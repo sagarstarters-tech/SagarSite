@@ -147,6 +147,7 @@ $feed_url = $site_url . '/api/google_merchant_feed.php';
                         </div>
                         <div class="card-body p-4 pt-0">
                             <form method="POST" action="">
+                                <?php echo csrf_input(); ?>
                                 <div class="form-check form-switch mb-4">
                                     <input class="form-check-input" type="checkbox" id="gmc_enabled" name="gmc_enabled" value="1" <?php echo ($gmc_enabled === '1') ? 'checked' : ''; ?>>
                                     <label class="form-check-label fw-bold text-dark" for="gmc_enabled">Enable Google Merchant Center Feed</label>
