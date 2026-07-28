@@ -1,0 +1,10 @@
+.env
+logs/
+uploads/
+vendor/
+.DS_Store
+.git/
+node_modules/
+.idea/
+.vscode/
+*.log
