@@ -257,8 +257,14 @@ return [
     [
         'label'    => 'Marketing',
         'icon'     => 'fa-bullhorn',
-        'pages'    => ['manage_whatsapp_settings.php', 'view_email_logs.php', 'manage_email_templates.php'],
+        'pages'    => ['manage_google_merchant.php', 'manage_whatsapp_settings.php', 'view_email_logs.php', 'manage_email_templates.php'],
         'children' => [
+            [
+                'label' => 'Google Merchant',
+                'icon'  => 'fab fa-google',
+                'url'   => 'manage_google_merchant.php',
+                'pages' => ['manage_google_merchant.php'],
+            ],
             [
                 'label' => 'WhatsApp Notifs',
                 'icon'  => 'fab fa-whatsapp',
