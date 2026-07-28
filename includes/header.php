@@ -259,6 +259,14 @@ if (isset($product['slug'])) {
     require_once 'ScriptService.php';
     $scriptService = new ScriptService($conn);
     echo $scriptService->getHeaderScripts();
+    if (!empty($global_settings['gmc_verification_meta'])) {
+        $gmc_meta = trim($global_settings['gmc_verification_meta']);
+        if (strpos($gmc_meta, '<meta') !== false) {
+            echo "    " . $gmc_meta . "\n";
+        } else {
+            echo '    <meta name="google-site-verification" content="' . htmlspecialchars($gmc_meta) . '" />' . "\n";
+        }
+    }
     ?>
     <!-- Auto Contrast Algorithm: ensures all button text is always readable -->
     <script>

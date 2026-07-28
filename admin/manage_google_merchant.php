@@ -17,21 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_gmc_settings']))
     $gmc_country           = trim($_POST['gmc_country'] ?? 'IN');
     $gmc_currency          = trim($_POST['gmc_currency'] ?? 'INR');
 
-    // Also update google_verification in scripts if user provided meta tag content
-    if (!empty($gmc_verification_meta)) {
-        // extract content="..." if user pasted full <meta ...> tag
-        if (preg_match('/content=["\']([^"\']+)["\']/i', $gmc_verification_meta, $matches)) {
-            $clean_meta = $matches[1];
-        } else {
-            $clean_meta = $gmc_verification_meta;
-        }
-        $stmt = $conn->prepare("INSERT INTO scripts (script_key, script_value) VALUES ('google_verification', ?) ON DUPLICATE KEY UPDATE script_value = VALUES(script_value)");
-        if ($stmt) {
-            $stmt->bind_param("s", $clean_meta);
-            $stmt->execute();
-            $stmt->close();
-        }
-    }
+
 
     $settings_to_update = [
         'gmc_enabled'           => $gmc_enabled,
