@@ -406,14 +406,18 @@ if (isset($product['slug'])) {
                           <i class="fas fa-user-circle fs-4 primary-blue"></i>
                       <?php endif; ?>
                   </a>
-                  <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownMenuLink">
-                      <li><a class="dropdown-item" href="<?php echo SITE_URL; ?>/user/profile.php">My Profile</a></li>
-                      <li><a class="dropdown-item" href="<?php echo SITE_URL; ?>/user/orders.php">My Orders</a></li>
-                      <?php if(isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
-                          <li><a class="dropdown-item" href="<?php echo SITE_URL; ?>/admin/index.php">Admin Panel</a></li>
-                      <?php endif; ?>
-                      <li><a class="dropdown-item" href="<?php echo SITE_URL; ?>/includes/auth.php?action=logout">Logout</a></li>
-                  </ul>
+                   <?php 
+                   $clean_site_url = rtrim(defined('SITE_URL') ? SITE_URL : '', '/');
+                   $clean_site_url = preg_replace('#/(includes|admin|api|user|auth)$#i', '', $clean_site_url);
+                   ?>
+                   <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownMenuLink">
+                       <li><a class="dropdown-item" href="<?php echo $clean_site_url; ?>/user/profile.php">My Profile</a></li>
+                       <li><a class="dropdown-item" href="<?php echo $clean_site_url; ?>/user/orders.php">My Orders</a></li>
+                       <?php if(isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                           <li><a class="dropdown-item" href="<?php echo $clean_site_url; ?>/admin/index.php">Admin Panel</a></li>
+                       <?php endif; ?>
+                       <li><a class="dropdown-item" href="<?php echo $clean_site_url; ?>/includes/auth.php?action=logout">Logout</a></li>
+                   </ul>
               </div>
           <?php else: ?>
               <a href="<?php echo SITE_URL; ?>/user/login.php" class="btn btn-outline-primary btn-custom btn-sm me-2 d-none d-sm-inline-block">Login</a>
@@ -548,6 +552,7 @@ function refreshUserState() {
             cartContainer.innerHTML = cartHtml;
 
             // 2. Sync Auth UI
+            let cleanBaseUrl = (data.site_url || '').replace(/\/+(includes|admin|api|user|auth)?\/*$/i, '');
             let authHtml = '';
             if (data.logged_in) {
                 // User is logged in
@@ -559,18 +564,18 @@ function refreshUserState() {
                                 '<i class="fas fa-user-circle fs-4 primary-blue"></i>'}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownMenuLink">
-                            <li><a class="dropdown-item" href="${data.site_url}/user/profile.php">My Profile</a></li>
-                            <li><a class="dropdown-item" href="${data.site_url}/user/orders.php">My Orders</a></li>
-                            ${data.role === 'admin' ? `<li><a class="dropdown-item" href="${data.site_url}/admin/index.php">Admin Panel</a></li>` : ''}
-                            <li><a class="dropdown-item" href="${data.site_url}/includes/auth.php?action=logout">Logout</a></li>
+                            <li><a class="dropdown-item" href="${cleanBaseUrl}/user/profile.php">My Profile</a></li>
+                            <li><a class="dropdown-item" href="${cleanBaseUrl}/user/orders.php">My Orders</a></li>
+                            ${data.role === 'admin' ? `<li><a class="dropdown-item" href="${cleanBaseUrl}/admin/index.php">Admin Panel</a></li>` : ''}
+                            <li><a class="dropdown-item" href="${cleanBaseUrl}/includes/auth.php?action=logout">Logout</a></li>
                         </ul>
                     </div>
                 `;
             } else {
                 // User is a guest
                 authHtml = `
-                    <a href="${data.site_url}/user/login.php" class="btn btn-outline-primary btn-custom btn-sm me-2 d-none d-sm-inline-block">Login</a>
-                    <a href="${data.site_url}/user/login.php" class="text-reset me-3 d-sm-none"><i class="fas fa-sign-in-alt fs-5"></i></a>
+                    <a href="${cleanBaseUrl}/user/login.php" class="btn btn-outline-primary btn-custom btn-sm me-2 d-none d-sm-inline-block">Login</a>
+                    <a href="${cleanBaseUrl}/user/login.php" class="text-reset me-3 d-sm-none"><i class="fas fa-sign-in-alt fs-5"></i></a>
                 `;
             }
             authContainer.innerHTML = authHtml;
