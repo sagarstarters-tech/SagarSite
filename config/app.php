@@ -5,7 +5,7 @@
  *  Location: /config/app.php
  * ============================================================
  *  Non-secret application settings. URL values are driven by
- *  SITE_URL in .env so the same code runs on XAMPP and Hostinger.
+ *  SITE_URL in .env or auto-detected domain on live servers.
  * ============================================================
  */
 
@@ -13,13 +13,23 @@ if (!defined('BASE_PATH')) {
     exit('No direct script access allowed');
 }
 
-// SITE_URL = the subfolder prefix, e.g. "/store" on XAMPP or "" on Hostinger root
-$_site_url = rtrim(_env('SITE_URL', ''), '/');
+$_env_site_url = rtrim(_env('SITE_URL', ''), '/');
 
-// Security Check: If it's a domain but missing protocol, use current protocol
-if ($_site_url && strpos($_site_url, '.') !== false && strpos($_site_url, '://') === false && !strpos($_site_url, '/')) {
-    $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? "https" : "http";
-    $_site_url = "$protocol://$_site_url";
+// Dynamic resolution: if running on a live web server (non-localhost HTTP_HOST)
+if (isset($_SERVER['HTTP_HOST']) && $_SERVER['HTTP_HOST'] !== 'localhost' && $_SERVER['HTTP_HOST'] !== '127.0.0.1') {
+    $protocol = (isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] === 'on' || $_SERVER['HTTPS'] === '1')) ? 'https' : 'http';
+    if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+        $protocol = 'https';
+    }
+    $host = $_SERVER['HTTP_HOST'];
+    
+    $script_dir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
+    $script_dir = preg_replace('#/(admin|api|user|auth)(/.*)?$#', '', $script_dir);
+    $subfolder  = ($script_dir === '/' || $script_dir === '\\') ? '' : rtrim($script_dir, '/');
+    
+    $_site_url = "$protocol://$host" . $subfolder;
+} else {
+    $_site_url = $_env_site_url;
 }
 
 return [

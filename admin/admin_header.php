@@ -64,7 +64,13 @@ $__admin_menu = require __DIR__ . '/config/menu.php';
         <div class="admin-sidebar p-0" id="adminSidebar">
             <!-- Logo -->
             <div class="admin-sidebar-logo text-center">
-                <img src="<?php echo ASSETS_URL; ?>/images/<?php echo htmlspecialchars($global_settings['header_logo_image'] ?? 'logo.jpg'); ?>"
+                <?php
+                $admin_logo = $global_settings['header_logo_image'] ?? 'logo.jpg';
+                if (!file_exists(BASE_PATH . '/assets/images/' . $admin_logo)) {
+                    $admin_logo = file_exists(BASE_PATH . '/assets/images/logo.jpg') ? 'logo.jpg' : 'logo_1772118384.jpeg';
+                }
+                ?>
+                <img src="<?php echo ASSETS_URL; ?>/images/<?php echo htmlspecialchars($admin_logo); ?>"
                      alt="Logo"
                      class="img-fluid"
                      style="height:<?php echo htmlspecialchars($global_settings['header_logo_height'] ?? '45'); ?>px; width:auto; object-fit:contain;">
@@ -107,8 +113,14 @@ $__admin_menu = require __DIR__ . '/config/menu.php';
                             </span>
                             <div class="dropdown">
                                 <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle-nocaret" data-mdb-toggle="dropdown">
-                                    <?php if (!empty($_SESSION['profile_photo'])): ?>
-                                        <img src="<?php echo ASSETS_URL; ?>/images/<?php echo htmlspecialchars($_SESSION['profile_photo']); ?>"
+                                    <?php 
+                                    $profile_pic = $_SESSION['profile_photo'] ?? '';
+                                    if (!empty($profile_pic) && !file_exists(BASE_PATH . '/assets/images/' . $profile_pic)) {
+                                        $profile_pic = file_exists(BASE_PATH . '/assets/images/profile_69c14f73c250a.png') ? 'profile_69c14f73c250a.png' : '';
+                                    }
+                                    ?>
+                                    <?php if (!empty($profile_pic)): ?>
+                                        <img src="<?php echo ASSETS_URL; ?>/images/<?php echo htmlspecialchars($profile_pic); ?>"
                                              alt="Profile"
                                              class="rounded-circle shadow-sm"
                                              style="width:36px;height:36px;object-fit:cover;border:2px solid #fff;">
