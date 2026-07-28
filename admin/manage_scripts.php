@@ -16,7 +16,7 @@ $scripts = $scriptService->getRawScripts();
                 </div>
                 <div class="card-body p-4">
                     <form id="scriptsForm">
-    <?php echo csrf_input(); ?>
+                        <?php echo csrf_input(); ?>
                         <input type="hidden" name="action" value="save_scripts">
                         
                         <!-- Header Section -->
@@ -87,6 +87,15 @@ $scripts = $scriptService->getRawScripts();
 </style>
 
 <script>
+function toB64(str) {
+    if (!str) return '';
+    try {
+        return btoa(unescape(encodeURIComponent(str)));
+    } catch(e) {
+        return str;
+    }
+}
+
 $(document).ready(function() {
     $('#scriptsForm').on('submit', function(e) {
         e.preventDefault();
@@ -97,21 +106,37 @@ $(document).ready(function() {
         btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Saving...');
         status.removeClass('text-success text-danger').text('');
 
+        const formData = {
+            action: 'save_scripts',
+            is_b64: '1',
+            _csrf_token: $('input[name="_csrf_token"]').val(),
+            header_code: toB64($('textarea[name="header_code"]').val()),
+            footer_code: toB64($('textarea[name="footer_code"]').val()),
+            google_verification: $('input[name="google_verification"]').val(),
+            bing_verification: $('input[name="bing_verification"]').val(),
+            custom_verification: toB64($('textarea[name="custom_verification"]').val()),
+            txt_instructions: toB64($('textarea[name="txt_instructions"]').val())
+        };
+
         $.ajax({
             url: 'ajax_manage_scripts.php',
             method: 'POST',
-            data: $(this).serialize(),
+            data: formData,
             dataType: 'json',
             success: function(response) {
                 if (response.success) {
                     status.addClass('text-success').text('Settings saved successfully!');
                     setTimeout(() => status.fadeOut(tmp => status.text('').show()), 3000);
                 } else {
-                    status.addClass('text-danger').text('Error: ' + response.error);
+                    status.addClass('text-danger').text('Error: ' + (response.error || 'Failed to save settings'));
                 }
             },
-            error: function() {
-                status.addClass('text-danger').text('Critical error communicating with server.');
+            error: function(xhr) {
+                let msg = 'Critical error communicating with server.';
+                if (xhr.status === 403) {
+                    msg = 'Security verification failed or session expired. Please refresh the page and try again.';
+                }
+                status.addClass('text-danger').text(msg);
             },
             complete: function() {
                 btn.prop('disabled', false).html('<i class="fas fa-save me-2"></i>Save Settings');

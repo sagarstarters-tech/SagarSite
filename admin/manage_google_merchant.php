@@ -12,6 +12,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_gmc_settings']))
     $gmc_enabled           = isset($_POST['gmc_enabled']) ? '1' : '0';
     $gmc_merchant_id       = trim($_POST['gmc_merchant_id'] ?? '');
     $gmc_verification_meta = trim($_POST['gmc_verification_meta'] ?? '');
+    if (isset($_POST['is_b64']) && $_POST['is_b64'] === '1' && !empty($gmc_verification_meta)) {
+        $gmc_verification_meta = base64_decode($gmc_verification_meta);
+    }
     $gmc_default_brand     = trim($_POST['gmc_default_brand'] ?? '');
     $gmc_condition         = trim($_POST['gmc_condition'] ?? 'new');
     $gmc_country           = trim($_POST['gmc_country'] ?? 'IN');
@@ -217,6 +220,23 @@ function copyFeedUrl() {
     copyText.setSelectionRange(0, 99999);
     navigator.clipboard.writeText(copyText.value);
     alert("Google Merchant Product Feed URL copied to clipboard!");
+}
+
+var gmcForm = document.querySelector('form');
+if (gmcForm) {
+    gmcForm.addEventListener('submit', function() {
+        var metaInput = document.getElementById('gmc_verification_meta');
+        if (metaInput && metaInput.value) {
+            var b64Input = document.createElement('input');
+            b64Input.type = 'hidden';
+            b64Input.name = 'is_b64';
+            b64Input.value = '1';
+            this.appendChild(b64Input);
+            try {
+                metaInput.value = btoa(unescape(encodeURIComponent(metaInput.value)));
+            } catch(err){}
+        }
+    });
 }
 </script>
 
