@@ -179,11 +179,11 @@ if (!empty($global_settings['hero_banner_product']) && file_exists(__DIR__ . '/a
             <?php
             // Determine main image source with fallback to first gallery image
             $main_image_src = ASSETS_URL.'/images/placeholder.svg';
-            if (!empty($product['image']) && file_exists(__DIR__ . '/assets/images/' . $product['image'])) {
+            if (!empty($product['image'])) {
                 $main_image_src = ASSETS_URL.'/images/'.$product['image'];
             } else {
                 $first_gal = $conn->query("SELECT image FROM product_images WHERE product_id = $id ORDER BY position ASC, id ASC LIMIT 1")->fetch_assoc();
-                if ($first_gal && !empty($first_gal['image']) && file_exists(__DIR__ . '/assets/images/' . $first_gal['image'])) {
+                if ($first_gal && !empty($first_gal['image'])) {
                     $main_image_src = ASSETS_URL.'/images/'.$first_gal['image'];
                 }
             }

@@ -127,11 +127,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         
-        $image = '';
-        if (isset($_FILES['image']) && $_FILES['image']['error'] === 0) {
-            $ext = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
-            $image = uniqid() . '.' . $ext;
-            move_uploaded_file($_FILES['image']['tmp_name'], '../assets/images/' . $image);
+        $image = null;
+        if (isset($_FILES['image'])) {
+            if ($_FILES['image']['error'] === 0) {
+                $ext = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
+                $image = uniqid() . '.' . $ext;
+                if (!move_uploaded_file($_FILES['image']['tmp_name'], '../assets/images/' . $image)) {
+                    $error = "Failed to move uploaded main image to assets/images/. Please check directory permissions.";
+                    $image = null;
+                }
+            } elseif ($_FILES['image']['error'] !== 4) {
+                $error = "Failed to upload main image. PHP Error code: " . $_FILES['image']['error'];
+            }
         }
 
         $sql = "INSERT INTO products (name, slug, short_description, description, features, meta_description, category_id, product_type, download_file, download_url, download_limit, download_expiry_days, regular_price, sale_price, price, sku, brand, stock, shipping_cost, weight, length, width, height, cod_available, is_trending, cod_charge, image, image_fit) VALUES ('$name', '$slug', '$short_desc', '$desc', '$features', '$meta_desc', $cat_id, '$product_type', '$download_file', '$download_url', $download_limit, $download_expiry, $regular_price, $sale_price, $price, '$sku', '$brand', $stock, $shipping_cost, $weight, $length, $width, $height, $cod_available, $is_trending, $cod_charge_sql, '$image', '$image_fit')";
@@ -216,15 +223,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $image_query = "";
-        if (isset($_FILES['image']) && $_FILES['image']['error'] === 0) {
-            $ext = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
-            $image = uniqid() . '.' . $ext;
-            if (move_uploaded_file($_FILES['image']['tmp_name'], '../assets/images/' . $image)) {
-                 $img_q = $conn->query("SELECT image FROM products WHERE id=$id")->fetch_assoc();
-                 if ($img_q && $img_q['image'] && file_exists('../assets/images/'.$img_q['image'])) {
-                     unlink('../assets/images/'.$img_q['image']);
-                 }
-                 $image_query = ", image='$image'";
+        if (isset($_FILES['image'])) {
+            if ($_FILES['image']['error'] === 0) {
+                $ext = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
+                $image = uniqid() . '.' . $ext;
+                if (move_uploaded_file($_FILES['image']['tmp_name'], '../assets/images/' . $image)) {
+                     $img_q = $conn->query("SELECT image FROM products WHERE id=$id")->fetch_assoc();
+                     if ($img_q && $img_q['image'] && file_exists('../assets/images/'.$img_q['image'])) {
+                         unlink('../assets/images/'.$img_q['image']);
+                     }
+                     $image_query = ", image='$image'";
+                } else {
+                    $error = "Failed to move uploaded main image to assets/images/. Please check directory permissions.";
+                }
+            } elseif ($_FILES['image']['error'] !== 4) {
+                $error = "Failed to upload main image. PHP Error code: " . $_FILES['image']['error'];
             }
         }
 

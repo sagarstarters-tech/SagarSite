@@ -151,12 +151,12 @@ if (!empty($global_settings[$setting_key]) && file_exists(__DIR__ . '/assets/ima
                         <div class="card product-card h-100 border-0 shadow-sm">
                             <?php
                             $main_img_src = ASSETS_URL.'/images/placeholder.svg';
-                            if (!empty($p['image']) && file_exists(__DIR__ . '/assets/images/' . $p['image'])) {
+                            if (!empty($p['image'])) {
                                 $main_img_src = ASSETS_URL.'/images/'.$p['image'];
                             } else {
                                 $p_id = intval($p['id']);
                                 $first_gal = $conn->query("SELECT image FROM product_images WHERE product_id = $p_id ORDER BY position ASC, id ASC LIMIT 1")->fetch_assoc();
-                                if ($first_gal && !empty($first_gal['image']) && file_exists(__DIR__ . '/assets/images/' . $first_gal['image'])) {
+                                if ($first_gal && !empty($first_gal['image'])) {
                                     $main_img_src = ASSETS_URL.'/images/'.$first_gal['image'];
                                 }
                             }
