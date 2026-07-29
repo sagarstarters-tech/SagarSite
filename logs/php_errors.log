@@ -2840,3 +2840,9 @@ Stack trace:
 #1 C:\xampp\htdocs\SagarSite\index.php(68): include('C:\\xampp\\htdocs...')
 #2 {main}
   thrown in C:\xampp\htdocs\SagarSite\includes\homepage-testimonials.php on line 14
+[29-Jul-2026 09:12:56 Asia/Kolkata] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'id' in 'field list' in C:\xampp\htdocs\SagarSite\scratch\check_images.php:8
+Stack trace:
+#0 C:\xampp\htdocs\SagarSite\scratch\check_images.php(8): mysqli->query('SELECT id, sett...')
+#1 C:\xampp\htdocs\SagarSite\scratch\check_images.php(45): checkTableImages(Object(mysqli), 'settings', 'setting_value')
+#2 {main}
+  thrown in C:\xampp\htdocs\SagarSite\scratch\check_images.php on line 8

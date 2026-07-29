@@ -177,7 +177,7 @@ if (!empty($global_settings['hero_banner_product']) && file_exists(__DIR__ . '/a
         <!-- Product Image & Gallery -->
         <div class="col-md-6 mb-4" data-aos="fade-right">
             <div class="card product-card shadow-sm border-0 bg-light d-flex align-items-center justify-content-center p-3 mb-3" style="position: relative; overflow: hidden;" id="imageZoomContainer">
-                <img id="mainProductImage" src="<?php echo htmlspecialchars($product['image'] ? ASSETS_URL.'/images/'.$product['image'] : 'https://dummyimage.com/600x600/dee2e6/6c757d.jpg&text=No+Image'); ?>" class="img-fluid rounded" alt="<?php echo htmlspecialchars($product['name']); ?>" style="width: 100%; aspect-ratio: 1 / 1; object-fit: <?php echo htmlspecialchars($product['image_fit'] ?? 'contain'); ?>; transition: opacity 0.3s ease;">
+                <img id="mainProductImage" src="<?php echo htmlspecialchars($product['image'] ? ASSETS_URL.'/images/'.$product['image'] : ASSETS_URL.'/images/placeholder.svg'); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="img-fluid rounded" alt="<?php echo htmlspecialchars($product['name']); ?>" style="width: 100%; aspect-ratio: 1 / 1; object-fit: <?php echo htmlspecialchars($product['image_fit'] ?? 'contain'); ?>; transition: opacity 0.3s ease;">
             </div>
             
             <style>
@@ -219,14 +219,14 @@ if (!empty($global_settings['hero_banner_product']) && file_exists(__DIR__ . '/a
             ?>
             <div class="d-flex gap-2 overflow-auto py-2" style="white-space: nowrap;">
                 <!-- Include main image as first thumbnail -->
-                <div class="gallery-thumbnail active-thumbnail" style="width: 80px; height: 80px; cursor: pointer; flex-shrink: 0; border: 2px solid var(--primary-color); border-radius: 8px; overflow: hidden; padding: 2px;" onclick="changeMainImage(this, '<?php echo htmlspecialchars($product['image'] ? ASSETS_URL.'/images/'.$product['image'] : 'https://dummyimage.com/600x600/dee2e6/6c757d.jpg&text=No+Image'); ?>')">
-                    <img src="<?php echo htmlspecialchars($product['image'] ? ASSETS_URL.'/images/'.$product['image'] : 'https://dummyimage.com/100x100/dee2e6/6c757d.jpg&text=No+Image'); ?>" class="w-100 h-100 object-fit-cover rounded">
+                <div class="gallery-thumbnail active-thumbnail" style="width: 80px; height: 80px; cursor: pointer; flex-shrink: 0; border: 2px solid var(--primary-color); border-radius: 8px; overflow: hidden; padding: 2px;" onclick="changeMainImage(this, '<?php echo htmlspecialchars($product['image'] ? ASSETS_URL.'/images/'.$product['image'] : ASSETS_URL.'/images/placeholder.svg'); ?>')">
+                    <img src="<?php echo htmlspecialchars($product['image'] ? ASSETS_URL.'/images/'.$product['image'] : ASSETS_URL.'/images/placeholder.svg'); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="w-100 h-100 object-fit-cover rounded">
                 </div>
                 
                 <!-- Output extra gallery images -->
                 <?php while($g = $gallery->fetch_assoc()): ?>
                 <div class="gallery-thumbnail" style="width: 80px; height: 80px; cursor: pointer; flex-shrink: 0; border: 2px solid transparent; border-radius: 8px; overflow: hidden; padding: 2px;" onclick="changeMainImage(this, '<?php echo ASSETS_URL; ?>/images/<?php echo htmlspecialchars($g['image']); ?>')">
-                    <img src="<?php echo ASSETS_URL; ?>/images/<?php echo htmlspecialchars($g['image']); ?>" class="w-100 h-100 object-fit-cover rounded">
+                    <img src="<?php echo ASSETS_URL; ?>/images/<?php echo htmlspecialchars($g['image']); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="w-100 h-100 object-fit-cover rounded">
                 </div>
                 <?php endwhile; ?>
             </div>
@@ -565,7 +565,7 @@ if (!empty($global_settings['hero_banner_product']) && file_exists(__DIR__ . '/a
             <?php $delay=100; while($p = $related->fetch_assoc()): ?>
             <div class="col-md-3" data-aos="zoom-in" data-aos-delay="<?php echo $delay; $delay+=100; ?>">
                 <div class="card product-card h-100 border-0 shadow-sm">
-                    <img src="<?php echo htmlspecialchars($p['image'] ? ASSETS_URL.'/images/'.$p['image'] : 'https://dummyimage.com/400x400/dee2e6/6c757d.jpg&text=No+Image'); ?>" class="card-img-top" alt="<?php echo htmlspecialchars($p['name']); ?>" loading="lazy" style="object-fit: <?php echo htmlspecialchars($p['image_fit'] ?? 'contain'); ?>; background-color:#fff;">
+                    <img src="<?php echo htmlspecialchars($p['image'] ? ASSETS_URL.'/images/'.$p['image'] : ASSETS_URL.'/images/placeholder.svg'); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="card-img-top" alt="<?php echo htmlspecialchars($p['name']); ?>" loading="lazy" style="object-fit: <?php echo htmlspecialchars($p['image_fit'] ?? 'contain'); ?>; background-color:#fff;">
                     <div class="card-body">
                         <h6 class="card-title fw-bold text-truncate"><?php echo htmlspecialchars($p['name']); ?></h6>
                         <div class="d-flex flex-wrap justify-content-between align-items-center mt-3 gap-2">

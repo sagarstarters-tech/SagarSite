@@ -40,7 +40,7 @@ include 'includes/hero-slider.php';
             <?php $delay=100; while($p = $prods->fetch_assoc()): ?>
             <div class="col-md-3" data-aos="fade-up" data-aos-delay="<?php echo $delay; $delay+=50; ?>">
                 <div class="card product-card h-100">
-                    <img src="<?php echo htmlspecialchars($p['image'] ? ASSETS_URL.'/images/'.$p['image'] : 'https://dummyimage.com/400x400/dee2e6/6c757d.jpg&text=No+Image'); ?>" class="card-img-top" alt="<?php echo htmlspecialchars($p['name']); ?>" loading="lazy" style="object-fit: <?php echo htmlspecialchars($p['image_fit'] ?? 'contain'); ?>; background-color:#fff;">
+                    <img src="<?php echo htmlspecialchars($p['image'] ? ASSETS_URL.'/images/'.$p['image'] : ASSETS_URL.'/images/placeholder.svg'); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="card-img-top" alt="<?php echo htmlspecialchars($p['name']); ?>" loading="lazy" style="object-fit: <?php echo htmlspecialchars($p['image_fit'] ?? 'contain'); ?>; background-color:#fff;">
                     <div class="card-body d-flex flex-column">
                         <h5 class="card-title fw-bold text-truncate"><?php echo htmlspecialchars($p['name']); ?></h5>
                         <p class="card-text text-muted small text-truncate"><?php echo htmlspecialchars(!empty($p['short_description']) ? $p['short_description'] : $p['description']); ?></p>

@@ -377,7 +377,7 @@ if ($seo_q) {
                         <tr>
                             <td class="ps-4">
                                 <div class="d-flex align-items-center">
-                                    <img src="<?php echo htmlspecialchars($p['image'] ? ASSETS_URL.'/images/'.$p['image'] : 'https://dummyimage.com/100x100/dee2e6/6c757d.jpg&text=No+Image'); ?>" class="rounded" style="width: 50px; height: 50px; object-fit: <?php echo htmlspecialchars($p['image_fit'] ?? 'contain'); ?>;">
+                                    <img src="<?php echo htmlspecialchars($p['image'] ? ASSETS_URL.'/images/'.$p['image'] : ASSETS_URL.'/images/placeholder.svg'); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="rounded" style="width: 50px; height: 50px; object-fit: <?php echo htmlspecialchars($p['image_fit'] ?? 'contain'); ?>;">
                                     <div class="ms-3">
                                         <h6 class="fw-bold mb-0 text-truncate" style="max-width: 200px;"><?php echo htmlspecialchars($p['name']); ?></h6>
                                     </div>

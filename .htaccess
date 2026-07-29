@@ -1,5 +1,5 @@
 RewriteEngine On
-RewriteBase /
+# RewriteBase /
 
 # ══════════════════════════════════════════════════════════════
 # 0. WHITELIST SOCIAL MEDIA CRAWLERS (bypass any WAF/firewall)
@@ -160,6 +160,13 @@ ErrorDocument 403 /404.php
 # ══════════════════════════════════════════════════════════════
 # 9. URL REWRITE RULES
 # ══════════════════════════════════════════════════════════════
+
+# Image 404 Fallback to prevent broken images
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^assets/images/.*\.(jpe?g|png|gif|webp|svg)$ assets/images/placeholder.svg [L,NC]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^uploads/.*\.(jpe?g|png|gif|webp|svg)$ assets/images/placeholder.svg [L,NC]
 
 # Dynamic sitemap
 RewriteRule ^sitemap\.xml$ sitemap.php [L,QSA]

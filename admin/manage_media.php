@@ -785,7 +785,7 @@ $total_videos = (int)($conn->query("SELECT COUNT(*) as c FROM media_library WHER
                 <div class="video-overlay"><i class="fas fa-play-circle"></i></div>
                 <span class="type-badge video">Video</span>
             <?php else: ?>
-                <img src="<?php echo $display_url; ?>" alt="<?php echo htmlspecialchars($m['alt_text']); ?>" loading="lazy">
+                <img src="<?php echo $display_url; ?>" alt="<?php echo htmlspecialchars($m['alt_text']); ?>" loading="lazy" onerror="this.onerror=null; this.src='../assets/images/placeholder.svg';">
                 <span class="type-badge image">Image</span>
             <?php endif; ?>
         </div>
