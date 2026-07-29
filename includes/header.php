@@ -400,8 +400,14 @@ if (isset($product['slug'])) {
           <?php if(isset($_SESSION['user_id'])): ?>
               <div class="dropdown me-2">
                   <a class="dropdown-toggle d-flex align-items-center hidden-arrow text-reset" href="#" id="navbarDropdownMenuLink" role="button" data-mdb-toggle="dropdown" aria-expanded="false">
-                      <?php if(isset($_SESSION['profile_photo']) && !empty($_SESSION['profile_photo'])): ?>
-                          <img src="<?php echo ASSETS_URL; ?>/images/<?php echo htmlspecialchars($_SESSION['profile_photo']); ?>" alt="Profile" class="rounded-circle object-fit-cover" style="width: 32px; height: 32px; border: 2px solid #007aff;">
+                      <?php 
+                      $p_photo = $_SESSION['profile_photo'] ?? '';
+                      if(!empty($p_photo) && !file_exists(BASE_PATH . '/assets/images/' . $p_photo)) {
+                          $p_photo = file_exists(BASE_PATH . '/assets/images/profile_69c14f73c250a.png') ? 'profile_69c14f73c250a.png' : '';
+                      }
+                      ?>
+                      <?php if(!empty($p_photo)): ?>
+                          <img src="<?php echo ASSETS_URL; ?>/images/<?php echo htmlspecialchars($p_photo); ?>" alt="Profile" class="rounded-circle object-fit-cover" style="width: 32px; height: 32px; border: 2px solid #007aff;" onerror="this.outerHTML='<i class=\'fas fa-user-circle fs-4 primary-blue\'></i>'">
                       <?php else: ?>
                           <i class="fas fa-user-circle fs-4 primary-blue"></i>
                       <?php endif; ?>
@@ -560,7 +566,7 @@ function refreshUserState() {
                     <div class="dropdown me-2">
                         <a class="dropdown-toggle d-flex align-items-center hidden-arrow text-reset" href="#" id="navbarDropdownMenuLink" role="button" data-mdb-toggle="dropdown" aria-expanded="false">
                             ${data.profile_photo ? 
-                                `<img src="${data.assets_url}/images/${data.profile_photo}" alt="Profile" class="rounded-circle object-fit-cover" style="width: 32px; height: 32px; border: 2px solid #007aff;">` : 
+                                `<img src="${data.assets_url}/images/${data.profile_photo}" alt="Profile" class="rounded-circle object-fit-cover" style="width: 32px; height: 32px; border: 2px solid #007aff;" onerror="this.outerHTML='<i class=\\'fas fa-user-circle fs-4 primary-blue\\'></i>'">` : 
                                 '<i class="fas fa-user-circle fs-4 primary-blue"></i>'}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownMenuLink">

@@ -15,13 +15,17 @@ $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
 $detected_site_url = defined('SITE_URL') && !empty(SITE_URL) ? rtrim(SITE_URL, '/') : "$proto://$host";
 $detected_site_url = preg_replace('#/(includes|admin|api|user|auth)$#i', '', $detected_site_url);
 
-$detected_assets_url = defined('ASSETS_URL') && !empty(ASSETS_URL) ? rtrim(ASSETS_URL, '/') : $detected_site_url . '/assets';
+// Resolve profile photo with fallback
+$p_photo = $_SESSION['profile_photo'] ?? '';
+if (!empty($p_photo) && !file_exists(__DIR__ . '/../assets/images/' . $p_photo)) {
+    $p_photo = file_exists(__DIR__ . '/../assets/images/profile_69c14f73c250a.png') ? 'profile_69c14f73c250a.png' : '';
+}
 
 $response = [
     'logged_in' => isset($_SESSION['user_id']),
     'name' => $_SESSION['name'] ?? '',
     'role' => $_SESSION['role'] ?? '',
-    'profile_photo' => $_SESSION['profile_photo'] ?? '',
+    'profile_photo' => $p_photo,
     'cart_count' => 0,
     'cart_total' => 0,
     'global_currency' => $global_currency ?? '₹',
