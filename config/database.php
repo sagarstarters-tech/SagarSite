@@ -54,7 +54,7 @@ if (!defined('APP_ENV')) {
 
 // ── Database Constants ───────────────────────────────────────
 if (!defined('DB_HOST')) define('DB_HOST', _env('DB_HOST', 'localhost'));
-if (!defined('DB_NAME')) define('DB_NAME', _env('DB_NAME', 'ecommerce_db'));
+if (!defined('DB_NAME')) define('DB_NAME', _env('DB_NAME', 'SagarSite_db'));
 if (!defined('DB_USER')) define('DB_USER', _env('DB_USER', 'root'));
 if (!defined('DB_PASS')) define('DB_PASS', _env('DB_PASS', ''));
 if (!defined('DB_PORT')) define('DB_PORT', (int) _env('DB_PORT', '3306'));
