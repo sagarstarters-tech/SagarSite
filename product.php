@@ -176,8 +176,20 @@ if (!empty($global_settings['hero_banner_product']) && file_exists(__DIR__ . '/a
     <div class="row">
         <!-- Product Image & Gallery -->
         <div class="col-md-6 mb-4" data-aos="fade-right">
+            <?php
+            // Determine main image source with fallback to first gallery image
+            $main_image_src = ASSETS_URL.'/images/placeholder.svg';
+            if (!empty($product['image']) && file_exists(__DIR__ . '/assets/images/' . $product['image'])) {
+                $main_image_src = ASSETS_URL.'/images/'.$product['image'];
+            } else {
+                $first_gal = $conn->query("SELECT image FROM product_images WHERE product_id = $id ORDER BY position ASC, id ASC LIMIT 1")->fetch_assoc();
+                if ($first_gal && !empty($first_gal['image']) && file_exists(__DIR__ . '/assets/images/' . $first_gal['image'])) {
+                    $main_image_src = ASSETS_URL.'/images/'.$first_gal['image'];
+                }
+            }
+            ?>
             <div class="card product-card shadow-sm border-0 bg-light d-flex align-items-center justify-content-center p-3 mb-3" style="position: relative; overflow: hidden;" id="imageZoomContainer">
-                <img id="mainProductImage" src="<?php echo htmlspecialchars($product['image'] ? ASSETS_URL.'/images/'.$product['image'] : ASSETS_URL.'/images/placeholder.svg'); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="img-fluid rounded" alt="<?php echo htmlspecialchars($product['name']); ?>" style="width: 100%; aspect-ratio: 1 / 1; object-fit: <?php echo htmlspecialchars($product['image_fit'] ?? 'contain'); ?>; transition: opacity 0.3s ease;">
+                <img id="mainProductImage" src="<?php echo htmlspecialchars($main_image_src); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="img-fluid rounded" alt="<?php echo htmlspecialchars($product['name']); ?>" style="width: 100%; aspect-ratio: 1 / 1; object-fit: <?php echo htmlspecialchars($product['image_fit'] ?? 'contain'); ?>; transition: opacity 0.3s ease;">
             </div>
             
             <style>
@@ -219,8 +231,8 @@ if (!empty($global_settings['hero_banner_product']) && file_exists(__DIR__ . '/a
             ?>
             <div class="d-flex gap-2 overflow-auto py-2" style="white-space: nowrap;">
                 <!-- Include main image as first thumbnail -->
-                <div class="gallery-thumbnail active-thumbnail" style="width: 80px; height: 80px; cursor: pointer; flex-shrink: 0; border: 2px solid var(--primary-color); border-radius: 8px; overflow: hidden; padding: 2px;" onclick="changeMainImage(this, '<?php echo htmlspecialchars($product['image'] ? ASSETS_URL.'/images/'.$product['image'] : ASSETS_URL.'/images/placeholder.svg'); ?>')">
-                    <img src="<?php echo htmlspecialchars($product['image'] ? ASSETS_URL.'/images/'.$product['image'] : ASSETS_URL.'/images/placeholder.svg'); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="w-100 h-100 object-fit-cover rounded">
+                <div class="gallery-thumbnail active-thumbnail" style="width: 80px; height: 80px; cursor: pointer; flex-shrink: 0; border: 2px solid var(--primary-color); border-radius: 8px; overflow: hidden; padding: 2px;" onclick="changeMainImage(this, '<?php echo htmlspecialchars($main_image_src); ?>')">
+                    <img src="<?php echo htmlspecialchars($main_image_src); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="w-100 h-100 object-fit-cover rounded">
                 </div>
                 
                 <!-- Output extra gallery images -->

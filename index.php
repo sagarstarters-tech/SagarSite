@@ -40,7 +40,19 @@ include 'includes/hero-slider.php';
             <?php $delay=100; while($p = $prods->fetch_assoc()): ?>
             <div class="col-md-3" data-aos="fade-up" data-aos-delay="<?php echo $delay; $delay+=50; ?>">
                 <div class="card product-card h-100">
-                    <img src="<?php echo htmlspecialchars($p['image'] ? ASSETS_URL.'/images/'.$p['image'] : ASSETS_URL.'/images/placeholder.svg'); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="card-img-top" alt="<?php echo htmlspecialchars($p['name']); ?>" loading="lazy" style="object-fit: <?php echo htmlspecialchars($p['image_fit'] ?? 'contain'); ?>; background-color:#fff;">
+                    <?php
+                    $main_img_src = ASSETS_URL.'/images/placeholder.svg';
+                    if (!empty($p['image']) && file_exists(__DIR__ . '/assets/images/' . $p['image'])) {
+                        $main_img_src = ASSETS_URL.'/images/'.$p['image'];
+                    } else {
+                        $p_id = intval($p['id']);
+                        $first_gal = $conn->query("SELECT image FROM product_images WHERE product_id = $p_id ORDER BY position ASC, id ASC LIMIT 1")->fetch_assoc();
+                        if ($first_gal && !empty($first_gal['image']) && file_exists(__DIR__ . '/assets/images/' . $first_gal['image'])) {
+                            $main_img_src = ASSETS_URL.'/images/'.$first_gal['image'];
+                        }
+                    }
+                    ?>
+                    <img src="<?php echo htmlspecialchars($main_img_src); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="card-img-top" alt="<?php echo htmlspecialchars($p['name']); ?>" loading="lazy" style="object-fit: <?php echo htmlspecialchars($p['image_fit'] ?? 'contain'); ?>; background-color:#fff;">
                     <div class="card-body d-flex flex-column">
                         <h5 class="card-title fw-bold text-truncate"><?php echo htmlspecialchars($p['name']); ?></h5>
                         <p class="card-text text-muted small text-truncate"><?php echo htmlspecialchars(!empty($p['short_description']) ? $p['short_description'] : $p['description']); ?></p>
