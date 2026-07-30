@@ -64,6 +64,17 @@ if (strtoupper($code) === 'PAYMENT_SUCCESS' || strtoupper($code) === 'SUCCESS') 
         if (isset($_SESSION['cart'])) { unset($_SESSION['cart']); }
         require_once 'includes/cart_functions.php';
         sync_cart_to_db($conn);
+
+        // Mark abandoned cart as recovered (fail-safe)
+        try {
+            require_once __DIR__ . '/includes/AbandonedCartService.php';
+            if (isset($_SESSION['user_id'])) {
+                (new AbandonedCartService($conn))->markRecovered(intval($_SESSION['user_id']));
+            }
+        } catch (Throwable $e) {
+            error_log('[AbandonedCart] PhonePe recovery mark error: ' . $e->getMessage());
+        }
+
         // Clear partial COD session flag
         if (isset($_SESSION['cod_partial_order'])) { unset($_SESSION['cod_partial_order']); }
 

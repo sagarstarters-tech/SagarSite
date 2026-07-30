@@ -257,8 +257,14 @@ return [
     [
         'label'    => 'Marketing',
         'icon'     => 'fa-bullhorn',
-        'pages'    => ['manage_google_merchant.php', 'manage_whatsapp_settings.php', 'view_email_logs.php', 'manage_email_templates.php'],
+        'pages'    => ['manage_google_merchant.php', 'manage_whatsapp_settings.php', 'view_email_logs.php', 'manage_email_templates.php', 'manage_abandoned_carts.php'],
         'children' => [
+            [
+                'label' => 'Cart Recovery',
+                'icon'  => 'fa-cart-arrow-down',
+                'url'   => 'manage_abandoned_carts.php',
+                'pages' => ['manage_abandoned_carts.php'],
+            ],
             [
                 'label' => 'Google Merchant',
                 'icon'  => 'fab fa-google',

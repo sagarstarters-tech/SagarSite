@@ -317,6 +317,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             unset($_SESSION['cart']);
             require_once 'includes/cart_functions.php';
             sync_cart_to_db($conn);
+
+            // Mark abandoned cart as recovered (fail-safe, non-blocking)
+            try {
+                require_once __DIR__ . '/includes/AbandonedCartService.php';
+                (new AbandonedCartService($conn))->markRecovered($user_id);
+            } catch (Throwable $e) {
+                error_log('[AbandonedCart] Recovery mark error: ' . $e->getMessage());
+            }
+
             $customer_email = $user_data['email'];
             $customer_name = $user_data['name'];
             sendOrderConfirmationEmail($conn, $order_id, $customer_email, $customer_name, $cart_items, $grand_total, $global_currency, $payment_method);
