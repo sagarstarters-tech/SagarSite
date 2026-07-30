@@ -75,6 +75,9 @@ if ($check_pos && $check_pos->num_rows == 0) {
     $conn->query("ALTER TABLE product_images ADD COLUMN position INT DEFAULT 0");
 }
 
+// Auto-clean dummy placeholder rows from product_images table to prevent broken gallery boxes
+$conn->query("DELETE FROM product_images WHERE LOWER(image) IN ('placeholder.svg', 'placeholder.png', 'no-image.png', 'no-image.jpg', 'null', 'undefined', '') OR image IS NULL");
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     
@@ -324,8 +327,17 @@ $has_cats = $cats && $cats->num_rows > 0;
 $product_images = [];
 $pi_q = $conn->query("SELECT * FROM product_images ORDER BY position ASC, id ASC");
 if ($pi_q) {
+    $dummies = ['placeholder.svg', 'placeholder.png', 'no-image.png', 'no-image.jpg', 'null', 'undefined'];
     while($pi = $pi_q->fetch_assoc()) {
+        $img_file = strtolower(basename(trim($pi['image'] ?? '')));
+        if (empty($img_file) || in_array($img_file, $dummies)) {
+            continue; // Skip dummy placeholder entries
+        }
         $pi['image_url'] = resolve_product_image_url($pi['image']);
+        // If image file doesn't exist on disk, skip it from gallery grid
+        if ($pi['image_url'] === (defined('SITE_URL') ? preg_replace('#^https?://[^/]+#i', '', rtrim(SITE_URL, '/')) : '') . '/assets/images/placeholder.svg') {
+            continue;
+        }
         $product_images[$pi['product_id']][] = $pi;
     }
 }

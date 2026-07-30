@@ -230,6 +230,9 @@ if (!empty($global_settings['hero_banner_product']) && file_exists(__DIR__ . '/a
                 <!-- Output extra gallery images -->
                 <?php while($g = $gallery->fetch_assoc()): 
                     $g_src = resolve_product_image_url($g['image'] ?? '');
+                    if (empty($g_src) || strpos($g_src, 'placeholder.svg') !== false || $g_src === $main_image_src) {
+                        continue; // Skip dummy or duplicate gallery thumbnails
+                    }
                 ?>
                 <div class="gallery-thumbnail" style="width: 80px; height: 80px; cursor: pointer; flex-shrink: 0; border: 2px solid transparent; border-radius: 8px; overflow: hidden; padding: 2px;" onclick="changeMainImage(this, '<?php echo htmlspecialchars($g_src); ?>')">
                     <img src="<?php echo htmlspecialchars($g_src); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="w-100 h-100 object-fit-cover rounded">
