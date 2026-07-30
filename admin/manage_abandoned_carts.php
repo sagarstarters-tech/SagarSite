@@ -174,11 +174,11 @@ $settings = $dashboardData['settings'];
                     <div class="row">
                         <div class="col-md-3 mb-3">
                             <label class="form-label">Coupon Discount (%)</label>
-                            <input type="number" step="0.1" class="form-control" name="discount_percent" value="<?php echo htmlspecialchars($settings['discount_percent'] ?? '0'); ?>">
+                            <input type="number" step="0.1" class="form-control" name="coupon_discount_percent" value="<?php echo htmlspecialchars($settings['coupon_discount_percent'] ?? '10'); ?>">
                         </div>
                         <div class="col-md-3 mb-3">
                             <label class="form-label">Coupon Validity (Hours)</label>
-                            <input type="number" class="form-control" name="validity_hours" value="<?php echo htmlspecialchars($settings['validity_hours'] ?? '24'); ?>">
+                            <input type="number" class="form-control" name="coupon_validity_hours" value="<?php echo htmlspecialchars($settings['coupon_validity_hours'] ?? '48'); ?>">
                         </div>
                         <div class="col-md-3 mb-3">
                             <label class="form-label">Auto-Expire Carts (Days)</label>
