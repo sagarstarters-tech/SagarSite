@@ -295,9 +295,9 @@ function loadCarts(page = 1) {
         data: { action: 'get_carts', status: status, search: search, page: page },
         dataType: 'json',
         success: function(response) {
-            if(response.success && response.data) {
-                renderCartsTable(response.data.data);
-                renderPagination(response.data.total_pages, page);
+            if(response.success && response.data && response.data.carts) {
+                renderCartsTable(response.data.carts.data);
+                renderPagination(response.data.carts.total_pages, page);
             } else {
                 $('#cartsTableBody').html('<tr><td colspan="7" class="text-center py-4 text-muted">No abandoned carts found.</td></tr>');
                 $('#paginationContainer').empty();
