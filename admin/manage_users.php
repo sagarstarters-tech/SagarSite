@@ -8,10 +8,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = intval($_POST['id']);
         if ($id != $_SESSION['user_id']) { // Don't delete self
             $conn->query("DELETE FROM users WHERE id=$id AND role='user'");
-            $success = "User deleted successfully.";
+            $_SESSION['flash_success'] = "User deleted successfully.";
         } else {
-            $error = "You cannot delete your own admin account.";
+            $_SESSION['flash_error'] = "You cannot delete your own admin account.";
         }
+        header("Location: manage_users.php");
+        exit;
     } elseif ($action === 'edit_user') {
         $id = intval($_POST['id']);
         $name = $conn->real_escape_string($_POST['name']);
@@ -59,7 +61,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                  }
                  
                  $conn->query("UPDATE users SET name='$name', email='$email' $password_update $photo_update, phone='$phone', address='$address', city='$city', state='$state', country='$country', zip_code='$zip_code', role='$role' WHERE id=$id");
-                 $success = "User #$id updated successfully.";
+                 $_SESSION['flash_success'] = "User #$id updated successfully.";
+                 header("Location: manage_users.php");
+                 exit;
              }
         }
     } elseif ($action === 'add_user') {
@@ -76,17 +80,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         $check = $conn->query("SELECT id FROM users WHERE email='$email'");
         if ($check->num_rows > 0) {
-            $error = "Email already exists!";
+            $_SESSION['flash_error'] = "Email already exists!";
         } else {
             $sql = "INSERT INTO users (name, email, password, phone, address, city, state, country, zip_code, role) VALUES ('$name', '$email', '$password', '$phone', '$address', '$city', '$state', '$country', '$zip_code', '$role')";
             if ($conn->query($sql)) {
-                $success = "User added successfully.";
+                $_SESSION['flash_success'] = "User added successfully.";
             } else {
-                $error = "Error adding user: " . $conn->error;
+                $_SESSION['flash_error'] = "Error adding user: " . $conn->error;
             }
         }
+        header("Location: manage_users.php");
+        exit;
     }
 }
+
+// Flash messages
+$success = $_SESSION['flash_success'] ?? null;
+$error = $_SESSION['flash_error'] ?? null;
+unset($_SESSION['flash_success'], $_SESSION['flash_error']);
 
 $page = isset($_GET['page']) ? intval($_GET['page']) : 1;
 $limit = 15;

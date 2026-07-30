@@ -271,15 +271,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         if (isset($_POST['testimonial_section_subtitle'])) {
             $val = $conn->real_escape_string($_POST['testimonial_section_subtitle']);
             $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('testimonial_section_subtitle', '$val') ON DUPLICATE KEY UPDATE setting_value='$val'");
-        }
         if (isset($_POST['testimonial_show_count'])) {
             $val = intval($_POST['testimonial_show_count']);
             $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('testimonial_show_count', '$val') ON DUPLICATE KEY UPDATE setting_value='$val'");
         }
+        $_SESSION['flash_success'] = "Settings updated successfully.";
+        header("Location: manage_settings.php");
+        exit;
     }
-
-    $success = "Settings updated successfully.";
 }
+
+// Flash messages
+$success = $_SESSION['flash_success'] ?? null;
+$error = $_SESSION['flash_error'] ?? null;
+unset($_SESSION['flash_success'], $_SESSION['flash_error']);
 
 // Handle Menu CRUD
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {

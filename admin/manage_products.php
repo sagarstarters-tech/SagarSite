@@ -170,7 +170,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
             }
-            $success = "Product added successfully.";
+            $_SESSION['flash_success'] = "Product added successfully.";
+            header("Location: manage_products.php?action=list");
+            exit;
         }
     } elseif ($action === 'edit') {
         $id = intval($_POST['id']);
@@ -234,10 +236,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                      }
                      $image_query = ", image='$image'";
                 } else {
-                    $error = "Failed to move uploaded main image to assets/images/. Please check directory permissions.";
+                    $_SESSION['flash_error'] = "Failed to move uploaded main image to assets/images/. Please check directory permissions.";
                 }
             } elseif ($_FILES['image']['error'] !== 4) {
-                $error = "Failed to upload main image. PHP Error code: " . $_FILES['image']['error'];
+                $_SESSION['flash_error'] = "Failed to upload main image. PHP Error code: " . $_FILES['image']['error'];
             }
         }
 
@@ -271,7 +273,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
             }
-            $success = "Product updated successfully.";
+            $_SESSION['flash_success'] = "Product updated successfully.";
+            header("Location: manage_products.php?action=list");
+            exit;
         }
     } elseif ($action === 'delete') {
         $id = intval($_POST['id']);
@@ -293,13 +297,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         $conn->query("DELETE FROM products WHERE id=$id");
-        $success = "Product deleted successfully.";
+        $_SESSION['flash_success'] = "Product deleted successfully.";
+        header("Location: manage_products.php?action=list");
+        exit;
     }
 }
 
 $page = isset($_GET['page']) ? intval($_GET['page']) : 1;
 $limit = 10;
 $offset = ($page - 1) * $limit;
+
+// Flash messages
+$success = $_SESSION['flash_success'] ?? null;
+$error = $_SESSION['flash_error'] ?? null;
+unset($_SESSION['flash_success'], $_SESSION['flash_error']);
 
 $products = $conn->query("SELECT p.*, c.name as category_name FROM products p JOIN categories c ON p.category_id = c.id ORDER BY p.id DESC LIMIT $limit OFFSET $offset");
 $total_products = $conn->query("SELECT COUNT(*) as c FROM products")->fetch_assoc()['c'];
