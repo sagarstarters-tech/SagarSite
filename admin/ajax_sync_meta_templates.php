@@ -9,7 +9,7 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
     exit;
 }
 
-$set_q = $conn->query("SELECT api_token, phone_number_id FROM whatsapp_settings WHERE id = 1");
+$set_q = $conn->query("SELECT api_token, phone_number_id, waba_id FROM whatsapp_settings WHERE id = 1");
 $settings = $set_q->fetch_assoc();
 
 if (empty($settings['api_token']) || empty($settings['phone_number_id'])) {
@@ -20,6 +20,9 @@ if (empty($settings['api_token']) || empty($settings['phone_number_id'])) {
 $token = trim($settings['api_token']);
 $phone_id = trim($settings['phone_number_id']);
 $waba_id = trim($_GET['waba_id'] ?? '');
+if (empty($waba_id)) {
+    $waba_id = trim($settings['waba_id'] ?? '');
+}
 
 // 1. If WABA ID is not provided, try to fetch it automatically from the Phone Number ID
 if (empty($waba_id)) {
