@@ -169,12 +169,31 @@ $settings = $dashboardData['settings'];
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">WhatsApp Template Name (Meta)</label>
-                            <input type="text" class="form-control" name="wa_template_name" value="<?php echo htmlspecialchars($settings['wa_template_name'] ?? ''); ?>">
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="meta_template_name" id="metaTplName" value="<?php echo htmlspecialchars($settings['meta_template_name'] ?? ''); ?>">
+                                <button class="btn btn-outline-primary" type="button" id="btnSyncTpl" title="Sync from Meta API"><i class="fas fa-sync-alt"></i></button>
+                            </div>
+                            <div id="tplSyncStatus" class="small mt-1 d-none"></div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Language Code</label>
-                            <input type="text" class="form-control" name="wa_language_code" value="<?php echo htmlspecialchars($settings['wa_language_code'] ?? 'en'); ?>">
+                            <input type="text" class="form-control" name="meta_template_lang" id="metaTplLang" value="<?php echo htmlspecialchars($settings['meta_template_lang'] ?? 'en'); ?>">
                         </div>
+                    </div>
+
+                    <div id="metaTemplatesList" class="mb-4 d-none p-3 border rounded-3 bg-white shadow-sm overflow-auto" style="max-height: 250px;">
+                        <h6 class="fw-bold mb-2">Select Approved Template</h6>
+                        <table class="table table-sm table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Language</th>
+                                    <th>Category</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tplTableBody"></tbody>
+                        </table>
                     </div>
 
                     <button type="button" class="btn btn-success mt-2" onclick="saveSettings()">
@@ -456,6 +475,71 @@ function refreshTableAndStats() {
 $(document).ready(function() {
     loadCarts(1);
 });
+// Sync Templates Logic
+document.addEventListener('DOMContentLoaded', function() {
+    const btnSync = document.getElementById('btnSyncTpl');
+    if (!btnSync) return;
+    
+    const tplStatus = document.getElementById('tplSyncStatus');
+    const tplList = document.getElementById('metaTemplatesList');
+    const tplTableBody = document.getElementById('tplTableBody');
+
+    btnSync.addEventListener('click', function() {
+        btnSync.disabled = true;
+        btnSync.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        tplStatus.className = 'small mt-1 text-info';
+        tplStatus.innerText = 'Connecting to Meta...';
+        tplStatus.classList.remove('d-none');
+        tplList.classList.add('d-none');
+
+        fetch('ajax_sync_meta_templates.php?waba_id=')
+            .then(res => res.json())
+            .then(data => {
+                btnSync.disabled = false;
+                btnSync.innerHTML = '<i class="fas fa-sync-alt"></i>';
+
+                if (data.error) {
+                    tplStatus.className = 'small mt-1 text-danger';
+                    tplStatus.innerText = 'Error: ' + data.error;
+                } else if (data.templates && data.templates.length > 0) {
+                    tplStatus.className = 'small mt-1 text-success';
+                    tplStatus.innerText = 'Templates fetched successfully!';
+                    
+                    tplTableBody.innerHTML = '';
+                    data.templates.forEach(tpl => {
+                        const row = `
+                            <tr>
+                                <td class="fw-bold fs-7">${tpl.name}</td>
+                                <td class="fs-7">${tpl.language}</td>
+                                <td class="fs-7"><span class="badge bg-light text-dark">${tpl.category}</span></td>
+                                <td class="text-end">
+                                    <button type="button" class="btn btn-sm btn-primary py-1 px-2" onclick="selectTemplate('${tpl.name}', '${tpl.language}')">Select</button>
+                                </td>
+                            </tr>
+                        `;
+                        tplTableBody.insertAdjacentHTML('beforeend', row);
+                    });
+                    tplList.classList.remove('d-none');
+                } else {
+                    tplStatus.className = 'small mt-1 text-warning';
+                    tplStatus.innerText = 'No approved templates found.';
+                }
+            })
+            .catch(err => {
+                btnSync.disabled = false;
+                btnSync.innerHTML = '<i class="fas fa-sync-alt"></i>';
+                tplStatus.className = 'small mt-1 text-danger';
+                tplStatus.innerText = 'Network error: ' + err.message;
+            });
+    });
+});
+
+function selectTemplate(name, lang) {
+    document.getElementById('metaTplName').value = name;
+    document.getElementById('metaTplLang').value = lang;
+    document.getElementById('metaTemplatesList').classList.add('d-none');
+    document.getElementById('tplSyncStatus').innerText = 'Template selected: ' + name;
+}
 </script>
 
 <?php include 'admin_footer.php'; ?>
