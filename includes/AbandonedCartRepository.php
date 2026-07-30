@@ -226,7 +226,7 @@ class AbandonedCartRepository {
 
         $sql = "SELECT ac.*, u.name AS customer_name, u.phone AS customer_phone, u.email AS customer_email
                 FROM abandoned_carts ac
-                JOIN users u ON ac.user_id = u.id
+                LEFT JOIN users u ON ac.user_id = u.id
                 WHERE ac.status = 'active'
                   AND ac.{$col} IS NULL
                   AND ac.created_at <= DATE_SUB(NOW(), INTERVAL ? MINUTE)
@@ -281,7 +281,7 @@ class AbandonedCartRepository {
     public function findByToken($token) {
         $stmt = $this->conn->prepare("SELECT ac.*, u.name AS customer_name, u.phone AS customer_phone
                 FROM abandoned_carts ac
-                JOIN users u ON ac.user_id = u.id
+                LEFT JOIN users u ON ac.user_id = u.id
                 WHERE ac.recovery_token = ? AND ac.status = 'active'
                 LIMIT 1");
         if (!$stmt) return null;
@@ -300,7 +300,7 @@ class AbandonedCartRepository {
         $cartId = intval($cartId);
         $stmt = $this->conn->prepare("SELECT ac.*, u.name AS customer_name, u.phone AS customer_phone, u.email AS customer_email
                 FROM abandoned_carts ac
-                JOIN users u ON ac.user_id = u.id
+                LEFT JOIN users u ON ac.user_id = u.id
                 WHERE ac.id = ?
                 LIMIT 1");
         if (!$stmt) return null;
@@ -337,7 +337,7 @@ class AbandonedCartRepository {
         }
 
         // Count total
-        $countSql = "SELECT COUNT(*) as total FROM abandoned_carts ac JOIN users u ON ac.user_id = u.id WHERE {$where}";
+        $countSql = "SELECT COUNT(*) as total FROM abandoned_carts ac LEFT JOIN users u ON ac.user_id = u.id WHERE {$where}";
         $countStmt = $this->conn->prepare($countSql);
         if ($types) $countStmt->bind_param($types, ...$params);
         $countStmt->execute();
@@ -347,7 +347,7 @@ class AbandonedCartRepository {
         // Fetch records
         $sql = "SELECT ac.*, u.name AS customer_name, u.phone AS customer_phone, u.email AS customer_email
                 FROM abandoned_carts ac
-                JOIN users u ON ac.user_id = u.id
+                LEFT JOIN users u ON ac.user_id = u.id
                 WHERE {$where}
                 ORDER BY ac.created_at DESC
                 LIMIT ?, ?";
