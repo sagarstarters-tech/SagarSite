@@ -40,6 +40,16 @@ class ScriptService {
     }
 
     /**
+     * Get scripts designated for the body section.
+     */
+    public function getBodyScripts() {
+        if (!empty($this->scripts['body_code'])) {
+            return "<!-- Custom Body Code -->\n" . $this->scripts['body_code'] . "\n";
+        }
+        return '';
+    }
+
+    /**
      * Get scripts designated for the footer section.
      */
     public function getFooterScripts() {

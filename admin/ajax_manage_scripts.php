@@ -21,12 +21,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         if ($action === 'save_scripts') {
             $header_code         = $_POST['header_code'] ?? '';
+            $body_code           = $_POST['body_code'] ?? '';
             $footer_code         = $_POST['footer_code'] ?? '';
             $custom_verification = $_POST['custom_verification'] ?? '';
             $txt_instructions    = $_POST['txt_instructions'] ?? '';
 
             if ($is_b64) {
                 $header_code         = base64_decode($header_code);
+                $body_code           = base64_decode($body_code);
                 $footer_code         = base64_decode($footer_code);
                 $custom_verification = base64_decode($custom_verification);
                 $txt_instructions    = base64_decode($txt_instructions);
@@ -34,6 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $data = [
                 'header_code'         => $header_code,
+                'body_code'           => $body_code,
                 'footer_code'         => $footer_code,
                 'google_verification' => $_POST['google_verification'] ?? '',
                 'bing_verification'   => $_POST['bing_verification'] ?? '',

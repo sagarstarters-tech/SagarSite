@@ -17,6 +17,7 @@ class ScriptRepository {
         $sql = "CREATE TABLE IF NOT EXISTS custom_scripts (
             id INT(11) AUTO_INCREMENT PRIMARY KEY,
             header_code TEXT,
+            body_code TEXT,
             footer_code TEXT,
             google_verification TEXT,
             bing_verification TEXT,
@@ -31,6 +32,10 @@ class ScriptRepository {
             if ($check && $check->num_rows === 0) {
                 $this->conn->query("INSERT INTO custom_scripts (id, header_code) VALUES (1, '')");
             }
+            // Ensure body_code column exists for older installations
+            try {
+                $this->conn->query("ALTER TABLE custom_scripts ADD COLUMN body_code TEXT AFTER header_code");
+            } catch (Throwable $e) {}
         } catch (Throwable $e) {
             error_log('[ScriptRepository] Table setup warning: ' . $e->getMessage());
         }
@@ -51,6 +56,7 @@ class ScriptRepository {
 
         return [
             'header_code' => '',
+            'body_code' => '',
             'footer_code' => '',
             'google_verification' => '',
             'bing_verification' => '',
@@ -65,7 +71,7 @@ class ScriptRepository {
     public function updateScripts($data) {
         $fields = [];
         foreach ($data as $key => $value) {
-            if (in_array($key, ['header_code', 'footer_code', 'google_verification', 'bing_verification', 'custom_verification', 'txt_instructions'])) {
+            if (in_array($key, ['header_code', 'body_code', 'footer_code', 'google_verification', 'bing_verification', 'custom_verification', 'txt_instructions'])) {
                 $fields[] = "`$key` = '" . $this->conn->real_escape_string($value) . "'";
             }
         }

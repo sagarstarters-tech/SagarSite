@@ -24,8 +24,18 @@ $scripts = $scriptService->getRawScripts();
                             <h6 class="fw-bold border-bottom pb-2 mb-3"><i class="fas fa-arrow-up me-2 text-primary"></i>Header Code</h6>
                             <div class="mb-3">
                                 <label class="form-label small fw-bold">Scripts in &lt;head&gt;</label>
-                                <textarea name="header_code" class="form-control font-monospace small" rows="8" placeholder="<!-- Add your Google Analytics, Facebook Pixel, or custom CSS here -->"><?php echo htmlspecialchars($scripts['header_code']); ?></textarea>
+                                <textarea name="header_code" class="form-control font-monospace small" rows="8" placeholder="<!-- Add your Google Analytics, Facebook Pixel, or custom CSS here -->"><?php echo htmlspecialchars($scripts['header_code'] ?? ''); ?></textarea>
                                 <div class="form-text">These scripts will be printed inside the <code>&lt;head&gt;</code> section.</div>
+                            </div>
+                        </div>
+
+                        <!-- Body Section -->
+                        <div class="section-card mb-4">
+                            <h6 class="fw-bold border-bottom pb-2 mb-3"><i class="fas fa-code me-2 text-primary"></i>Body Code</h6>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Scripts right after &lt;body&gt;</label>
+                                <textarea name="body_code" class="form-control font-monospace small" rows="8" placeholder="<!-- Add your Google Tag Manager (noscript) or custom HTML here -->"><?php echo htmlspecialchars($scripts['body_code'] ?? ''); ?></textarea>
+                                <div class="form-text">These scripts will be printed just after the opening <code>&lt;body&gt;</code> tag.</div>
                             </div>
                         </div>
 
@@ -111,6 +121,7 @@ $(document).ready(function() {
             is_b64: '1',
             _csrf_token: $('input[name="_csrf_token"]').val(),
             header_code: toB64($('textarea[name="header_code"]').val()),
+            body_code: toB64($('textarea[name="body_code"]').val()),
             footer_code: toB64($('textarea[name="footer_code"]').val()),
             google_verification: $('input[name="google_verification"]').val(),
             bing_verification: $('input[name="bing_verification"]').val(),
