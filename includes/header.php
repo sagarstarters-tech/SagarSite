@@ -315,6 +315,7 @@ if (isset($product['slug'])) {
 
 </head>
 <body class="body-fade-in">
+<?php echo isset($scriptService) ? $scriptService->getBodyScripts() : ''; ?>
 
 <!-- Page Load Animation Overlay -->
 <div id="page-loader">
