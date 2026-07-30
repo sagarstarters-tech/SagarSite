@@ -135,7 +135,7 @@ $settings = $dashboardData['settings'];
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Template Reminder 1</label>
-                            <textarea class="form-control mb-2" name="template_reminder_1" rows="3"><?php echo htmlspecialchars($settings['template_reminder_1'] ?? ''); ?></textarea>
+                            <textarea class="form-control mb-2" name="reminder_1_message" rows="3"><?php echo htmlspecialchars($settings['reminder_1_message'] ?? ''); ?></textarea>
                             <div class="input-group input-group-sm">
                                 <span class="input-group-text bg-light fw-bold text-muted">Meta Template</span>
                                 <input type="text" class="form-control" name="meta_template_1" id="metaTpl1" value="<?php echo htmlspecialchars($settings['meta_template_1'] ?? ''); ?>" placeholder="Template name...">
@@ -144,7 +144,7 @@ $settings = $dashboardData['settings'];
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Template Reminder 2</label>
-                            <textarea class="form-control mb-2" name="template_reminder_2" rows="3"><?php echo htmlspecialchars($settings['template_reminder_2'] ?? ''); ?></textarea>
+                            <textarea class="form-control mb-2" name="reminder_2_message" rows="3"><?php echo htmlspecialchars($settings['reminder_2_message'] ?? ''); ?></textarea>
                             <div class="input-group input-group-sm">
                                 <span class="input-group-text bg-light fw-bold text-muted">Meta Template</span>
                                 <input type="text" class="form-control" name="meta_template_2" id="metaTpl2" value="<?php echo htmlspecialchars($settings['meta_template_2'] ?? ''); ?>" placeholder="Template name...">
@@ -153,7 +153,7 @@ $settings = $dashboardData['settings'];
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Template Reminder 3</label>
-                            <textarea class="form-control mb-2" name="template_reminder_3" rows="3"><?php echo htmlspecialchars($settings['template_reminder_3'] ?? ''); ?></textarea>
+                            <textarea class="form-control mb-2" name="reminder_3_message" rows="3"><?php echo htmlspecialchars($settings['reminder_3_message'] ?? ''); ?></textarea>
                             <div class="input-group input-group-sm">
                                 <span class="input-group-text bg-light fw-bold text-muted">Meta Template</span>
                                 <input type="text" class="form-control" name="meta_template_3" id="metaTpl3" value="<?php echo htmlspecialchars($settings['meta_template_3'] ?? ''); ?>" placeholder="Template name...">
@@ -162,7 +162,7 @@ $settings = $dashboardData['settings'];
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Template Reminder 4</label>
-                            <textarea class="form-control mb-2" name="template_reminder_4" rows="3"><?php echo htmlspecialchars($settings['template_reminder_4'] ?? ''); ?></textarea>
+                            <textarea class="form-control mb-2" name="reminder_4_message" rows="3"><?php echo htmlspecialchars($settings['reminder_4_message'] ?? ''); ?></textarea>
                             <div class="input-group input-group-sm">
                                 <span class="input-group-text bg-light fw-bold text-muted">Meta Template</span>
                                 <input type="text" class="form-control" name="meta_template_4" id="metaTpl4" value="<?php echo htmlspecialchars($settings['meta_template_4'] ?? ''); ?>" placeholder="Template name...">
