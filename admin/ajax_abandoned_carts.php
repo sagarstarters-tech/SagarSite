@@ -45,6 +45,7 @@ try {
             break;
 
         case 'save_settings':
+            error_log('[AbandonedCart] save_settings POST: ' . print_r($_POST, true));
             $settingsData = [];
             $allowedKeys = [
                 'is_enabled', 'reminder_1_delay', 'reminder_2_delay', 'reminder_3_delay', 'reminder_4_delay',
@@ -57,6 +58,7 @@ try {
                     $settingsData[$key] = $_POST[$key];
                 }
             }
+            error_log('[AbandonedCart] save_settings data to save: ' . print_r($settingsData, true));
             $result = $controller->saveSettings($settingsData);
             echo json_encode($result);
             break;
