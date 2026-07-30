@@ -83,12 +83,10 @@ if (!function_exists('resolve_profile_photo_url')) {
         }
         
         $base_path = defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__);
-        $assets_url = defined('ASSETS_URL') ? rtrim(ASSETS_URL, '/') : '';
-        if (empty($assets_url)) {
-            $proto = (isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] === 'on' || $_SERVER['HTTPS'] === '1')) || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ? 'https' : 'http';
-            $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-            $assets_url = "$proto://$host/assets";
-        }
+        
+        // Derive clean relative site URL (e.g. "" or "/SagarSite") for 100% domain & protocol independence
+        $site_url = defined('SITE_URL') ? rtrim(SITE_URL, '/') : '';
+        $clean_site_url = preg_replace('#^https?://[^/]+#i', '', $site_url);
         
         // 2. Check if specific filename exists in assets/images
         if (!empty($photo)) {
@@ -97,13 +95,13 @@ if (!function_exists('resolve_profile_photo_url')) {
                 $clean_photo = substr($clean_photo, 14);
             }
             if (file_exists($base_path . '/assets/images/' . $clean_photo)) {
-                return $assets_url . '/images/' . $clean_photo;
+                return $clean_site_url . '/assets/images/' . $clean_photo;
             }
         }
         
-        // 3. Fallback for admin user or if profile_69c14f73c250a.png exists
-        if ($role === 'admin' && file_exists($base_path . '/assets/images/profile_69c14f73c250a.png')) {
-            return $assets_url . '/images/profile_69c14f73c250a.png';
+        // 3. Fallback to default profile photo if available
+        if (file_exists($base_path . '/assets/images/profile_69c14f73c250a.png')) {
+            return $clean_site_url . '/assets/images/profile_69c14f73c250a.png';
         }
         
         return '';

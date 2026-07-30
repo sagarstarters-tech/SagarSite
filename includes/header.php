@@ -405,7 +405,7 @@ if (isset($product['slug'])) {
                        $profile_photo_url = resolve_profile_photo_url($_SESSION['profile_photo'] ?? '', $_SESSION['role'] ?? '');
                        ?>
                        <?php if(!empty($profile_photo_url)): ?>
-                           <img src="<?php echo htmlspecialchars($profile_photo_url); ?>" alt="Profile" class="rounded-circle object-fit-cover" style="width: 32px; height: 32px; border: 2px solid #007aff;" onerror="this.outerHTML='<i class=\'fas fa-user-circle fs-4 primary-blue\'></i>'">
+                           <img src="<?php echo htmlspecialchars($profile_photo_url); ?>" alt="Profile" class="rounded-circle object-fit-cover" style="width: 32px; height: 32px; border: 2px solid #007aff;" onerror="if(!this.dataset.failed){this.dataset.failed=1;this.src='<?php echo $clean_site_url; ?>/assets/images/profile_69c14f73c250a.png';}else{this.outerHTML='<i class=\'fas fa-user-circle fs-4 primary-blue\'></i>';}">
                        <?php else: ?>
                            <i class="fas fa-user-circle fs-4 primary-blue"></i>
                        <?php endif; ?>
@@ -564,7 +564,7 @@ function refreshUserState() {
                     <div class="dropdown me-2">
                         <a class="dropdown-toggle d-flex align-items-center hidden-arrow text-reset" href="#" id="navbarDropdownMenuLink" role="button" data-mdb-toggle="dropdown" aria-expanded="false">
                             ${data.profile_photo_url ? 
-                                `<img src="${data.profile_photo_url}" alt="Profile" class="rounded-circle object-fit-cover" style="width: 32px; height: 32px; border: 2px solid #007aff;" onerror="this.outerHTML='<i class=\\'fas fa-user-circle fs-4 primary-blue\\'></i>'">` : 
+                                `<img src="${data.profile_photo_url}" alt="Profile" class="rounded-circle object-fit-cover" style="width: 32px; height: 32px; border: 2px solid #007aff;" onerror="if(!this.dataset.failed){this.dataset.failed=1;this.src='${cleanBaseUrl}/assets/images/profile_69c14f73c250a.png';}else{this.outerHTML='<i class=\\'fas fa-user-circle fs-4 primary-blue\\'></i>';}">` : 
                                 '<i class="fas fa-user-circle fs-4 primary-blue"></i>'}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownMenuLink">
