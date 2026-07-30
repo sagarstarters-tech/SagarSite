@@ -178,15 +178,7 @@ if (!empty($global_settings['hero_banner_product']) && file_exists(__DIR__ . '/a
         <div class="col-md-6 mb-4" data-aos="fade-right">
             <?php
             // Determine main image source with fallback to first gallery image
-            $main_image_src = ASSETS_URL.'/images/placeholder.svg';
-            if (!empty($product['image'])) {
-                $main_image_src = ASSETS_URL.'/images/'.$product['image'];
-            } else {
-                $first_gal = $conn->query("SELECT image FROM product_images WHERE product_id = $id ORDER BY position ASC, id ASC LIMIT 1")->fetch_assoc();
-                if ($first_gal && !empty($first_gal['image'])) {
-                    $main_image_src = ASSETS_URL.'/images/'.$first_gal['image'];
-                }
-            }
+            $main_image_src = resolve_product_image_url($product['image'] ?? '', $conn, $id);
             ?>
             <div class="card product-card shadow-sm border-0 bg-light d-flex align-items-center justify-content-center p-3 mb-3" style="position: relative; overflow: hidden;" id="imageZoomContainer">
                 <img id="mainProductImage" src="<?php echo htmlspecialchars($main_image_src); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="img-fluid rounded" alt="<?php echo htmlspecialchars($product['name']); ?>" style="width: 100%; aspect-ratio: 1 / 1; object-fit: <?php echo htmlspecialchars($product['image_fit'] ?? 'contain'); ?>; transition: opacity 0.3s ease;">
@@ -236,9 +228,11 @@ if (!empty($global_settings['hero_banner_product']) && file_exists(__DIR__ . '/a
                 </div>
                 
                 <!-- Output extra gallery images -->
-                <?php while($g = $gallery->fetch_assoc()): ?>
-                <div class="gallery-thumbnail" style="width: 80px; height: 80px; cursor: pointer; flex-shrink: 0; border: 2px solid transparent; border-radius: 8px; overflow: hidden; padding: 2px;" onclick="changeMainImage(this, '<?php echo ASSETS_URL; ?>/images/<?php echo htmlspecialchars($g['image']); ?>')">
-                    <img src="<?php echo ASSETS_URL; ?>/images/<?php echo htmlspecialchars($g['image']); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="w-100 h-100 object-fit-cover rounded">
+                <?php while($g = $gallery->fetch_assoc()): 
+                    $g_src = resolve_product_image_url($g['image'] ?? '');
+                ?>
+                <div class="gallery-thumbnail" style="width: 80px; height: 80px; cursor: pointer; flex-shrink: 0; border: 2px solid transparent; border-radius: 8px; overflow: hidden; padding: 2px;" onclick="changeMainImage(this, '<?php echo htmlspecialchars($g_src); ?>')">
+                    <img src="<?php echo htmlspecialchars($g_src); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="w-100 h-100 object-fit-cover rounded">
                 </div>
                 <?php endwhile; ?>
             </div>

@@ -41,16 +41,7 @@ include 'includes/hero-slider.php';
             <div class="col-md-3" data-aos="fade-up" data-aos-delay="<?php echo $delay; $delay+=50; ?>">
                 <div class="card product-card h-100">
                     <?php
-                    $main_img_src = ASSETS_URL.'/images/placeholder.svg';
-                    if (!empty($p['image'])) {
-                        $main_img_src = ASSETS_URL.'/images/'.$p['image'];
-                    } else {
-                        $p_id = intval($p['id']);
-                        $first_gal = $conn->query("SELECT image FROM product_images WHERE product_id = $p_id ORDER BY position ASC, id ASC LIMIT 1")->fetch_assoc();
-                        if ($first_gal && !empty($first_gal['image'])) {
-                            $main_img_src = ASSETS_URL.'/images/'.$first_gal['image'];
-                        }
-                    }
+                    $main_img_src = resolve_product_image_url($p['image'] ?? '', $conn, $p['id']);
                     ?>
                     <img src="<?php echo htmlspecialchars($main_img_src); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="card-img-top" alt="<?php echo htmlspecialchars($p['name']); ?>" loading="lazy" style="object-fit: <?php echo htmlspecialchars($p['image_fit'] ?? 'contain'); ?>; background-color:#fff;">
                     <div class="card-body d-flex flex-column">

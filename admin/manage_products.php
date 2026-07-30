@@ -325,6 +325,7 @@ $product_images = [];
 $pi_q = $conn->query("SELECT * FROM product_images ORDER BY position ASC, id ASC");
 if ($pi_q) {
     while($pi = $pi_q->fetch_assoc()) {
+        $pi['image_url'] = resolve_product_image_url($pi['image']);
         $product_images[$pi['product_id']][] = $pi;
     }
 }
@@ -401,7 +402,7 @@ if ($seo_q) {
                         <tr>
                             <td class="ps-4">
                                 <div class="d-flex align-items-center">
-                                    <img src="<?php echo htmlspecialchars($p['image'] ? ASSETS_URL.'/images/'.$p['image'] : ASSETS_URL.'/images/placeholder.svg'); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="rounded" style="width: 50px; height: 50px; object-fit: <?php echo htmlspecialchars($p['image_fit'] ?? 'contain'); ?>;">
+                                    <img src="<?php echo htmlspecialchars(resolve_product_image_url($p['image'] ?? '', $conn, $p['id'])); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="rounded" style="width: 50px; height: 50px; object-fit: <?php echo htmlspecialchars($p['image_fit'] ?? 'contain'); ?>;">
                                     <div class="ms-3">
                                         <h6 class="fw-bold mb-0 text-truncate" style="max-width: 200px;"><?php echo htmlspecialchars($p['name']); ?></h6>
                                     </div>
@@ -1010,9 +1011,14 @@ document.addEventListener('DOMContentLoaded', function() {
             if (this.dataset.gallery) {
                 const gallery = JSON.parse(this.dataset.gallery);
                 gallery.forEach(img => {
+                    let imgUrl = img.image_url ? img.image_url : '<?php echo ASSETS_URL; ?>/images/placeholder.svg';
+                    if (!img.image_url && img.image) {
+                        let cleanImg = img.image.replace(/^(assets\/images\/|\/)/, '');
+                        imgUrl = `<?php echo ASSETS_URL; ?>/images/${cleanImg}`;
+                    }
                     galleryHtml += `
                         <div class="position-relative border rounded p-1" style="width: 80px; height: 80px;" id="gal_img_${img.id}" data-img-id="${img.id}">
-                            <img src="<?php echo ASSETS_URL; ?>/images/${img.image}" class="w-100 h-100" style="object-fit: cover;">
+                            <img src="${imgUrl}" class="w-100 h-100" style="object-fit: cover;" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';">
                             <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 p-1 delete-gallery-btn" data-img-id="${img.id}" style="line-height: .8;"><i class="fas fa-times" style="font-size: 10px;"></i></button>
                         </div>
                     `;

@@ -110,3 +110,75 @@ if (!function_exists('resolve_profile_photo_url')) {
     }
 }
 
+// Global Product Image Resolver
+if (!function_exists('resolve_product_image_url')) {
+    function resolve_product_image_url($image_path, $conn = null, $product_id = null) {
+        $img = trim((string)$image_path);
+        
+        $base_path = defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__);
+        $assets_url = defined('ASSETS_URL') ? rtrim(ASSETS_URL, '/') : '';
+        if (empty($assets_url)) {
+            $proto = (isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] === 'on' || $_SERVER['HTTPS'] === '1')) || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ? 'https' : 'http';
+            $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+            $assets_url = "$proto://$host/assets";
+        }
+        $placeholder_url = $assets_url . '/images/placeholder.svg';
+        
+        // Filter out dummy/empty/invalid image strings
+        $dummies = ['placeholder.svg', 'placeholder.png', 'no-image.png', 'no-image.jpg', 'null', 'undefined'];
+        if (empty($img) || in_array(strtolower(basename($img)), $dummies)) {
+            $img = '';
+        }
+        
+        // If main image is empty, fallback to first gallery image for product_id
+        if (empty($img) && $conn !== null && !empty($product_id)) {
+            $p_id = intval($product_id);
+            $gal_q = $conn->query("SELECT image FROM product_images WHERE product_id = $p_id ORDER BY position ASC, id ASC LIMIT 1");
+            if ($gal_q && $gal_q->num_rows > 0) {
+                $g_row = $gal_q->fetch_assoc();
+                $g_img = trim($g_row['image'] ?? '');
+                if (!empty($g_img) && !in_array(strtolower(basename($g_img)), $dummies)) {
+                    $img = $g_img;
+                }
+            }
+        }
+        
+        if (empty($img)) {
+            return $placeholder_url;
+        }
+        
+        // 1. Full HTTP / HTTPS URL
+        if (strpos($img, 'http://') === 0 || strpos($img, 'https://') === 0) {
+            return $img;
+        }
+        
+        // Clean leading slashes and redundant directory prefixes
+        $clean = ltrim($img, '/');
+        if (strpos($clean, 'assets/images/') === 0) {
+            $clean = substr($clean, 14);
+        } elseif (strpos($clean, 'uploads/images/') === 0) {
+            $clean = substr($clean, 15);
+        } elseif (strpos($clean, 'uploads/') === 0) {
+            $clean_sub = substr($clean, 8);
+            if (file_exists($base_path . '/assets/images/' . $clean_sub)) {
+                $clean = $clean_sub;
+            }
+        }
+        
+        // 2. Check if file exists in assets/images/
+        if (file_exists($base_path . '/assets/images/' . $clean)) {
+            return $assets_url . '/images/' . $clean;
+        }
+        
+        // 3. Check if file exists in uploads/
+        if (file_exists($base_path . '/uploads/' . $clean)) {
+            $site_url = defined('SITE_URL') ? rtrim(SITE_URL, '/') : '';
+            return $site_url . '/uploads/' . $clean;
+        }
+        
+        // Default fallback to placeholder SVG vector if file is missing on disk
+        return $placeholder_url;
+    }
+}
+
+

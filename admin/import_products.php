@@ -158,7 +158,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file'])) {
             $desc_esc = $conn->real_escape_string($description);
             $price_esc = floatval($price);
             $stock_esc = intval($stock);
-            $image_esc = $conn->real_escape_string($image);
+            $clean_image = preg_replace('#^(assets/images/|uploads/|/)+#i', '', $image);
+            $dummies = ['placeholder.svg', 'placeholder.png', 'no-image.png', 'no-image.jpg', 'null', 'undefined'];
+            if (in_array(strtolower($clean_image), $dummies)) {
+                $clean_image = '';
+            }
+            $image_esc = $conn->real_escape_string($clean_image);
             
             $is_update = false;
             $product_id = 0;
@@ -182,7 +187,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file'])) {
             if ($is_update) {
                 // Determine if Image Field specifically was overridden in import
                 $image_update_clause = "";
-                if (!empty($image)) {
+                if (!empty($clean_image)) {
                     $image_update_clause = ", image='$image_esc'";
                 }
                 
@@ -227,9 +232,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file'])) {
                     $conn->query("DELETE FROM product_images WHERE product_id = $product_id");
                     $g_imgs = explode(',', $gallery);
                     foreach($g_imgs as $g) {
-                        $g = $conn->real_escape_string(trim($g));
-                        if(!empty($g)) {
-                            $conn->query("INSERT INTO product_images (product_id, image) VALUES ($product_id, '$g')");
+                        $clean_g = preg_replace('#^(assets/images/|uploads/|/)+#i', '', trim($g));
+                        if (!empty($clean_g) && !in_array(strtolower($clean_g), $dummies)) {
+                            $clean_g_esc = $conn->real_escape_string($clean_g);
+                            $conn->query("INSERT INTO product_images (product_id, image) VALUES ($product_id, '$clean_g_esc')");
                         }
                     }
                 }
