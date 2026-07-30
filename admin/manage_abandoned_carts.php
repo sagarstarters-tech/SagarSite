@@ -34,7 +34,7 @@ $settings = $dashboardData['settings'];
             <p class="text-muted mb-0">Track and recover abandoned carts via automated WhatsApp reminders.</p>
         </div>
         <div>
-            <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#settingsCollapse" aria-expanded="false" aria-controls="settingsCollapse">
+            <button class="btn btn-primary" type="button" data-mdb-toggle="collapse" data-mdb-target="#settingsCollapse" aria-expanded="false" aria-controls="settingsCollapse">
                 <i class="fas fa-cog me-2"></i> Settings
             </button>
         </div>
