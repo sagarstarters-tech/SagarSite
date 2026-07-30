@@ -158,24 +158,19 @@ class AbandonedCartService {
         // Build message from template
         $messageTemplate = $this->settings["reminder_{$level}_message"] ?? "Hi {CustomerName}, you left items in your cart. Complete your purchase: {RecoveryLink}";
 
-        $message = str_replace([
-            '{CustomerName}',
-            '{ProductNames}',
-            '{CartTotal}',
-            '{RecoveryLink}',
-            '{CouponCode}',
-            '{CouponDiscount}',
-        ], [
-            $cart['customer_name'] ?? 'Customer',
-            $cart['product_names'] ?? 'Your items',
-            number_format($cart['cart_total'], 2),
-            $recoveryLink,
-            $couponCode,
-            $couponDiscount . '%',
-        ], $messageTemplate);
+        $variables = [
+            '{CustomerName}' => $cart['customer_name'] ?? 'Customer',
+            '{ProductNames}' => $cart['product_names'] ?? 'Your items',
+            '{CartTotal}'    => number_format($cart['cart_total'], 2),
+            '{RecoveryLink}' => $recoveryLink,
+            '{CouponCode}'   => $couponCode,
+            '{CouponDiscount}' => $couponDiscount . '%',
+        ];
+
+        $message = str_replace(array_keys($variables), array_values($variables), $messageTemplate);
 
         // Send via WhatsApp API (reuse existing infrastructure)
-        $sent = $this->sendWhatsAppMessage($cart['customer_phone'], $message, $cartId, $level);
+        $sent = $this->sendWhatsAppMessage($cart['customer_phone'], $message, $cartId, $level, $variables, $messageTemplate);
 
         if ($sent) {
             $this->repo->markReminderSent($cartId, $level);
@@ -203,7 +198,7 @@ class AbandonedCartService {
     /**
      * Send WhatsApp message using the existing Meta Cloud API setup.
      */
-    private function sendWhatsAppMessage($phone, $message, $cartId = 0, $level = 0) {
+    private function sendWhatsAppMessage($phone, $message, $cartId = 0, $level = 0, $variables = [], $messageTemplate = '') {
         // Get WhatsApp settings
         $waSettings = null;
         try {
@@ -237,11 +232,23 @@ class AbandonedCartService {
             $phoneId = trim($waSettings['phone_number_id']);
             $url = "https://graph.facebook.com/v19.0/{$phoneId}/messages";
 
-            // Check if cart abandonment template is configured
-            $abandonTemplate = trim($this->settings['meta_template_name'] ?? '');
+            // Check if cart abandonment template is configured for this level
+            // Level 0 is manual, default to level 1 template if manual doesn't have one? We use level 1 for manual.
+            $tplLevel = $level > 0 ? $level : 1;
+            $abandonTemplate = trim($this->settings["meta_template_{$tplLevel}"] ?? '');
 
             if (!empty($abandonTemplate)) {
                 // Template mode
+                preg_match_all('/\{(CustomerName|ProductNames|CartTotal|RecoveryLink|CouponCode|CouponDiscount)\}/', $messageTemplate, $matches);
+                $params = [];
+                if (!empty($matches[0])) {
+                    foreach ($matches[0] as $varKey) {
+                        $val = (string)($variables[$varKey] ?? '');
+                        if ($val === '') $val = ' '; // Meta API doesn't like empty strings for parameters
+                        $params[] = ["type" => "text", "text" => $val];
+                    }
+                }
+
                 $payload = [
                     "messaging_product" => "whatsapp",
                     "recipient_type"    => "individual",
@@ -250,16 +257,16 @@ class AbandonedCartService {
                     "template"          => [
                         "name"     => $abandonTemplate,
                         "language" => ["code" => trim($this->settings['meta_template_lang'] ?? 'en')],
-                        "components" => [
-                            [
-                                "type"       => "body",
-                                "parameters" => [
-                                    ["type" => "text", "text" => $waSettings['customer_name'] ?? 'Customer'],
-                                ]
-                            ]
-                        ]
+                        "components" => []
                     ]
                 ];
+                
+                if (!empty($params)) {
+                    $payload["template"]["components"][] = [
+                        "type" => "body",
+                        "parameters" => $params
+                    ];
+                }
             } else {
                 // Text mode fallback
                 $payload = [

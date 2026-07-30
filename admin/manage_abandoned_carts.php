@@ -135,19 +135,39 @@ $settings = $dashboardData['settings'];
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Template Reminder 1</label>
-                            <textarea class="form-control" name="template_reminder_1" rows="3"><?php echo htmlspecialchars($settings['template_reminder_1'] ?? ''); ?></textarea>
+                            <textarea class="form-control mb-2" name="template_reminder_1" rows="3"><?php echo htmlspecialchars($settings['template_reminder_1'] ?? ''); ?></textarea>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-light fw-bold text-muted">Meta Template</span>
+                                <input type="text" class="form-control" name="meta_template_1" id="metaTpl1" value="<?php echo htmlspecialchars($settings['meta_template_1'] ?? ''); ?>" placeholder="Template name...">
+                                <button class="btn btn-outline-primary btn-sync-tpl" type="button" data-target="metaTpl1" title="Fetch Templates"><i class="fas fa-list"></i> Fetch</button>
+                            </div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Template Reminder 2</label>
-                            <textarea class="form-control" name="template_reminder_2" rows="3"><?php echo htmlspecialchars($settings['template_reminder_2'] ?? ''); ?></textarea>
+                            <textarea class="form-control mb-2" name="template_reminder_2" rows="3"><?php echo htmlspecialchars($settings['template_reminder_2'] ?? ''); ?></textarea>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-light fw-bold text-muted">Meta Template</span>
+                                <input type="text" class="form-control" name="meta_template_2" id="metaTpl2" value="<?php echo htmlspecialchars($settings['meta_template_2'] ?? ''); ?>" placeholder="Template name...">
+                                <button class="btn btn-outline-primary btn-sync-tpl" type="button" data-target="metaTpl2" title="Fetch Templates"><i class="fas fa-list"></i> Fetch</button>
+                            </div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Template Reminder 3</label>
-                            <textarea class="form-control" name="template_reminder_3" rows="3"><?php echo htmlspecialchars($settings['template_reminder_3'] ?? ''); ?></textarea>
+                            <textarea class="form-control mb-2" name="template_reminder_3" rows="3"><?php echo htmlspecialchars($settings['template_reminder_3'] ?? ''); ?></textarea>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-light fw-bold text-muted">Meta Template</span>
+                                <input type="text" class="form-control" name="meta_template_3" id="metaTpl3" value="<?php echo htmlspecialchars($settings['meta_template_3'] ?? ''); ?>" placeholder="Template name...">
+                                <button class="btn btn-outline-primary btn-sync-tpl" type="button" data-target="metaTpl3" title="Fetch Templates"><i class="fas fa-list"></i> Fetch</button>
+                            </div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Template Reminder 4</label>
-                            <textarea class="form-control" name="template_reminder_4" rows="3"><?php echo htmlspecialchars($settings['template_reminder_4'] ?? ''); ?></textarea>
+                            <textarea class="form-control mb-2" name="template_reminder_4" rows="3"><?php echo htmlspecialchars($settings['template_reminder_4'] ?? ''); ?></textarea>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-light fw-bold text-muted">Meta Template</span>
+                                <input type="text" class="form-control" name="meta_template_4" id="metaTpl4" value="<?php echo htmlspecialchars($settings['meta_template_4'] ?? ''); ?>" placeholder="Template name...">
+                                <button class="btn btn-outline-primary btn-sync-tpl" type="button" data-target="metaTpl4" title="Fetch Templates"><i class="fas fa-list"></i> Fetch</button>
+                            </div>
                         </div>
                     </div>
 
@@ -166,18 +186,12 @@ $settings = $dashboardData['settings'];
                         </div>
                     </div>
 
-                    <div class="row">
+                    <div class="row mb-2">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">WhatsApp Template Name (Meta)</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" name="meta_template_name" id="metaTplName" value="<?php echo htmlspecialchars($settings['meta_template_name'] ?? ''); ?>">
-                                <button class="btn btn-outline-primary" type="button" id="btnSyncTpl" title="Sync from Meta API"><i class="fas fa-sync-alt"></i></button>
-                            </div>
-                            <div id="tplSyncStatus" class="small mt-1 d-none"></div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Language Code</label>
+                            <label class="form-label">Meta Template Language Code</label>
                             <input type="text" class="form-control" name="meta_template_lang" id="metaTplLang" value="<?php echo htmlspecialchars($settings['meta_template_lang'] ?? 'en'); ?>">
+                            <small class="text-muted">Language code for all Meta templates (e.g. 'en').</small>
+                            <div id="tplSyncStatus" class="small mt-2 d-none"></div>
                         </div>
                     </div>
 
@@ -476,69 +490,78 @@ $(document).ready(function() {
     loadCarts(1);
 });
 // Sync Templates Logic
+let currentTplTarget = null;
 document.addEventListener('DOMContentLoaded', function() {
-    const btnSync = document.getElementById('btnSyncTpl');
-    if (!btnSync) return;
-    
+    const btnSyncs = document.querySelectorAll('.btn-sync-tpl');
     const tplStatus = document.getElementById('tplSyncStatus');
     const tplList = document.getElementById('metaTemplatesList');
     const tplTableBody = document.getElementById('tplTableBody');
 
-    btnSync.addEventListener('click', function() {
-        btnSync.disabled = true;
-        btnSync.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-        tplStatus.className = 'small mt-1 text-info';
-        tplStatus.innerText = 'Connecting to Meta...';
-        tplStatus.classList.remove('d-none');
-        tplList.classList.add('d-none');
+    btnSyncs.forEach(btn => {
+        btn.addEventListener('click', function() {
+            currentTplTarget = this.getAttribute('data-target');
+            
+            // Disable all fetch buttons temporarily
+            btnSyncs.forEach(b => { b.disabled = true; });
+            const originalHtml = this.innerHTML;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+            
+            tplStatus.className = 'small mt-2 fw-bold text-info';
+            tplStatus.innerText = 'Connecting to Meta...';
+            tplStatus.classList.remove('d-none');
+            tplList.classList.add('d-none');
 
-        fetch('ajax_sync_meta_templates.php?waba_id=')
-            .then(res => res.json())
-            .then(data => {
-                btnSync.disabled = false;
-                btnSync.innerHTML = '<i class="fas fa-sync-alt"></i>';
+            fetch('ajax_sync_meta_templates.php?waba_id=')
+                .then(res => res.json())
+                .then(data => {
+                    btnSyncs.forEach(b => { b.disabled = false; });
+                    this.innerHTML = originalHtml;
 
-                if (data.error) {
-                    tplStatus.className = 'small mt-1 text-danger';
-                    tplStatus.innerText = 'Error: ' + data.error;
-                } else if (data.templates && data.templates.length > 0) {
-                    tplStatus.className = 'small mt-1 text-success';
-                    tplStatus.innerText = 'Templates fetched successfully!';
-                    
-                    tplTableBody.innerHTML = '';
-                    data.templates.forEach(tpl => {
-                        const row = `
-                            <tr>
-                                <td class="fw-bold fs-7">${tpl.name}</td>
-                                <td class="fs-7">${tpl.language}</td>
-                                <td class="fs-7"><span class="badge bg-light text-dark">${tpl.category}</span></td>
-                                <td class="text-end">
-                                    <button type="button" class="btn btn-sm btn-primary py-1 px-2" onclick="selectTemplate('${tpl.name}', '${tpl.language}')">Select</button>
-                                </td>
-                            </tr>
-                        `;
-                        tplTableBody.insertAdjacentHTML('beforeend', row);
-                    });
-                    tplList.classList.remove('d-none');
-                } else {
-                    tplStatus.className = 'small mt-1 text-warning';
-                    tplStatus.innerText = 'No approved templates found.';
-                }
-            })
-            .catch(err => {
-                btnSync.disabled = false;
-                btnSync.innerHTML = '<i class="fas fa-sync-alt"></i>';
-                tplStatus.className = 'small mt-1 text-danger';
-                tplStatus.innerText = 'Network error: ' + err.message;
-            });
+                    if (data.error) {
+                        tplStatus.className = 'small mt-2 fw-bold text-danger';
+                        tplStatus.innerText = 'Error: ' + data.error;
+                    } else if (data.templates && data.templates.length > 0) {
+                        tplStatus.className = 'small mt-2 fw-bold text-success';
+                        tplStatus.innerText = 'Templates fetched! Select one below for ' + currentTplTarget + '.';
+                        
+                        tplTableBody.innerHTML = '';
+                        data.templates.forEach(tpl => {
+                            const row = `
+                                <tr>
+                                    <td class="fw-bold fs-7">${tpl.name}</td>
+                                    <td class="fs-7">${tpl.language}</td>
+                                    <td class="fs-7"><span class="badge bg-light text-dark">${tpl.category}</span></td>
+                                    <td class="text-end">
+                                        <button type="button" class="btn btn-sm btn-primary py-1 px-2" onclick="selectTemplate('${tpl.name}', '${tpl.language}')">Select</button>
+                                    </td>
+                                </tr>
+                            `;
+                            tplTableBody.insertAdjacentHTML('beforeend', row);
+                        });
+                        tplList.classList.remove('d-none');
+                    } else {
+                        tplStatus.className = 'small mt-2 fw-bold text-warning';
+                        tplStatus.innerText = 'No approved templates found.';
+                    }
+                })
+                .catch(err => {
+                    btnSyncs.forEach(b => { b.disabled = false; });
+                    this.innerHTML = originalHtml;
+                    tplStatus.className = 'small mt-2 fw-bold text-danger';
+                    tplStatus.innerText = 'Network error: ' + err.message;
+                });
+        });
     });
 });
 
 function selectTemplate(name, lang) {
-    document.getElementById('metaTplName').value = name;
-    document.getElementById('metaTplLang').value = lang;
-    document.getElementById('metaTemplatesList').classList.add('d-none');
-    document.getElementById('tplSyncStatus').innerText = 'Template selected: ' + name;
+    if (currentTplTarget) {
+        document.getElementById(currentTplTarget).value = name;
+        document.getElementById('metaTplLang').value = lang;
+        document.getElementById('metaTemplatesList').classList.add('d-none');
+        document.getElementById('tplSyncStatus').className = 'small mt-2 fw-bold text-success';
+        document.getElementById('tplSyncStatus').innerText = 'Template selected: ' + name;
+    }
 }
 </script>
 
