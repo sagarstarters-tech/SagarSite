@@ -393,10 +393,15 @@ function sendReminder(cartId, btn) {
         dataType: 'json',
         success: function(res) {
             if(res.success) {
-                alert(res.message || 'Reminder sent successfully!');
+                if(res.link) {
+                    window.open(res.link, '_blank');
+                    alert('WhatsApp Web opened in new tab. Please send the message manually.');
+                } else {
+                    alert(res.message || 'Reminder sent successfully!');
+                }
                 refreshTableAndStats();
             } else {
-                alert(res.message || 'Error sending reminder');
+                alert(res.error || res.message || 'Error sending reminder');
                 $btn.html(originalHtml).prop('disabled', false);
             }
         },

@@ -44,10 +44,14 @@ class AbandonedCartController {
 
             $result = $this->service->sendManualReminder($cartId);
 
-            if ($result) {
-                return ['success' => true, 'message' => 'Reminder sent successfully'];
+            if (!empty($result['success'])) {
+                $response = ['success' => true, 'message' => 'Reminder sent successfully'];
+                if (!empty($result['link'])) {
+                    $response['link'] = $result['link'];
+                }
+                return $response;
             } else {
-                return ['success' => false, 'error' => 'Failed to send reminder. Check WhatsApp settings and phone number.'];
+                return ['success' => false, 'error' => $result['error'] ?? 'Failed to send reminder. Check WhatsApp settings.'];
             }
         } catch (\Throwable $e) {
             return ['success' => false, 'error' => $e->getMessage()];

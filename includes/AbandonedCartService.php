@@ -172,7 +172,7 @@ class AbandonedCartService {
         // Send via WhatsApp API (reuse existing infrastructure)
         $sent = $this->sendWhatsAppMessage($cart['customer_phone'], $message, $cartId, $level, $variables, $messageTemplate);
 
-        if ($sent) {
+        if (!empty($sent['success'])) {
             $this->repo->markReminderSent($cartId, $level);
         }
 
@@ -304,7 +304,7 @@ class AbandonedCartService {
             if ($curlError) {
                 error_log("[AbandonedCart] cURL error cart #{$cartId}: {$curlError}");
                 $this->logWhatsApp($cartId, $cleanNumber, $message, 'api', "Failed: cURL - " . substr($curlError, 0, 80));
-                return false;
+                return ['success' => false, 'error' => "cURL Error: " . $curlError];
             }
 
             $success = ($httpCode == 200);
@@ -315,15 +315,15 @@ class AbandonedCartService {
 
             $this->logWhatsApp($cartId, $cleanNumber, $message, 'api', $statusMsg);
 
-            return $success;
+            return ['success' => $success, 'error' => $success ? null : $statusMsg];
         }
 
-        // Web mode fallback — generate wa.me link (logged for admin to send manually)
+        // Web mode fallback — generate wa.me link
         $waLink = 'https://wa.me/' . $cleanNumber . '?text=' . urlencode($message);
         $this->logWhatsApp($cartId, $cleanNumber, $message, 'web', 'Generated wa.me link (manual send)');
         error_log("[AbandonedCart] Web mode link generated for cart #{$cartId}: {$waLink}");
 
-        return true; // Mark as "sent" since it's queued for manual
+        return ['success' => true, 'link' => $waLink];
     }
 
     /**
