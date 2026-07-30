@@ -27,21 +27,23 @@ if (session_status() === PHP_SESSION_NONE) {
         $domain = preg_replace('/^www\./i', '', $domain);
     }
     
-    // Only set cookie domain for non-local and non-IP hosts
-    if ($domain !== 'localhost' && !filter_var($domain, FILTER_VALIDATE_IP)) {
-        ini_set('session.cookie_domain', '.' . $domain);
-    }
-    
     // 3. Security & HTTPS detection
-    $is_https = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') || 
+    $is_https = (isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] === 'on' || $_SERVER['HTTPS'] === '1')) || 
                 (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
     
-    ini_set('session.cookie_path', '/');
-    ini_set('session.cookie_httponly', '1');
-    ini_set('session.cookie_samesite', 'Lax'); 
-    
-    if ($is_https) {
-        ini_set('session.cookie_secure', '1');
+    $cookie_domain = ($domain !== 'localhost' && !filter_var($domain, FILTER_VALIDATE_IP)) ? '.' . $domain : '';
+
+    if (PHP_VERSION_ID >= 70300) {
+        session_set_cookie_params([
+            'lifetime' => 86400 * 30,
+            'path' => '/',
+            'domain' => $cookie_domain,
+            'secure' => $is_https,
+            'httponly' => true,
+            'samesite' => 'Lax'
+        ]);
+    } else {
+        session_set_cookie_params(86400 * 30, '/; samesite=Lax', $cookie_domain, $is_https, true);
     }
     
     session_start();

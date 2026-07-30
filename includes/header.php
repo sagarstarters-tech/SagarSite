@@ -290,7 +290,8 @@ if (isset($product['slug'])) {
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('<?php echo SITE_URL; ?>/sw.js').then(registration => {
+          navigator.serviceWorker.register('<?php echo SITE_URL; ?>/sw.js?v=2').then(registration => {
+            registration.update();
             console.log('SW registered: ', registration);
           }).catch(registrationError => {
             console.log('SW registration failed: ', registrationError);
@@ -523,11 +524,11 @@ function refreshUserState() {
     }
 
     // Try primary path
-    fetch(checkPath, { credentials: 'same-origin' })
+    fetch(checkPath, { credentials: 'same-origin', cache: 'no-store' })
         .then(response => {
             if (!response.ok) {
                 // If the primary path fails (possible .env mismatch), try root relative
-                return fetch('/includes/ajax_auth_check.php', { credentials: 'same-origin' });
+                return fetch('/includes/ajax_auth_check.php', { credentials: 'same-origin', cache: 'no-store' });
             }
             return response;
         })

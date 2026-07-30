@@ -3,10 +3,9 @@
  * AJAX Login State & Cart Synchronization
  * This utility detects the state regardless of SITE_URL settings.
  */
+ob_start();
 include_once __DIR__ . '/session_setup.php';
 include_once __DIR__ . '/db_connect.php';
-
-header('Content-Type: application/json');
 
 // Auto-detect base URLs for JS use
 $proto = (isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] === 'on' || $_SERVER['HTTPS'] === '1')) || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ? 'https' : 'http';
@@ -14,6 +13,8 @@ $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
 
 $detected_site_url = defined('SITE_URL') && !empty(SITE_URL) ? rtrim(SITE_URL, '/') : "$proto://$host";
 $detected_site_url = preg_replace('#/(includes|admin|api|user|auth)$#i', '', $detected_site_url);
+
+$detected_assets_url = defined('ASSETS_URL') && !empty(ASSETS_URL) ? ASSETS_URL : $detected_site_url . '/assets';
 
 // Resolve profile photo with fallback
 $p_photo = $_SESSION['profile_photo'] ?? '';
@@ -55,5 +56,11 @@ if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
     }
 }
 
+// Clean any unexpected output/warnings from buffer before returning JSON
+if (ob_get_length()) ob_clean();
+header('Content-Type: application/json');
+header('Cache-Control: no-cache, no-store, must-revalidate');
+
 echo json_encode($response);
 exit;
+
