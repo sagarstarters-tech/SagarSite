@@ -93,8 +93,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="col-md-4">
             <div class="card product-card mb-4">
                 <div class="card-body text-center p-4">
-                    <?php if (!empty($user['profile_photo'])): ?>
-                        <img src="../assets/images/<?php echo htmlspecialchars($user['profile_photo']); ?>" alt="Profile" class="rounded-circle mb-3 object-fit-cover" style="width: 120px; height: 120px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                    <?php 
+                    $profile_photo_url = resolve_profile_photo_url($user['profile_photo'] ?? '', $user['role'] ?? '');
+                    ?>
+                    <?php if (!empty($profile_photo_url)): ?>
+                        <img src="<?php echo htmlspecialchars($profile_photo_url); ?>" alt="Profile" class="rounded-circle mb-3 object-fit-cover" style="width: 120px; height: 120px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
                     <?php else: ?>
                         <i class="fas fa-user-circle fa-5x primary-blue mb-3"></i>
                     <?php endif; ?>

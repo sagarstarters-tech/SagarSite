@@ -35,14 +35,13 @@ if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
     }
 }
 
-// Fallback: If profile_photo is not in session (from older logins), fetch it
-if (isset($_SESSION['user_id']) && !isset($_SESSION['profile_photo'])) {
+// Fallback: If profile_photo is not in session or empty, fetch it from DB
+if (isset($_SESSION['user_id']) && (empty($_SESSION['profile_photo']) || !isset($_SESSION['profile_photo']))) {
     $uid = intval($_SESSION['user_id']);
     $usr_q = $conn->query("SELECT profile_photo FROM users WHERE id=$uid");
     if ($usr_q && $usr_q->num_rows > 0) {
-        $_SESSION['profile_photo'] = $usr_q->fetch_assoc()['profile_photo'] ?? '';
-    } else {
-        $_SESSION['profile_photo'] = '';
+        $db_photo = trim($usr_q->fetch_assoc()['profile_photo'] ?? '');
+        $_SESSION['profile_photo'] = $db_photo;
     }
 }
 require_once __DIR__ . '/SeoService.php';
@@ -402,17 +401,14 @@ if (isset($product['slug'])) {
           <?php if(isset($_SESSION['user_id'])): ?>
               <div class="dropdown me-2">
                   <a class="dropdown-toggle d-flex align-items-center hidden-arrow text-reset" href="#" id="navbarDropdownMenuLink" role="button" data-mdb-toggle="dropdown" aria-expanded="false">
-                      <?php 
-                      $p_photo = $_SESSION['profile_photo'] ?? '';
-                      if(!empty($p_photo) && !file_exists(BASE_PATH . '/assets/images/' . $p_photo)) {
-                          $p_photo = file_exists(BASE_PATH . '/assets/images/profile_69c14f73c250a.png') ? 'profile_69c14f73c250a.png' : '';
-                      }
-                      ?>
-                      <?php if(!empty($p_photo)): ?>
-                          <img src="<?php echo ASSETS_URL; ?>/images/<?php echo htmlspecialchars($p_photo); ?>" alt="Profile" class="rounded-circle object-fit-cover" style="width: 32px; height: 32px; border: 2px solid #007aff;" onerror="this.outerHTML='<i class=\'fas fa-user-circle fs-4 primary-blue\'></i>'">
-                      <?php else: ?>
-                          <i class="fas fa-user-circle fs-4 primary-blue"></i>
-                      <?php endif; ?>
+                       <?php 
+                       $profile_photo_url = resolve_profile_photo_url($_SESSION['profile_photo'] ?? '', $_SESSION['role'] ?? '');
+                       ?>
+                       <?php if(!empty($profile_photo_url)): ?>
+                           <img src="<?php echo htmlspecialchars($profile_photo_url); ?>" alt="Profile" class="rounded-circle object-fit-cover" style="width: 32px; height: 32px; border: 2px solid #007aff;" onerror="this.outerHTML='<i class=\'fas fa-user-circle fs-4 primary-blue\'></i>'">
+                       <?php else: ?>
+                           <i class="fas fa-user-circle fs-4 primary-blue"></i>
+                       <?php endif; ?>
                   </a>
                    <?php 
                    $clean_site_url = rtrim(defined('SITE_URL') ? SITE_URL : '', '/');
@@ -567,8 +563,8 @@ function refreshUserState() {
                 authHtml = `
                     <div class="dropdown me-2">
                         <a class="dropdown-toggle d-flex align-items-center hidden-arrow text-reset" href="#" id="navbarDropdownMenuLink" role="button" data-mdb-toggle="dropdown" aria-expanded="false">
-                            ${data.profile_photo ? 
-                                `<img src="${data.assets_url}/images/${data.profile_photo}" alt="Profile" class="rounded-circle object-fit-cover" style="width: 32px; height: 32px; border: 2px solid #007aff;" onerror="this.outerHTML='<i class=\\'fas fa-user-circle fs-4 primary-blue\\'></i>'">` : 
+                            ${data.profile_photo_url ? 
+                                `<img src="${data.profile_photo_url}" alt="Profile" class="rounded-circle object-fit-cover" style="width: 32px; height: 32px; border: 2px solid #007aff;" onerror="this.outerHTML='<i class=\\'fas fa-user-circle fs-4 primary-blue\\'></i>'">` : 
                                 '<i class="fas fa-user-circle fs-4 primary-blue"></i>'}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownMenuLink">

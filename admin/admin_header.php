@@ -113,20 +113,17 @@ $__admin_menu = require __DIR__ . '/config/menu.php';
                             </span>
                             <div class="dropdown">
                                 <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle-nocaret" data-mdb-toggle="dropdown">
-                                    <?php 
-                                    $profile_pic = $_SESSION['profile_photo'] ?? '';
-                                    if (!empty($profile_pic) && !file_exists(BASE_PATH . '/assets/images/' . $profile_pic)) {
-                                        $profile_pic = file_exists(BASE_PATH . '/assets/images/profile_69c14f73c250a.png') ? 'profile_69c14f73c250a.png' : '';
-                                    }
-                                    ?>
-                                    <?php if (!empty($profile_pic)): ?>
-                                        <img src="<?php echo ASSETS_URL; ?>/images/<?php echo htmlspecialchars($profile_pic); ?>"
-                                             alt="Profile"
-                                             class="rounded-circle shadow-sm"
-                                             style="width:36px;height:36px;object-fit:cover;border:2px solid #fff;">
-                                    <?php else: ?>
-                                        <i class="fas fa-user-circle fa-2x text-muted"></i>
-                                    <?php endif; ?>
+                                     <?php 
+                                     $profile_pic_url = resolve_profile_photo_url($_SESSION['profile_photo'] ?? '', $_SESSION['role'] ?? '');
+                                     ?>
+                                     <?php if (!empty($profile_pic_url)): ?>
+                                         <img src="<?php echo htmlspecialchars($profile_pic_url); ?>"
+                                              alt="Profile"
+                                              class="rounded-circle shadow-sm"
+                                              style="width:36px;height:36px;object-fit:cover;border:2px solid #fff;">
+                                     <?php else: ?>
+                                         <i class="fas fa-user-circle fa-2x text-muted"></i>
+                                     <?php endif; ?>
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 mt-2">
                                     <li><a class="dropdown-item py-2" href="manage_settings.php"><i class="fas fa-cog me-2"></i>Settings</a></li>

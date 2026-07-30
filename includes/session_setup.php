@@ -71,3 +71,42 @@ if (!function_exists('verify_csrf_token')) {
         return hash_equals($_SESSION['csrf_token'], $token);
     }
 }
+
+// Global Profile Photo Resolver
+if (!function_exists('resolve_profile_photo_url')) {
+    function resolve_profile_photo_url($photo, $role = '') {
+        $photo = trim((string)$photo);
+        
+        // 1. Full HTTP / HTTPS URL (e.g. Google avatar)
+        if (strpos($photo, 'http://') === 0 || strpos($photo, 'https://') === 0) {
+            return $photo;
+        }
+        
+        $base_path = defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__);
+        $assets_url = defined('ASSETS_URL') ? rtrim(ASSETS_URL, '/') : '';
+        if (empty($assets_url)) {
+            $proto = (isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] === 'on' || $_SERVER['HTTPS'] === '1')) || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ? 'https' : 'http';
+            $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+            $assets_url = "$proto://$host/assets";
+        }
+        
+        // 2. Check if specific filename exists in assets/images
+        if (!empty($photo)) {
+            $clean_photo = ltrim($photo, '/');
+            if (strpos($clean_photo, 'assets/images/') === 0) {
+                $clean_photo = substr($clean_photo, 14);
+            }
+            if (file_exists($base_path . '/assets/images/' . $clean_photo)) {
+                return $assets_url . '/images/' . $clean_photo;
+            }
+        }
+        
+        // 3. Fallback for admin user or if profile_69c14f73c250a.png exists
+        if ($role === 'admin' && file_exists($base_path . '/assets/images/profile_69c14f73c250a.png')) {
+            return $assets_url . '/images/profile_69c14f73c250a.png';
+        }
+        
+        return '';
+    }
+}
+

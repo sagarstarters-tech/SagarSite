@@ -16,17 +16,24 @@ $detected_site_url = preg_replace('#/(includes|admin|api|user|auth)$#i', '', $de
 
 $detected_assets_url = defined('ASSETS_URL') && !empty(ASSETS_URL) ? ASSETS_URL : $detected_site_url . '/assets';
 
-// Resolve profile photo with fallback
-$p_photo = $_SESSION['profile_photo'] ?? '';
-if (!empty($p_photo) && !file_exists(__DIR__ . '/../assets/images/' . $p_photo)) {
-    $p_photo = file_exists(__DIR__ . '/../assets/images/profile_69c14f73c250a.png') ? 'profile_69c14f73c250a.png' : '';
+// Fallback: If profile_photo is not in session or empty, fetch it from DB
+if (isset($_SESSION['user_id']) && (empty($_SESSION['profile_photo']) || !isset($_SESSION['profile_photo']))) {
+    $uid = intval($_SESSION['user_id']);
+    $usr_q = $conn->query("SELECT profile_photo FROM users WHERE id=$uid");
+    if ($usr_q && $usr_q->num_rows > 0) {
+        $_SESSION['profile_photo'] = trim($usr_q->fetch_assoc()['profile_photo'] ?? '');
+    }
 }
+
+// Resolve profile photo URL using global helper
+$profile_photo_url = resolve_profile_photo_url($_SESSION['profile_photo'] ?? '', $_SESSION['role'] ?? '');
 
 $response = [
     'logged_in' => isset($_SESSION['user_id']),
     'name' => $_SESSION['name'] ?? '',
     'role' => $_SESSION['role'] ?? '',
-    'profile_photo' => $p_photo,
+    'profile_photo' => $_SESSION['profile_photo'] ?? '',
+    'profile_photo_url' => $profile_photo_url,
     'cart_count' => 0,
     'cart_total' => 0,
     'global_currency' => $global_currency ?? '₹',
