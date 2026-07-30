@@ -297,6 +297,7 @@ class AbandonedCartService {
             $logDir = dirname(__DIR__) . '/logs';
             if (!is_dir($logDir)) @mkdir($logDir, 0755, true);
             $logEntry = '[' . date('Y-m-d H:i:s') . "] Cart-Abandon Cart#{$cartId} L{$level} HTTP:{$httpCode} To:{$cleanNumber}" . PHP_EOL;
+            $logEntry .= "Payload: " . json_encode($payload) . PHP_EOL;
             $logEntry .= "Response: " . $result . PHP_EOL;
             $logEntry .= str_repeat('-', 60) . PHP_EOL;
             @file_put_contents($logDir . '/cart_abandonment_whatsapp.log', $logEntry, FILE_APPEND);
