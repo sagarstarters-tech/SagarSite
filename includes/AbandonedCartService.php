@@ -97,7 +97,7 @@ class AbandonedCartService {
             foreach ($dueCarts as $cart) {
                 try {
                     $result = $this->sendReminder($cart['id'], $level);
-                    if ($result) {
+                    if (!empty($result['success'])) {
                         $processed++;
                     } else {
                         $errors++;
