@@ -378,6 +378,12 @@ class AbandonedCartRepository {
         $res = $stmt->get_result();
         $carts = [];
         while ($row = $res->fetch_assoc()) {
+            $step = 0;
+            if (!empty($row['reminder_1_sent'])) $step = 1;
+            if (!empty($row['reminder_2_sent'])) $step = 2;
+            if (!empty($row['reminder_3_sent'])) $step = 3;
+            if (!empty($row['reminder_4_sent'])) $step = 4;
+            $row['reminder_step'] = $step;
             $carts[] = $row;
         }
         $stmt->close();

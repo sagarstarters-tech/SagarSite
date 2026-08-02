@@ -327,10 +327,11 @@ function renderCartsTable(carts) {
             const abandonedTime = timeAgo(cart.created_at);
             
             const step = parseInt(cart.reminder_step || 0);
-            let remindersHtml = '';
+            let remindersHtml = '<div class="d-flex align-items-center">';
             for(let i=1; i<=4; i++) {
                 remindersHtml += `<span class="reminder-dot ${i <= step ? 'sent' : 'pending'}" title="Reminder ${i}"></span>`;
             }
+            remindersHtml += `<span class="small text-muted ms-2">${step}/4</span></div>`;
             
             let statusBadge = '';
             if (cart.status === 'active') statusBadge = '<span class="badge bg-warning text-dark">Active</span>';
