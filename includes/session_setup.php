@@ -113,7 +113,6 @@ if (!function_exists('resolve_product_image_url')) {
     function resolve_product_image_url($image_path, $conn = null, $product_id = null) {
         $img = trim((string)$image_path);
         
-        $base_path = defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__);
         $site_url = defined('SITE_URL') ? rtrim(SITE_URL, '/') : '';
         $assets_url = defined('ASSETS_URL') ? rtrim(ASSETS_URL, '/') : ($site_url . '/assets');
         $placeholder_url = $assets_url . '/images/placeholder.svg';
@@ -124,21 +123,14 @@ if (!function_exists('resolve_product_image_url')) {
             $img = '';
         }
         
-        // If main image is empty, scan ALL gallery images for product_id until a valid existing image file is found
+        // If main image is empty, scan ALL gallery images for product_id until a valid image entry is found
         if (empty($img) && $conn !== null && !empty($product_id)) {
             $p_id = intval($product_id);
             $gal_q = $conn->query("SELECT image FROM product_images WHERE product_id = $p_id ORDER BY position ASC, id ASC");
             if ($gal_q && $gal_q->num_rows > 0) {
                 while ($g_row = $gal_q->fetch_assoc()) {
                     $g_img = trim($g_row['image'] ?? '');
-                    if (empty($g_img) || in_array(strtolower(basename($g_img)), $dummies)) {
-                        continue;
-                    }
-                    $check_clean = ltrim($g_img, '/');
-                    if (strpos($check_clean, 'assets/images/') === 0) {
-                        $check_clean = substr($check_clean, 14);
-                    }
-                    if (file_exists($base_path . '/assets/images/' . $check_clean) || file_exists($base_path . '/uploads/' . $check_clean)) {
+                    if (!empty($g_img) && !in_array(strtolower(basename($g_img)), $dummies)) {
                         $img = $g_img;
                         break; // Found first real photo in gallery!
                     }
@@ -158,33 +150,20 @@ if (!function_exists('resolve_product_image_url')) {
         // Clean leading slashes and redundant directory prefixes
         $clean = ltrim($img, '/');
         if (strpos($clean, 'assets/images/') === 0) {
-            $clean = substr($clean, 14);
-        } elseif (strpos($clean, 'uploads/images/') === 0) {
-            $clean = substr($clean, 15);
-        } elseif (strpos($clean, 'uploads/') === 0) {
+            $clean_sub = substr($clean, 14);
+            return $assets_url . '/images/' . $clean_sub;
+        }
+        if (strpos($clean, 'uploads/images/') === 0) {
+            $clean_sub = substr($clean, 15);
+            return $site_url . '/uploads/images/' . $clean_sub;
+        }
+        if (strpos($clean, 'uploads/') === 0) {
             $clean_sub = substr($clean, 8);
-            if (file_exists($base_path . '/assets/images/' . $clean_sub)) {
-                $clean = $clean_sub;
-            }
+            return $site_url . '/uploads/' . $clean_sub;
         }
         
-        // 2. Check if file exists in assets/images/
-        if (file_exists($base_path . '/assets/images/' . $clean)) {
-            return $assets_url . '/images/' . $clean;
-        }
-        
-        // 3. Check if file exists in uploads/
-        if (file_exists($base_path . '/uploads/' . $clean)) {
-            return $site_url . '/uploads/' . $clean;
-        }
-        
-        // If clean image filename exists (e.g. image name stored in DB), return assets/images path so browser can load it
-        if (!empty($clean)) {
-            return $assets_url . '/images/' . $clean;
-        }
-
-        // Default fallback to placeholder SVG vector if image is empty
-        return $placeholder_url;
+        // Default product & gallery images are stored in assets/images/
+        return $assets_url . '/images/' . $clean;
     }
 }
 
