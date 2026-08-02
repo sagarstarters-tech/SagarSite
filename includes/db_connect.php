@@ -51,11 +51,18 @@ if ($result = $conn->query($settings_query)) {
 }
 
 // ── Apply Timezone ───────────────────────────────────────────
-$timezone = !empty($global_settings['timezone']) ? $global_settings['timezone'] : 'UTC';
+$timezone = !empty($global_settings['timezone']) ? $global_settings['timezone'] : 'Asia/Kolkata';
 if (!in_array($timezone, timezone_identifiers_list())) {
-    $timezone = 'UTC';
+    $timezone = 'Asia/Kolkata';
 }
 date_default_timezone_set($timezone);
+
+// Sync MySQL session timezone with PHP timezone
+try {
+    $now = new DateTime('now', new DateTimeZone($timezone));
+    $offset = $now->format('P'); // e.g. +05:30
+    $conn->query("SET time_zone = '{$offset}'");
+} catch (\Throwable $e) {}
 
 // ── Global Currency Symbol ───────────────────────────────────
 $global_currency = !empty($global_settings['currency_symbol']) ? $global_settings['currency_symbol'] : '₹';
