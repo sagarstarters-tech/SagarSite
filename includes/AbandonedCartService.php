@@ -124,7 +124,7 @@ class AbandonedCartService {
      */
     public function sendReminder($cartId, $level = 0) {
         $cart = $this->repo->getById($cartId);
-        if (!$cart || $cart['status'] !== 'active') return false;
+        if (!$cart) return false;
 
         // Auto-detect level if not specified
         if ($level <= 0) {

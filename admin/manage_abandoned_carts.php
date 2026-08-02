@@ -351,8 +351,8 @@ function renderCartsTable(carts) {
                     <td>${remindersHtml}</td>
                     <td>${statusBadge}</td>
                     <td class="pe-3 text-end text-nowrap">
+                        <button class="btn btn-sm btn-outline-primary me-1 btn-reminder" onclick="sendReminder(${cart.id}, this)" title="Send next reminder"><i class="fas fa-paper-plane"></i></button>
                         ${cart.status === 'active' ? `
-                            <button class="btn btn-sm btn-outline-primary me-1 btn-reminder" onclick="sendReminder(${cart.id}, this)" title="Send next reminder"><i class="fas fa-paper-plane"></i></button>
                             <button class="btn btn-sm btn-outline-warning me-1 btn-expire" onclick="markExpired(${cart.id}, this)" title="Mark as expired"><i class="fas fa-times"></i></button>
                         ` : ''}
                         <button class="btn btn-sm btn-outline-danger btn-delete" onclick="deleteCart(${cart.id}, this)" title="Delete cart"><i class="fas fa-trash"></i></button>
