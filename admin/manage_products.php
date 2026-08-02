@@ -1040,7 +1040,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const gallery = JSON.parse(this.dataset.gallery);
                 gallery.forEach(img => {
                     let imgUrl = img.image_url ? img.image_url : '<?php echo ASSETS_URL; ?>/images/placeholder.svg';
-                    if (!img.image_url && img.image) {
+                    if ((!img.image_url || img.image_url.includes('placeholder.svg')) && img.image) {
                         let cleanImg = img.image.replace(/^(assets\/images\/|\/)/, '');
                         imgUrl = `<?php echo ASSETS_URL; ?>/images/${cleanImg}`;
                     }
