@@ -181,6 +181,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } elseif ($action === 'edit') {
         $id = intval($_POST['id']);
+        $return_page = intval($_POST['current_page'] ?? 1);
+        if ($return_page < 1) $return_page = 1;
         $name = $conn->real_escape_string($_POST['name']);
         $desc = $conn->real_escape_string($_POST['description']);
         $features = $conn->real_escape_string($_POST['features'] ?? '');
@@ -279,7 +281,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
             $_SESSION['flash_success'] = "Product updated successfully.";
-            header("Location: manage_products.php?action=list");
+            header("Location: manage_products.php?page=" . $return_page);
             exit;
         }
     } elseif ($action === 'delete') {
@@ -537,6 +539,7 @@ if ($seo_q) {
         <div class="modal-body p-4">
             <input type="hidden" name="action" value="edit">
             <input type="hidden" name="id" id="edit_p_id">
+            <input type="hidden" name="current_page" id="edit_current_page" value="1">
             <div class="row">
                 <div class="col-md-6 mb-3">
                     <label class="form-label fw-bold">Product Name</label>
@@ -971,6 +974,7 @@ document.addEventListener('DOMContentLoaded', function() {
     editBtns.forEach(btn => {
         btn.addEventListener('click', function() {
             document.getElementById('edit_p_id').value = this.dataset.id;
+            document.getElementById('edit_current_page').value = new URLSearchParams(window.location.search).get('page') || '1';
             document.getElementById('edit_p_name').value = this.dataset.name;
             document.getElementById('edit_p_slug').value = this.dataset.slug;
             document.getElementById('edit_p_category').value = this.dataset.category;
