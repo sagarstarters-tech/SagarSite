@@ -207,19 +207,19 @@ $settings = $dashboardData['settings'];
                             <p class="small text-muted mb-3">Customer ko automatic WhatsApp reminders bejne ke liye Hostinger cPanel -> <strong>Cron Jobs</strong> me niche diya gaya command add karein:</p>
                             
                             <div class="mb-3">
-                                <label class="form-label small fw-bold">Recommended PHP CLI Command (Hostinger Cron Job):</label>
+                                <label class="form-label small fw-bold">Option 1: PHP CLI Command (Exact Hostinger Server Path):</label>
                                 <div class="input-group input-group-sm">
-                                    <input type="text" class="form-control font-monospace bg-light" readonly id="cronCmdCli" value="/usr/bin/php /home/u902894566/public_html/cron/cart_abandonment.php">
+                                    <input type="text" class="form-control font-monospace bg-light" readonly id="cronCmdCli" value="/usr/bin/php /home/u902894566/domains/sagarstarters.com/public_html/cron/cart_abandonment.php">
                                     <button class="btn btn-outline-secondary" type="button" onclick="navigator.clipboard.writeText($('#cronCmdCli').val()); alert('CLI Command Copied!');"><i class="fas fa-copy me-1"></i> Copy</button>
                                 </div>
-                                <small class="text-danger mt-1 d-block"><i class="fas fa-exclamation-triangle me-1"></i> <strong>Note:</strong> Path me <code>SagarSite/</code> <strong>mat use karein</strong>. Hostinger server root <code>/home/u902894566/public_html/cron/cart_abandonment.php</code> hai.</small>
+                                <small class="text-success mt-1 d-block"><i class="fas fa-check-circle me-1"></i> Exact path on Hostinger: <code>/home/u902894566/domains/sagarstarters.com/public_html/cron/cart_abandonment.php</code></small>
                             </div>
 
                             <div class="mb-2">
-                                <label class="form-label small fw-bold">HTTP URL Cron Command (Alternative):</label>
+                                <label class="form-label small fw-bold">Option 2: Custom / URL Cron Command (Select 'Custom' in Hostinger):</label>
                                 <div class="input-group input-group-sm">
-                                    <input type="text" class="form-control font-monospace bg-light" readonly id="cronUrlHttp" value="https://sagarstarters.com/cron/cart_abandonment.php?key=<?php echo htmlspecialchars($settings['cron_secret_key'] ?? 'sagar_cart_recovery_cron_secret'); ?>">
-                                    <button class="btn btn-outline-secondary" type="button" onclick="navigator.clipboard.writeText($('#cronUrlHttp').val()); alert('Cron URL Copied!');"><i class="fas fa-copy me-1"></i> Copy</button>
+                                    <input type="text" class="form-control font-monospace bg-light" readonly id="cronUrlHttp" value="curl -s &quot;https://sagarstarters.com/cron/cart_abandonment.php?key=<?php echo htmlspecialchars($settings['cron_secret_key'] ?? 'sagar_cart_recovery_cron_secret'); ?>&quot;">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="navigator.clipboard.writeText($('#cronUrlHttp').val()); alert('Custom Cron Command Copied!');"><i class="fas fa-copy me-1"></i> Copy</button>
                                 </div>
                             </div>
                         </div>
