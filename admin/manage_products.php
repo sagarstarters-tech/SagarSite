@@ -81,6 +81,19 @@ if ($check_pos && $check_pos->num_rows == 0) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     
+    // Block browser hard-refresh POST resubmit for destructive actions (add/edit/delete)
+    // verify_form_nonce() consumes the nonce — a hard refresh resubmit will find an empty nonce and be rejected.
+    if (in_array($action, ['add', 'edit', 'delete'])) {
+        csrf_verify(); // Verify CSRF token (session-lifetime protection)
+        if (!verify_form_nonce()) {
+            // Duplicate submission / hard refresh — safe redirect back to prevent any side effects
+            $_SESSION['flash_error'] = "Duplicate form submission detected. Your last action was already saved. Please do not use browser refresh after submitting a form.";
+            $return_page = intval($_POST['current_page'] ?? 1);
+            header("Location: manage_products.php?page=" . max(1, $return_page));
+            exit;
+        }
+    }
+
     if ($action === 'add') {
         $name = $conn->real_escape_string($_POST['name']);
         $desc = $conn->real_escape_string($_POST['description']);
@@ -545,10 +558,12 @@ if ($seo_q) {
       </div>
       <form method="POST" enctype="multipart/form-data">
     <?php echo csrf_input(); ?>
+    <?php echo form_nonce_input('edit_product'); ?>
         <div class="modal-body p-4">
             <input type="hidden" name="action" value="edit">
             <input type="hidden" name="id" id="edit_p_id">
             <input type="hidden" name="current_page" id="edit_current_page" value="1">
+
             <div class="row">
                 <div class="col-md-6 mb-3">
                     <label class="form-label fw-bold">Product Name</label>
@@ -767,6 +782,7 @@ if ($seo_q) {
       </div>
       <form method="POST" enctype="multipart/form-data">
     <?php echo csrf_input(); ?>
+    <?php echo form_nonce_input('add_product'); ?>
         <div class="modal-body p-4">
             <input type="hidden" name="action" value="add">
             <div class="row">
@@ -1082,32 +1098,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             
-            document.querySelectorAll('.delete-gallery-btn').forEach(btn => {
-                btn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    if(confirm('Delete this gallery image?')) {
-                        const imgId = this.dataset.imgId;
-                        fetch('manage_products.php', {
-                            method: 'POST',
-                            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                            body: 'action=delete_gallery_image&image_id=' + imgId
-                        })
-                        .then(res => res.json())
-                        .then(data => {
-                            if (data.success) {
-                                const el = document.getElementById('gal_img_' + imgId);
-                                if (el) el.remove();
-                            } else {
-                                alert('Error: ' + (data.error || 'Failed to delete image.'));
-                            }
-                        })
-                        .catch(err => {
-                            console.error('Logout or session issue?', err);
-                            alert('Failed to connect to server. Please refresh.');
-                        });
-                    }
-                });
-            });
+            // NOTE: Delete button listeners are handled via event delegation below (outside this loop)
+            // to prevent duplicate listeners being added every time a modal opens.
             
             var modal = new mdb.Modal(document.getElementById('editProductModal'));
             modal.show();
@@ -1240,6 +1232,39 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     document.getElementById('addProductModal').addEventListener('show.mdb.modal', () => {
         addGallerySort.reset();
+    });
+});
+
+// --- Event Delegation for Gallery Delete Buttons ---
+// Using document-level delegation prevents duplicate listeners when edit modal re-opens.
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.delete-gallery-btn');
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm('Delete this gallery image?')) return;
+    const imgId = btn.dataset.imgId;
+    if (!imgId) return;
+    btn.disabled = true;
+    fetch('manage_products.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'action=delete_gallery_image&image_id=' + encodeURIComponent(imgId)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            const el = document.getElementById('gal_img_' + imgId);
+            if (el) el.remove();
+        } else {
+            btn.disabled = false;
+            alert('Error: ' + (data.error || 'Failed to delete image.'));
+        }
+    })
+    .catch(err => {
+        btn.disabled = false;
+        console.error('Gallery delete error:', err);
+        alert('Failed to connect to server. Please refresh the page.');
     });
 });
 
