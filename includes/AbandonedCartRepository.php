@@ -150,8 +150,11 @@ class AbandonedCartRepository {
     public function createOrUpdate($userId, $cartData, $cartTotal, $productNames, $productImage = null) {
         $userId = intval($userId);
 
+        $cartJson = is_string($cartData) ? $cartData : json_encode($cartData);
+        $token = bin2hex(random_bytes(32));
+
         // Check if active record exists
-        $stmt = $this->conn->prepare("SELECT id FROM abandoned_carts WHERE user_id = ? AND status = 'active' LIMIT 1");
+        $stmt = $this->conn->prepare("SELECT id, cart_data FROM abandoned_carts WHERE user_id = ? AND status = 'active' LIMIT 1");
         if (!$stmt) return false;
         $stmt->bind_param("i", $userId);
         $stmt->execute();
@@ -159,22 +162,24 @@ class AbandonedCartRepository {
         $existing = $res->fetch_assoc();
         $stmt->close();
 
-        $cartJson = is_string($cartData) ? $cartData : json_encode($cartData);
-        $token = bin2hex(random_bytes(32));
-
         if ($existing) {
-            // Update existing — reset reminders only if cart content changed
-            $stmt = $this->conn->prepare("UPDATE abandoned_carts SET cart_data = ?, cart_total = ?, product_names = ?, product_image = ?, recovery_token = ?, updated_at = NOW() WHERE id = ?");
+            // 1. If cart contents have NOT changed, do NOT touch database or update timestamp
+            if ($existing['cart_data'] === $cartJson) {
+                return $existing['id'];
+            }
+
+            // 2. Cart content changed (user added/removed items) -> Update record & reset reminder timers
+            $stmt = $this->conn->prepare("UPDATE abandoned_carts SET cart_data = ?, cart_total = ?, product_names = ?, product_image = ?, recovery_token = ?, reminder_1_sent = NULL, reminder_2_sent = NULL, reminder_3_sent = NULL, reminder_4_sent = NULL, updated_at = NOW() WHERE id = ?");
             if (!$stmt) return false;
             $stmt->bind_param("sdsssi", $cartJson, $cartTotal, $productNames, $productImage, $token, $existing['id']);
             $result = $stmt->execute();
             $stmt->close();
             return $result ? $existing['id'] : false;
         } else {
-            // Create new
+            // Create new active abandoned cart
             $stmt = $this->conn->prepare("INSERT INTO abandoned_carts (user_id, cart_data, cart_total, product_names, product_image, status, recovery_token) VALUES (?, ?, ?, ?, ?, 'active', ?)");
             if (!$stmt) return false;
-            $stmt->bind_param("idsss" . "s", $userId, $cartJson, $cartTotal, $productNames, $productImage, $token);
+            $stmt->bind_param("idssss", $userId, $cartJson, $cartTotal, $productNames, $productImage, $token);
             $result = $stmt->execute();
             $id = $this->conn->insert_id;
             $stmt->close();
