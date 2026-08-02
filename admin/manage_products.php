@@ -75,8 +75,8 @@ if ($check_pos && $check_pos->num_rows == 0) {
     $conn->query("ALTER TABLE product_images ADD COLUMN position INT DEFAULT 0");
 }
 
-// Auto-clean dummy placeholder rows from product_images table to prevent broken gallery boxes
-$conn->query("DELETE FROM product_images WHERE LOWER(image) IN ('placeholder.svg', 'placeholder.png', 'no-image.png', 'no-image.jpg', 'null', 'undefined', '') OR image IS NULL");
+// Note: Removed aggressive auto-delete of product_images rows on every page load.
+// That was deleting legitimate gallery entries. Placeholder filtering is now done only at display time.
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
@@ -144,7 +144,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        $sql = "INSERT INTO products (name, slug, short_description, description, features, meta_description, category_id, product_type, download_file, download_url, download_limit, download_expiry_days, regular_price, sale_price, price, sku, brand, stock, shipping_cost, weight, length, width, height, cod_available, is_trending, cod_charge, image, image_fit) VALUES ('$name', '$slug', '$short_desc', '$desc', '$features', '$meta_desc', $cat_id, '$product_type', '$download_file', '$download_url', $download_limit, $download_expiry, $regular_price, $sale_price, $price, '$sku', '$brand', $stock, $shipping_cost, $weight, $length, $width, $height, $cod_available, $is_trending, $cod_charge_sql, '$image', '$image_fit')";
+        // Use NULL in SQL when no image is uploaded, not empty string
+        $image_sql = ($image !== null) ? "'" . $conn->real_escape_string($image) . "'" : "NULL";
+        $sql = "INSERT INTO products (name, slug, short_description, description, features, meta_description, category_id, product_type, download_file, download_url, download_limit, download_expiry_days, regular_price, sale_price, price, sku, brand, stock, shipping_cost, weight, length, width, height, cod_available, is_trending, cod_charge, image, image_fit) VALUES ('$name', '$slug', '$short_desc', '$desc', '$features', '$meta_desc', $cat_id, '$product_type', '$download_file', '$download_url', $download_limit, $download_expiry, $regular_price, $sale_price, $price, '$sku', '$brand', $stock, $shipping_cost, $weight, $length, $width, $height, $cod_available, $is_trending, $cod_charge_sql, $image_sql, '$image_fit')";
 
 
 
@@ -331,13 +333,11 @@ if ($pi_q) {
     while($pi = $pi_q->fetch_assoc()) {
         $img_file = strtolower(basename(trim($pi['image'] ?? '')));
         if (empty($img_file) || in_array($img_file, $dummies)) {
-            continue; // Skip dummy placeholder entries
+            continue; // Skip only actual dummy placeholder entries
         }
+        // Always resolve the URL - if file is missing on disk, it will show placeholder
+        // but we still keep the record so it is not lost from the gallery
         $pi['image_url'] = resolve_product_image_url($pi['image']);
-        // If image file doesn't exist on disk, skip it from gallery grid
-        if ($pi['image_url'] === (defined('SITE_URL') ? preg_replace('#^https?://[^/]+#i', '', rtrim(SITE_URL, '/')) : '') . '/assets/images/placeholder.svg') {
-            continue;
-        }
         $product_images[$pi['product_id']][] = $pi;
     }
 }
