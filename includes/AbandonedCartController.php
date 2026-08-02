@@ -120,7 +120,7 @@ class AbandonedCartController {
                 'is_enabled', 'reminder_1_delay', 'reminder_2_delay', 'reminder_3_delay', 'reminder_4_delay',
                 'reminder_1_message', 'reminder_2_message', 'reminder_3_message', 'reminder_4_message',
                 'coupon_discount_percent', 'coupon_validity_hours', 'auto_expire_days',
-                'meta_template_name', 'meta_template_lang'
+                'meta_template_1', 'meta_template_2', 'meta_template_3', 'meta_template_4', 'meta_template_lang'
             ];
 
             $filtered = [];
