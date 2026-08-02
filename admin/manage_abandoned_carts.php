@@ -349,11 +349,12 @@ function renderCartsTable(carts) {
                     <td>${abandonedTime}</td>
                     <td>${remindersHtml}</td>
                     <td>${statusBadge}</td>
-                    <td class="pe-3 text-end">
+                    <td class="pe-3 text-end text-nowrap">
                         ${cart.status === 'active' ? `
                             <button class="btn btn-sm btn-outline-primary me-1 btn-reminder" onclick="sendReminder(${cart.id}, this)" title="Send next reminder"><i class="fas fa-paper-plane"></i></button>
-                            <button class="btn btn-sm btn-outline-danger btn-expire" onclick="markExpired(${cart.id}, this)" title="Mark as expired"><i class="fas fa-times"></i></button>
+                            <button class="btn btn-sm btn-outline-warning me-1 btn-expire" onclick="markExpired(${cart.id}, this)" title="Mark as expired"><i class="fas fa-times"></i></button>
                         ` : ''}
+                        <button class="btn btn-sm btn-outline-danger btn-delete" onclick="deleteCart(${cart.id}, this)" title="Delete cart"><i class="fas fa-trash"></i></button>
                     </td>
                 </tr>
             `;
@@ -429,6 +430,33 @@ function markExpired(cartId, btn) {
                 refreshTableAndStats();
             } else {
                 alert(res.message || 'Error marking as expired');
+                $btn.html(originalHtml).prop('disabled', false);
+            }
+        },
+        error: function() {
+            alert('Request failed');
+            $btn.html(originalHtml).prop('disabled', false);
+        }
+    });
+}
+
+function deleteCart(cartId, btn) {
+    if(!confirm('Are you sure you want to delete this cart? This action cannot be undone.')) return;
+    
+    const $btn = $(btn);
+    const originalHtml = $btn.html();
+    $btn.html('<i class="fas fa-spinner fa-spin"></i>').prop('disabled', true);
+    
+    $.ajax({
+        url: 'ajax_abandoned_carts.php',
+        type: 'POST',
+        data: { action: 'delete_cart', cart_id: cartId },
+        dataType: 'json',
+        success: function(res) {
+            if(res.success) {
+                refreshTableAndStats();
+            } else {
+                alert(res.message || 'Error deleting cart');
                 $btn.html(originalHtml).prop('disabled', false);
             }
         },

@@ -219,6 +219,19 @@ class AbandonedCartRepository {
     }
 
     /**
+     * Delete an abandoned cart record.
+     */
+    public function deleteCart($cartId) {
+        $cartId = intval($cartId);
+        $stmt = $this->conn->prepare("DELETE FROM abandoned_carts WHERE id = ?");
+        if (!$stmt) return false;
+        $stmt->bind_param("i", $cartId);
+        $result = $stmt->execute();
+        $stmt->close();
+        return $result;
+    }
+
+    /**
      * Get abandoned carts due for a specific reminder level.
      * @param int $level Reminder level (1-4)
      * @param int $delayMinutes Delay in minutes since cart creation

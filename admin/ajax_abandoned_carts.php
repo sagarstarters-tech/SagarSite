@@ -44,6 +44,12 @@ try {
             echo json_encode($result);
             break;
 
+        case 'delete_cart':
+            $cartId = intval($_POST['cart_id'] ?? 0);
+            $result = $controller->deleteCart($cartId);
+            echo json_encode($result);
+            break;
+
         case 'save_settings':
             error_log('[AbandonedCart] save_settings POST: ' . print_r($_POST, true));
             $settingsData = [];

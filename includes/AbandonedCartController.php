@@ -80,6 +80,27 @@ class AbandonedCartController {
     }
 
     /**
+     * Delete a specific abandoned cart.
+     */
+    public function deleteCart($cartId) {
+        try {
+            $cartId = intval($cartId);
+            if ($cartId <= 0) {
+                return ['success' => false, 'error' => 'Invalid cart ID'];
+            }
+
+            $repo = new AbandonedCartRepository($this->conn);
+            $result = $repo->deleteCart($cartId);
+
+            return $result
+                ? ['success' => true, 'message' => 'Cart deleted successfully']
+                : ['success' => false, 'error' => 'Failed to delete cart'];
+        } catch (\Throwable $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
      * Get settings for the admin settings panel.
      */
     public function getSettings() {
