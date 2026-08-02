@@ -17,8 +17,6 @@ if (empty($token)) {
     
     if (!$cart) {
         $error = 'This recovery link has expired or is invalid.';
-    } elseif ($cart['status'] !== 'active') {
-        $error = 'This cart has already been recovered or expired.';
     } else {
         // Restore cart
         $userId = intval($cart['user_id']);

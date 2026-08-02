@@ -298,7 +298,7 @@ class AbandonedCartRepository {
         $stmt = $this->conn->prepare("SELECT ac.*, u.name AS customer_name, u.phone AS customer_phone
                 FROM abandoned_carts ac
                 LEFT JOIN users u ON ac.user_id = u.id
-                WHERE ac.recovery_token = ? AND ac.status = 'active'
+                WHERE ac.recovery_token = ?
                 LIMIT 1");
         if (!$stmt) return null;
         $stmt->bind_param("s", $token);
