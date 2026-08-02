@@ -178,7 +178,12 @@ if (!function_exists('resolve_product_image_url')) {
             return $clean_site_url . '/uploads/' . $clean;
         }
         
-        // Default fallback to placeholder SVG vector if file is missing on disk
+        // If clean image filename exists (e.g. image name stored in DB), return assets/images path so browser can load it
+        if (!empty($clean)) {
+            return $clean_site_url . '/assets/images/' . $clean;
+        }
+
+        // Default fallback to placeholder SVG vector if image is empty
         return $placeholder_url;
     }
 }
