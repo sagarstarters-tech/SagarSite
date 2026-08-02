@@ -300,11 +300,21 @@ $settings = $dashboardData['settings'];
 </div>
 
 <script>
+function parseSqlDate(dateStr) {
+    if (!dateStr) return new Date();
+    const p = dateStr.split(/[- :]/);
+    if (p.length >= 6) {
+        return new Date(p[0], p[1] - 1, p[2], p[3], p[4], p[5]);
+    }
+    return new Date(dateStr.replace(/-/g, '/'));
+}
+
 function timeAgo(dateStr) {
     if (!dateStr) return '';
     const now = new Date();
-    const date = new Date(dateStr.replace(' ', 'T'));
+    const date = parseSqlDate(dateStr);
     const seconds = Math.floor((now - date) / 1000);
+    if (isNaN(seconds) || seconds < 0) return 'Just now';
     if (seconds < 60) return 'Just now';
     if (seconds < 3600) return Math.floor(seconds / 60) + ' min ago';
     if (seconds < 86400) return Math.floor(seconds / 3600) + ' hours ago';
