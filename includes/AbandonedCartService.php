@@ -79,11 +79,12 @@ class AbandonedCartService {
      */
     public function processAutoReminders() {
         if (!($this->settings['is_enabled'] ?? '1')) {
-            return ['processed' => 0, 'message' => 'Cart abandonment feature is disabled'];
+            return ['processed' => 0, 'errors' => 0, 'message' => 'Cart abandonment feature is disabled in settings'];
         }
 
         $processed = 0;
         $errors = 0;
+        $errorDetails = [];
 
         // Auto-expire old carts first
         $expireDays = intval($this->settings['auto_expire_days'] ?? 7);
@@ -101,18 +102,28 @@ class AbandonedCartService {
                         $processed++;
                     } else {
                         $errors++;
+                        if (!empty($result['error'])) {
+                            $errorDetails[] = "Cart #{$cart['id']}: " . $result['error'];
+                        }
                     }
                 } catch (\Throwable $e) {
                     $errors++;
+                    $errorDetails[] = "Cart #{$cart['id']}: " . $e->getMessage();
                     error_log("[AbandonedCart] Reminder L{$level} error for cart #{$cart['id']}: " . $e->getMessage());
                 }
             }
         }
 
+        $msg = "Processed {$processed} reminders with {$errors} errors.";
+        if (!empty($errorDetails)) {
+            $msg .= " Details: " . implode(' | ', array_unique($errorDetails));
+        }
+
         return [
-            'processed' => $processed,
-            'errors'    => $errors,
-            'message'   => "Processed {$processed} reminders with {$errors} errors"
+            'processed'    => $processed,
+            'errors'       => $errors,
+            'error_details' => array_unique($errorDetails),
+            'message'      => $msg
         ];
     }
 
@@ -211,9 +222,9 @@ class AbandonedCartService {
             return false;
         }
 
-        if (!$waSettings || $waSettings['is_enabled'] != 1) {
+        if (!$waSettings || ($waSettings['is_enabled'] ?? '0') != 1) {
             error_log("[AbandonedCart] WhatsApp is disabled or not configured");
-            return false;
+            return ['success' => false, 'error' => 'WhatsApp Notifications are disabled in Admin -> WhatsApp Notifs Settings'];
         }
 
         // Clean phone number (same logic as existing whatsapp_functions.php)
@@ -223,17 +234,20 @@ class AbandonedCartService {
 
         if (empty($cleanNumber)) {
             error_log("[AbandonedCart] Empty phone for cart #{$cartId}");
-            return false;
+            return ['success' => false, 'error' => 'Customer phone number is empty or invalid'];
         }
 
         // API mode
-        if ($waSettings['sending_mode'] === 'api' && !empty($waSettings['api_token']) && !empty($waSettings['phone_number_id'])) {
+        if (($waSettings['sending_mode'] ?? 'web') === 'api') {
+            if (empty($waSettings['api_token']) || empty($waSettings['phone_number_id'])) {
+                return ['success' => false, 'error' => 'Meta API Token or Phone Number ID is missing in WhatsApp Notifs Settings'];
+            }
+
             $token = trim($waSettings['api_token']);
             $phoneId = trim($waSettings['phone_number_id']);
             $url = "https://graph.facebook.com/v19.0/{$phoneId}/messages";
 
             // Check if cart abandonment template is configured for this level
-            // Level 0 is manual, default to level 1 template if manual doesn't have one? We use level 1 for manual.
             $tplLevel = $level > 0 ? $level : 1;
             $abandonTemplate = trim($this->settings["meta_template_{$tplLevel}"] ?? '');
 
@@ -312,7 +326,7 @@ class AbandonedCartService {
             $metaResponse = json_decode($result, true);
             $statusMsg = $success
                 ? 'Sent via Meta API (Cart Recovery) ID:' . substr($metaResponse['messages'][0]['id'] ?? 'unknown', 0, 20)
-                : 'Failed API: ' . substr($metaResponse['error']['message'] ?? 'Unknown error', 0, 100);
+                : 'Failed API (HTTP ' . $httpCode . '): ' . substr($metaResponse['error']['message'] ?? 'Unknown error', 0, 100);
 
             $this->logWhatsApp($cartId, $cleanNumber, $message, 'api', $statusMsg);
 
@@ -321,8 +335,13 @@ class AbandonedCartService {
 
         // Web mode fallback — generate wa.me link
         $waLink = 'https://wa.me/' . $cleanNumber . '?text=' . urlencode($message);
-        $this->logWhatsApp($cartId, $cleanNumber, $message, 'web', 'Generated wa.me link (manual send)');
+        $this->logWhatsApp($cartId, $cleanNumber, $message, 'web', 'Generated wa.me link');
         error_log("[AbandonedCart] Web mode link generated for cart #{$cartId}: {$waLink}");
+
+        if ($level > 0) {
+            // Auto-reminders cannot send automatically over Web Mode without Meta Cloud API
+            return ['success' => false, 'error' => 'Auto reminders require Meta API mode in WhatsApp Notifs Settings. Web Mode only creates manual wa.me links.', 'link' => $waLink];
+        }
 
         return ['success' => true, 'link' => $waLink];
     }
