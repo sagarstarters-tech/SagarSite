@@ -100,14 +100,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $height = floatval($_POST['height'] ?? 0);
         $cod_available = isset($_POST['cod_available']) ? 1 : 0;
         $is_trending = isset($_POST['is_trending']) ? 1 : 0;
-        $cod_charge = ($_POST['cod_charge'] !== '' && $_POST['cod_charge'] !== null) ? floatval($_POST['cod_charge']) : null;
+        $cod_charge_raw = $_POST['cod_charge'] ?? '';
+        $cod_charge = ($cod_charge_raw !== '' && $cod_charge_raw !== null) ? floatval($cod_charge_raw) : null;
         $cod_charge_sql = ($cod_charge !== null) ? $cod_charge : 'NULL';
 
 
 
         $meta_desc = $conn->real_escape_string($_POST['meta_description'] ?? '');
         $image_fit = $conn->real_escape_string($_POST['image_fit'] ?? 'contain');
-        $slug = !empty($_POST['slug']) ? $conn->real_escape_string(strtolower(str_replace(' ', '-', preg_replace('/[^a-z0-9-]+/', '-', $_POST['slug'])))) : time() . '-' . substr(preg_replace('/[^a-z0-9-]+/', '-', strtolower($name)), 0, 50);
         $slug = $conn->real_escape_string(strtolower(str_replace(' ', '-', preg_replace('/[^a-z0-9-]+/', '-', $_POST['slug'] ?? ''))));
         if (empty($slug)) $slug = time() . '-' . substr(preg_replace('/[^a-z0-9-]+/', '-', strtolower($name)), 0, 50);
         
@@ -178,6 +178,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['flash_success'] = "Product added successfully.";
             header("Location: manage_products.php?action=list");
             exit;
+        } else {
+            $_SESSION['flash_error'] = "Failed to add product: " . $conn->error;
         }
     } elseif ($action === 'edit') {
         $id = intval($_POST['id']);
@@ -201,7 +203,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $height = floatval($_POST['height'] ?? 0);
         $cod_available = isset($_POST['cod_available']) ? 1 : 0;
         $is_trending = isset($_POST['is_trending']) ? 1 : 0;
-        $cod_charge = ($_POST['cod_charge'] !== '' && $_POST['cod_charge'] !== null) ? floatval($_POST['cod_charge']) : null;
+        $cod_charge_raw = $_POST['cod_charge'] ?? '';
+        $cod_charge = ($cod_charge_raw !== '' && $cod_charge_raw !== null) ? floatval($cod_charge_raw) : null;
         $cod_charge_sql = ($cod_charge !== null) ? $cod_charge : 'NULL';
 
 
@@ -209,6 +212,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $meta_desc = $conn->real_escape_string($_POST['meta_description'] ?? '');
         $image_fit = $conn->real_escape_string($_POST['image_fit'] ?? 'contain');
         $slug = $conn->real_escape_string(strtolower(str_replace(' ', '-', preg_replace('/[^a-z0-9-]+/', '-', $_POST['slug'] ?? ''))));
+        if (empty($slug)) {
+            // Fallback: auto-generate slug from product name if admin cleared it
+            $existing = $conn->query("SELECT slug FROM products WHERE id=$id")->fetch_assoc();
+            $slug = !empty($existing['slug']) ? $existing['slug'] : time() . '-' . substr(preg_replace('/[^a-z0-9-]+/', '-', strtolower($name)), 0, 50);
+        }
         
         $product_type = $conn->real_escape_string($_POST['product_type'] ?? 'physical');
         $download_url = $conn->real_escape_string($_POST['download_url'] ?? '');
@@ -283,6 +291,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['flash_success'] = "Product updated successfully.";
             header("Location: manage_products.php?page=" . $return_page);
             exit;
+        } else {
+            $_SESSION['flash_error'] = "Failed to update product: " . $conn->error;
         }
     } elseif ($action === 'delete') {
         $id = intval($_POST['id']);
@@ -372,6 +382,10 @@ if ($seo_q) {
 
 <?php if(isset($success)): ?>
     <div class="alert alert-success py-2"><?php echo $success; ?></div>
+<?php endif; ?>
+
+<?php if(isset($error)): ?>
+    <div class="alert alert-danger py-2"><?php echo htmlspecialchars($error); ?></div>
 <?php endif; ?>
 
 <?php if(isset($_SESSION['import_success'])): ?>
@@ -504,7 +518,7 @@ if ($seo_q) {
                         </tr>
                         <?php endwhile; ?>
                     <?php else: ?>
-                        <tr><td colspan="5" class="text-center py-4 text-muted">No products found.</td></tr>
+                        <tr><td colspan="6" class="text-center py-4 text-muted">No products found.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
@@ -1007,7 +1021,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('edit_p_length').value = this.dataset.length || 0;
             document.getElementById('edit_p_width').value = this.dataset.width || 0;
             document.getElementById('edit_p_height').value = this.dataset.height || 0;
-            document.getElementById('edit_p_cod_available').checked = this.dataset.codAvailable == 1;
+            // cod_available already set on line 985, no duplicate needed
 
 
 
