@@ -40,6 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         sync_cart_to_db($conn);
+        track_abandoned_cart($conn);
         header("Location: ../cart.php");
         exit;
     }
@@ -56,6 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             unset($_SESSION['cart'][$product_id]);
         }
         sync_cart_to_db($conn);
+        track_abandoned_cart($conn);
         header("Location: ../cart.php");
         exit;
     }
@@ -63,6 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'remove') {
         unset($_SESSION['cart'][$product_id]);
         sync_cart_to_db($conn);
+        track_abandoned_cart($conn);
         header("Location: ../cart.php");
         exit;
     }

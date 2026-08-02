@@ -31,13 +31,20 @@ function sync_cart_to_db($conn) {
         $stmt->execute();
         $stmt->close();
     }
+}
 
-    // Track cart for abandonment recovery (fail-safe, non-blocking)
+/**
+ * Track abandoned cart ONLY when cart content is modified (Add, Update, Remove)
+ */
+function track_abandoned_cart($conn) {
+    if (!isset($_SESSION['user_id'])) {
+        return;
+    }
     try {
         require_once __DIR__ . '/AbandonedCartService.php';
         $abandonedCartService = new AbandonedCartService($conn);
-        $abandonedCartService->trackCart($user_id);
-    } catch (Throwable $e) {
+        $abandonedCartService->trackCart(intval($_SESSION['user_id']));
+    } catch (\Throwable $e) {
         error_log('[AbandonedCart] Track error: ' . $e->getMessage());
     }
 }
