@@ -59,6 +59,18 @@ class AbandonedCartController {
     }
 
     /**
+     * Trigger auto reminders processing manually (for testing / admin trigger).
+     */
+    public function triggerAutoReminders() {
+        try {
+            $result = $this->service->processAutoReminders();
+            return array_merge(['success' => true], $result);
+        } catch (\Throwable $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
      * Mark a specific abandoned cart as expired.
      */
     public function markExpired($cartId) {

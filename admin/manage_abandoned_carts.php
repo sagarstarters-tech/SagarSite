@@ -193,6 +193,36 @@ $settings = $dashboardData['settings'];
                             <small class="text-muted">Language code for all Meta templates (e.g. 'en').</small>
                             <div id="tplSyncStatus" class="small mt-2 d-none"></div>
                         </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Cron Secret Key (Security Key)</label>
+                            <input type="text" class="form-control" name="cron_secret_key" id="cronSecretKey" value="<?php echo htmlspecialchars($settings['cron_secret_key'] ?? 'sagar_cart_recovery_cron_secret'); ?>">
+                            <small class="text-muted">Secret key for URL/HTTP Cron Job access.</small>
+                        </div>
+                    </div>
+
+                    <!-- Hostinger Cron Setup Instructions -->
+                    <div class="card border-0 bg-white border-start border-warning border-4 shadow-sm rounded-3 my-4">
+                        <div class="card-body">
+                            <h6 class="fw-bold text-dark mb-2"><i class="fas fa-clock text-warning me-2"></i> Hostinger Cron Job Setup Guide (Auto Reminders)</h6>
+                            <p class="small text-muted mb-3">Customer ko automatic WhatsApp reminders bejne ke liye Hostinger cPanel -> <strong>Cron Jobs</strong> me niche diya gaya command add karein:</p>
+                            
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Recommended PHP CLI Command (Hostinger Cron Job):</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="text" class="form-control font-monospace bg-light" readonly id="cronCmdCli" value="/usr/bin/php /home/u902894566/public_html/cron/cart_abandonment.php">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="navigator.clipboard.writeText($('#cronCmdCli').val()); alert('CLI Command Copied!');"><i class="fas fa-copy me-1"></i> Copy</button>
+                                </div>
+                                <small class="text-danger mt-1 d-block"><i class="fas fa-exclamation-triangle me-1"></i> <strong>Note:</strong> Path me <code>SagarSite/</code> <strong>mat use karein</strong>. Hostinger server root <code>/home/u902894566/public_html/cron/cart_abandonment.php</code> hai.</small>
+                            </div>
+
+                            <div class="mb-2">
+                                <label class="form-label small fw-bold">HTTP URL Cron Command (Alternative):</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="text" class="form-control font-monospace bg-light" readonly id="cronUrlHttp" value="https://sagarstarters.com/cron/cart_abandonment.php?key=<?php echo htmlspecialchars($settings['cron_secret_key'] ?? 'sagar_cart_recovery_cron_secret'); ?>">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="navigator.clipboard.writeText($('#cronUrlHttp').val()); alert('Cron URL Copied!');"><i class="fas fa-copy me-1"></i> Copy</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div id="metaTemplatesList" class="mb-4 d-none p-3 border rounded-3 bg-white shadow-sm overflow-auto" style="max-height: 250px;">
@@ -238,6 +268,7 @@ $settings = $dashboardData['settings'];
                 </div>
                 <div class="col-md-5 text-end">
                     <button class="btn btn-light border" onclick="refreshTableAndStats()"><i class="fas fa-sync-alt me-1"></i> Refresh</button>
+                    <button class="btn btn-warning text-dark border ms-2" onclick="triggerCronNow()"><i class="fas fa-paper-plane me-1"></i> Run Auto Reminders Now</button>
                 </div>
             </div>
         </div>
@@ -596,6 +627,34 @@ function selectTemplate(name, lang) {
         document.getElementById('tplSyncStatus').className = 'small mt-2 fw-bold text-success';
         document.getElementById('tplSyncStatus').innerText = 'Template selected: ' + name;
     }
+}
+
+function triggerCronNow() {
+    if (!confirm('Run automated cart recovery check right now?')) return;
+    
+    const btn = event.currentTarget;
+    const originalText = $(btn).html();
+    $(btn).html('<i class="fas fa-spinner fa-spin me-1"></i> Running...').prop('disabled', true);
+    
+    $.ajax({
+        url: 'ajax_abandoned_carts.php',
+        type: 'POST',
+        data: { action: 'trigger_cron' },
+        dataType: 'json',
+        success: function(res) {
+            $(btn).html(originalText).prop('disabled', false);
+            if (res.success) {
+                alert('Auto Reminder Executed Successfully!\n' + (res.message || ('Processed: ' + (res.processed || 0))));
+                refreshTableAndStats();
+            } else {
+                alert('Error running auto reminder: ' + (res.error || 'Unknown error'));
+            }
+        },
+        error: function(err) {
+            $(btn).html(originalText).prop('disabled', false);
+            alert('Request failed: ' + err.statusText);
+        }
+    });
 }
 </script>
 

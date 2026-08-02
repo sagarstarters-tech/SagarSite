@@ -54,6 +54,7 @@ class AbandonedCartRepository {
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
             // Insert default settings if not exist
+            // Insert default settings if not exist
             $defaults = [
                 'is_enabled'              => '1',
                 'reminder_1_delay'        => '30',
@@ -72,6 +73,7 @@ class AbandonedCartRepository {
                 'meta_template_3'         => '',
                 'meta_template_4'         => '',
                 'meta_template_lang'      => 'en',
+                'cron_secret_key'         => 'sagar_cart_recovery_cron_secret',
             ];
 
             $stmt = $this->conn->prepare("INSERT IGNORE INTO abandoned_cart_settings (setting_key, setting_value) VALUES (?, ?)");
@@ -118,7 +120,8 @@ class AbandonedCartRepository {
             'is_enabled', 'reminder_1_delay', 'reminder_2_delay', 'reminder_3_delay', 'reminder_4_delay',
             'reminder_1_message', 'reminder_2_message', 'reminder_3_message', 'reminder_4_message',
             'coupon_discount_percent', 'coupon_validity_hours', 'auto_expire_days',
-            'meta_template_1', 'meta_template_2', 'meta_template_3', 'meta_template_4', 'meta_template_lang'
+            'meta_template_1', 'meta_template_2', 'meta_template_3', 'meta_template_4', 'meta_template_lang',
+            'cron_secret_key'
         ];
         if (!in_array($key, $allowed)) return false;
 
@@ -240,11 +243,18 @@ class AbandonedCartRepository {
         $col = "reminder_{$level}_sent";
         if (!in_array($level, [1, 2, 3, 4])) return [];
 
+        $prevColCheck = "";
+        if ($level > 1) {
+            $prevCol = "reminder_" . ($level - 1) . "_sent";
+            $prevColCheck = " AND ac.{$prevCol} IS NOT NULL";
+        }
+
         $sql = "SELECT ac.*, u.name AS customer_name, u.phone AS customer_phone, u.email AS customer_email
                 FROM abandoned_carts ac
                 LEFT JOIN users u ON ac.user_id = u.id
                 WHERE ac.status = 'active'
                   AND ac.{$col} IS NULL
+                  {$prevColCheck}
                   AND ac.created_at <= DATE_SUB(NOW(), INTERVAL ? MINUTE)
                 ORDER BY ac.created_at ASC
                 LIMIT 50";

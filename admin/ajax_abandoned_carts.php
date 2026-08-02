@@ -38,6 +38,11 @@ try {
             echo json_encode($result);
             break;
 
+        case 'trigger_cron':
+            $result = $controller->triggerAutoReminders();
+            echo json_encode($result);
+            break;
+
         case 'mark_expired':
             $cartId = intval($_POST['cart_id'] ?? 0);
             $result = $controller->markExpired($cartId);
