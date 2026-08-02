@@ -330,14 +330,17 @@ $product_images = [];
 $pi_q = $conn->query("SELECT * FROM product_images ORDER BY position ASC, id ASC");
 if ($pi_q) {
     $dummies = ['placeholder.svg', 'placeholder.png', 'no-image.png', 'no-image.jpg', 'null', 'undefined'];
+    $placeholder_check_url = (defined('SITE_URL') ? preg_replace('#^https?://[^/]+#i', '', rtrim(SITE_URL, '/')) : '') . '/assets/images/placeholder.svg';
     while($pi = $pi_q->fetch_assoc()) {
         $img_file = strtolower(basename(trim($pi['image'] ?? '')));
         if (empty($img_file) || in_array($img_file, $dummies)) {
-            continue; // Skip only actual dummy placeholder entries
+            continue; // Skip dummy placeholder entries
         }
-        // Always resolve the URL - if file is missing on disk, it will show placeholder
-        // but we still keep the record so it is not lost from the gallery
         $pi['image_url'] = resolve_product_image_url($pi['image']);
+        // Hide gallery images whose physical file is missing on disk (display-only filter, DB records remain safe)
+        if ($pi['image_url'] === $placeholder_check_url) {
+            continue;
+        }
         $product_images[$pi['product_id']][] = $pi;
     }
 }
