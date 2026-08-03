@@ -191,6 +191,10 @@ RewriteRule ^page/([^/]+)/?$ page.php?slug=$1 [L,QSA]
     RewriteCond %{HTTP_USER_AGENT} (facebookexternalhit|Facebot|WhatsApp) [NC]
     RewriteRule .* - [L]
 
+    # Allow curl requests to /cron/ path (Hostinger cron jobs use curl)
+    RewriteCond %{REQUEST_URI} ^/cron/ [NC]
+    RewriteRule .* - [L]
+
     RewriteCond %{HTTP_USER_AGENT} (libwww-perl|wget|python|nikto|curl|scan|java|winhttp|clshttp|loader) [NC,OR]
     RewriteCond %{HTTP_USER_AGENT} (<|>|'|%0A|%0D|%27|%3C|%3E|%00) [NC]
     RewriteRule .* - [F,L]

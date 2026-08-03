@@ -7,11 +7,14 @@
  * 
  * Option 1 (PHP CLI - Recommended):
  * Command: /usr/bin/php /home/u902894566/public_html/cron/cart_abandonment.php
- * Schedule: Every 10 minutes (* /10 * * * *)
+ * Schedule: Every 10 minutes (*/10 * * * *)
  * 
- * Option 2 (HTTP URL Cron):
- * URL: https://sagarstarters.com/cron/cart_abandonment.php?key=sagar_cart_recovery_cron_secret
- * Schedule: Every 10 minutes (* /10 * * * *)
+ * Option 2 (HTTP URL Cron - Use www URL + -L flag to follow redirects):
+ * Command: curl -s -L 'https://www.sagarstarters.com/cron/cart_abandonment.php?key=sagar_cart_recovery_cron_secret'
+ * Schedule: Every 10 minutes (*/10 * * * *)
+ * 
+ * NOTE: Always use https://www.sagarstarters.com (with www) to avoid 301 redirect.
+ * The -L flag tells curl to follow redirects automatically.
  */
 
 // Bootstrap
