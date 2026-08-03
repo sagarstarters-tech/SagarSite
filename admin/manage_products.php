@@ -3,6 +3,7 @@
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array(($_POST['action'] ?? ''), ['delete_gallery_image', 'toggle_trending', 'update_gallery_order'])) {
     include_once __DIR__ . '/../includes/session_setup.php';
     include_once __DIR__ . '/../includes/db_connect.php';
+    require_once __DIR__ . '/helpers/csrf.php';
     
     header('Content-Type: application/json');
     
@@ -12,12 +13,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array(($_POST['action'] ?? ''), 
         exit;
     }
 
+    // CSRF Check — prevent unauthorized AJAX requests from other pages
+    $ajax_submitted_token = $_POST['_csrf_token'] ?? '';
+    $ajax_stored_token    = $_SESSION['csrf_token'] ?? '';
+    if (empty($ajax_stored_token) || !hash_equals($ajax_stored_token, $ajax_submitted_token)) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'error' => 'Security check failed. Please refresh the page and try again.']);
+        exit;
+    }
+
     $action = $_POST['action'];
     if ($action === 'delete_gallery_image') {
         $img_id = intval($_POST['image_id']);
         $img_q = $conn->query("SELECT image FROM product_images WHERE id=$img_id")->fetch_assoc();
-        if ($img_q && $img_q['image'] && file_exists('../assets/images/'.$img_q['image'])) {
-            unlink('../assets/images/'.$img_q['image']);
+        if ($img_q && $img_q['image']) {
+            $gal_file = $conn->real_escape_string($img_q['image']);
+            // Safety: only delete physical file if NOT referenced by any other product gallery or main image
+            $other_gal_refs = (int)$conn->query("SELECT COUNT(*) as c FROM product_images WHERE image='$gal_file' AND id!=$img_id")->fetch_assoc()['c'];
+            $main_refs      = (int)$conn->query("SELECT COUNT(*) as c FROM products WHERE image='$gal_file'")->fetch_assoc()['c'];
+            if ($other_gal_refs === 0 && $main_refs === 0 && file_exists('../assets/images/'.$img_q['image'])) {
+                unlink('../assets/images/'.$img_q['image']);
+            }
         }
         if ($conn->query("DELETE FROM product_images WHERE id=$img_id")) {
             echo json_encode(['success' => true]);
@@ -259,8 +275,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $image = uniqid() . '.' . $ext;
                 if (move_uploaded_file($_FILES['image']['tmp_name'], '../assets/images/' . $image)) {
                      $img_q = $conn->query("SELECT image FROM products WHERE id=$id")->fetch_assoc();
-                     if ($img_q && $img_q['image'] && file_exists('../assets/images/'.$img_q['image'])) {
-                         unlink('../assets/images/'.$img_q['image']);
+                     if ($img_q && $img_q['image']) {
+                         $old_main_img = $conn->real_escape_string($img_q['image']);
+                         // Safety: only delete old main image if NOT used by any other product or gallery entry
+                         $other_prod_refs = (int)$conn->query("SELECT COUNT(*) as c FROM products WHERE image='$old_main_img' AND id!=$id")->fetch_assoc()['c'];
+                         $gal_refs        = (int)$conn->query("SELECT COUNT(*) as c FROM product_images WHERE image='$old_main_img'")->fetch_assoc()['c'];
+                         if ($other_prod_refs === 0 && $gal_refs === 0 && file_exists('../assets/images/'.$img_q['image'])) {
+                             unlink('../assets/images/'.$img_q['image']);
+                         }
                      }
                      $image_query = ", image='$image'";
                 } else {
@@ -310,17 +332,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($action === 'delete') {
         $id = intval($_POST['id']);
         
-        // Remove main image
+        // Remove main image (safety: only if not shared with another product or gallery)
         $img_q = $conn->query("SELECT image FROM products WHERE id=$id")->fetch_assoc();
-        if ($img_q && $img_q['image'] && file_exists('../assets/images/'.$img_q['image'])) {
-            unlink('../assets/images/'.$img_q['image']);
+        if ($img_q && $img_q['image']) {
+            $del_main = $conn->real_escape_string($img_q['image']);
+            $other_p  = (int)$conn->query("SELECT COUNT(*) as c FROM products WHERE image='$del_main' AND id!=$id")->fetch_assoc()['c'];
+            $gal_ref  = (int)$conn->query("SELECT COUNT(*) as c FROM product_images WHERE image='$del_main'")->fetch_assoc()['c'];
+            if ($other_p === 0 && $gal_ref === 0 && file_exists('../assets/images/'.$img_q['image'])) {
+                unlink('../assets/images/'.$img_q['image']);
+            }
         }
         
-        // Remove gallery images from disk
+        // Remove gallery images from disk (safety: only if not shared)
         $gal_img_q = $conn->query("SELECT image FROM product_images WHERE product_id=$id");
         if ($gal_img_q) {
             while ($g = $gal_img_q->fetch_assoc()) {
-                if (file_exists('../assets/images/'.$g['image'])) {
+                if (!$g['image']) continue;
+                $gal_del     = $conn->real_escape_string($g['image']);
+                $other_gal   = (int)$conn->query("SELECT COUNT(*) as c FROM product_images WHERE image='$gal_del' AND product_id!=$id")->fetch_assoc()['c'];
+                $main_ref_2  = (int)$conn->query("SELECT COUNT(*) as c FROM products WHERE image='$gal_del'")->fetch_assoc()['c'];
+                if ($other_gal === 0 && $main_ref_2 === 0 && file_exists('../assets/images/'.$g['image'])) {
                     unlink('../assets/images/'.$g['image']);
                 }
             }
@@ -994,6 +1025,8 @@ if ($seo_q) {
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 
 <script>
+// CSRF token for AJAX requests — fetched from PHP session (same token used in forms)
+const _csrfToken = '<?php echo csrf_token(); ?>';
 document.addEventListener('DOMContentLoaded', function() {
     const editBtns = document.querySelectorAll('.edit-product-btn');
     editBtns.forEach(btn => {
@@ -1249,7 +1282,7 @@ document.addEventListener('click', function(e) {
     fetch('manage_products.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: 'action=delete_gallery_image&image_id=' + encodeURIComponent(imgId)
+        body: 'action=delete_gallery_image&image_id=' + encodeURIComponent(imgId) + '&_csrf_token=' + encodeURIComponent(_csrfToken)
     })
     .then(res => res.json())
     .then(data => {
