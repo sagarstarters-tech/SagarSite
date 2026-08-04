@@ -212,7 +212,7 @@ if ($seo_q) {
                                     <td class="ps-4">
                                         <div class="d-flex align-items-center gap-3">
                                             <?php if(!empty($c['image'])): ?>
-                                                <img src="../assets/images/<?php echo htmlspecialchars($c['image']); ?>" class="mc-thumb">
+                                                <img src="<?php echo resolve_image_url($c['image']); ?>" class="mc-thumb" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';">
                                             <?php else: ?>
                                                 <div class="mc-thumb d-flex align-items-center justify-content-center">
                                                     <i class="fas fa-folder text-secondary fs-5"></i>

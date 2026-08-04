@@ -108,6 +108,62 @@ if (!function_exists('resolve_profile_photo_url')) {
     }
 }
 
+// Global Image Resolver (Generic for Banners, Slides, Categories, Features, etc.)
+if (!function_exists('resolve_image_url')) {
+    function resolve_image_url($image_path, $default_fallback = '') {
+        $img = trim((string)$image_path);
+        
+        $site_url = defined('SITE_URL') ? rtrim(SITE_URL, '/') : '';
+        $assets_url = defined('ASSETS_URL') ? rtrim(ASSETS_URL, '/') : ($site_url . '/assets');
+        $base_path = defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__);
+        $placeholder = !empty($default_fallback) ? $default_fallback : ($assets_url . '/images/placeholder.svg');
+        
+        $dummies = ['placeholder.svg', 'placeholder.png', 'no-image.png', 'no-image.jpg', 'null', 'undefined'];
+        if (empty($img) || in_array(strtolower(basename($img)), $dummies)) {
+            return $placeholder;
+        }
+        
+        if (strpos($img, 'http://') === 0 || strpos($img, 'https://') === 0) {
+            return $img;
+        }
+        
+        $clean = ltrim($img, '/');
+        if (strpos($clean, 'assets/images/') === 0) {
+            $clean = substr($clean, 14);
+        } elseif (strpos($clean, 'uploads/images/') === 0) {
+            $clean = substr($clean, 15);
+        } elseif (strpos($clean, 'uploads/') === 0) {
+            $clean = substr($clean, 8);
+        }
+        
+        // 1. Check in /uploads/
+        if (file_exists($base_path . '/uploads/' . $clean)) {
+            return $site_url . '/uploads/' . $clean;
+        }
+        
+        // 2. Check in /assets/images/
+        if (file_exists($base_path . '/assets/images/' . $clean)) {
+            return $assets_url . '/images/' . $clean;
+        }
+        
+        // 3. Auto-heal: search for matching file with different extension (e.g. .webp instead of .jpg)
+        $name_no_ext = pathinfo($clean, PATHINFO_FILENAME);
+        if (!empty($name_no_ext)) {
+            $matches = glob($base_path . '/assets/images/' . $name_no_ext . '.*');
+            if (!empty($matches)) {
+                return $assets_url . '/images/' . basename($matches[0]);
+            }
+            $upload_matches = glob($base_path . '/uploads/' . $name_no_ext . '.*');
+            if (!empty($upload_matches)) {
+                return $site_url . '/uploads/' . basename($upload_matches[0]);
+            }
+        }
+        
+        // 4. Return safe fallback placeholder instead of broken 404 URL
+        return $placeholder;
+    }
+}
+
 // Global Product Image Resolver
 if (!function_exists('resolve_product_image_url')) {
     function resolve_product_image_url($image_path, $conn = null, $product_id = null) {
@@ -115,6 +171,7 @@ if (!function_exists('resolve_product_image_url')) {
         
         $site_url = defined('SITE_URL') ? rtrim(SITE_URL, '/') : '';
         $assets_url = defined('ASSETS_URL') ? rtrim(ASSETS_URL, '/') : ($site_url . '/assets');
+        $base_path = defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__);
         $placeholder_url = $assets_url . '/images/placeholder.svg';
         
         // Filter out dummy/empty/invalid image strings
@@ -150,20 +207,38 @@ if (!function_exists('resolve_product_image_url')) {
         // Clean leading slashes and redundant directory prefixes
         $clean = ltrim($img, '/');
         if (strpos($clean, 'assets/images/') === 0) {
-            $clean_sub = substr($clean, 14);
-            return $assets_url . '/images/' . $clean_sub;
-        }
-        if (strpos($clean, 'uploads/images/') === 0) {
-            $clean_sub = substr($clean, 15);
-            return $site_url . '/uploads/images/' . $clean_sub;
-        }
-        if (strpos($clean, 'uploads/') === 0) {
-            $clean_sub = substr($clean, 8);
-            return $site_url . '/uploads/' . $clean_sub;
+            $clean = substr($clean, 14);
+        } elseif (strpos($clean, 'uploads/images/') === 0) {
+            $clean = substr($clean, 15);
+        } elseif (strpos($clean, 'uploads/') === 0) {
+            $clean = substr($clean, 8);
         }
         
-        // Default product & gallery images are stored in assets/images/
-        return $assets_url . '/images/' . $clean;
+        // Check in /uploads/
+        if (file_exists($base_path . '/uploads/' . $clean)) {
+            return $site_url . '/uploads/' . $clean;
+        }
+        
+        // Check in /assets/images/
+        if (file_exists($base_path . '/assets/images/' . $clean)) {
+            return $assets_url . '/images/' . $clean;
+        }
+        
+        // Auto-heal extension mismatch (e.g. db says .jpg, file is .webp)
+        $name_no_ext = pathinfo($clean, PATHINFO_FILENAME);
+        if (!empty($name_no_ext)) {
+            $matches = glob($base_path . '/assets/images/' . $name_no_ext . '.*');
+            if (!empty($matches)) {
+                return $assets_url . '/images/' . basename($matches[0]);
+            }
+            $upload_matches = glob($base_path . '/uploads/' . $name_no_ext . '.*');
+            if (!empty($upload_matches)) {
+                return $site_url . '/uploads/' . basename($upload_matches[0]);
+            }
+        }
+        
+        // Default safe fallback if file physically deleted or missing from disk
+        return $placeholder_url;
     }
 }
 

@@ -124,7 +124,7 @@ $section_enabled = $global_settings['homepage_features_enabled'] ?? '1';
                                 <?php if($f['icon_type'] === 'font'): ?>
                                     <i class="<?php echo htmlspecialchars($f['icon_value']); ?> fa-2x text-primary p-2 bg-light rounded"></i>
                                 <?php else: ?>
-                                    <img src="<?php echo ASSETS_URL; ?>/images/<?php echo htmlspecialchars($f['icon_value']); ?>" alt="icon" style="height: 40px; width: 40px; object-fit: contain;" class="bg-light p-1 rounded">
+                                    <img src="<?php echo resolve_image_url($f['icon_value']); ?>" alt="icon" style="height: 40px; width: 40px; object-fit: contain;" class="bg-light p-1 rounded" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';">
                                 <?php endif; ?>
                             </td>
                             <td>

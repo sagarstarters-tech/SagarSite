@@ -185,7 +185,7 @@ $slides = $conn->query("SELECT * FROM hero_slides ORDER BY display_order ASC");
                             <td class="px-4 text-muted"><i class="fas fa-grip-vertical"></i></td>
                             <td>
                                 <?php if($slide['bg_type'] === 'image' && $slide['media_path']): ?>
-                                    <img src="<?php echo ASSETS_URL; ?>/images/slider/<?php echo htmlspecialchars($slide['media_path']); ?>" style="width: 80px; height: 50px; object-fit: cover;" class="rounded">
+                                    <img src="<?php echo resolve_image_url($slide['media_path']); ?>" style="width: 80px; height: 50px; object-fit: cover;" class="rounded" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';">
                                 <?php elseif($slide['bg_type'] === 'video' && $slide['media_path']): ?>
                                     <div class="bg-dark text-white rounded d-flex align-items-center justify-content-center" style="width: 80px; height: 50px;"><i class="fas fa-video"></i></div>
                                 <?php else: ?>

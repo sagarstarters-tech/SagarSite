@@ -155,7 +155,7 @@ $banners = $conn->query("SELECT * FROM banners ORDER BY created_at DESC");
                         <?php while($banner = $banners->fetch_assoc()): ?>
                         <tr>
                             <td class="ps-4 py-3">
-                                <img src="<?php echo ASSETS_URL; ?>/images/<?php echo htmlspecialchars($banner['image']); ?>" class="mb-thumb" alt="Banner">
+                                <img src="<?php echo resolve_image_url($banner['image']); ?>" class="mb-thumb" alt="Banner" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';">
                             </td>
                             <td>
                                 <strong><?php echo htmlspecialchars($banner['heading'] ?: '(No Heading)'); ?></strong><br>
