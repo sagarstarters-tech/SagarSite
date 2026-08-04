@@ -796,21 +796,39 @@ $total_videos = (int)($conn->query("SELECT COUNT(*) as c FROM media_library WHER
 }
 </style>
 
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!--  PAGE HEADER                                              -->
-<!-- ═══════════════════════════════════════════════════════════ -->
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <div>
-        <h2 class="h3 mb-1 fw-bold" style="color:#333;">
-            <i class="fas fa-photo-video me-2" style="background: linear-gradient(135deg,#667eea,#764ba2); -webkit-background-clip:text; -webkit-text-fill-color:transparent;"></i>
-            Media Library
-        </h2>
-        <p class="text-muted mb-0" style="font-size:0.85rem;">Upload, manage, and organize your images & videos — WordPress style.</p>
+<style>
+.mm-hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+    border-radius: 20px;
+    padding: 24px 28px;
+    color: #ffffff;
+    box-shadow: 0 15px 30px -10px rgba(15, 23, 42, 0.25);
+    margin-bottom: 24px;
+}
+</style>
+
+<div class="container-fluid py-3">
+
+    <!-- Hero Header Banner -->
+    <div class="mm-hero">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge bg-primary bg-opacity-25 text-white border border-primary border-opacity-50 rounded-pill px-3 py-1 small">
+                        <i class="fas fa-photo-video me-1"></i> Media Storage
+                    </span>
+                    <span class="text-white-50 small"><?php echo $total_all; ?> total media assets</span>
+                </div>
+                <h3 class="fw-bold mb-0 text-white">Media & Asset Library</h3>
+            </div>
+            <div>
+                <button class="btn btn-primary px-4 py-2 rounded-3 fw-bold shadow-sm d-flex align-items-center gap-2" onclick="document.getElementById('mediaFileInput').click()">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <span>Upload New Media</span>
+                </button>
+            </div>
+        </div>
     </div>
-    <button class="btn btn-primary btn-lg px-4" style="background:linear-gradient(135deg,#667eea,#764ba2); border:none; border-radius:10px; font-weight:600;" onclick="document.getElementById('mediaFileInput').click()">
-        <i class="fas fa-cloud-upload-alt me-2"></i>Upload New
-    </button>
-</div>
 
 <?php render_flash(); ?>
 
@@ -1326,5 +1344,6 @@ document.addEventListener('keydown', e => {
     if (e.key === 'Escape') closeMediaDetail();
 });
 </script>
+</div>
 
 <?php include 'admin_footer.php'; ?>

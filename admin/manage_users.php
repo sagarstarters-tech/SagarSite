@@ -108,72 +108,135 @@ $total_users = $conn->query("SELECT COUNT(*) as c FROM users")->fetch_assoc()['c
 $total_pages = ceil($total_users / $limit);
 ?>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="fw-bold mb-0">Manage Users</h4>
-    <button class="btn btn-primary btn-custom" data-mdb-toggle="modal" data-mdb-target="#addUserModal">
-        <i class="fas fa-plus me-2"></i>Add User
-    </button>
-</div>
+<style>
+.mu-hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+    border-radius: 20px;
+    padding: 24px 28px;
+    color: #ffffff;
+    box-shadow: 0 15px 30px -10px rgba(15, 23, 42, 0.25);
+    margin-bottom: 24px;
+}
+.mu-card {
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
+    overflow: hidden;
+}
+.mu-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #ffffff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    flex-shrink: 0;
+}
+.mu-avatar-placeholder {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+</style>
 
-<?php if(isset($success)): ?>
-    <div class="alert alert-success py-2"><?php echo $success; ?></div>
-<?php endif; ?>
-<?php if(isset($error)): ?>
-    <div class="alert alert-danger py-2"><?php echo $error; ?></div>
-<?php endif; ?>
+<div class="container-fluid py-3">
 
-<div class="card border-0 shadow-sm rounded-4">
-    <div class="card-body p-0">
+    <!-- Hero Header Banner -->
+    <div class="mu-hero">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge bg-primary bg-opacity-25 text-white border border-primary border-opacity-50 rounded-pill px-3 py-1 small">
+                        <i class="fas fa-users me-1"></i> User Accounts
+                    </span>
+                    <span class="text-white-50 small"><?php echo $total_users; ?> registered users</span>
+                </div>
+                <h3 class="fw-bold mb-0 text-white">Customer & User Management</h3>
+            </div>
+            <div>
+                <button class="btn btn-primary px-3 py-2 rounded-3 fw-bold shadow-sm d-flex align-items-center gap-2" data-mdb-toggle="modal" data-mdb-target="#addUserModal">
+                    <i class="fas fa-user-plus"></i>
+                    <span>Add New User</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <?php if(isset($success)): ?>
+        <div class="alert alert-success rounded-3 py-2 px-3 mb-3 shadow-sm"><i class="fas fa-check-circle me-2"></i><?php echo $success; ?></div>
+    <?php endif; ?>
+    <?php if(isset($error)): ?>
+        <div class="alert alert-danger rounded-3 py-2 px-3 mb-3 shadow-sm"><i class="fas fa-exclamation-circle me-2"></i><?php echo $error; ?></div>
+    <?php endif; ?>
+
+    <!-- Table Container -->
+    <div class="mu-card">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table align-middle mb-0">
                 <thead class="bg-light">
                     <tr>
-                        <th class="ps-4">ID</th>
-                        <th>Name</th>
+                        <th class="ps-4">User Details</th>
                         <th>Email & Phone</th>
-                        <th>Address</th>
-                        <th>Role</th>
+                        <th>Shipping Address</th>
+                        <th>Account Role</th>
                         <th>Joined Date</th>
-                        <th class="pe-4 text-end">Actions</th>
+                        <th class="pe-4 text-end">Quick Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if($users && $users->num_rows > 0): ?>
                         <?php while($u = $users->fetch_assoc()): ?>
+                        <?php
+                            $uInitials = strtoupper(substr($u['name'], 0, 2));
+                        ?>
                         <tr>
-                            <td class="ps-4 fw-bold">#<?php echo $u['id']; ?></td>
-                            <td>
-                                <div class="d-flex align-items-center">
+                            <td class="ps-4">
+                                <div class="d-flex align-items-center gap-3">
                                     <?php if(!empty($u['profile_photo'])): ?>
-                                        <img src="../assets/images/<?php echo htmlspecialchars($u['profile_photo']); ?>" alt="Avatar" class="rounded-circle me-3 object-fit-cover" style="width: 40px; height: 40px; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                        <img src="../assets/images/<?php echo htmlspecialchars($u['profile_photo']); ?>" alt="Avatar" class="mu-avatar">
                                     <?php else: ?>
-                                        <i class="fas fa-user-circle fa-2x text-muted me-3"></i>
+                                        <div class="mu-avatar-placeholder"><?php echo $uInitials; ?></div>
                                     <?php endif; ?>
-                                    <span class="fw-bold"><?php echo htmlspecialchars($u['name']); ?></span>
+                                    <div>
+                                        <div class="fw-bold text-dark mb-0"><?php echo htmlspecialchars($u['name']); ?></div>
+                                        <small class="text-muted">ID: #<?php echo $u['id']; ?></small>
+                                    </div>
                                 </div>
                             </td>
                             <td>
-                                <div><?php echo htmlspecialchars($u['email']); ?></div>
-                                <small class="text-muted"><i class="fas fa-phone me-1"></i> <?php echo !empty($u['phone']) ? htmlspecialchars($u['phone']) : 'N/A'; ?></small>
+                                <div class="fw-semibold text-dark small"><?php echo htmlspecialchars($u['email']); ?></div>
+                                <small class="text-muted d-block"><i class="fas fa-phone me-1 text-primary"></i> <?php echo !empty($u['phone']) ? htmlspecialchars($u['phone']) : 'N/A'; ?></small>
                             </td>
                             <td>
                                 <?php if(!empty($u['address'])): ?>
-                                    <small><?php echo htmlspecialchars($u['address']); ?>, <br><?php echo htmlspecialchars($u['city']); ?>, <?php echo htmlspecialchars($u['state']); ?> <?php echo htmlspecialchars($u['zip_code']); ?><br><?php echo htmlspecialchars($u['country']); ?></small>
+                                    <small class="text-dark d-block"><?php echo htmlspecialchars($u['address']); ?></small>
+                                    <small class="text-muted"><?php echo htmlspecialchars($u['city']); ?>, <?php echo htmlspecialchars($u['state']); ?> <?php echo htmlspecialchars($u['zip_code']); ?></small>
                                 <?php else: ?>
-                                    <small class="text-muted">N/A</small>
+                                    <small class="text-muted">No address provided</small>
                                 <?php endif; ?>
                             </td>
                             <td>
                                 <?php if($u['role'] === 'admin'): ?>
-                                    <span class="badge bg-primary text-white px-2 py-1">Admin</span>
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1"><i class="fas fa-user-shield me-1"></i> Admin</span>
                                 <?php else: ?>
-                                    <span class="badge bg-secondary px-2 py-1">User</span>
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1"><i class="fas fa-user me-1"></i> Customer</span>
                                 <?php endif; ?>
                             </td>
-                            <td><?php echo date('M d, Y', strtotime($u['created_at'])); ?></td>
+                            <td>
+                                <span class="small text-muted fw-semibold"><i class="far fa-calendar-alt me-1"></i><?php echo date('M d, Y', strtotime($u['created_at'])); ?></span>
+                            </td>
                             <td class="pe-4 text-end">
-                                <div class="action-btns">
-                                    <button class="btn btn-primary btn-sm btn-custom edit-user-btn" 
+                                <div class="d-flex align-items-center justify-content-end gap-1">
+                                    <button class="btn btn-primary btn-sm rounded-3 px-2 py-1 edit-user-btn" 
                                         data-id="<?php echo $u['id']; ?>"
                                         data-name="<?php echo htmlspecialchars($u['name']); ?>"
                                         data-email="<?php echo htmlspecialchars($u['email']); ?>"
@@ -183,34 +246,35 @@ $total_pages = ceil($total_users / $limit);
                                         data-city="<?php echo htmlspecialchars($u['city']); ?>"
                                         data-state="<?php echo htmlspecialchars($u['state']); ?>"
                                         data-country="<?php echo htmlspecialchars($u['country']); ?>"
-                                        data-zip="<?php echo htmlspecialchars($u['zip_code']); ?>">
+                                        data-zip="<?php echo htmlspecialchars($u['zip_code']); ?>"
+                                        title="Edit User">
                                         <i class="fas fa-edit"></i>
                                     </button>
                                     <?php if($u['role'] === 'user'): ?>
-                                    <form method="POST" class="m-0" onsubmit="return confirm('Delete this user? This will also remove their orders.');">
-    <?php echo csrf_input(); ?>
+                                    <form method="POST" class="d-inline m-0 p-0" onsubmit="return confirm('Delete this user? This will also remove their orders.');">
+                                        <?php echo csrf_input(); ?>
                                         <input type="hidden" name="action" value="delete">
                                         <input type="hidden" name="id" value="<?php echo $u['id']; ?>">
-                                        <button type="submit" class="btn btn-danger btn-sm btn-custom px-3"><i class="fas fa-trash-alt"></i></button>
+                                        <button type="submit" class="btn btn-danger btn-sm rounded-3 px-2 py-1" title="Delete User"><i class="fas fa-trash-alt"></i></button>
                                     </form>
                                     <?php else: ?>
-                                    <button class="btn btn-secondary btn-sm btn-custom disabled px-3" title="Cannot delete admins"><i class="fas fa-trash-alt"></i></button>
+                                    <button class="btn btn-secondary btn-sm rounded-3 px-2 py-1 disabled" title="Cannot delete admins"><i class="fas fa-trash-alt"></i></button>
                                     <?php endif; ?>
                                 </div>
                             </td>
                         </tr>
                         <?php endwhile; ?>
                     <?php else: ?>
-                        <tr><td colspan="6" class="text-center py-4 text-muted">No users found.</td></tr>
+                        <tr><td colspan="6" class="text-center py-5 text-muted">No users found.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
         </div>
         
         <?php if($total_pages > 1): ?>
-        <div class="p-3 border-top">
+        <div class="p-3 border-top bg-light">
             <nav>
-                <ul class="pagination justify-content-center mb-0">
+                <ul class="pagination pagination-sm justify-content-center mb-0">
                     <?php for($i=1; $i<=$total_pages; $i++): ?>
                         <li class="page-item <?php echo $page == $i ? 'active' : ''; ?>">
                             <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>

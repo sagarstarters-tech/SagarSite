@@ -101,95 +101,156 @@ if ($seo_q) {
 }
 ?>
 
-<div class="row">
-    <div class="col-md-4 mb-4">
-        <div class="card border-0 shadow-sm rounded-4">
-            <div class="card-body p-4">
-                <h5 class="fw-bold mb-4">Add New Category</h5>
-                <?php if(isset($success)): ?>
-                    <div class="alert alert-success py-2"><?php echo $success; ?></div>
-                <?php endif; ?>
-                <form method="POST" enctype="multipart/form-data">
-    <?php echo csrf_input(); ?>
-                    <input type="hidden" name="action" value="add">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Category Name</label>
-                        <input type="text" name="name" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Slug (URL)</label>
-                        <input type="text" name="slug" class="form-control" placeholder="auto-generated if empty">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">SEO Title</label>
-                        <input type="text" name="seo_title" class="form-control">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">SEO Description</label>
-                        <textarea name="seo_description" class="form-control" rows="2"></textarea>
-                    </div>
-                    <div class="mb-4">
-                        <label class="form-label fw-bold">Category Image</label>
-                        <input type="file" name="image" class="form-control" accept="image/*">
-                        <div class="mt-2">
-                            <span class="badge bg-primary px-3 py-2 shadow-sm rounded-pill"><i class="fas fa-crop-alt me-2"></i>Rec. Size: 800x800px (1:1 Ratio)</span>
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-custom w-100">Add Category</button>
-                </form>
+<style>
+.mc-hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+    border-radius: 20px;
+    padding: 24px 28px;
+    color: #ffffff;
+    box-shadow: 0 15px 30px -10px rgba(15, 23, 42, 0.25);
+    margin-bottom: 24px;
+}
+.mc-card {
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
+    overflow: hidden;
+}
+.mc-thumb {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    object-fit: cover;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    flex-shrink: 0;
+}
+</style>
+
+<div class="container-fluid py-3">
+
+    <!-- Hero Header Banner -->
+    <div class="mc-hero">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge bg-primary bg-opacity-25 text-white border border-primary border-opacity-50 rounded-pill px-3 py-1 small">
+                        <i class="fas fa-tags me-1"></i> Catalog Structure
+                    </span>
+                    <span class="text-white-50 small"><?php echo $categories_res->num_rows; ?> active categories</span>
+                </div>
+                <h3 class="fw-bold mb-0 text-white">Category Management Hub</h3>
             </div>
         </div>
     </div>
-    
-    <div class="col-md-8">
-        <div class="card border-0 shadow-sm rounded-4">
-            <div class="card-body p-4">
-                <h5 class="fw-bold mb-4">Manage Categories</h5>
+
+    <?php if(isset($success)): ?>
+        <div class="alert alert-success rounded-3 py-2 px-3 mb-3 shadow-sm"><i class="fas fa-check-circle me-2"></i><?php echo $success; ?></div>
+    <?php endif; ?>
+
+    <div class="row g-4">
+        <!-- Add Category Form Card -->
+        <div class="col-lg-4">
+            <div class="mc-card p-4">
+                <h5 class="fw-bold text-dark mb-3"><i class="fas fa-plus-circle text-primary me-2"></i>Add New Category</h5>
+                <form method="POST" enctype="multipart/form-data">
+                    <?php echo csrf_input(); ?>
+                    <input type="hidden" name="action" value="add">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">Category Name</label>
+                        <input type="text" name="name" class="form-control rounded-3" required placeholder="e.g. Submersible Starters">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">Slug (URL)</label>
+                        <input type="text" name="slug" class="form-control rounded-3" placeholder="auto-generated if empty">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">SEO Title</label>
+                        <input type="text" name="seo_title" class="form-control rounded-3" placeholder="Page Title for Google">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">SEO Description</label>
+                        <textarea name="seo_description" class="form-control rounded-3" rows="2" placeholder="Meta description for search engines"></textarea>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-muted">Category Image</label>
+                        <input type="file" name="image" class="form-control rounded-3" accept="image/*">
+                        <div class="mt-2">
+                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1 small"><i class="fas fa-crop-alt me-1"></i>Rec. Size: 800x800px (1:1 Ratio)</span>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary fw-bold w-100 rounded-3 py-2 shadow-sm"><i class="fas fa-plus me-2"></i>Add Category</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Categories List Table Card -->
+        <div class="col-lg-8">
+            <div class="mc-card">
+                <div class="p-3 border-bottom bg-light d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-list text-primary me-2"></i>Active Categories List</h6>
+                    <span class="badge bg-secondary text-white"><?php echo $categories_res->num_rows; ?> Total</span>
+                </div>
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="table-light">
+                    <table class="table align-middle mb-0">
+                        <thead class="bg-light">
                             <tr>
-                                <th>ID</th>
-                                <th>Name</th>
-                                <th class="text-end pe-4">Actions</th>
+                                <th class="ps-4">Category Details</th>
+                                <th>Slug / URL</th>
+                                <th class="pe-4 text-end">Quick Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php while($c = $categories_res->fetch_assoc()): ?>
-                            <tr>
-                                <td class="fw-bold">
-                                    <div class="d-flex align-items-center">
-                                        <?php if(!empty($c['image'])): ?>
-                                            <img src="../assets/images/<?php echo htmlspecialchars($c['image']); ?>" class="rounded me-3 object-fit-cover" style="width: 40px; height: 40px;">
-                                        <?php else: ?>
-                                            <div class="bg-light rounded me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                                <i class="fas fa-folder text-muted"></i>
+                            <?php if($categories_res && $categories_res->num_rows > 0): ?>
+                                <?php 
+                                // Re-query or seek to 0 if needed
+                                $categories_res->data_seek(0);
+                                while($c = $categories_res->fetch_assoc()): 
+                                ?>
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <?php if(!empty($c['image'])): ?>
+                                                <img src="../assets/images/<?php echo htmlspecialchars($c['image']); ?>" class="mc-thumb">
+                                            <?php else: ?>
+                                                <div class="mc-thumb d-flex align-items-center justify-content-center">
+                                                    <i class="fas fa-folder text-secondary fs-5"></i>
+                                                </div>
+                                            <?php endif; ?>
+                                            <div>
+                                                <div class="fw-bold text-dark mb-0"><?php echo htmlspecialchars($c['name']); ?></div>
+                                                <small class="text-muted">ID: #<?php echo $c['id']; ?></small>
                                             </div>
-                                        <?php endif; ?>
-                                        <span>#<?php echo $c['id']; ?></span>
-                                    </div>
-                                </td>
-                                <td><?php echo htmlspecialchars($c['name']); ?></td>
-                                <td class="text-end pe-4">
-                                    <div class="action-btns">
-                                        <button class="btn btn-primary btn-sm btn-custom px-3 edit-category-btn" 
-                                            data-id="<?php echo $c['id']; ?>"
-                                            data-name="<?php echo htmlspecialchars($c['name']); ?>"
-                                            data-slug="<?php echo htmlspecialchars($c['slug'] ?? ''); ?>"
-                                            data-seo-title="<?php echo htmlspecialchars($category_seo[$c['id']]['meta_title'] ?? ''); ?>"
-                                            data-seo-description="<?php echo htmlspecialchars($category_seo[$c['id']]['meta_description'] ?? ''); ?>">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <form method="POST" class="m-0" onsubmit="return confirm('Are you sure you want to delete this category? All related products will also be deleted!');">
-    <?php echo csrf_input(); ?>
-                                            <input type="hidden" name="action" value="delete">
-                                            <input type="hidden" name="id" value="<?php echo $c['id']; ?>">
-                                            <button type="submit" class="btn btn-danger btn-sm btn-custom px-3"><i class="fas fa-trash-alt"></i></button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
-                            <?php endwhile; ?>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border px-2 py-1"><i class="fas fa-link me-1 text-muted"></i><?php echo htmlspecialchars($c['slug'] ?? ''); ?></span>
+                                    </td>
+                                    <td class="pe-4 text-end">
+                                        <div class="d-flex align-items-center justify-content-end gap-1">
+                                            <button class="btn btn-primary btn-sm rounded-3 px-2 py-1 edit-category-btn" 
+                                                data-id="<?php echo $c['id']; ?>"
+                                                data-name="<?php echo htmlspecialchars($c['name']); ?>"
+                                                data-slug="<?php echo htmlspecialchars($c['slug'] ?? ''); ?>"
+                                                data-seo-title="<?php echo htmlspecialchars($category_seo[$c['id']]['meta_title'] ?? ''); ?>"
+                                                data-seo-description="<?php echo htmlspecialchars($category_seo[$c['id']]['meta_description'] ?? ''); ?>"
+                                                title="Edit Category">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <form method="POST" class="d-inline m-0 p-0" onsubmit="return confirm('Are you sure you want to delete this category? All related products will also be deleted!');">
+                                                <?php echo csrf_input(); ?>
+                                                <input type="hidden" name="action" value="delete">
+                                                <input type="hidden" name="id" value="<?php echo $c['id']; ?>">
+                                                <button type="submit" class="btn btn-danger btn-sm rounded-3 px-2 py-1" title="Delete Category"><i class="fas fa-trash-alt"></i></button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <?php endwhile; ?>
+                            <?php else: ?>
+                                <tr><td colspan="3" class="text-center py-5 text-muted">No categories created yet.</td></tr>
+                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>

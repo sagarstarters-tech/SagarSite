@@ -82,36 +82,80 @@ if (isset($_GET['delete'])) {
 $banners = $conn->query("SELECT * FROM banners ORDER BY created_at DESC");
 ?>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="h3 mb-0 text-gray-800">Banner & Slider Management</h2>
-    <button class="btn btn-primary btn-custom" data-mdb-toggle="modal" data-mdb-target="#addBannerModal"><i class="fas fa-plus me-2"></i>Add New Banner</button>
-</div>
+<style>
+.mb-hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+    border-radius: 20px;
+    padding: 24px 28px;
+    color: #ffffff;
+    box-shadow: 0 15px 30px -10px rgba(15, 23, 42, 0.25);
+    margin-bottom: 24px;
+}
+.mb-card {
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
+    overflow: hidden;
+}
+.mb-thumb {
+    width: 140px;
+    height: 70px;
+    border-radius: 10px;
+    object-fit: contain;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+}
+</style>
 
-<?php if (isset($_GET['success'])): ?>
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <i class="fas fa-check-circle me-2"></i> <?php echo htmlspecialchars($_GET['success']); ?>
-        <button type="button" class="btn-close" data-mdb-dismiss="alert" aria-label="Close"></button>
+<div class="container-fluid py-3">
+
+    <!-- Hero Header Banner -->
+    <div class="mb-hero">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge bg-primary bg-opacity-25 text-white border border-primary border-opacity-50 rounded-pill px-3 py-1 small">
+                        <i class="fas fa-images me-1"></i> Promotional Banners
+                    </span>
+                    <span class="text-white-50 small"><?php echo $banners ? $banners->num_rows : 0; ?> active banners</span>
+                </div>
+                <h3 class="fw-bold mb-0 text-white">Banner & Slider Management</h3>
+            </div>
+            <div>
+                <button class="btn btn-primary px-3 py-2 rounded-3 fw-bold shadow-sm d-flex align-items-center gap-2" data-mdb-toggle="modal" data-mdb-target="#addBannerModal">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Add New Banner</span>
+                </button>
+            </div>
+        </div>
     </div>
-<?php endif; ?>
 
-<div class="card border-0 shadow-sm rounded-4">
-    <div class="card-body p-0">
+    <?php if (isset($_GET['success'])): ?>
+        <div class="alert alert-success rounded-3 py-2 px-3 mb-3 shadow-sm alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i> <?php echo htmlspecialchars($_GET['success']); ?>
+            <button type="button" class="btn-close" data-mdb-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <?php endif; ?>
+
+    <!-- Table Container -->
+    <div class="mb-card">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table align-middle mb-0">
                 <thead class="bg-light">
                     <tr>
-                        <th class="px-4 py-3">Image</th>
-                        <th class="py-3">Details</th>
+                        <th class="ps-4 py-3">Banner Preview</th>
+                        <th class="py-3">Heading & Details</th>
                         <th class="py-3">Status</th>
-                        <th class="px-4 py-3 text-end">Actions</th>
+                        <th class="pe-4 py-3 text-end">Quick Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if($banners && $banners->num_rows > 0): ?>
                         <?php while($banner = $banners->fetch_assoc()): ?>
                         <tr>
-                            <td class="px-4">
-                                <img src="<?php echo ASSETS_URL; ?>/images/<?php echo htmlspecialchars($banner['image']); ?>" class="img-thumbnail" style="width: 120px; height: 60px; object-fit: contain; background-color: #fff;" alt="Banner">
+                            <td class="ps-4 py-3">
+                                <img src="<?php echo ASSETS_URL; ?>/images/<?php echo htmlspecialchars($banner['image']); ?>" class="mb-thumb" alt="Banner">
                             </td>
                             <td>
                                 <strong><?php echo htmlspecialchars($banner['heading'] ?: '(No Heading)'); ?></strong><br>
@@ -257,6 +301,7 @@ document.querySelectorAll('.edit-banner-btn').forEach(button => {
     });
 });
 </script>
+</div>
 
 <?php include 'admin_footer.php'; ?>
 

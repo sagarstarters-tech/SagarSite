@@ -26,25 +26,71 @@ $wa_settings = $wa_q ? $wa_q->fetch_assoc() : null;
 $wa_enabled = ($wa_settings && $wa_settings['is_enabled'] == 1);
 ?>
 
-<!-- Stats Cards -->
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="fw-bold mb-0"><i class="fas fa-file-invoice me-2 text-primary"></i>Invoices</h4>
-    <div class="d-flex gap-2">
-        <button class="btn btn-primary btn-custom px-3" onclick="bulkGenerate()" id="bulkGenBtn">
-            <i class="fas fa-magic me-2"></i>Generate All Pending
-        </button>
-        <button class="btn btn-outline-secondary btn-custom px-3" data-mdb-toggle="modal" data-mdb-target="#invoiceSettingsModal">
-            <i class="fas fa-cog me-2"></i>Settings
-        </button>
-    </div>
-</div>
+<style>
+.mi-hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+    border-radius: 20px;
+    padding: 24px 28px;
+    color: #ffffff;
+    box-shadow: 0 15px 30px -10px rgba(15, 23, 42, 0.25);
+    margin-bottom: 24px;
+}
+.mi-btn-white {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border: 1px solid #ffffff !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18) !important;
+    transition: all 0.2s ease !important;
+}
+.mi-btn-white:hover {
+    background-color: #f1f5f9 !important;
+    color: #2563eb !important;
+}
+.mi-btn-white *, button.mi-btn-white * {
+    background: transparent !important;
+    color: #0f172a !important;
+    box-shadow: none !important;
+}
+.mi-btn-white::before, .mi-btn-white::after {
+    display: none !important;
+    content: none !important;
+}
+</style>
 
-<?php if (isset($settingsSaved)): ?>
-    <div class="alert alert-success py-2 alert-dismissible fade show" role="alert">
-        <i class="fas fa-check-circle me-2"></i>Invoice settings saved successfully.
-        <button type="button" class="btn-close" data-mdb-dismiss="alert"></button>
+<div class="container-fluid py-3">
+
+    <!-- Hero Header Banner -->
+    <div class="mi-hero">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge bg-primary bg-opacity-25 text-white border border-primary border-opacity-50 rounded-pill px-3 py-1 small">
+                        <i class="fas fa-file-invoice me-1"></i> Automated Billing
+                    </span>
+                    <span class="text-white-50 small"><?php echo (int)$stats['total']; ?> total invoices generated</span>
+                </div>
+                <h3 class="fw-bold mb-0 text-white">Billing & Invoice Engine</h3>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <button class="btn btn-primary px-3 py-2 rounded-3 fw-bold shadow-sm d-flex align-items-center gap-2" onclick="bulkGenerate()" id="bulkGenBtn">
+                    <i class="fas fa-magic"></i>
+                    <span>Generate All Pending</span>
+                </button>
+                <button class="btn mi-btn-white px-3 py-2 rounded-3 d-flex align-items-center gap-2" data-mdb-toggle="modal" data-mdb-target="#invoiceSettingsModal">
+                    <i class="fas fa-cog text-primary"></i>
+                    <span>Invoice Settings</span>
+                </button>
+            </div>
+        </div>
     </div>
-<?php endif; ?>
+
+    <?php if (isset($settingsSaved)): ?>
+        <div class="alert alert-success rounded-3 py-2 px-3 mb-3 shadow-sm alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>Invoice settings saved successfully.
+            <button type="button" class="btn-close" data-mdb-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
 
 <div id="alertArea"></div>
 
@@ -407,5 +453,6 @@ function showAlert(type, msg) {
         `<div class="alert alert-${type} py-2 alert-dismissible fade show"><i class="fas fa-${type==='success'?'check-circle':'exclamation-circle'} me-2"></i>${msg}<button type="button" class="btn-close" data-mdb-dismiss="alert"></button></div>`;
 }
 </script>
+</div>
 
 <?php include 'admin_footer.php'; ?>
