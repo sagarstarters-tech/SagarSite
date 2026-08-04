@@ -254,14 +254,17 @@ class AbandonedCartRepository {
             $prevColCheck = " AND ac.{$prevCol} IS NOT NULL";
         }
 
+        // FIXED: Use updated_at (last cart activity time) instead of created_at
+        // A cart is "abandoned" from the moment the user last touched it (updated_at),
+        // not from when the cart record was first created.
         $sql = "SELECT ac.*, u.name AS customer_name, u.phone AS customer_phone, u.email AS customer_email
                 FROM abandoned_carts ac
                 LEFT JOIN users u ON ac.user_id = u.id
                 WHERE ac.status = 'active'
                   AND ac.{$col} IS NULL
                   {$prevColCheck}
-                  AND ac.created_at <= DATE_SUB(NOW(), INTERVAL ? MINUTE)
-                ORDER BY ac.created_at ASC
+                  AND ac.updated_at <= DATE_SUB(NOW(), INTERVAL ? MINUTE)
+                ORDER BY ac.updated_at ASC
                 LIMIT 50";
 
         $stmt = $this->conn->prepare($sql);
@@ -277,9 +280,11 @@ class AbandonedCartRepository {
         return $carts;
     }
 
+
     /**
      * Mark a specific reminder as sent.
      */
+
     public function markReminderSent($cartId, $level) {
         if (!in_array($level, [1, 2, 3, 4])) return false;
         $col = "reminder_{$level}_sent";

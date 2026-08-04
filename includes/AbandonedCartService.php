@@ -78,38 +78,44 @@ class AbandonedCartService {
      * Process all due automatic reminders (called by cron).
      */
     public function processAutoReminders() {
-        if (!($this->settings['is_enabled'] ?? '1')) {
+        // Fix: explicit string comparison (DB returns strings, not booleans)
+        if (($this->settings['is_enabled'] ?? '0') != '1') {
             return ['processed' => 0, 'errors' => 0, 'message' => 'Cart abandonment feature is disabled in settings'];
         }
 
-        $processed = 0;
-        $errors = 0;
+        $processed    = 0;
+        $errors       = 0;
         $errorDetails = [];
+        $skipped      = 0;
 
         // Auto-expire old carts first
         $expireDays = intval($this->settings['auto_expire_days'] ?? 7);
         $this->repo->autoExpire($expireDays);
+        error_log("[AbandonedCart] Auto-expired carts older than {$expireDays} days.");
 
         // Process each reminder level
         for ($level = 1; $level <= 4; $level++) {
-            $delay = intval($this->settings["reminder_{$level}_delay"] ?? 30);
+            $delay    = intval($this->settings["reminder_{$level}_delay"] ?? 30);
             $dueCarts = $this->repo->getDueReminders($level, $delay);
+
+            error_log("[AbandonedCart] Level {$level}: delay={$delay}min, due=" . count($dueCarts) . " carts");
 
             foreach ($dueCarts as $cart) {
                 try {
                     $result = $this->sendReminder($cart['id'], $level);
                     if (!empty($result['success'])) {
                         $processed++;
+                        error_log("[AbandonedCart] ✓ Cart #{$cart['id']} L{$level} sent to " . ($cart['customer_phone'] ?? 'unknown'));
                     } else {
                         $errors++;
-                        if (!empty($result['error'])) {
-                            $errorDetails[] = "Cart #{$cart['id']}: " . $result['error'];
-                        }
+                        $errMsg = $result['error'] ?? 'Unknown error';
+                        $errorDetails[] = "Cart #{$cart['id']} L{$level}: " . $errMsg;
+                        error_log("[AbandonedCart] ✗ Cart #{$cart['id']} L{$level} failed: " . $errMsg);
                     }
                 } catch (\Throwable $e) {
                     $errors++;
-                    $errorDetails[] = "Cart #{$cart['id']}: " . $e->getMessage();
-                    error_log("[AbandonedCart] Reminder L{$level} error for cart #{$cart['id']}: " . $e->getMessage());
+                    $errorDetails[] = "Cart #{$cart['id']} L{$level}: " . $e->getMessage();
+                    error_log("[AbandonedCart] Exception L{$level} cart #{$cart['id']}: " . $e->getMessage());
                 }
             }
         }
@@ -120,10 +126,10 @@ class AbandonedCartService {
         }
 
         return [
-            'processed'    => $processed,
-            'errors'       => $errors,
+            'processed'     => $processed,
+            'errors'        => $errors,
             'error_details' => array_unique($errorDetails),
-            'message'      => $msg
+            'message'       => $msg
         ];
     }
 
