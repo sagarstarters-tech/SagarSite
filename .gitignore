@@ -10,9 +10,18 @@
 Thumbs.db
 .DS_Store
 
-# Uploads (optional - keep empty dir)
+# Prevent Git from tracking or modifying user-uploaded images in assets/images/
+/assets/images/*
+!/assets/images/.gitkeep
+!/assets/images/placeholder.svg
+!/assets/images/placeholder.png
+!/assets/images/no-image.png
+!/assets/images/google-icon.svg
+
+# User Uploads Directory Protection (git-ignored)
 /uploads/*
 !/uploads/.gitkeep
+!/uploads/.gitignore
 
 # Vendor (if composer is used)
 # Backups & SQL Dumps

@@ -164,7 +164,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($_FILES['image']['error'] === 0) {
                 $ext = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
                 $image = uniqid() . '.' . $ext;
-                if (!move_uploaded_file($_FILES['image']['tmp_name'], '../assets/images/' . $image)) {
+                if (move_uploaded_file($_FILES['image']['tmp_name'], '../assets/images/' . $image)) {
+                    @copy('../assets/images/' . $image, '../uploads/' . $image);
+                } else {
                     $error = "Failed to move uploaded main image to assets/images/. Please check directory permissions.";
                     $image = null;
                 }
@@ -176,8 +178,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Use NULL in SQL when no image is uploaded, not empty string
         $image_sql = ($image !== null) ? "'" . $conn->real_escape_string($image) . "'" : "NULL";
         $sql = "INSERT INTO products (name, slug, short_description, description, features, meta_description, category_id, product_type, download_file, download_url, download_limit, download_expiry_days, regular_price, sale_price, price, sku, brand, stock, shipping_cost, weight, length, width, height, cod_available, is_trending, cod_charge, image, image_fit) VALUES ('$name', '$slug', '$short_desc', '$desc', '$features', '$meta_desc', $cat_id, '$product_type', '$download_file', '$download_url', $download_limit, $download_expiry, $regular_price, $sale_price, $price, '$sku', '$brand', $stock, $shipping_cost, $weight, $length, $width, $height, $cod_available, $is_trending, $cod_charge_sql, $image_sql, '$image_fit')";
-
-
 
         if ($conn->query($sql)) {
             $product_id = $conn->insert_id;
@@ -199,6 +199,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $ext = pathinfo($_FILES['gallery']['name'][$i], PATHINFO_EXTENSION);
                         $g_image = uniqid('gal_') . '.' . $ext;
                         if (move_uploaded_file($_FILES['gallery']['tmp_name'][$i], '../assets/images/' . $g_image)) {
+                            @copy('../assets/images/' . $g_image, '../uploads/' . $g_image);
                             $conn->query("INSERT INTO product_images (product_id, image, position) VALUES ($product_id, '$g_image', $i)");
                         }
                     }
@@ -274,6 +275,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $ext = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
                 $image = uniqid() . '.' . $ext;
                 if (move_uploaded_file($_FILES['image']['tmp_name'], '../assets/images/' . $image)) {
+                     @copy('../assets/images/' . $image, '../uploads/' . $image);
                      $img_q = $conn->query("SELECT image FROM products WHERE id=$id")->fetch_assoc();
                      if ($img_q && $img_q['image']) {
                          $old_main_img = $conn->real_escape_string($img_q['image']);
