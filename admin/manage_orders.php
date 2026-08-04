@@ -72,62 +72,180 @@ $wa_settings = $wa_q ? $wa_q->fetch_assoc() : null;
 $wa_enabled = ($wa_settings && $wa_settings['is_enabled'] == 1);
 ?>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="fw-bold mb-0">Manage Orders</h4>
-    <?php if ($total_orders > 0): ?>
-        <form method="POST" class="m-0" onsubmit="return confirm('WARNING: This will permanently delete ALL orders and their associated items from the database. This action cannot be undone. Are you absolutely sure?');">
-    <?php echo csrf_input(); ?>
-            <input type="hidden" name="action" value="clear_all">
-            <button type="submit" class="btn btn-outline-danger btn-sm px-3"><i class="fas fa-trash-alt me-2"></i>Clear All Data</button>
-        </form>
+<style>
+.mo-hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+    border-radius: 20px;
+    padding: 24px 28px;
+    color: #ffffff;
+    box-shadow: 0 15px 30px -10px rgba(15, 23, 42, 0.25);
+    margin-bottom: 24px;
+}
+.mo-filter-tabs {
+    background: #f1f5f9;
+    padding: 5px;
+    border-radius: 12px;
+    display: inline-flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 20px;
+}
+.mo-filter-tab {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #64748b;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+.mo-filter-tab:hover { color: #0f172a; }
+.mo-filter-tab.active {
+    background: #ffffff;
+    color: #0f172a;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+.mo-table-container {
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
+    overflow: hidden;
+}
+.mo-avatar-circle {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.mo-action-btn-group {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+}
+.mo-btn-danger-white {
+    background-color: #ffffff !important;
+    color: #dc2626 !important;
+    border: 1px solid #ffffff !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15) !important;
+    transition: all 0.2s ease !important;
+}
+.mo-btn-danger-white:hover {
+    background-color: #fef2f2 !important;
+    color: #991b1b !important;
+}
+</style>
+
+<div class="container-fluid py-3">
+
+    <!-- Hero Banner -->
+    <div class="mo-hero">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge bg-primary bg-opacity-25 text-white border border-primary border-opacity-50 rounded-pill px-3 py-1 small">
+                        <i class="fas fa-shopping-bag me-1"></i> Store Orders
+                    </span>
+                    <span class="text-white-50 small"><?php echo $total_orders; ?> total orders found</span>
+                </div>
+                <h3 class="fw-bold mb-0 text-white">Orders Management Hub</h3>
+            </div>
+            <div>
+                <?php if ($total_orders > 0): ?>
+                    <form method="POST" class="m-0" onsubmit="return confirm('WARNING: This will permanently delete ALL orders and their associated items from the database. This action cannot be undone. Are you absolutely sure?');">
+                        <?php echo csrf_input(); ?>
+                        <input type="hidden" name="action" value="clear_all">
+                        <button type="submit" class="btn mo-btn-danger-white px-3 py-2 rounded-3 d-flex align-items-center gap-2">
+                            <i class="fas fa-trash-alt"></i>
+                            <span>Clear All Orders</span>
+                        </button>
+                    </form>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+
+    <?php if(isset($success)): ?>
+        <div class="alert alert-success rounded-3 py-2 px-3 mb-3 shadow-sm"><i class="fas fa-check-circle me-2"></i><?php echo $success; ?></div>
     <?php endif; ?>
-</div>
 
-<?php if(isset($success)): ?>
-    <div class="alert alert-success py-2"><?php echo $success; ?></div>
-<?php endif; ?>
+    <!-- Filter Tabs -->
+    <div class="mo-filter-tabs">
+        <a href="?status=all" class="mo-filter-tab <?php echo $status_filter === 'all' ? 'active' : ''; ?>"><i class="fas fa-list-ul me-1"></i> All Orders</a>
+        <a href="?status=pending" class="mo-filter-tab <?php echo $status_filter === 'pending' ? 'active' : ''; ?>"><i class="fas fa-clock text-warning me-1"></i> Pending</a>
+        <a href="?status=processing" class="mo-filter-tab <?php echo $status_filter === 'processing' ? 'active' : ''; ?>"><i class="fas fa-cog text-primary me-1"></i> Processing</a>
+        <a href="?status=shipped" class="mo-filter-tab <?php echo $status_filter === 'shipped' ? 'active' : ''; ?>"><i class="fas fa-truck text-info me-1"></i> Shipped</a>
+        <a href="?status=delivered" class="mo-filter-tab <?php echo $status_filter === 'delivered' ? 'active' : ''; ?>"><i class="fas fa-check-circle text-success me-1"></i> Delivered</a>
+        <a href="?status=completed" class="mo-filter-tab <?php echo $status_filter === 'completed' ? 'active' : ''; ?>"><i class="fas fa-box text-success me-1"></i> Completed</a>
+        <a href="?status=cancelled" class="mo-filter-tab <?php echo $status_filter === 'cancelled' ? 'active' : ''; ?>"><i class="fas fa-times-circle text-secondary me-1"></i> Cancelled</a>
+    </div>
 
-<div class="card border-0 shadow-sm rounded-4">
-    <div class="card-body p-0">
+    <!-- Table Container -->
+    <div class="mo-table-container">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table align-middle mb-0">
                 <thead class="bg-light">
                     <tr>
                         <th class="ps-4">Order ID</th>
                         <th>Customer</th>
-                        <th>Date</th>
-                        <th>Total</th>
+                        <th>Date & Time</th>
+                        <th>Order Total</th>
                         <th>Payment</th>
-                        <th>Status</th>
-                        <th class="pe-4 text-end">Actions</th>
+                        <th>Order Status</th>
+                        <th class="pe-4 text-end">Quick Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if($orders && $orders->num_rows > 0): ?>
                         <?php while($o = $orders->fetch_assoc()): ?>
+                        <?php
+                            $cName = $o['user_name'] ?? 'Guest';
+                            $cInitials = strtoupper(substr($cName, 0, 2));
+                        ?>
                         <tr>
-                            <td class="ps-4 fw-bold">#<?php echo $o['id']; ?></td>
-                            <td>
-                                <div class="fw-bold"><?php echo htmlspecialchars($o['user_name']); ?></div>
-                                <small class="text-muted"><?php echo htmlspecialchars($o['user_email']); ?></small>
+                            <td class="ps-4">
+                                <span class="badge bg-dark text-white rounded-3 px-2 py-1 fs-6">#<?php echo $o['id']; ?></span>
                             </td>
-                            <td><?php echo date('M d, Y H:i', strtotime($o['created_at'])); ?></td>
-                            <td class="fw-bold"><?php echo $global_currency; ?><?php echo number_format($o['total_amount'], 2); ?></td>
+                            <td>
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="mo-avatar-circle"><?php echo $cInitials; ?></div>
+                                    <div>
+                                        <div class="fw-bold text-dark mb-0"><?php echo htmlspecialchars($o['user_name']); ?></div>
+                                        <small class="text-muted d-block"><?php echo htmlspecialchars($o['user_email']); ?></small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="small fw-semibold text-muted"><i class="far fa-calendar-alt me-1"></i><?php echo date('M d, Y H:i', strtotime($o['created_at'])); ?></span>
+                            </td>
+                            <td>
+                                <div class="fw-bold text-dark fs-6"><?php echo $global_currency; ?><?php echo number_format($o['total_amount'], 2); ?></div>
+                            </td>
                             <td>
                                 <?php if($o['payment_method'] === 'cod'): ?>
-                                    <span class="badge bg-success bg-opacity-10 text-success border border-success"><i class="fas fa-money-bill-wave me-1"></i> COD</span>
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1"><i class="fas fa-money-bill-wave me-1"></i> COD</span>
                                 <?php elseif($o['payment_method'] === 'phonepe'): ?>
-                                    <span class="badge bg-info bg-opacity-10 text-info border border-info"><i class="fas fa-mobile-alt me-1"></i> PhonePe</span>
+                                    <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-2 py-1"><i class="fas fa-mobile-alt me-1"></i> PhonePe</span>
                                 <?php else: ?>
-                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary"><i class="fas fa-credit-card me-1"></i> Card</span>
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1"><i class="fas fa-credit-card me-1"></i> Card</span>
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <form method="POST" class="d-flex align-items-center">
-    <?php echo csrf_input(); ?>
+                                <form method="POST" class="d-flex align-items-center m-0">
+                                    <?php echo csrf_input(); ?>
                                     <input type="hidden" name="action" value="update_status">
                                     <input type="hidden" name="id" value="<?php echo $o['id']; ?>">
-                                    <select name="status" class="form-select form-select-sm me-2" style="width: 120px;" onchange="this.form.submit()">
+                                    <select name="status" class="form-select form-select-sm rounded-3 fw-semibold border-secondary-subtle" style="min-width: 130px;" onchange="this.form.submit()">
                                         <option value="pending" <?php echo $o['status']=='pending'?'selected':''; ?>>Pending</option>
                                         <option value="processing" <?php echo $o['status']=='processing'?'selected':''; ?>>Processing</option>
                                         <option value="partially_shipped" <?php echo $o['status']=='partially_shipped'?'selected':''; ?>>Partially Shipped</option>
@@ -139,42 +257,42 @@ $wa_enabled = ($wa_settings && $wa_settings['is_enabled'] == 1);
                                 </form>
                             </td>
                             <td class="pe-4 text-end">
-                                <div class="action-btns">
+                                <div class="mo-action-btn-group">
                                     <?php if ($wa_enabled): ?>
-                                        <button type="button" class="btn btn-success btn-sm btn-custom text-white px-3 me-2" title="Send WhatsApp Update" onclick="openWhatsAppModal(<?php echo $o['id']; ?>)">
+                                        <button type="button" class="btn btn-sm btn-success rounded-3 px-2 py-1" title="Send WhatsApp Update" onclick="openWhatsAppModal(<?php echo $o['id']; ?>)">
                                             <i class="fab fa-whatsapp"></i>
                                         </button>
                                     <?php endif; ?>
-                                    <a href="order_details.php?id=<?php echo $o['id']; ?>" class="btn btn-primary btn-sm btn-custom px-3 me-2" title="View Order Details">
+                                    <a href="order_details.php?id=<?php echo $o['id']; ?>" class="btn btn-sm btn-primary rounded-3 px-2 py-1" title="View Order Details">
                                         <i class="fas fa-eye"></i>
                                     </a>
-                                    <a href="invoice_view.php?order_id=<?php echo $o['id']; ?>" target="_blank" class="btn btn-dark btn-sm btn-custom px-3 me-2" title="View Invoice">
+                                    <a href="invoice_view.php?order_id=<?php echo $o['id']; ?>" target="_blank" class="btn btn-sm btn-dark rounded-3 px-2 py-1" title="View Invoice">
                                         <i class="fas fa-file-invoice"></i>
                                     </a>
-                                    <a href="manage_order_tracking.php?id=<?php echo $o['id']; ?>" class="btn btn-info btn-sm btn-custom text-white px-3 me-2" title="Update Tracking">
+                                    <a href="manage_order_tracking.php?id=<?php echo $o['id']; ?>" class="btn btn-sm btn-info text-white rounded-3 px-2 py-1" title="Update Tracking">
                                         <i class="fas fa-truck-fast"></i>
                                     </a>
-                                    <form method="POST" class="m-0" onsubmit="return confirm('Delete this order completely?');">
-    <?php echo csrf_input(); ?>
+                                    <form method="POST" class="d-inline m-0" onsubmit="return confirm('Delete this order completely?');">
+                                        <?php echo csrf_input(); ?>
                                         <input type="hidden" name="action" value="delete">
                                         <input type="hidden" name="id" value="<?php echo $o['id']; ?>">
-                                        <button type="submit" class="btn btn-danger btn-sm btn-custom px-3"><i class="fas fa-trash-alt"></i></button>
+                                        <button type="submit" class="btn btn-sm btn-danger rounded-3 px-2 py-1" title="Delete Order"><i class="fas fa-trash-alt"></i></button>
                                     </form>
                                 </div>
                             </td>
                         </tr>
                         <?php endwhile; ?>
                     <?php else: ?>
-                        <tr><td colspan="7" class="text-center py-4 text-muted">No orders found.</td></tr>
+                        <tr><td colspan="7" class="text-center py-5 text-muted">No orders found matching criteria.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
         </div>
         
         <?php if($total_pages > 1): ?>
-        <div class="p-3 border-top">
+        <div class="p-3 border-top bg-light">
             <nav>
-                <ul class="pagination justify-content-center mb-0">
+                <ul class="pagination pagination-sm justify-content-center mb-0">
                     <?php for($i=1; $i<=$total_pages; $i++): ?>
                         <li class="page-item <?php echo $page == $i ? 'active' : ''; ?>">
                             <a class="page-link" href="?page=<?php echo $i; ?>&status=<?php echo htmlspecialchars($status_filter); ?>"><?php echo $i; ?></a>

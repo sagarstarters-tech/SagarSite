@@ -405,65 +405,134 @@ if ($seo_q) {
     }
 }
 ?>
+<style>
+.mp-hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+    border-radius: 20px;
+    padding: 24px 28px;
+    color: #ffffff;
+    box-shadow: 0 15px 30px -10px rgba(15, 23, 42, 0.25);
+    margin-bottom: 24px;
+}
+.mp-btn-white {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border: 1px solid #ffffff !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18) !important;
+    transition: all 0.2s ease !important;
+}
+.mp-btn-white:hover {
+    background-color: #f1f5f9 !important;
+    color: #2563eb !important;
+}
+.mp-btn-white *, button.mp-btn-white * {
+    background: transparent !important;
+    color: #0f172a !important;
+    box-shadow: none !important;
+}
+.mp-btn-white::before, .mp-btn-white::after {
+    display: none !important;
+    content: none !important;
+}
+.mp-table-container {
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
+    overflow: hidden;
+}
+.mp-thumb {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    object-fit: cover;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    flex-shrink: 0;
+}
+</style>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="fw-bold mb-0">Manage Products</h4>
-    <div class="d-flex gap-2">
-        <a href="export_products.php" class="btn btn-success btn-custom px-3" title="Export Products to CSV"><i class="fas fa-file-export me-2"></i>Export</a>
-        <button class="btn btn-info btn-custom px-3 text-white" data-mdb-toggle="modal" data-mdb-target="#importProductModal" title="Import Products"><i class="fas fa-file-import me-2"></i>Import</button>
-        <button class="btn btn-primary btn-custom px-3" data-mdb-toggle="modal" data-mdb-target="#addProductModal" <?php echo !$has_cats ? 'disabled' : ''; ?>><i class="fas fa-plus me-2"></i>Add Product</button>
-    </div>
-</div>
+<div class="container-fluid py-3">
 
-<?php if(!$has_cats): ?>
-    <div class="alert alert-warning">You must create at least one category before adding products.</div>
-<?php endif; ?>
-
-<?php if(isset($success)): ?>
-    <div class="alert alert-success py-2"><?php echo $success; ?></div>
-<?php endif; ?>
-
-<?php if(isset($error)): ?>
-    <div class="alert alert-danger py-2"><?php echo htmlspecialchars($error); ?></div>
-<?php endif; ?>
-
-<?php if(isset($_SESSION['import_success'])): ?>
-    <div class="alert alert-success py-3 d-flex align-items-center">
-        <i class="fas fa-check-circle fa-2x me-3"></i>
-        <div>
-            <h6 class="fw-bold mb-1">Import Report</h6>
-            <?php echo $_SESSION['import_success']; ?>
+    <!-- Hero Header Banner -->
+    <div class="mp-hero">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge bg-primary bg-opacity-25 text-white border border-primary border-opacity-50 rounded-pill px-3 py-1 small">
+                        <i class="fas fa-boxes me-1"></i> Catalog Inventory
+                    </span>
+                    <span class="text-white-50 small"><?php echo $total_products; ?> total products in database</span>
+                </div>
+                <h3 class="fw-bold mb-0 text-white">Product Catalog Management</h3>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <a href="export_products.php" class="btn mp-btn-white px-3 py-2 rounded-3 d-flex align-items-center gap-2" title="Export Products to CSV">
+                    <i class="fas fa-file-export text-success"></i>
+                    <span>Export CSV</span>
+                </a>
+                <button class="btn mp-btn-white px-3 py-2 rounded-3 d-flex align-items-center gap-2" data-mdb-toggle="modal" data-mdb-target="#importProductModal" title="Import Products">
+                    <i class="fas fa-file-import text-info"></i>
+                    <span>Import Products</span>
+                </button>
+                <button class="btn btn-primary px-3 py-2 rounded-3 fw-bold shadow-sm d-flex align-items-center gap-2" data-mdb-toggle="modal" data-mdb-target="#addProductModal" <?php echo !$has_cats ? 'disabled' : ''; ?>>
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Add New Product</span>
+                </button>
+            </div>
         </div>
     </div>
-    <?php unset($_SESSION['import_success']); ?>
-<?php endif; ?>
 
-<?php if(isset($_SESSION['import_errors']) && !empty($_SESSION['import_errors'])): ?>
-    <div class="alert alert-warning py-3">
-        <h6 class="fw-bold text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Import Discrepancies (<?php echo count($_SESSION['import_errors']); ?> issues found)</h6>
-        <div style="max-height: 150px; overflow-y: auto; font-size: 0.9em;" class="bg-light p-2 rounded border mt-2">
-            <ul class="mb-0 text-muted ps-3">
-                <?php foreach($_SESSION['import_errors'] as $err): ?>
-                    <li><?php echo htmlspecialchars($err); ?></li>
-                <?php endforeach; ?>
-            </ul>
+    <?php if(!$has_cats): ?>
+        <div class="alert alert-warning rounded-3 shadow-sm"><i class="fas fa-exclamation-triangle me-2"></i>You must create at least one category before adding products.</div>
+    <?php endif; ?>
+
+    <?php if(isset($success)): ?>
+        <div class="alert alert-success rounded-3 py-2 px-3 mb-3 shadow-sm"><i class="fas fa-check-circle me-2"></i><?php echo $success; ?></div>
+    <?php endif; ?>
+
+    <?php if(isset($error)): ?>
+        <div class="alert alert-danger rounded-3 py-2 px-3 mb-3 shadow-sm"><i class="fas fa-exclamation-circle me-2"></i><?php echo htmlspecialchars($error); ?></div>
+    <?php endif; ?>
+
+    <?php if(isset($_SESSION['import_success'])): ?>
+        <div class="alert alert-success rounded-3 py-3 px-3 shadow-sm d-flex align-items-center mb-3">
+            <i class="fas fa-check-circle fa-2x me-3"></i>
+            <div>
+                <h6 class="fw-bold mb-1">Import Report</h6>
+                <?php echo $_SESSION['import_success']; ?>
+            </div>
         </div>
-    </div>
-    <?php unset($_SESSION['import_errors']); ?>
-<?php endif; ?>
+        <?php unset($_SESSION['import_success']); ?>
+    <?php endif; ?>
 
-<div class="card border-0 shadow-sm rounded-4">
-    <div class="card-body p-0">
+    <?php if(isset($_SESSION['import_errors']) && !empty($_SESSION['import_errors'])): ?>
+        <div class="alert alert-warning rounded-3 py-3 px-3 shadow-sm mb-3">
+            <h6 class="fw-bold text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Import Discrepancies (<?php echo count($_SESSION['import_errors']); ?> issues found)</h6>
+            <div style="max-height: 150px; overflow-y: auto; font-size: 0.9em;" class="bg-light p-2 rounded border mt-2">
+                <ul class="mb-0 text-muted ps-3">
+                    <?php foreach($_SESSION['import_errors'] as $err): ?>
+                        <li><?php echo htmlspecialchars($err); ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+        </div>
+        <?php unset($_SESSION['import_errors']); ?>
+    <?php endif; ?>
+
+    <!-- Table Container -->
+    <div class="mp-table-container">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table align-middle mb-0">
                 <thead class="bg-light">
                     <tr>
-                        <th class="ps-4">Product</th>
+                        <th class="ps-4">Product Details</th>
                         <th>Category</th>
                         <th>Trending</th>
                         <th>Price</th>
-                        <th>Stock</th>
-                        <th class="pe-4 text-end">Actions</th>
+                        <th>Stock Level</th>
+                        <th class="pe-4 text-end">Quick Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -471,45 +540,48 @@ if ($seo_q) {
                         <?php while($p = $products->fetch_assoc()): ?>
                         <tr>
                             <td class="ps-4">
-                                <div class="d-flex align-items-center">
-                                    <img src="<?php echo htmlspecialchars(resolve_product_image_url($p['image'] ?? '', $conn, $p['id'])); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="rounded" style="width: 50px; height: 50px; object-fit: <?php echo htmlspecialchars($p['image_fit'] ?? 'contain'); ?>;">
-                                    <div class="ms-3">
-                                        <h6 class="fw-bold mb-0 text-truncate" style="max-width: 200px;"><?php echo htmlspecialchars($p['name']); ?></h6>
+                                <div class="d-flex align-items-center gap-3">
+                                    <img src="<?php echo htmlspecialchars(resolve_product_image_url($p['image'] ?? '', $conn, $p['id'])); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="mp-thumb" style="object-fit: <?php echo htmlspecialchars($p['image_fit'] ?? 'contain'); ?>;">
+                                    <div>
+                                        <h6 class="fw-bold mb-0 text-dark text-truncate" style="max-width: 260px;"><?php echo htmlspecialchars($p['name']); ?></h6>
+                                        <?php if (!empty($p['sku'])): ?>
+                                            <small class="text-muted"><span class="badge bg-light text-dark border">SKU: <?php echo htmlspecialchars($p['sku']); ?></span></small>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                             </td>
                             <td>
-                                <span class="badge bg-secondary text-white" style="color: #fff !important;"><?php echo htmlspecialchars($p['category_name']); ?></span>
+                                <span class="badge bg-secondary text-white px-2 py-1" style="color: #fff !important;"><?php echo htmlspecialchars($p['category_name']); ?></span>
                                 <?php if($p['product_type'] === 'virtual'): ?>
-                                    <span class="badge bg-info ms-1 text-white" style="color: #fff !important;">Virtual</span>
+                                    <span class="badge bg-info text-white px-2 py-1 ms-1" style="color: #fff !important;">Virtual</span>
                                 <?php elseif($p['product_type'] === 'downloadable'): ?>
-                                    <span class="badge bg-primary ms-1 text-white" style="color: #fff !important;">Downloadable</span>
+                                    <span class="badge bg-primary text-white px-2 py-1 ms-1" style="color: #fff !important;">Downloadable</span>
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <div class="trending-toggle" data-id="<?php echo $p['id']; ?>" style="cursor: pointer;" title="Click to toggle Trending status">
+                                <div class="trending-toggle d-inline-block" data-id="<?php echo $p['id']; ?>" style="cursor: pointer;" title="Click to toggle Trending status">
                                     <?php if(isset($p['is_trending']) && $p['is_trending']): ?>
-                                        <span class="badge bg-warning text-dark"><i class="fas fa-star me-1"></i>Trending</span>
+                                        <span class="badge bg-warning text-dark px-2 py-1"><i class="fas fa-star me-1"></i>Trending</span>
                                     <?php else: ?>
-                                        <span class="badge bg-light text-muted"><i class="far fa-star me-1"></i>Regular</span>
+                                        <span class="badge bg-light text-muted border px-2 py-1"><i class="far fa-star me-1"></i>Regular</span>
                                     <?php endif; ?>
                                 </div>
                             </td>
-                            <td class="fw-bold"><?php echo $global_currency; ?><?php echo number_format($p['price'], 2); ?></td>
+                            <td class="fw-bold text-dark fs-6"><?php echo $global_currency; ?><?php echo number_format($p['price'], 2); ?></td>
                             <td>
                                 <?php if($p['product_type'] !== 'physical'): ?>
                                     <span class="text-muted small">N/A</span>
                                 <?php elseif($p['stock'] > 10): ?>
-                                    <span class="text-success fw-bold"><?php echo $p['stock']; ?></span>
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1 fw-bold"><?php echo $p['stock']; ?> in stock</span>
                                 <?php elseif($p['stock'] > 0): ?>
-                                    <span class="text-warning fw-bold"><?php echo $p['stock']; ?></span>
+                                    <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-2 py-1 fw-bold"><?php echo $p['stock']; ?> left</span>
                                 <?php else: ?>
-                                    <span class="badge bg-danger text-white" style="color: #fff !important;">Out of Stock</span>
+                                    <span class="badge bg-danger text-white px-2 py-1" style="color: #fff !important;">Out of Stock</span>
                                 <?php endif; ?>
                             </td>
-                            <td class="pe-4">
-                                <div class="action-btns">
-                                    <button class="btn btn-primary btn-sm btn-custom edit-product-btn" 
+                            <td class="pe-4 text-end">
+                                <div class="d-flex align-items-center justify-content-end gap-1">
+                                    <button class="btn btn-primary btn-sm rounded-3 px-2 py-1 edit-product-btn" 
                                         data-id="<?php echo $p['id']; ?>"
                                         data-name="<?php echo htmlspecialchars($p['name']); ?>"
                                         data-slug="<?php echo htmlspecialchars($p['slug'] ?? ''); ?>"
@@ -520,7 +592,6 @@ if ($seo_q) {
                                         data-download-limit="<?php echo $p['download_limit']; ?>"
                                         data-download-expiry="<?php echo $p['download_expiry_days']; ?>"
                                         data-regular-price="<?php echo $p['regular_price']; ?>"
-
                                         data-sale-price="<?php echo $p['sale_price']; ?>"
                                         data-sku="<?php echo htmlspecialchars($p['sku'] ?? ''); ?>"
                                         data-brand="<?php echo htmlspecialchars($p['brand'] ?? ''); ?>"
@@ -536,37 +607,35 @@ if ($seo_q) {
                                         data-is-trending="<?php echo $p['is_trending'] ?? 0; ?>"
                                         data-features="<?php echo htmlspecialchars($p['features'] ?? ''); ?>"
                                         data-image-fit="<?php echo htmlspecialchars($p['image_fit'] ?? 'cover'); ?>"
-
-
-
                                         data-gallery="<?php echo htmlspecialchars(json_encode($product_images[$p['id']] ?? [])); ?>"
                                         data-description="<?php echo htmlspecialchars($p['description']); ?>"
                                         data-meta-description="<?php echo htmlspecialchars($p['meta_description'] ?? ''); ?>"
                                         data-seo-title="<?php echo htmlspecialchars($product_seo[$p['id']]['meta_title'] ?? ''); ?>"
-                                        data-focus-keyword="<?php echo htmlspecialchars($product_seo[$p['id']]['focus_keyword'] ?? ''); ?>">
+                                        data-focus-keyword="<?php echo htmlspecialchars($product_seo[$p['id']]['focus_keyword'] ?? ''); ?>"
+                                        title="Edit Product">
                                         <i class="fas fa-edit"></i>
                                     </button>
-                                    <form method="POST" class="m-0 p-0" onsubmit="return confirm('Delete this product?');">
-    <?php echo csrf_input(); ?>
+                                    <form method="POST" class="d-inline m-0 p-0" onsubmit="return confirm('Delete this product?');">
+                                        <?php echo csrf_input(); ?>
                                         <input type="hidden" name="action" value="delete">
                                         <input type="hidden" name="id" value="<?php echo $p['id']; ?>">
-                                        <button type="submit" class="btn btn-danger btn-sm btn-custom"><i class="fas fa-trash-alt"></i></button>
+                                        <button type="submit" class="btn btn-danger btn-sm rounded-3 px-2 py-1" title="Delete Product"><i class="fas fa-trash-alt"></i></button>
                                     </form>
                                 </div>
                             </td>
                         </tr>
                         <?php endwhile; ?>
                     <?php else: ?>
-                        <tr><td colspan="6" class="text-center py-4 text-muted">No products found.</td></tr>
+                        <tr><td colspan="6" class="text-center py-5 text-muted">No products found in catalog.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
         </div>
         
         <?php if($total_pages > 1): ?>
-        <div class="p-3 border-top">
+        <div class="p-3 border-top bg-light">
             <nav>
-                <ul class="pagination justify-content-center mb-0">
+                <ul class="pagination pagination-sm justify-content-center mb-0">
                     <?php for($i=1; $i<=$total_pages; $i++): ?>
                         <li class="page-item <?php echo $page == $i ? 'active' : ''; ?>">
                             <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
@@ -577,7 +646,7 @@ if ($seo_q) {
         </div>
         <?php endif; ?>
     </div>
-</div>
+</div></div>
 
 <!-- Edit Product Modal -->
 <div class="modal fade" id="editProductModal" tabindex="-1" aria-labelledby="editProductModalLabel" aria-hidden="true">
