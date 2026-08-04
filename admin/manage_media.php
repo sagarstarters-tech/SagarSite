@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['media_action'] ?? '') === 
         if ($row = $res->fetch_assoc()) {
             $full_path = realpath(__DIR__ . '/../' . $row['file_path']);
             if ($full_path && file_exists($full_path)) {
-                unlink($full_path);
+                @unlink($full_path);
             }
             $del_stmt = $conn->prepare("DELETE FROM media_library WHERE id = ?");
             $del_stmt->bind_param('i', $del_id);
@@ -63,6 +63,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['media_action'] ?? '') === 
             set_flash('success', 'Media file deleted successfully.');
         }
         $stmt->close();
+    }
+    header('Location: manage_media.php');
+    exit;
+}
+
+// ── Handle BULK DELETE (POST) ─────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['media_action'] ?? '') === 'bulk_delete') {
+    csrf_verify();
+    $raw_ids = $_POST['media_ids'] ?? '';
+    $del_ids = array_filter(array_map('intval', is_array($raw_ids) ? $raw_ids : explode(',', $raw_ids)));
+    
+    if (!empty($del_ids)) {
+        $placeholders = implode(',', array_fill(0, count($del_ids), '?'));
+        $types = str_repeat('i', count($del_ids));
+
+        $stmt = $conn->prepare("SELECT file_path FROM media_library WHERE id IN ($placeholders)");
+        $stmt->bind_param($types, ...$del_ids);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        while ($row = $res->fetch_assoc()) {
+            $full_path = realpath(__DIR__ . '/../' . $row['file_path']);
+            if ($full_path && file_exists($full_path)) {
+                @unlink($full_path);
+            }
+        }
+        $stmt->close();
+
+        $del_stmt = $conn->prepare("DELETE FROM media_library WHERE id IN ($placeholders)");
+        $del_stmt->bind_param($types, ...$del_ids);
+        $del_stmt->execute();
+        $count = $del_stmt->affected_rows;
+        $del_stmt->close();
+
+        set_flash('success', $count . ' media file(s) deleted successfully.');
+    } else {
+        set_flash('warning', 'No media files selected for deletion.');
     }
     header('Location: manage_media.php');
     exit;
@@ -446,16 +482,18 @@ $total_videos = (int)($conn->query("SELECT COUNT(*) as c FROM media_library WHER
     position: absolute;
     top: 8px;
     right: 8px;
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     background: rgba(255,255,255,.9);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     display: flex;
     align-items: center;
     justify-content: center;
     opacity: 0;
-    transition: opacity .2s;
-    z-index: 2;
+    transition: all .2s;
+    z-index: 5;
+    cursor: pointer;
 }
 .media-card:hover .select-check,
 .media-card.selected .select-check {
@@ -463,6 +501,65 @@ $total_videos = (int)($conn->query("SELECT COUNT(*) as c FROM media_library WHER
 }
 .media-card.selected .select-check {
     background: #667eea;
+    color: #fff;
+    transform: scale(1.1);
+}
+.select-check:hover {
+    transform: scale(1.15);
+}
+
+/* ── Bulk Actions Floating Bar ────────────────────────────── */
+.bulk-actions-bar {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%) translateY(120px);
+    background: #1e293b;
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 50px;
+    box-shadow: 0 12px 36px rgba(0,0,0,0.35);
+    z-index: 1040;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
+    opacity: 0;
+    pointer-events: none;
+}
+.bulk-actions-bar.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+.bulk-actions-bar .btn-bulk-delete {
+    background: linear-gradient(135deg, #ff4d4d, #dc3545);
+    color: #fff;
+    border: none;
+    border-radius: 30px;
+    padding: 8px 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(220,53,69,0.35);
+}
+.bulk-actions-bar .btn-bulk-delete:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(220,53,69,0.5);
+}
+.bulk-actions-bar .btn-bulk-cancel {
+    background: rgba(255,255,255,0.1);
+    color: #cbd5e1;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 30px;
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.bulk-actions-bar .btn-bulk-cancel:hover {
+    background: rgba(255,255,255,0.2);
     color: #fff;
 }
 
@@ -725,7 +822,7 @@ $total_videos = (int)($conn->query("SELECT COUNT(*) as c FROM media_library WHER
 <!--  TOOLBAR: FILTER + SEARCH                                 -->
 <!-- ═══════════════════════════════════════════════════════════ -->
 <div class="media-toolbar">
-    <div class="filter-tabs d-flex align-items-center">
+    <div class="filter-tabs d-flex align-items-center flex-wrap gap-2">
         <a href="manage_media.php?type=all" class="<?php echo $filter_type === 'all' ? 'active' : ''; ?>">
             All <span class="badge"><?php echo $total_all; ?></span>
         </a>
@@ -735,11 +832,16 @@ $total_videos = (int)($conn->query("SELECT COUNT(*) as c FROM media_library WHER
         <a href="manage_media.php?type=video" class="<?php echo $filter_type === 'video' ? 'active' : ''; ?>">
             <i class="fas fa-video me-1"></i>Videos <span class="badge"><?php echo $total_videos; ?></span>
         </a>
-        <form method="POST" class="ms-3 m-0 p-0" onsubmit="return confirm('Sync all existing images from the assets/images folder into the Media Library?');">
+        <form method="POST" class="m-0 p-0" onsubmit="return confirm('Sync all existing images from the assets/images folder into the Media Library?');">
             <?php echo csrf_input(); ?>
             <input type="hidden" name="media_action" value="sync_assets">
-            <button type="submit" class="btn btn-outline-primary btn-sm rounded-pill"><i class="fas fa-sync-alt me-2"></i>Fetched Images</button>
+            <button type="submit" class="btn btn-outline-primary btn-sm rounded-pill"><i class="fas fa-sync-alt me-1"></i>Fetched Images</button>
         </form>
+        <?php if ($total_all > 0): ?>
+        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill ms-1" id="btnSelectAll" onclick="toggleSelectAll()">
+            <i class="fas fa-check-square me-1"></i>Select All
+        </button>
+        <?php endif; ?>
     </div>
     <div class="media-search ms-auto">
         <form method="GET" action="manage_media.php">
@@ -776,7 +878,7 @@ $total_videos = (int)($conn->query("SELECT COUNT(*) as c FROM media_library WHER
          data-alt="<?php echo htmlspecialchars($m['alt_text']); ?>"
          data-caption="<?php echo htmlspecialchars($m['caption'] ?? ''); ?>"
          data-date="<?php echo date('M d, Y h:i A', strtotime($m['created_at'])); ?>"
-         onclick="openMediaDetail(this)">
+         onclick="handleCardClick(event, this)">
         <div class="media-thumb">
             <?php if ($is_video): ?>
                 <video preload="metadata" muted>
@@ -796,7 +898,7 @@ $total_videos = (int)($conn->query("SELECT COUNT(*) as c FROM media_library WHER
                 <?php if ($dims): ?> &middot; <?php echo $dims; ?><?php endif; ?>
             </div>
         </div>
-        <div class="select-check">
+        <div class="select-check" title="Select item" onclick="toggleSelectMedia(event, this)">
             <i class="fas fa-check" style="font-size:.75rem;"></i>
         </div>
     </div>
@@ -879,6 +981,22 @@ $total_videos = (int)($conn->query("SELECT COUNT(*) as c FROM media_library WHER
     </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!--  BULK ACTIONS FLOATING BAR                                -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="bulk-actions-bar" id="bulkActionsBar">
+    <div class="d-flex align-items-center gap-2">
+        <i class="fas fa-check-circle text-primary" style="font-size:1.2rem;"></i>
+        <span id="selectedCountText" style="font-weight:600; font-size:0.9rem;">0 file(s) selected</span>
+    </div>
+    <div class="d-flex align-items-center gap-2 ms-3">
+        <button type="button" class="btn-bulk-cancel" onclick="clearSelection()">Cancel</button>
+        <button type="button" class="btn-bulk-delete" onclick="deleteSelectedMedia()">
+            <i class="fas fa-trash-alt me-1"></i>Delete Selected (<span id="selectedCountBadge">0</span>)
+        </button>
+    </div>
+</div>
+
 <!-- Hidden delete form -->
 <form id="mediaDeleteForm" method="POST" action="manage_media.php" style="display:none;">
     <?php echo csrf_input(); ?>
@@ -886,7 +1004,103 @@ $total_videos = (int)($conn->query("SELECT COUNT(*) as c FROM media_library WHER
     <input type="hidden" name="media_id" id="deleteMediaId" value="">
 </form>
 
+<!-- Hidden bulk delete form -->
+<form id="bulkDeleteForm" method="POST" action="manage_media.php" style="display:none;">
+    <?php echo csrf_input(); ?>
+    <input type="hidden" name="media_action" value="bulk_delete">
+    <input type="hidden" name="media_ids" id="bulkDeleteIdsInput" value="">
+</form>
+
 <script>
+// ═══════════════════════════════════════════════════════════
+//  MULTI-SELECT & BULK DELETE
+// ═══════════════════════════════════════════════════════════
+let selectedMediaIds = new Set();
+
+function toggleSelectMedia(event, element) {
+    if (event) event.stopPropagation();
+    const card = element.closest('.media-card');
+    const mediaId = card.dataset.id;
+
+    if (selectedMediaIds.has(mediaId)) {
+        selectedMediaIds.delete(mediaId);
+        card.classList.remove('selected');
+    } else {
+        selectedMediaIds.add(mediaId);
+        card.classList.add('selected');
+    }
+
+    updateBulkActionBar();
+}
+
+function handleCardClick(event, card) {
+    if (selectedMediaIds.size > 0) {
+        const selectCheck = card.querySelector('.select-check');
+        toggleSelectMedia(event, selectCheck);
+    } else {
+        openMediaDetail(card);
+    }
+}
+
+function updateBulkActionBar() {
+    const bar = document.getElementById('bulkActionsBar');
+    const countText = document.getElementById('selectedCountText');
+    const countBadge = document.getElementById('selectedCountBadge');
+    const selectAllBtn = document.getElementById('btnSelectAll');
+    const totalCards = document.querySelectorAll('.media-card').length;
+
+    if (selectedMediaIds.size > 0) {
+        bar.classList.add('show');
+        if (countText) countText.textContent = `${selectedMediaIds.size} file(s) selected`;
+        if (countBadge) countBadge.textContent = selectedMediaIds.size;
+        
+        if (selectAllBtn) {
+            if (selectedMediaIds.size === totalCards) {
+                selectAllBtn.innerHTML = '<i class="fas fa-minus-square me-1"></i>Deselect All';
+            } else {
+                selectAllBtn.innerHTML = '<i class="fas fa-check-square me-1"></i>Select All';
+            }
+        }
+    } else {
+        bar.classList.remove('show');
+        if (selectAllBtn) {
+            selectAllBtn.innerHTML = '<i class="fas fa-check-square me-1"></i>Select All';
+        }
+    }
+}
+
+function toggleSelectAll() {
+    const allCards = document.querySelectorAll('.media-card');
+    if (selectedMediaIds.size === allCards.length && allCards.length > 0) {
+        clearSelection();
+    } else {
+        allCards.forEach(card => {
+            const id = card.dataset.id;
+            selectedMediaIds.add(id);
+            card.classList.add('selected');
+        });
+        updateBulkActionBar();
+    }
+}
+
+function clearSelection() {
+    selectedMediaIds.clear();
+    document.querySelectorAll('.media-card.selected').forEach(card => {
+        card.classList.remove('selected');
+    });
+    updateBulkActionBar();
+}
+
+function deleteSelectedMedia() {
+    if (selectedMediaIds.size === 0) return;
+    
+    const count = selectedMediaIds.size;
+    if (confirm(`Are you sure you want to permanently delete ${count} selected media file(s)? This action cannot be undone.`)) {
+        document.getElementById('bulkDeleteIdsInput').value = Array.from(selectedMediaIds).join(',');
+        document.getElementById('bulkDeleteForm').submit();
+    }
+}
+
 // ═══════════════════════════════════════════════════════════
 //  DRAG & DROP + FILE UPLOAD
 // ═══════════════════════════════════════════════════════════
@@ -1032,8 +1246,8 @@ function updateProgressItem(item, status, errMsg) {
 //  DETAIL PANEL
 // ═══════════════════════════════════════════════════════════
 function openMediaDetail(card) {
-    // Remove previous selection
-    document.querySelectorAll('.media-card.selected').forEach(c => c.classList.remove('selected'));
+    // Remove multi-selection when opening detail panel
+    clearSelection();
     card.classList.add('selected');
 
     const d = card.dataset;
