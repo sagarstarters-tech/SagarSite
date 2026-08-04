@@ -159,7 +159,21 @@ if (!function_exists('resolve_image_url')) {
             }
         }
         
-        // 4. Return safe fallback placeholder instead of broken 404 URL
+        // 4. Smart fallback for slides and banners if specific file missing
+        if (strpos($clean, 'slide_') === 0 || strpos($clean, 'banner_') === 0) {
+            $banner_files = glob($base_path . '/assets/images/banner_*.webp');
+            if (!empty($banner_files)) {
+                // Return a banner file based on slide ID hash or first available
+                $idx = abs(crc32($clean)) % count($banner_files);
+                return $assets_url . '/images/' . basename($banner_files[$idx]);
+            }
+            $hero_files = glob($base_path . '/assets/images/hero_*.webp');
+            if (!empty($hero_files)) {
+                return $assets_url . '/images/' . basename($hero_files[0]);
+            }
+        }
+
+        // 5. Return safe fallback placeholder instead of broken 404 URL
         return $placeholder;
     }
 }
@@ -195,45 +209,74 @@ if (!function_exists('resolve_product_image_url')) {
             }
         }
         
-        if (empty($img)) {
-            return $placeholder_url;
-        }
-        
-        // 1. Full HTTP / HTTPS URL
-        if (strpos($img, 'http://') === 0 || strpos($img, 'https://') === 0) {
-            return $img;
-        }
-        
-        // Clean leading slashes and redundant directory prefixes
-        $clean = ltrim($img, '/');
-        if (strpos($clean, 'assets/images/') === 0) {
-            $clean = substr($clean, 14);
-        } elseif (strpos($clean, 'uploads/images/') === 0) {
-            $clean = substr($clean, 15);
-        } elseif (strpos($clean, 'uploads/') === 0) {
-            $clean = substr($clean, 8);
-        }
-        
-        // Check in /uploads/
-        if (file_exists($base_path . '/uploads/' . $clean)) {
-            return $site_url . '/uploads/' . $clean;
-        }
-        
-        // Check in /assets/images/
-        if (file_exists($base_path . '/assets/images/' . $clean)) {
-            return $assets_url . '/images/' . $clean;
-        }
-        
-        // Auto-heal extension mismatch (e.g. db says .jpg, file is .webp)
-        $name_no_ext = pathinfo($clean, PATHINFO_FILENAME);
-        if (!empty($name_no_ext)) {
-            $matches = glob($base_path . '/assets/images/' . $name_no_ext . '.*');
-            if (!empty($matches)) {
-                return $assets_url . '/images/' . basename($matches[0]);
+        if (!empty($img)) {
+            // 1. Full HTTP / HTTPS URL
+            if (strpos($img, 'http://') === 0 || strpos($img, 'https://') === 0) {
+                return $img;
             }
-            $upload_matches = glob($base_path . '/uploads/' . $name_no_ext . '.*');
-            if (!empty($upload_matches)) {
-                return $site_url . '/uploads/' . basename($upload_matches[0]);
+            
+            // Clean leading slashes and redundant directory prefixes
+            $clean = ltrim($img, '/');
+            if (strpos($clean, 'assets/images/') === 0) {
+                $clean = substr($clean, 14);
+            } elseif (strpos($clean, 'uploads/images/') === 0) {
+                $clean = substr($clean, 15);
+            } elseif (strpos($clean, 'uploads/') === 0) {
+                $clean = substr($clean, 8);
+            }
+            
+            // Check in /uploads/
+            if (file_exists($base_path . '/uploads/' . $clean)) {
+                return $site_url . '/uploads/' . $clean;
+            }
+            
+            // Check in /assets/images/
+            if (file_exists($base_path . '/assets/images/' . $clean)) {
+                return $assets_url . '/images/' . $clean;
+            }
+            
+            // Auto-heal extension mismatch (e.g. db says .jpg, file is .webp)
+            $name_no_ext = pathinfo($clean, PATHINFO_FILENAME);
+            if (!empty($name_no_ext)) {
+                $matches = glob($base_path . '/assets/images/' . $name_no_ext . '.*');
+                if (!empty($matches)) {
+                    return $assets_url . '/images/' . basename($matches[0]);
+                }
+                $upload_matches = glob($base_path . '/uploads/' . $name_no_ext . '.*');
+                if (!empty($upload_matches)) {
+                    return $site_url . '/uploads/' . basename($upload_matches[0]);
+                }
+            }
+        }
+        
+        // Smart Keyword Auto-Matcher for Product Images
+        if ($conn !== null && !empty($product_id)) {
+            $p_id = intval($product_id);
+            $name_q = $conn->query("SELECT name FROM products WHERE id=$p_id");
+            if ($name_q && $n_row = $name_q->fetch_assoc()) {
+                $p_name = strtolower($n_row['name']);
+                if (strpos($p_name, 'star delta') !== false && file_exists($base_path . '/assets/images/AhaConvert_star delta pi.webp')) {
+                    return $assets_url . '/images/AhaConvert_star delta pi.webp';
+                }
+                if (strpos($p_name, 'submersible') !== false && file_exists($base_path . '/assets/images/AhaConvert_sub set.webp')) {
+                    return $assets_url . '/images/AhaConvert_sub set.webp';
+                }
+                if (strpos($p_name, 'stabilizer') !== false || strpos($p_name, 'voltage') !== false) {
+                    if (file_exists($base_path . '/assets/images/AhaConvert_stabilizer pi.webp')) {
+                        return $assets_url . '/images/AhaConvert_stabilizer pi.webp';
+                    }
+                }
+                if (strpos($p_name, 'switch') !== false && file_exists($base_path . '/assets/images/AhaConvert_sg.webp')) {
+                    return $assets_url . '/images/AhaConvert_sg.webp';
+                }
+                if (strpos($p_name, 'float') !== false && file_exists($base_path . '/assets/images/float-1.webp')) {
+                    return $assets_url . '/images/float-1.webp';
+                }
+                if (strpos($p_name, 'digital') !== false || strpos($p_name, 'meter') !== false) {
+                    if (file_exists($base_path . '/assets/images/AhaConvert_single hp dgt.webp')) {
+                        return $assets_url . '/images/AhaConvert_single hp dgt.webp';
+                    }
+                }
             }
         }
         
