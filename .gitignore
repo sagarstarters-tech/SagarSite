@@ -25,33 +25,6 @@ Thumbs.db
 /scratch/
 scratch.php
 
-# ══════════════════════════════════════════════════════════════════
-# USER-UPLOADED PRODUCT IMAGES — DO NOT TRACK IN GIT
-# ══════════════════════════════════════════════════════════════════
-# REASON: These images are uploaded via the Admin Panel on the live
-# server (Hostinger). If tracked in git, a `git reset --hard` during
-# auto-deploy will DELETE server images that no longer exist locally.
-# This was the ROOT CAUSE of automatic product image deletion.
-#
-# Static placeholder files (placeholder.svg, no-image.png etc.) are
-# kept in git via the `!` exception rules below.
-# ══════════════════════════════════════════════════════════════════
-/assets/images/*.jpg
-/assets/images/*.jpeg
-/assets/images/*.png
-/assets/images/*.webp
-/assets/images/*.gif
-/assets/images/*.svg
-# Keep ONLY essential static placeholders in git
-!/assets/images/placeholder.svg
-!/assets/images/placeholder.png
-!/assets/images/no-image.png
-!/assets/images/google-icon.svg
-# Subdirectories with user-uploaded slider & testimonial images
-/assets/images/slider/*
-/assets/images/testimonials/*
-# Keep gitkeep marker files so empty dirs are preserved
-!/assets/images/slider/.gitkeep
-!/assets/images/testimonials/.gitkeep
+
 
 
