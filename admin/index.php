@@ -183,6 +183,19 @@ $admin_name = isset($_SESSION['name']) ? htmlspecialchars($_SESSION['name']) : '
     font-size: 1rem;
     flex-shrink: 0;
 }
+.dash-btn-outline {
+    background: rgba(255, 255, 255, 0.15) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.4) !important;
+    backdrop-filter: blur(4px);
+    transition: all 0.2s ease;
+}
+.dash-btn-outline:hover, .dash-btn-outline:focus {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border-color: #ffffff !important;
+    box-shadow: 0 4px 15px rgba(255, 255, 255, 0.25) !important;
+}
 </style>
 
 <div class="container-fluid py-4 dash-wrapper">
@@ -203,11 +216,11 @@ $admin_name = isset($_SESSION['name']) ? htmlspecialchars($_SESSION['name']) : '
                 <p class="text-white-50 mb-0 small">Here is what is happening across your store today.</p>
             </div>
             <div class="d-flex align-items-center gap-2 flex-wrap">
-                <a href="manage_products.php?action=add" class="btn btn-primary px-3 py-2 rounded-3 shadow-sm d-flex align-items-center gap-2 fw-semibold">
+                <a href="manage_products.php?action=add" class="btn btn-primary px-3 py-2 rounded-3 shadow-sm d-flex align-items-center gap-2 fw-semibold text-white">
                     <i class="fas fa-plus-circle"></i>
                     <span>Add Product</span>
                 </a>
-                <a href="../index.php" target="_blank" class="btn btn-outline-light px-3 py-2 rounded-3 d-flex align-items-center gap-2 fw-semibold">
+                <a href="../index.php" target="_blank" class="btn dash-btn-outline px-3 py-2 rounded-3 d-flex align-items-center gap-2 fw-semibold">
                     <i class="fas fa-external-link-alt"></i>
                     <span>View Live Store</span>
                 </a>

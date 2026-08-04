@@ -321,6 +321,19 @@ $currency = isset($global_currency) ? htmlspecialchars($global_currency) : '₹'
     border: 1px solid var(--ac-border-color);
     box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.08);
 }
+.ac-btn-hero-outline {
+    background: rgba(255, 255, 255, 0.15) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.4) !important;
+    backdrop-filter: blur(4px);
+    transition: all 0.2s ease;
+}
+.ac-btn-hero-outline:hover, .ac-btn-hero-outline:focus {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border-color: #ffffff !important;
+    box-shadow: 0 4px 15px rgba(255, 255, 255, 0.25) !important;
+}
 </style>
 
 <div class="container-fluid py-4 ac-dashboard-wrapper">
@@ -346,7 +359,7 @@ $currency = isset($global_currency) ? htmlspecialchars($global_currency) : '₹'
                     <i class="fas fa-bolt"></i>
                     <span>Run Reminders Now</span>
                 </button>
-                <button class="btn btn-outline-light px-3 py-2 rounded-3 d-flex align-items-center gap-2" type="button" data-mdb-toggle="collapse" data-mdb-target="#settingsCollapse" aria-expanded="false">
+                <button class="btn ac-btn-hero-outline px-3 py-2 rounded-3 d-flex align-items-center gap-2 fw-semibold" type="button" data-mdb-toggle="collapse" data-mdb-target="#settingsCollapse" aria-expanded="false">
                     <i class="fas fa-sliders-h"></i>
                     <span>Settings & Templates</span>
                 </button>
