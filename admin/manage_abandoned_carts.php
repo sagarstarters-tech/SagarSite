@@ -321,18 +321,24 @@ $currency = isset($global_currency) ? htmlspecialchars($global_currency) : '₹'
     border: 1px solid var(--ac-border-color);
     box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.08);
 }
-.ac-btn-hero-outline {
-    background: rgba(255, 255, 255, 0.15) !important;
+.ac-btn-hero-outline,
+button.ac-btn-hero-outline,
+.ac-btn-hero-outline *,
+button.ac-btn-hero-outline * {
+    background-color: rgba(255, 255, 255, 0.18) !important;
     color: #ffffff !important;
-    border: 1px solid rgba(255, 255, 255, 0.4) !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
     backdrop-filter: blur(4px);
     transition: all 0.2s ease;
 }
-.ac-btn-hero-outline:hover, .ac-btn-hero-outline:focus {
-    background: #ffffff !important;
+.ac-btn-hero-outline:hover,
+button.ac-btn-hero-outline:hover,
+.ac-btn-hero-outline:hover *,
+button.ac-btn-hero-outline:hover * {
+    background-color: #ffffff !important;
     color: #0f172a !important;
     border-color: #ffffff !important;
-    box-shadow: 0 4px 15px rgba(255, 255, 255, 0.25) !important;
+    box-shadow: 0 4px 15px rgba(255, 255, 255, 0.3) !important;
 }
 </style>
 

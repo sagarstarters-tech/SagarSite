@@ -183,18 +183,24 @@ $admin_name = isset($_SESSION['name']) ? htmlspecialchars($_SESSION['name']) : '
     font-size: 1rem;
     flex-shrink: 0;
 }
-.dash-btn-outline {
-    background: rgba(255, 255, 255, 0.15) !important;
+.dash-btn-outline,
+a.dash-btn-outline,
+.dash-btn-outline *,
+a.dash-btn-outline * {
+    background-color: rgba(255, 255, 255, 0.18) !important;
     color: #ffffff !important;
-    border: 1px solid rgba(255, 255, 255, 0.4) !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
     backdrop-filter: blur(4px);
     transition: all 0.2s ease;
 }
-.dash-btn-outline:hover, .dash-btn-outline:focus {
-    background: #ffffff !important;
+.dash-btn-outline:hover,
+a.dash-btn-outline:hover,
+.dash-btn-outline:hover *,
+a.dash-btn-outline:hover * {
+    background-color: #ffffff !important;
     color: #0f172a !important;
     border-color: #ffffff !important;
-    box-shadow: 0 4px 15px rgba(255, 255, 255, 0.25) !important;
+    box-shadow: 0 4px 15px rgba(255, 255, 255, 0.3) !important;
 }
 </style>
 
