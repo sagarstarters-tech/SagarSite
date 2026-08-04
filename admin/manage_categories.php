@@ -42,8 +42,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $image = uniqid() . '.' . $ext;
             if (move_uploaded_file($_FILES['image']['tmp_name'], '../assets/images/' . $image)) {
                  $img_q = $conn->query("SELECT image FROM categories WHERE id=$id")->fetch_assoc();
-                 if ($img_q && $img_q['image'] && file_exists('../assets/images/'.$img_q['image'])) {
-                     unlink('../assets/images/'.$img_q['image']);
+                 if ($img_q && $img_q['image']) {
+                     $old_cat_img = $conn->real_escape_string($img_q['image']);
+                     // Safety: only delete if not shared with any product, product_images, or banner
+                     $prod_refs  = (int)$conn->query("SELECT COUNT(*) as c FROM products WHERE image='$old_cat_img'")->fetch_assoc()['c'];
+                     $gal_refs   = (int)$conn->query("SELECT COUNT(*) as c FROM product_images WHERE image='$old_cat_img'")->fetch_assoc()['c'];
+                     $ban_refs   = (int)$conn->query("SELECT COUNT(*) as c FROM banners WHERE image='$old_cat_img'")->fetch_assoc()['c'];
+                     $other_cat  = (int)$conn->query("SELECT COUNT(*) as c FROM categories WHERE image='$old_cat_img' AND id!=$id")->fetch_assoc()['c'];
+                     if ($prod_refs === 0 && $gal_refs === 0 && $ban_refs === 0 && $other_cat === 0 && file_exists('../assets/images/'.$img_q['image'])) {
+                         unlink('../assets/images/'.$img_q['image']);
+                     }
                  }
                  $image_query = ", image='$image'";
             }
@@ -63,10 +71,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($action === 'delete') {
         $id = intval($_POST['id']);
         
-        // Remove image
+        // Remove image (safety: only if not shared with any product, product_images, or banner)
         $img_q = $conn->query("SELECT image FROM categories WHERE id=$id")->fetch_assoc();
-        if ($img_q && $img_q['image'] && file_exists('../assets/images/'.$img_q['image'])) {
-            unlink('../assets/images/'.$img_q['image']);
+        if ($img_q && $img_q['image']) {
+            $old_cat_img = $conn->real_escape_string($img_q['image']);
+            $prod_refs  = (int)$conn->query("SELECT COUNT(*) as c FROM products WHERE image='$old_cat_img'")->fetch_assoc()['c'];
+            $gal_refs   = (int)$conn->query("SELECT COUNT(*) as c FROM product_images WHERE image='$old_cat_img'")->fetch_assoc()['c'];
+            $ban_refs   = (int)$conn->query("SELECT COUNT(*) as c FROM banners WHERE image='$old_cat_img'")->fetch_assoc()['c'];
+            $other_cat  = (int)$conn->query("SELECT COUNT(*) as c FROM categories WHERE image='$old_cat_img' AND id!=$id")->fetch_assoc()['c'];
+            if ($prod_refs === 0 && $gal_refs === 0 && $ban_refs === 0 && $other_cat === 0 && file_exists('../assets/images/'.$img_q['image'])) {
+                unlink('../assets/images/'.$img_q['image']);
+            }
         }
         
         $conn->query("DELETE FROM categories WHERE id=$id");

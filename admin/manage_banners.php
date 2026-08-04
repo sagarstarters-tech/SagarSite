@@ -35,10 +35,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         $image_query = "";
         if (isset($_FILES['image']) && $_FILES['image']['error'] === 0) {
-            // Get old image to delete
+            // Get old image to delete (only if not shared with products/gallery)
             $old_q = $conn->query("SELECT image FROM banners WHERE id=$id");
             if ($old_img = $old_q->fetch_assoc()) {
-                if (file_exists('../assets/images/' . $old_img['image'])) {
+                $old_banner_img = $conn->real_escape_string($old_img['image']);
+                $prod_refs  = (int)$conn->query("SELECT COUNT(*) as c FROM products WHERE image='$old_banner_img'")->fetch_assoc()['c'];
+                $gal_refs   = (int)$conn->query("SELECT COUNT(*) as c FROM product_images WHERE image='$old_banner_img'")->fetch_assoc()['c'];
+                $other_ban  = (int)$conn->query("SELECT COUNT(*) as c FROM banners WHERE image='$old_banner_img' AND id!=$id")->fetch_assoc()['c'];
+                if ($prod_refs === 0 && $gal_refs === 0 && $other_ban === 0 && file_exists('../assets/images/' . $old_img['image'])) {
                     unlink('../assets/images/' . $old_img['image']);
                 }
             }
@@ -61,7 +65,11 @@ if (isset($_GET['delete'])) {
     $id = intval($_GET['delete']);
     $old_q = $conn->query("SELECT image FROM banners WHERE id=$id");
     if ($old_q && $old_img = $old_q->fetch_assoc()) {
-        if (file_exists('../assets/images/' . $old_img['image'])) {
+        $old_banner_img = $conn->real_escape_string($old_img['image']);
+        $prod_refs  = (int)$conn->query("SELECT COUNT(*) as c FROM products WHERE image='$old_banner_img'")->fetch_assoc()['c'];
+        $gal_refs   = (int)$conn->query("SELECT COUNT(*) as c FROM product_images WHERE image='$old_banner_img'")->fetch_assoc()['c'];
+        $other_ban  = (int)$conn->query("SELECT COUNT(*) as c FROM banners WHERE image='$old_banner_img' AND id!=$id")->fetch_assoc()['c'];
+        if ($prod_refs === 0 && $gal_refs === 0 && $other_ban === 0 && file_exists('../assets/images/' . $old_img['image'])) {
             unlink('../assets/images/' . $old_img['image']);
         }
     }

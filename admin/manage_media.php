@@ -47,14 +47,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['media_action'] ?? '') === 
     csrf_verify();
     $del_id = intval($_POST['media_id'] ?? 0);
     if ($del_id > 0) {
-        $stmt = $conn->prepare("SELECT file_path FROM media_library WHERE id = ?");
+        $stmt = $conn->prepare("SELECT file_path, file_name FROM media_library WHERE id = ?");
         $stmt->bind_param('i', $del_id);
         $stmt->execute();
         $res = $stmt->get_result();
         if ($row = $res->fetch_assoc()) {
             $full_path = realpath(__DIR__ . '/../' . $row['file_path']);
-            if ($full_path && file_exists($full_path)) {
-                @unlink($full_path);
+            $file_basename = basename($row['file_path']);
+            $safe_basename = $conn->real_escape_string($file_basename);
+            // Safety: only delete physical file if NOT referenced by products/gallery/banners/categories
+            $prod_refs = (int)$conn->query("SELECT COUNT(*) as c FROM products WHERE image='$safe_basename'")->fetch_assoc()['c'];
+            $gal_refs  = (int)$conn->query("SELECT COUNT(*) as c FROM product_images WHERE image='$safe_basename'")->fetch_assoc()['c'];
+            $ban_refs  = (int)$conn->query("SELECT COUNT(*) as c FROM banners WHERE image='$safe_basename'")->fetch_assoc()['c'];
+            $cat_refs  = (int)$conn->query("SELECT COUNT(*) as c FROM categories WHERE image='$safe_basename'")->fetch_assoc()['c'];
+            if ($prod_refs === 0 && $gal_refs === 0 && $ban_refs === 0 && $cat_refs === 0) {
+                if ($full_path && file_exists($full_path)) {
+                    @unlink($full_path);
+                }
             }
             $del_stmt = $conn->prepare("DELETE FROM media_library WHERE id = ?");
             $del_stmt->bind_param('i', $del_id);
@@ -78,14 +87,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['media_action'] ?? '') === 
         $placeholders = implode(',', array_fill(0, count($del_ids), '?'));
         $types = str_repeat('i', count($del_ids));
 
-        $stmt = $conn->prepare("SELECT file_path FROM media_library WHERE id IN ($placeholders)");
+        $stmt = $conn->prepare("SELECT file_path, file_name FROM media_library WHERE id IN ($placeholders)");
         $stmt->bind_param($types, ...$del_ids);
         $stmt->execute();
         $res = $stmt->get_result();
         while ($row = $res->fetch_assoc()) {
             $full_path = realpath(__DIR__ . '/../' . $row['file_path']);
-            if ($full_path && file_exists($full_path)) {
-                @unlink($full_path);
+            $file_basename = basename($row['file_path']);
+            $safe_basename = $conn->real_escape_string($file_basename);
+            // Safety: only delete physical file if NOT referenced by products/gallery/banners/categories
+            $prod_refs = (int)$conn->query("SELECT COUNT(*) as c FROM products WHERE image='$safe_basename'")->fetch_assoc()['c'];
+            $gal_refs  = (int)$conn->query("SELECT COUNT(*) as c FROM product_images WHERE image='$safe_basename'")->fetch_assoc()['c'];
+            $ban_refs  = (int)$conn->query("SELECT COUNT(*) as c FROM banners WHERE image='$safe_basename'")->fetch_assoc()['c'];
+            $cat_refs  = (int)$conn->query("SELECT COUNT(*) as c FROM categories WHERE image='$safe_basename'")->fetch_assoc()['c'];
+            if ($prod_refs === 0 && $gal_refs === 0 && $ban_refs === 0 && $cat_refs === 0) {
+                if ($full_path && file_exists($full_path)) {
+                    @unlink($full_path);
+                }
             }
         }
         $stmt->close();

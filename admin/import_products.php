@@ -228,14 +228,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file'])) {
                 ]);
                 
                 if (!empty($gallery)) {
-                    // Quick Replace for seamless updates
-                    $conn->query("DELETE FROM product_images WHERE product_id = $product_id");
+                    // SAFE MERGE: Only add new gallery images, never delete existing ones.
+                    // Fetch existing images for this product to avoid duplicate inserts.
+                    $existing_gal_q = $conn->query("SELECT image FROM product_images WHERE product_id = $product_id");
+                    $existing_gal_images = [];
+                    if ($existing_gal_q) {
+                        while ($eg = $existing_gal_q->fetch_assoc()) {
+                            $existing_gal_images[] = strtolower(trim($eg['image']));
+                        }
+                    }
                     $g_imgs = explode(',', $gallery);
                     foreach($g_imgs as $g) {
                         $clean_g = preg_replace('#^(assets/images/|uploads/|/)+#i', '', trim($g));
                         if (!empty($clean_g) && !in_array(strtolower($clean_g), $dummies)) {
-                            $clean_g_esc = $conn->real_escape_string($clean_g);
-                            $conn->query("INSERT INTO product_images (product_id, image) VALUES ($product_id, '$clean_g_esc')");
+                            // Only insert if not already in the gallery
+                            if (!in_array(strtolower($clean_g), $existing_gal_images)) {
+                                $clean_g_esc = $conn->real_escape_string($clean_g);
+                                $conn->query("INSERT INTO product_images (product_id, image) VALUES ($product_id, '$clean_g_esc')");
+                                $existing_gal_images[] = strtolower($clean_g); // Prevent duplicates within same import row
+                            }
                         }
                     }
                 }

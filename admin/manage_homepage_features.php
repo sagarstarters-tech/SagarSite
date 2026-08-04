@@ -53,11 +53,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($action === 'delete') {
         $id = intval($_POST['id']);
         
-        // delete image if exists
+        // delete image if exists (safety: only if not shared with products/gallery/banners/categories)
         $del_q = $conn->query("SELECT icon_type, icon_value FROM homepage_features WHERE id=$id");
         if ($del_item = $del_q->fetch_assoc()) {
-            if ($del_item['icon_type'] === 'image' && !empty($del_item['icon_value']) && file_exists('../assets/images/' . $del_item['icon_value'])) {
-                unlink('../assets/images/' . $del_item['icon_value']);
+            if ($del_item['icon_type'] === 'image' && !empty($del_item['icon_value'])) {
+                $feat_img = $conn->real_escape_string($del_item['icon_value']);
+                $prod_refs = (int)$conn->query("SELECT COUNT(*) as c FROM products WHERE image='$feat_img'")->fetch_assoc()['c'];
+                $gal_refs  = (int)$conn->query("SELECT COUNT(*) as c FROM product_images WHERE image='$feat_img'")->fetch_assoc()['c'];
+                $ban_refs  = (int)$conn->query("SELECT COUNT(*) as c FROM banners WHERE image='$feat_img'")->fetch_assoc()['c'];
+                $cat_refs  = (int)$conn->query("SELECT COUNT(*) as c FROM categories WHERE image='$feat_img'")->fetch_assoc()['c'];
+                if ($prod_refs === 0 && $gal_refs === 0 && $ban_refs === 0 && $cat_refs === 0 && file_exists('../assets/images/' . $del_item['icon_value'])) {
+                    unlink('../assets/images/' . $del_item['icon_value']);
+                }
             }
         }
         
