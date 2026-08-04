@@ -322,24 +322,40 @@ $currency = isset($global_currency) ? htmlspecialchars($global_currency) : '₹'
     box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.08);
 }
 .ac-btn-white,
-button.ac-btn-white,
-.ac-btn-white *,
-button.ac-btn-white * {
+button.ac-btn-white {
     background-color: #ffffff !important;
     color: #0f172a !important;
     border: 1px solid #ffffff !important;
     font-weight: 700 !important;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18) !important;
+    transition: all 0.2s ease !important;
+}
+.ac-btn-white *,
+button.ac-btn-white * {
+    background: transparent !important;
+    background-color: transparent !important;
+    color: #0f172a !important;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+    text-shadow: none !important;
+}
+.ac-btn-white::before,
+.ac-btn-white::after,
+button.ac-btn-white::before,
+button.ac-btn-white::after {
+    display: none !important;
+    content: none !important;
 }
 .ac-btn-white:hover,
-button.ac-btn-white:hover,
-.ac-btn-white:hover *,
-button.ac-btn-white:hover * {
+button.ac-btn-white:hover {
     background-color: #f1f5f9 !important;
     color: #2563eb !important;
     transform: translateY(-2px) !important;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35) !important;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25) !important;
+}
+.ac-btn-white:hover * {
+    color: #2563eb !important;
 }
 </style>
 

@@ -184,24 +184,40 @@ $admin_name = isset($_SESSION['name']) ? htmlspecialchars($_SESSION['name']) : '
     flex-shrink: 0;
 }
 .dash-btn-white,
-a.dash-btn-white,
-.dash-btn-white *,
-a.dash-btn-white * {
+a.dash-btn-white {
     background-color: #ffffff !important;
     color: #0f172a !important;
     border: 1px solid #ffffff !important;
     font-weight: 700 !important;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18) !important;
+    transition: all 0.2s ease !important;
+}
+.dash-btn-white *,
+a.dash-btn-white * {
+    background: transparent !important;
+    background-color: transparent !important;
+    color: #0f172a !important;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+    text-shadow: none !important;
+}
+.dash-btn-white::before,
+.dash-btn-white::after,
+a.dash-btn-white::before,
+a.dash-btn-white::after {
+    display: none !important;
+    content: none !important;
 }
 .dash-btn-white:hover,
-a.dash-btn-white:hover,
-.dash-btn-white:hover *,
-a.dash-btn-white:hover * {
+a.dash-btn-white:hover {
     background-color: #f1f5f9 !important;
     color: #2563eb !important;
     transform: translateY(-2px) !important;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35) !important;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25) !important;
+}
+.dash-btn-white:hover * {
+    color: #2563eb !important;
 }
 </style>
 
