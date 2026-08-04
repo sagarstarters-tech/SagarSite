@@ -36,15 +36,15 @@ class AuthMiddleware
             csrf_verify();
         }
 
-        // Fallback: fetch profile photo if missing from session
-        if (!isset($_SESSION['profile_photo']) && $conn !== null) {
+        // Fallback: fetch profile photo if missing or empty from session
+        if ((!isset($_SESSION['profile_photo']) || empty($_SESSION['profile_photo'])) && $conn !== null) {
             $uid = intval($_SESSION['user_id']);
             $stmt = $conn->prepare("SELECT profile_photo FROM users WHERE id = ?");
             if ($stmt) {
                 $stmt->bind_param('i', $uid);
                 $stmt->execute();
                 $res = $stmt->get_result()->fetch_assoc();
-                $_SESSION['profile_photo'] = $res['profile_photo'] ?? '';
+                $_SESSION['profile_photo'] = trim($res['profile_photo'] ?? '');
                 $stmt->close();
             } else {
                 $_SESSION['profile_photo'] = '';
