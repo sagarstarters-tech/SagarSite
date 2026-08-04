@@ -183,24 +183,25 @@ $admin_name = isset($_SESSION['name']) ? htmlspecialchars($_SESSION['name']) : '
     font-size: 1rem;
     flex-shrink: 0;
 }
-.dash-btn-outline,
-a.dash-btn-outline,
-.dash-btn-outline *,
-a.dash-btn-outline * {
-    background-color: rgba(255, 255, 255, 0.18) !important;
-    color: #ffffff !important;
-    border-color: rgba(255, 255, 255, 0.5) !important;
-    backdrop-filter: blur(4px);
-    transition: all 0.2s ease;
-}
-.dash-btn-outline:hover,
-a.dash-btn-outline:hover,
-.dash-btn-outline:hover *,
-a.dash-btn-outline:hover * {
+.dash-btn-white,
+a.dash-btn-white,
+.dash-btn-white *,
+a.dash-btn-white * {
     background-color: #ffffff !important;
     color: #0f172a !important;
-    border-color: #ffffff !important;
-    box-shadow: 0 4px 15px rgba(255, 255, 255, 0.3) !important;
+    border: 1px solid #ffffff !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.dash-btn-white:hover,
+a.dash-btn-white:hover,
+.dash-btn-white:hover *,
+a.dash-btn-white:hover * {
+    background-color: #f1f5f9 !important;
+    color: #2563eb !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35) !important;
 }
 </style>
 
@@ -226,7 +227,7 @@ a.dash-btn-outline:hover * {
                     <i class="fas fa-plus-circle"></i>
                     <span>Add Product</span>
                 </a>
-                <a href="../index.php" target="_blank" class="btn dash-btn-outline px-3 py-2 rounded-3 d-flex align-items-center gap-2 fw-semibold">
+                <a href="../index.php" target="_blank" class="btn dash-btn-white px-3 py-2 rounded-3 d-flex align-items-center gap-2">
                     <i class="fas fa-external-link-alt"></i>
                     <span>View Live Store</span>
                 </a>

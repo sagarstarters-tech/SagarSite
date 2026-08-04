@@ -321,24 +321,25 @@ $currency = isset($global_currency) ? htmlspecialchars($global_currency) : '₹'
     border: 1px solid var(--ac-border-color);
     box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.08);
 }
-.ac-btn-hero-outline,
-button.ac-btn-hero-outline,
-.ac-btn-hero-outline *,
-button.ac-btn-hero-outline * {
-    background-color: rgba(255, 255, 255, 0.18) !important;
-    color: #ffffff !important;
-    border-color: rgba(255, 255, 255, 0.5) !important;
-    backdrop-filter: blur(4px);
-    transition: all 0.2s ease;
-}
-.ac-btn-hero-outline:hover,
-button.ac-btn-hero-outline:hover,
-.ac-btn-hero-outline:hover *,
-button.ac-btn-hero-outline:hover * {
+.ac-btn-white,
+button.ac-btn-white,
+.ac-btn-white *,
+button.ac-btn-white * {
     background-color: #ffffff !important;
     color: #0f172a !important;
-    border-color: #ffffff !important;
-    box-shadow: 0 4px 15px rgba(255, 255, 255, 0.3) !important;
+    border: 1px solid #ffffff !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.ac-btn-white:hover,
+button.ac-btn-white:hover,
+.ac-btn-white:hover *,
+button.ac-btn-white:hover * {
+    background-color: #f1f5f9 !important;
+    color: #2563eb !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35) !important;
 }
 </style>
 
@@ -365,7 +366,7 @@ button.ac-btn-hero-outline:hover * {
                     <i class="fas fa-bolt"></i>
                     <span>Run Reminders Now</span>
                 </button>
-                <button class="btn ac-btn-hero-outline px-3 py-2 rounded-3 d-flex align-items-center gap-2 fw-semibold" type="button" data-mdb-toggle="collapse" data-mdb-target="#settingsCollapse" aria-expanded="false">
+                <button class="btn ac-btn-white px-3 py-2 rounded-3 d-flex align-items-center gap-2" type="button" data-mdb-toggle="collapse" data-mdb-target="#settingsCollapse" aria-expanded="false">
                     <i class="fas fa-sliders-h"></i>
                     <span>Settings & Templates</span>
                 </button>
