@@ -19,7 +19,7 @@ if ($features_enabled == '1') {
                                 <?php if ($f['icon_type'] === 'font'): ?>
                                     <i class="<?php echo htmlspecialchars($f['icon_value']); ?> feature-icon-font"></i>
                                 <?php else: ?>
-                                    <img src="<?php echo ASSETS_URL; ?>/images/<?php echo htmlspecialchars($f['icon_value']); ?>" alt="<?php echo htmlspecialchars($f['title']); ?> Icon" class="feature-icon-img">
+                                    <img src="<?php echo htmlspecialchars(resolve_image_url($f['icon_value'])); ?>" alt="<?php echo htmlspecialchars($f['title']); ?> Icon" class="feature-icon-img" onerror="this.onerror=null; this.style.display='none';">
                                 <?php endif; ?>
                             </div>
                             <h4 class="feature-title"><?php echo htmlspecialchars($f['title']); ?></h4>

@@ -33,11 +33,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (isset($_FILES['icon_value_img']) && $_FILES['icon_value_img']['error'] === UPLOAD_ERR_OK) {
                 $ext = strtolower(pathinfo($_FILES['icon_value_img']['name'], PATHINFO_EXTENSION));
                 if (in_array($ext, ['jpg', 'jpeg', 'png', 'svg', 'gif', 'webp'])) {
-                    $icon_value = 'feature_' . time() . '.' . $ext;
-                    // Save to uploads/images/ — deploy-safe (not wiped by git deployment)
-                    $upload_target = '../uploads/images/';
+                    $fname = 'feature_' . time() . '.' . $ext;
+                    // Save to uploads/media/images/ — consistent with media library
+                    $upload_target = '../uploads/media/images/';
                     if (!is_dir($upload_target)) mkdir($upload_target, 0755, true);
-                    move_uploaded_file($_FILES['icon_value_img']['tmp_name'], $upload_target . $icon_value);
+                    if (move_uploaded_file($_FILES['icon_value_img']['tmp_name'], $upload_target . $fname)) {
+                        $icon_value = 'uploads/media/images/' . $fname; // store full relative path
+                    }
                 }
             } else {
                 // Keep existing image if no new file is uploaded
@@ -66,9 +68,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $ban_refs  = (int)$conn->query("SELECT COUNT(*) as c FROM banners WHERE image='$feat_img'")->fetch_assoc()['c'];
                 $cat_refs  = (int)$conn->query("SELECT COUNT(*) as c FROM categories WHERE image='$feat_img'")->fetch_assoc()['c'];
                 if ($prod_refs === 0 && $gal_refs === 0 && $ban_refs === 0 && $cat_refs === 0) {
-                    // Check both possible storage locations (backward compatible)
-                    if (file_exists('../uploads/images/' . $del_item['icon_value'])) unlink('../uploads/images/' . $del_item['icon_value']);
-                    elseif (file_exists('../assets/images/' . $del_item['icon_value'])) unlink('../assets/images/' . $del_item['icon_value']);
+                    // Try all possible storage locations (backward compatible)
+                    $try1 = '../' . ltrim($del_item['icon_value'], '/');
+                    $try2 = '../uploads/images/' . basename($del_item['icon_value']);
+                    $try3 = '../assets/images/' . basename($del_item['icon_value']);
+                    foreach ([$try1, $try2, $try3] as $tp) {
+                        if (file_exists($tp)) { @unlink($tp); break; }
+                    }
                 }
             }
         }
