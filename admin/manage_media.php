@@ -1893,7 +1893,7 @@ function renderUnusedTab(files) {
             ? `<img src="${escHtml(thumbSrc)}" alt="" onerror="this.onerror=null;this.src='../assets/images/placeholder.svg'">`
             : `<i class="fas fa-video" style="font-size:1.4rem;color:#764ba2;"></i>`;
         html += `
-        <div class="dup-file-row" id="duprow-${f.id}">
+        <div class="dup-file-row" data-media-id="${f.id}">
             <div class="dup-thumb">${thumbHtml}</div>
             <div class="dup-info">
                 <div class="dup-name" title="${escHtml(f.original_name)}">${escHtml(f.original_name)}</div>
@@ -1932,7 +1932,7 @@ function renderDupGroupTab(containerId, groups, label) {
                 : `<i class="fas fa-unlink me-1"></i>Unused`;
             const canDelete = !f.is_used;
             html += `
-            <div class="dup-file-row" id="duprow-${f.id}" style="border-radius:0; border-left:none; border-right:none; border-top:${fi===0?'none':'1px solid #eee'};">
+            <div class="dup-file-row" data-media-id="${f.id}" style="border-radius:0; border-left:none; border-right:none; border-top:${fi===0?'none':'1px solid #eee'};">
                 <div class="dup-thumb">${thumbHtml}</div>
                 <div class="dup-info">
                     <div class="dup-name" title="${escHtml(f.original_name)}">${escHtml(f.original_name)}</div>
@@ -1968,9 +1968,10 @@ async function deleteSingleMedia(id, btn) {
         });
         const data = await resp.json();
         if (data.success) {
-            // Remove row from modal
-            const row = document.getElementById('duprow-' + id);
-            if (row) {
+            // Remove row(s) from modal across all tabs
+            const rows = document.querySelectorAll(`.dup-file-row[data-media-id="${id}"]`);
+            rows.forEach(row => {
+                const groupContainer = row.closest('.dup-group-box');
                 row.style.transition = 'all .3s';
                 row.style.opacity = '0';
                 row.style.height = row.offsetHeight + 'px';
@@ -1978,21 +1979,55 @@ async function deleteSingleMedia(id, btn) {
                     row.style.height = '0';
                     row.style.padding = '0';
                     row.style.margin = '0';
-                    setTimeout(() => row.remove(), 300);
+                    setTimeout(() => {
+                        row.remove();
+                        if (groupContainer) {
+                            const remainingRows = groupContainer.querySelectorAll('.dup-file-row');
+                            if (remainingRows.length <= 1) {
+                                groupContainer.style.transition = 'all .3s';
+                                groupContainer.style.opacity = '0';
+                                setTimeout(() => groupContainer.remove(), 300);
+                            } else {
+                                const header = groupContainer.querySelector('.dup-group-header');
+                                if (header) {
+                                    header.innerHTML = header.innerHTML.replace(/\d+ copies/, remainingRows.length + ' copies');
+                                }
+                            }
+                        }
+                    }, 300);
                 }, 300);
-            }
+            });
+
             // Also remove from page grid
-            const gridCard = document.querySelector(`.media-card[data-id="${id}"]`);
-            if (gridCard) {
+            const gridCards = document.querySelectorAll(`.media-card[data-id="${id}"]`);
+            gridCards.forEach(gridCard => {
                 gridCard.style.transition = 'all .3s';
                 gridCard.style.opacity = '0';
                 gridCard.style.transform = 'scale(0.8)';
                 setTimeout(() => gridCard.remove(), 300);
-            }
-            // Update unused count in _dupData
+            });
+
+            // Update _dupData counts
             if (_dupData) {
                 _dupData.unused_files = _dupData.unused_files.filter(f => f.id !== id);
                 document.getElementById('unusedTabCount').textContent = _dupData.unused_files.length;
+
+                // Update hash duplicates
+                _dupData.duplicates_by_hash.forEach(group => {
+                    group.files = group.files.filter(f => f.id !== id);
+                    group.ids = group.ids.filter(i => i !== id);
+                });
+                _dupData.duplicates_by_hash = _dupData.duplicates_by_hash.filter(g => g.files.length > 1);
+                document.getElementById('hashTabCount').textContent = _dupData.duplicates_by_hash.length;
+
+                // Update name duplicates
+                _dupData.duplicates_by_name.forEach(group => {
+                    group.files = group.files.filter(f => f.id !== id);
+                    group.ids = group.ids.filter(i => i !== id);
+                });
+                _dupData.duplicates_by_name = _dupData.duplicates_by_name.filter(g => g.files.length > 1);
+                document.getElementById('nameTabCount').textContent = _dupData.duplicates_by_name.length;
+
                 if (_dupData.unused_files.length === 0) {
                     document.getElementById('btnDeleteAllUnused').disabled = true;
                     document.getElementById('btnDeleteAllText').textContent = 'Delete All Unused';

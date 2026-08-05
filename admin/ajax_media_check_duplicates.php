@@ -313,9 +313,10 @@ if ($action === 'delete_safe') {
     }
 
     // Safe to delete
-    $full_path    = realpath(__DIR__ . '/../' . $row['file_path']);
+    $rel_path     = ltrim($row['file_path'], '/\\');
+    $full_path    = __DIR__ . '/../' . $rel_path;
     $file_deleted = false;
-    if ($full_path && file_exists($full_path)) {
+    if (file_exists($full_path)) {
         $file_deleted = @unlink($full_path);
     }
 
@@ -377,8 +378,9 @@ if ($action === 'bulk_delete_unused') {
             continue;
         }
 
-        $full_path = realpath(__DIR__ . '/../' . $row['file_path']);
-        if ($full_path && file_exists($full_path)) {
+        $rel_path  = ltrim($row['file_path'], '/\\');
+        $full_path = __DIR__ . '/../' . $rel_path;
+        if (file_exists($full_path)) {
             @unlink($full_path);
         }
 
