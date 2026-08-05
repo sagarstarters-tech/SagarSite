@@ -144,16 +144,20 @@ $categories = $conn->query("SELECT id, name FROM categories ORDER BY name ASC");
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label fw-bold">Favicon (Square .png/.ico)</label>
                                         <input type="file" name="favicon" class="form-control" accept="image/*">
-                                        <?php if (!empty($globalSettings['site_favicon'])): ?>
-                                            <div class="mt-2"><img src="../assets/images/<?php echo $globalSettings['site_favicon']; ?>" style="height: 32px;"></div>
-                                        <?php endif; ?>
+                                        <?php if (!empty($globalSettings['site_favicon'])): 
+                                             $fav_preview = resolve_image_url($globalSettings['site_favicon']);
+                                         ?>
+                                             <div class="mt-2"><img src="<?php echo htmlspecialchars($fav_preview); ?>" style="height: 32px;" onerror="this.src='../assets/images/favicon.png';"></div>
+                                         <?php endif; ?>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label fw-bold">Open Graph Default Image</label>
                                         <input type="file" name="og_image" class="form-control" accept="image/*">
-                                        <?php if (!empty($globalSettings['og_default_image'])): ?>
-                                            <div class="mt-2"><img src="../assets/images/<?php echo $globalSettings['og_default_image']; ?>" style="height: 50px;"></div>
-                                        <?php endif; ?>
+                                        <?php if (!empty($globalSettings['og_default_image'])): 
+                                             $og_preview = resolve_image_url($globalSettings['og_default_image']);
+                                         ?>
+                                             <div class="mt-2"><img src="<?php echo htmlspecialchars($og_preview); ?>" style="max-height: 50px;" onerror="this.style.display='none';"></div>
+                                         <?php endif; ?>
                                     </div>
                                 </div>
                                 <div class="row">

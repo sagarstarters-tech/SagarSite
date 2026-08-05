@@ -225,7 +225,7 @@ if (isset($product['slug'])) {
     <meta property="fb:app_id" content="">
 
     <?php if (!empty($seoData['favicon'])): ?>
-    <link rel="icon" type="image/x-icon" href="<?php echo ASSETS_URL; ?>/images/<?php echo $seoData['favicon']; ?>">
+    <link rel="icon" type="image/x-icon" href="<?php echo htmlspecialchars(resolve_image_url($seoData['favicon'])); ?>">
     <?php endif; ?>
 
     <?php if (!empty($seoData['canonical'])): ?>
