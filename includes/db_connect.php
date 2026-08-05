@@ -17,6 +17,7 @@ if (!defined('BASE_PATH')) {
     define('BASE_PATH', dirname(__DIR__));
 }
 require_once __DIR__ . '/country_codes.php';
+require_once __DIR__ . '/session_setup.php';
 if (!defined('CONFIG_PATH')) {
     define('CONFIG_PATH', BASE_PATH . '/config/');
 }

@@ -1,6 +1,7 @@
 <?php
 ob_start(); // Buffer output to allow setting variables before header
 require_once 'includes/db_connect.php';
+require_once 'includes/session_setup.php';
 
 $where = "";
 if (isset($_GET['slug'])) {
@@ -50,7 +51,7 @@ $page_meta_title = $product['name'] . " - Sagar Starter's";
 $page_meta_description = !empty($product['meta_description']) ? $product['meta_description'] : (!empty($product['short_description']) ? substr(strip_tags($product['short_description']), 0, 160) : substr(strip_tags($product['description']), 0, 160));
 
 // Use the robust resolve_product_image_url function for social preview images
-$page_meta_image = resolve_product_image_url($product['image'] ?? '', $conn, $id);
+$page_meta_image = function_exists('resolve_product_image_url') ? resolve_product_image_url($product['image'] ?? '', $conn, $id) : ($product['image'] ?? 'og_default.jpg');
 
 // Related Products
 $cat_id = $product['category_id'];
