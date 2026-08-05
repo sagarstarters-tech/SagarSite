@@ -170,6 +170,7 @@ class AbandonedCartService {
                 $siteUrl = rtrim($row['setting_value'], '/');
             }
         }
+        $siteUrl = preg_replace('#/(admin|api|user|auth|cron)(/.*)?$#i', '', $siteUrl);
         $recoveryLink = $siteUrl . '/recover_cart.php?token=' . urlencode($cart['recovery_token']);
 
         // Build message from template

@@ -966,7 +966,8 @@ function openCartModal(cart) {
     $('#modalCustomerPhone').text(customerPhone + ' | Cart ID #' + cart.id);
     $('#modalCartTotal').text(globalCurrency + parseFloat(cart.cart_total || 0).toFixed(2));
 
-    const siteUrl = '<?php echo rtrim(defined('SITE_URL') ? SITE_URL : '', '/'); ?>';
+    const rawSiteUrl = '<?php echo rtrim(defined('SITE_URL') ? SITE_URL : '', '/'); ?>';
+    const siteUrl = rawSiteUrl.replace(/\/(admin|api|user|auth|cron)(\/.*)?$/i, '');
     const link = siteUrl + '/recover_cart.php?token=' + encodeURIComponent(cart.recovery_token || '');
     $('#modalRecoveryLink').val(link);
 

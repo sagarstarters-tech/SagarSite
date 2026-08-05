@@ -24,7 +24,7 @@ if (isset($_SERVER['HTTP_HOST']) && $_SERVER['HTTP_HOST'] !== 'localhost' && $_S
     $host = $_SERVER['HTTP_HOST'];
     
     $script_dir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
-    $script_dir = preg_replace('#/(admin|api|user|auth)(/.*)?$#', '', $script_dir);
+    $script_dir = preg_replace('#/(admin|api|user|auth|cron|shipping_module_src|wapi)(/.*)?$#i', '', $script_dir);
     $subfolder  = ($script_dir === '/' || $script_dir === '\\') ? '' : rtrim($script_dir, '/');
     
     $_site_url = "$protocol://$host" . $subfolder;
