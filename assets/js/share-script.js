@@ -8,7 +8,11 @@ document.addEventListener("DOMContentLoaded", function () {
     const COPY_BTN = container.querySelector(".share-copylink");
 
     // Dynamically grab current URL and Product Name
-    const productUrl = encodeURIComponent(window.location.href);
+    let currentHref = window.location.href;
+    if (currentHref.indexOf('?') === -1) {
+        currentHref += '?v=' + Math.floor(Date.now() / 3600000);
+    }
+    const productUrl = encodeURIComponent(currentHref);
     const productNameRaw = container.getAttribute("data-title") || document.title;
     const productName = encodeURIComponent(productNameRaw);
 
