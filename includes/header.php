@@ -235,7 +235,8 @@ $current_url = $scheme . "://" . $_SERVER['HTTP_HOST'] . $current_uri;
 
 // If we are on a product page and have a valid slug, use the clean slug as canonical
 if (isset($product['slug'])) {
-    $current_url = rtrim(defined('SITE_URL') ? SITE_URL : $scheme . "://" . $_SERVER['HTTP_HOST'], '/') . "/product/" . $product['slug'];
+    $q_str = !empty($_SERVER['QUERY_STRING']) ? '?' . $_SERVER['QUERY_STRING'] : '';
+    $current_url = rtrim(defined('SITE_URL') ? SITE_URL : $scheme . "://" . $_SERVER['HTTP_HOST'], '/') . "/product/" . $product['slug'] . $q_str;
 }
 ?>
 <!DOCTYPE html>
