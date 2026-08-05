@@ -393,10 +393,14 @@ $active_tab = isset($_GET['tab']) ? $_GET['tab'] : 'general';
                     <div class="mb-4">
                         <label class="form-label fw-bold">Site Logo (Header)</label>
                         <div class="d-flex align-items-center gap-3 mb-2">
-                            <?php 
+                            <?php
                             $logo = $current_settings['header_logo_image'] ?? 'logo.jpg';
+                            $logo_prev = resolve_image_url($logo);
+                            if (empty($logo_prev) || strpos($logo_prev, 'placeholder') !== false) {
+                                $logo_prev = '../assets/images/logo.jpg';
+                            }
                             ?>
-                            <img src="../assets/images/<?php echo htmlspecialchars($logo); ?>" alt="Current Logo" class="img-thumbnail" style="max-height: 80px;">
+                            <img src="<?php echo htmlspecialchars($logo_prev); ?>" alt="Current Logo" class="img-thumbnail" style="max-height: 80px;" onerror="this.src='../assets/images/logo.jpg';">
                             <div class="flex-grow-1">
                                 <input type="file" name="site_logo" class="form-control" accept="image/*">
                                 <small class="text-muted">Recommended: PNG or transparent background.</small>
@@ -411,10 +415,14 @@ $active_tab = isset($_GET['tab']) ? $_GET['tab'] : 'general';
                     <div class="mb-4">
                         <label class="form-label fw-bold">Footer Logo</label>
                         <div class="d-flex align-items-center gap-3 mb-2">
-                            <?php 
+                            <?php
                             $f_logo = $current_settings['footer_logo_image'] ?? 'logo.jpg';
+                            $f_logo_prev = resolve_image_url($f_logo);
+                            if (empty($f_logo_prev) || strpos($f_logo_prev, 'placeholder') !== false) {
+                                $f_logo_prev = '../assets/images/logo.jpg';
+                            }
                             ?>
-                            <img src="../assets/images/<?php echo htmlspecialchars($f_logo); ?>" alt="Current Footer Logo" class="img-thumbnail" style="max-height: 80px;">
+                            <img src="<?php echo htmlspecialchars($f_logo_prev); ?>" alt="Current Footer Logo" class="img-thumbnail" style="max-height: 80px;" onerror="this.src='../assets/images/logo.jpg';">
                             <div class="flex-grow-1">
                                 <input type="file" name="footer_logo" class="form-control" accept="image/*">
                                 <small class="text-muted">Recommended: PNG or transparent background.</small>
