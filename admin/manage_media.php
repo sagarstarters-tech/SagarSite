@@ -142,39 +142,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['media_action'] ?? '') === 
 // ── Handle SYNC ASSETS (POST) ───────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['media_action'] ?? '') === 'sync_assets') {
     csrf_verify();
-    $assets_dir = realpath(__DIR__ . '/../assets/images');
+    $target_dirs = [
+        'assets/images' => realpath(__DIR__ . '/../assets/images'),
+        'uploads/images' => realpath(__DIR__ . '/../uploads/images'),
+        'uploads/media/images' => realpath(__DIR__ . '/../uploads/media/images')
+    ];
     $count = 0; $skipped = 0;
-    if ($assets_dir && is_dir($assets_dir)) {
-        $files = scandir($assets_dir);
-        $stmt = $conn->prepare("INSERT INTO media_library (file_name, original_name, file_path, file_url, file_type, mime_type, file_size, width, height) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        foreach ($files as $file) {
-            if ($file === '.' || $file === '..') continue;
-            $full_path = $assets_dir . '/' . $file;
-            if (!is_file($full_path)) continue;
-            
-            $rel_path = 'assets/images/' . $file;
-            $safe_rel = $conn->real_escape_string($rel_path);
-            $safe_file = $conn->real_escape_string($file);
-            $check = $conn->query("SELECT id FROM media_library WHERE file_url = '$safe_rel' OR file_name = '$safe_file'");
-            if ($check && $check->num_rows > 0) { $skipped++; continue; }
-            
-            $size = filesize($full_path);
-            $finfo = new finfo(FILEINFO_MIME_TYPE);
-            $mime = $finfo->file($full_path);
-            if (strpos($mime, 'image/') !== 0) continue;
-            
-            $info = @getimagesize($full_path);
-            $width = $info ? $info[0] : null;
-            $height = $info ? $info[1] : null;
-            $file_type = 'image';
-            
-            $stmt->bind_param('ssssssiii', $file, $file, $rel_path, $rel_path, $file_type, $mime, $size, $width, $height);
-            if ($stmt->execute()) { $count++; }
+    $stmt = $conn->prepare("INSERT INTO media_library (file_name, original_name, file_path, file_url, file_type, mime_type, file_size, width, height) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    
+    foreach ($target_dirs as $rel_prefix => $dir_path) {
+        if ($dir_path && is_dir($dir_path)) {
+            $files = scandir($dir_path);
+            foreach ($files as $file) {
+                if ($file === '.' || $file === '..') continue;
+                $full_path = $dir_path . '/' . $file;
+                if (!is_file($full_path)) continue;
+                
+                $rel_path = $rel_prefix . '/' . $file;
+                $safe_rel = $conn->real_escape_string($rel_path);
+                $safe_file = $conn->real_escape_string($file);
+                $check = $conn->query("SELECT id FROM media_library WHERE file_url = '$safe_rel' OR file_name = '$safe_file'");
+                if ($check && $check->num_rows > 0) { $skipped++; continue; }
+                
+                $size = filesize($full_path);
+                $finfo = new finfo(FILEINFO_MIME_TYPE);
+                $mime = $finfo->file($full_path);
+                if (strpos($mime, 'image/') !== 0) continue;
+                
+                $info = @getimagesize($full_path);
+                $width = $info ? $info[0] : null;
+                $height = $info ? $info[1] : null;
+                $file_type = 'image';
+                
+                $stmt->bind_param('ssssssiii', $file, $file, $rel_path, $rel_path, $file_type, $mime, $size, $width, $height);
+                if ($stmt->execute()) { $count++; }
+            }
         }
-        set_flash('success', "Sync complete. Added: $count images. Skipped (already exist): $skipped images.");
-    } else {
-        set_flash('danger', 'Assets directory not found.');
     }
+    set_flash('success', "Sync complete. Added: $count images. Skipped (already exist): $skipped images.");
     header('Location: manage_media.php');
     exit;
 }
@@ -1325,8 +1330,18 @@ foreach ($_usage_tables as $_ut) {
         $_is_used = isset($_used_basenames[$_card_basename]);
     ?>
     <?php 
-        $display_url = (strpos($m['file_url'], 'http') === 0) ? $m['file_url'] : '../' . $m['file_url'];
-        $absolute_url = (strpos($m['file_url'], 'http') === 0) ? $m['file_url'] : SITE_URL . '/' . $m['file_url'];
+        $display_url = resolve_image_url($m['file_url']);
+        if (empty($display_url) || strpos($display_url, 'placeholder') !== false) {
+            $alt_try = resolve_image_url($m['file_name']);
+            if (!empty($alt_try) && strpos($alt_try, 'placeholder') === false) {
+                $display_url = $alt_try;
+            } else {
+                $clean_u = ltrim($m['file_url'], '/');
+                $display_url = (strpos($m['file_url'], 'http') === 0) ? $m['file_url'] : '../' . $clean_u;
+            }
+        }
+        $clean_u_abs = ltrim($m['file_url'], '/');
+        $absolute_url = (strpos($m['file_url'], 'http') === 0) ? $m['file_url'] : SITE_URL . '/' . $clean_u_abs;
     ?>
     <div class="media-card"
          data-id="<?php echo $m['id']; ?>"
@@ -1943,8 +1958,8 @@ function renderUnusedTab(files) {
     }
     let html = `<div class="dup-section-title"><i class="fas fa-unlink me-1"></i>${files.length} unused file(s) — safe to delete</div>`;
     files.forEach(f => {
-        const sizeStr = formatSize(f.file_size);
-        const thumbSrc = (f.file_url.startsWith('http') ? f.file_url : '../' + f.file_url);
+        const cleanUrl = f.file_url.replace(/^\/+/, '');
+        const thumbSrc = (cleanUrl.startsWith('http') ? cleanUrl : '../' + cleanUrl);
         const isImg = f.file_type === 'image';
         const thumbHtml = isImg
             ? `<img src="${escHtml(thumbSrc)}" alt="" onerror="this.onerror=null;this.src='../assets/images/placeholder.svg'">`
@@ -1977,8 +1992,8 @@ function renderDupGroupTab(containerId, groups, label) {
         html += `<div class="dup-group-box">
             <div class="dup-group-header"><i class="fas fa-layer-group"></i>${label} &mdash; ${group.files.length} copies</div>`;
         group.files.forEach((f, fi) => {
-            const sizeStr = formatSize(f.file_size);
-            const thumbSrc = (f.file_url.startsWith('http') ? f.file_url : '../' + f.file_url);
+            const cleanUrl = f.file_url.replace(/^\/+/, '');
+            const thumbSrc = (cleanUrl.startsWith('http') ? cleanUrl : '../' + cleanUrl);
             const isImg = f.file_type === 'image';
             const thumbHtml = isImg
                 ? `<img src="${escHtml(thumbSrc)}" alt="" onerror="this.onerror=null;this.src='../assets/images/placeholder.svg'">`

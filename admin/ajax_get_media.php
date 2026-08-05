@@ -27,10 +27,17 @@ $result = $stmt->get_result();
 
 $items = [];
 while ($row = $result->fetch_assoc()) {
+    $resolvedUrl = resolve_image_url($row['file_url']);
+    if (empty($resolvedUrl) || strpos($resolvedUrl, 'placeholder') !== false) {
+        $altUrl = resolve_image_url($row['file_name']);
+        if (!empty($altUrl) && strpos($altUrl, 'placeholder') === false) {
+            $resolvedUrl = $altUrl;
+        }
+    }
     $items[] = [
         'id' => $row['id'],
         'file_name' => mb_convert_encoding($row['file_name'], 'UTF-8', 'auto'),
-        'file_url' => '/' . ltrim($row['file_url'], '/'), // Ensure leading slash for absolute path from root
+        'file_url' => !empty($resolvedUrl) ? $resolvedUrl : '/' . ltrim($row['file_url'], '/'),
         'original_name' => mb_convert_encoding($row['original_name'], 'UTF-8', 'auto'),
     ];
 }
