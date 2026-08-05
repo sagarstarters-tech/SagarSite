@@ -1211,6 +1211,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (order.length > 0) {
                         const formData = new FormData();
                         formData.append('action', 'update_gallery_order');
+                        formData.append('_csrf_token', _csrfToken);
                         order.forEach((id, index) => {
                             formData.append(`order[${index}]`, id);
                         });
@@ -1247,6 +1248,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const formData = new FormData();
             formData.append('action', 'toggle_trending');
             formData.append('id', id);
+            formData.append('_csrf_token', _csrfToken);
             
             fetch('manage_products.php', {
                 method: 'POST',
@@ -1256,22 +1258,22 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 container.style.opacity = '1';
                 if(data.success) {
-                    const badge = container.querySelector('.badge');
-                    if(badge.classList.contains('bg-light')) {
+                    const isTrending = data.is_trending == 1;
+                    if(isTrending) {
                         container.innerHTML = '<span class="badge bg-warning text-dark"><i class="fas fa-star me-1"></i>Trending</span>';
-                        // Also update any other attribute if needed (like the edit button data-is-trending)
-                        const editBtn = container.closest('tr').querySelector('.edit-product-btn');
-                        if(editBtn) editBtn.dataset.isTrending = '1';
                     } else {
                         container.innerHTML = '<span class="badge bg-light text-muted"><i class="far fa-star me-1"></i>Regular</span>';
-                        const editBtn = container.closest('tr').querySelector('.edit-product-btn');
-                        if(editBtn) editBtn.dataset.isTrending = '0';
                     }
+                    const editBtn = container.closest('tr')?.querySelector('.edit-product-btn');
+                    if(editBtn) editBtn.dataset.isTrending = isTrending ? '1' : '0';
+                } else {
+                    alert(data.error || 'Failed to toggle trending status.');
                 }
             })
             .catch(err => {
                 container.style.opacity = '1';
                 console.error('Error toggling trending status:', err);
+                alert('Connection error occurred.');
             });
         });
     });
