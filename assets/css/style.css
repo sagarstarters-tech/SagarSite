@@ -532,4 +532,14 @@ body.dark-mode-active .footer-link:hover,
     [data-mdb-theme="dark"] #navbarContent .dropdown-item {
         color: rgba(255,255,255,0.7) !important;
     }
+    body.dark-mode-active #navbarContent .mobile-menu-header button,
+    [data-mdb-theme="dark"] #navbarContent .mobile-menu-header button {
+        background-color: #2b2b2b !important;
+        color: #fff !important;
+        border-color: #444 !important;
+    }
+    body.dark-mode-active #navbarContent .mobile-menu-header,
+    [data-mdb-theme="dark"] #navbarContent .mobile-menu-header {
+        border-bottom-color: rgba(255,255,255,0.1) !important;
+    }
 }

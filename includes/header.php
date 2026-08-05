@@ -444,6 +444,13 @@ if (isset($product['slug'])) {
     </div>
     
     <div class="collapse navbar-collapse order-lg-2" id="navbarContent">
+      <!-- Mobile Back Button Header -->
+      <div class="mobile-menu-header d-flex align-items-center justify-content-between pb-3 mb-3 border-bottom d-lg-none">
+          <button type="button" class="btn btn-sm btn-light text-dark fw-bold rounded-pill px-3 py-1 shadow-sm border ms-1" data-mdb-toggle="collapse" data-mdb-target="#navbarContent" aria-label="Close menu">
+              <i class="fas fa-arrow-left me-2"></i>Back
+          </button>
+          <span class="fw-bold text-muted small pe-2 text-uppercase"><i class="fas fa-compass me-1"></i>Menu</span>
+      </div>
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
         <?php
         // Fetch top-level menus for Header
