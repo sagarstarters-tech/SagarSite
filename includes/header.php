@@ -214,6 +214,17 @@ if (!empty($og_image_url)) {
                 $twitter_image_url = $og_image_url;
             }
         }
+        
+        // If image is WebP, route through og_image.php to convert to JPEG on-the-fly for Facebook compatibility
+        $clean_check = strtok($og_image_url, '?');
+        if (strtolower(pathinfo($clean_check, PATHINFO_EXTENSION)) === 'webp') {
+            $site_url = defined('SITE_URL') ? rtrim(SITE_URL, '/') : '';
+            $og_image_url = $site_url . '/og_image.php?img=' . rawurlencode(ltrim(urldecode($clean_url_path), '/'));
+            if (strpos($og_image_url, '&v=') === false && isset($v)) {
+                $og_image_url .= "&v=" . $v;
+            }
+            $twitter_image_url = $og_image_url;
+        }
     }
 }
 
@@ -251,6 +262,7 @@ if (isset($product['slug'])) {
     if ($ext == 'png') $mime = 'image/png';
     elseif ($ext == 'gif') $mime = 'image/gif';
     elseif ($ext == 'webp') $mime = 'image/webp';
+    if (strpos($og_image_url, 'og_image.php') !== false) $mime = 'image/jpeg';
     
     if (strpos($og_image_url, 'https://') === 0): ?>
     <meta property="og:image:secure_url" content="<?php echo htmlspecialchars($og_image_url); ?>">
