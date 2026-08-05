@@ -179,6 +179,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['media_action'] ?? '') === 
     exit;
 }
 
+// ── Handle CLEAR ALL MEDIA (POST) ───────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['media_action'] ?? '') === 'clear_all_media') {
+    csrf_verify();
+    
+    // 1. Truncate media_library & product_images
+    $conn->query("TRUNCATE TABLE `media_library`");
+    $conn->query("TRUNCATE TABLE `product_images`");
+
+    // 2. Clear image columns across all tables
+    $reset_tables = ['products', 'banners', 'categories', 'hero_slides', 'sliders', 'testimonials', 'homepage_features', 'slides'];
+    foreach ($reset_tables as $tbl) {
+        $texists = $conn->query("SHOW TABLES LIKE '$tbl'");
+        if ($texists && $texists->num_rows > 0) {
+            $cexists = $conn->query("SHOW COLUMNS FROM `$tbl` LIKE 'image'");
+            if ($cexists && $cexists->num_rows > 0) {
+                $conn->query("UPDATE `$tbl` SET `image` = '' WHERE `image` IS NOT NULL");
+            }
+        }
+    }
+
+    // 3. Delete physical files from uploads directories
+    $upload_dirs = [
+        realpath(__DIR__ . '/../uploads/media/images'),
+        realpath(__DIR__ . '/../uploads/media/videos'),
+        realpath(__DIR__ . '/../uploads/images'),
+    ];
+    $count = 0;
+    function wipe_upload_dir($dir, &$c) {
+        if (!$dir || !is_dir($dir)) return;
+        $items = scandir($dir);
+        foreach ($items as $item) {
+            if (in_array($item, ['.', '..', '.htaccess', '.gitkeep', '.gitignore'])) continue;
+            $full_path = $dir . '/' . $item;
+            if (is_dir($full_path)) {
+                wipe_upload_dir($full_path, $c);
+                @rmdir($full_path);
+            } else {
+                if (@unlink($full_path)) $c++;
+            }
+        }
+    }
+    foreach ($upload_dirs as $udir) {
+        if ($udir) wipe_upload_dir($udir, $count);
+    }
+
+    set_flash('success', "All media records reset and $count physical file(s) deleted successfully.");
+    header('Location: manage_media.php');
+    exit;
+}
+
 // ── Fetch all media ──────────────────────────────────────────
 $filter_type = $_GET['type'] ?? 'all';
 $search_q    = trim($_GET['search'] ?? '');
@@ -1240,6 +1290,13 @@ foreach ($_usage_tables as $_ut) {
         <button type="button" class="btn btn-outline-warning btn-sm rounded-pill ms-1 fw-bold" id="btnCheckDuplicates" onclick="openDupModal()" title="Find duplicate &amp; unused media files">
             <i class="fas fa-search-minus me-1"></i>Check Duplicates &amp; Unused
         </button>
+        <form method="POST" class="d-inline m-0 p-0" onsubmit="return confirm('⚠️ CRITICAL WARNING: Are you sure you want to COMPLETELY delete ALL media files and reset image references everywhere on the website?\n\nThis action CANNOT be undone!');">
+            <?php echo csrf_input(); ?>
+            <input type="hidden" name="media_action" value="clear_all_media">
+            <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill ms-1 fw-bold" title="Delete ALL media files from website">
+                <i class="fas fa-trash-alt me-1"></i>Clear All Media
+            </button>
+        </form>
         <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill ms-1" id="btnSelectAll" onclick="toggleSelectAll()">
             <i class="fas fa-check-square me-1"></i>Select All
         </button>
