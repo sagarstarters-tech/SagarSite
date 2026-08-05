@@ -227,7 +227,11 @@ $_optional_tables = ['hero_slides','sliders','testimonials','homepage_features',
 foreach ($_optional_tables as $_ot) {
     $r = $conn->query("SHOW TABLES LIKE '$_ot'");
     if ($r && $r->num_rows > 0) {
-        $_usage_tables[] = ['table' => $_ot, 'col' => 'image'];
+        // Verify 'image' column actually exists in this table
+        $col_check = $conn->query("SHOW COLUMNS FROM `$_ot` LIKE 'image'");
+        if ($col_check && $col_check->num_rows > 0) {
+            $_usage_tables[] = ['table' => $_ot, 'col' => 'image'];
+        }
     }
 }
 // Build a set of used basenames
