@@ -13,16 +13,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         $image = '';
         if (isset($_FILES['image']) && $_FILES['image']['error'] === 0) {
-            $ext = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
-            $image = uniqid('banner_') . '.' . $ext;
-            // Save to uploads/images/ — deploy-safe (not wiped by git deployment)
-            $upload_target = '../uploads/images/';
+            $ext = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
+            $fname = uniqid('banner_') . '.' . $ext;
+            // Save to uploads/media/images/ — consistent with media library
+            $upload_target = '../uploads/media/images/';
             if (!is_dir($upload_target)) mkdir($upload_target, 0755, true);
-            move_uploaded_file($_FILES['image']['tmp_name'], $upload_target . $image);
+            if (move_uploaded_file($_FILES['image']['tmp_name'], $upload_target . $fname)) {
+                $image = 'uploads/media/images/' . $fname; // store full relative path
+            }
         }
         
         if ($image) {
-            $conn->query("INSERT INTO banners (image, heading, subheading, status) VALUES ('$image', '$heading', '$subheading', '$status')");
+            $esc_img = $conn->real_escape_string($image);
+            $conn->query("INSERT INTO banners (image, heading, subheading, status) VALUES ('$esc_img', '$heading', '$subheading', '$status')");
         }
         
         header("Location: manage_banners.php?success=Banner added successfully");
@@ -46,19 +49,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $gal_refs   = (int)$conn->query("SELECT COUNT(*) as c FROM product_images WHERE image='$old_banner_img'")->fetch_assoc()['c'];
                 $other_ban  = (int)$conn->query("SELECT COUNT(*) as c FROM banners WHERE image='$old_banner_img' AND id!=$id")->fetch_assoc()['c'];
                 if ($prod_refs === 0 && $gal_refs === 0 && $other_ban === 0) {
-                    // Check both possible storage locations (backward compatible)
-                    if (file_exists('../uploads/images/' . $old_img['image'])) unlink('../uploads/images/' . $old_img['image']);
-                    elseif (file_exists('../assets/images/' . $old_img['image'])) unlink('../assets/images/' . $old_img['image']);
+                    // Try all possible storage locations (backward compatible)
+                    $try1 = '../' . ltrim($old_img['image'], '/');
+                    $try2 = '../uploads/images/' . basename($old_img['image']);
+                    $try3 = '../assets/images/' . basename($old_img['image']);
+                    foreach ([$try1, $try2, $try3] as $tp) {
+                        if (file_exists($tp)) { @unlink($tp); break; }
+                    }
                 }
             }
-            
-            $ext = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
-            $image = uniqid('banner_') . '.' . $ext;
-            // Save to uploads/images/ — deploy-safe
-            $upload_target = '../uploads/images/';
+
+            $ext = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
+            $fname = uniqid('banner_') . '.' . $ext;
+            // Save to uploads/media/images/ — consistent with media library
+            $upload_target = '../uploads/media/images/';
             if (!is_dir($upload_target)) mkdir($upload_target, 0755, true);
-            move_uploaded_file($_FILES['image']['tmp_name'], $upload_target . $image);
-            $image_query = ", image='$image'";
+            if (move_uploaded_file($_FILES['image']['tmp_name'], $upload_target . $fname)) {
+                $new_path = $conn->real_escape_string('uploads/media/images/' . $fname);
+                $image_query = ", image='$new_path'";
+            }
         }
         
         $conn->query("UPDATE banners SET heading='$heading', subheading='$subheading', status='$status' $image_query WHERE id=$id");
@@ -78,9 +87,12 @@ if (isset($_GET['delete'])) {
         $gal_refs   = (int)$conn->query("SELECT COUNT(*) as c FROM product_images WHERE image='$old_banner_img'")->fetch_assoc()['c'];
         $other_ban  = (int)$conn->query("SELECT COUNT(*) as c FROM banners WHERE image='$old_banner_img' AND id!=$id")->fetch_assoc()['c'];
         if ($prod_refs === 0 && $gal_refs === 0 && $other_ban === 0) {
-            // Check both possible storage locations (backward compatible)
-            if (file_exists('../uploads/images/' . $old_img['image'])) unlink('../uploads/images/' . $old_img['image']);
-            elseif (file_exists('../assets/images/' . $old_img['image'])) unlink('../assets/images/' . $old_img['image']);
+            $try1 = '../' . ltrim($old_img['image'], '/');
+            $try2 = '../uploads/images/' . basename($old_img['image']);
+            $try3 = '../assets/images/' . basename($old_img['image']);
+            foreach ([$try1, $try2, $try3] as $tp) {
+                if (file_exists($tp)) { @unlink($tp); break; }
+            }
         }
     }
     $conn->query("DELETE FROM banners WHERE id=$id");

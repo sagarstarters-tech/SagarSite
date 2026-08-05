@@ -49,9 +49,9 @@ $transition_type = $settings['transition_type'] ?? 'slide'; // fade, slide, zoom
                 <!-- Background Layer -->
                 <div class="hero-bg">
                     <?php if($slide['bg_type'] === 'image' && $slide['media_path']): ?>
-                        <img src="<?php echo ASSETS_URL; ?>/images/slider/<?php echo htmlspecialchars($slide['media_path']); ?>" alt="<?php echo htmlspecialchars($slide['title']); ?>" loading="<?php echo $slide_index === 0 ? 'eager' : 'lazy'; ?>">
+                        <img src="<?php echo htmlspecialchars(resolve_image_url($slide['media_path'])); ?>" alt="<?php echo htmlspecialchars($slide['title']); ?>" loading="<?php echo $slide_index === 0 ? 'eager' : 'lazy'; ?>">
                     <?php elseif($slide['bg_type'] === 'video' && $slide['media_path']): ?>
-                        <video src="<?php echo ASSETS_URL; ?>/images/slider/<?php echo htmlspecialchars($slide['media_path']); ?>" autoplay loop muted playsinline <?php echo $slide_index !== 0 ? 'data-lazy-video' : ''; ?>></video>
+                        <video src="<?php echo htmlspecialchars(resolve_image_url($slide['media_path'])); ?>" autoplay loop muted playsinline <?php echo $slide_index !== 0 ? 'data-lazy-video' : ''; ?>></video>
                     <?php elseif($slide['bg_type'] === 'color'): ?>
                         <div style="background-color: <?php echo htmlspecialchars($slide['bg_color']); ?>; width: 100%; height: 100%;"></div>
                     <?php elseif($slide['bg_type'] === 'gradient'): ?>

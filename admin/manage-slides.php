@@ -43,9 +43,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $media_path = '';
         if (($bg_type === 'image' || $bg_type === 'video') && isset($_FILES['media']) && $_FILES['media']['error'] === 0) {
-            $ext = pathinfo($_FILES['media']['name'], PATHINFO_EXTENSION);
-            $media_path = uniqid('slide_') . '.' . $ext;
-            move_uploaded_file($_FILES['media']['tmp_name'], $upload_dir . $media_path);
+            $ext = strtolower(pathinfo($_FILES['media']['name'], PATHINFO_EXTENSION));
+            $fname = uniqid('slide_') . '.' . $ext;
+            // Save to uploads/media/images/ — consistent with media library
+            $slide_upload_target = '../uploads/media/images/';
+            if (!is_dir($slide_upload_target)) mkdir($slide_upload_target, 0755, true);
+            if (move_uploaded_file($_FILES['media']['tmp_name'], $slide_upload_target . $fname)) {
+                $media_path = 'uploads/media/images/' . $fname; // store full relative path
+            }
         }
 
         $sql = "INSERT INTO hero_slides (bg_type, media_path, bg_color, overlay_color, title, subtitle, description, 
@@ -87,19 +92,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $media_query = "";
         if (($bg_type === 'image' || $bg_type === 'video') && isset($_FILES['media']) && $_FILES['media']['error'] === 0) {
-            // Delete old media — check both possible locations
+            // Delete old media — check all possible locations
             $old_q = $conn->query("SELECT media_path FROM hero_slides WHERE id=$id");
             if ($old_q && $old = $old_q->fetch_assoc()) {
                 if ($old['media_path']) {
-                    if (file_exists($upload_dir . $old['media_path'])) unlink($upload_dir . $old['media_path']);
-                    elseif (file_exists($old_upload_dir . $old['media_path'])) unlink($old_upload_dir . $old['media_path']);
+                    $try1 = '../' . ltrim($old['media_path'], '/');
+                    $try2 = $upload_dir . basename($old['media_path']);
+                    $try3 = $old_upload_dir . basename($old['media_path']);
+                    foreach ([$try1, $try2, $try3] as $tp) {
+                        if (file_exists($tp)) { @unlink($tp); break; }
+                    }
                 }
             }
 
-            $ext = pathinfo($_FILES['media']['name'], PATHINFO_EXTENSION);
-            $media_path = uniqid('slide_') . '.' . $ext;
-            move_uploaded_file($_FILES['media']['tmp_name'], $upload_dir . $media_path);
-            $media_query = ", media_path='$media_path'";
+            $ext = strtolower(pathinfo($_FILES['media']['name'], PATHINFO_EXTENSION));
+            $fname = uniqid('slide_') . '.' . $ext;
+            // Save to uploads/media/images/ — consistent with media library
+            $slide_upload_target = '../uploads/media/images/';
+            if (!is_dir($slide_upload_target)) mkdir($slide_upload_target, 0755, true);
+            if (move_uploaded_file($_FILES['media']['tmp_name'], $slide_upload_target . $fname)) {
+                $new_path = $conn->real_escape_string('uploads/media/images/' . $fname);
+                $media_query = ", media_path='$new_path'";
+            }
         }
 
         $sql = "UPDATE hero_slides SET 
