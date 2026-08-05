@@ -141,32 +141,78 @@ function makeAbsoluteUrl($path) {
     return $scheme . "://" . $host . $finalPath;
 }
 
-$og_image_url = makeAbsoluteUrl($seoData['og_image']);
-$twitter_image_url = makeAbsoluteUrl($seoData['twitter_image']);
-// DEBUG: error_log("SEO Debug: OG Image=$og_image_url");
+if (!function_exists('encode_social_url_path')) {
+    function encode_social_url_path($url) {
+        if (empty($url)) return '';
+        $parsed = parse_url($url);
+        if (!$parsed || !isset($parsed['path'])) return $url;
+        
+        $path_parts = explode('/', $parsed['path']);
+        $encoded_parts = array_map(function($part) {
+            return rawurlencode(urldecode($part));
+        }, $path_parts);
+        
+        $encoded_path = implode('/', $encoded_parts);
+        
+        $scheme = isset($parsed['scheme']) ? $parsed['scheme'] . '://' : '';
+        $host = isset($parsed['host']) ? $parsed['host'] : '';
+        $port = isset($parsed['port']) ? ':' . $parsed['port'] : '';
+        $query = isset($parsed['query']) ? '?' . $parsed['query'] : '';
+        
+        return $scheme . $host . $port . $encoded_path . $query;
+    }
+}
 
-// Auto-detect OG image dimensions for Facebook compatibility
+// 1. Resolve raw image reference to full URL
+$raw_og_img = $seoData['og_image'] ?? '';
+if (!empty($entity_type) && $entity_type === 'product' && !empty($entity_id)) {
+    $og_image_url = function_exists('resolve_product_image_url') 
+        ? resolve_product_image_url($raw_og_img, $conn ?? null, $entity_id) 
+        : makeAbsoluteUrl($raw_og_img);
+} else {
+    $og_image_url = function_exists('resolve_image_url') 
+        ? resolve_image_url($raw_og_img) 
+        : makeAbsoluteUrl($raw_og_img);
+}
+
+// 2. Fallback if empty or SVG (Facebook & WhatsApp do not render SVG open-graph images)
+$clean_og_url = strtok($og_image_url, '?');
+if (empty($og_image_url) || strtolower(pathinfo($clean_og_url, PATHINFO_EXTENSION)) === 'svg' || strpos($og_image_url, 'placeholder.svg') !== false) {
+    $og_image_url = function_exists('resolve_image_url') 
+        ? resolve_image_url('og_default.jpg') 
+        : makeAbsoluteUrl('og_default.jpg');
+}
+
+// 3. Rawurlencode path spaces/special characters for strict social crawler HTTP client compatibility
+$og_image_url = encode_social_url_path($og_image_url);
+$twitter_image_url = $og_image_url;
+
+// 4. Auto-detect OG image dimensions & cache-busting timestamp
 $og_image_width = 1200;  // Default fallback
 $og_image_height = 630;  // Default fallback
-if (!empty($seoData['og_image'])) {
-    $img_raw = $seoData['og_image'];
-    // Build local file path from the image reference
-    if (strpos($img_raw, 'http') !== 0) {
-        $clean = ltrim($img_raw, '/');
-        if (strpos($clean, '/') !== false) {
-            $local_img_path = __DIR__ . '/../' . $clean;
-        } else {
-            $local_img_path = __DIR__ . '/../assets/images/' . $clean;
+
+if (!empty($og_image_url)) {
+    $parsed_path = parse_url($og_image_url, PHP_URL_PATH);
+    if ($parsed_path) {
+        $site_path = defined('SITE_URL') ? parse_url(SITE_URL, PHP_URL_PATH) : '';
+        $clean_url_path = $parsed_path;
+        if (!empty($site_path) && strpos($clean_url_path, $site_path) === 0) {
+            $clean_url_path = substr($clean_url_path, strlen($site_path));
         }
+        $base_dir = defined('BASE_PATH') ? BASE_PATH : __DIR__ . '/..';
+        $local_img_path = $base_dir . '/' . ltrim(urldecode($clean_url_path), '/');
+        
         if (file_exists($local_img_path)) {
             $img_size = @getimagesize($local_img_path);
-            if ($img_size && $img_size[0] >= 200 && $img_size[1] >= 200) {
+            if ($img_size && $img_size[0] >= 100 && $img_size[1] >= 100) {
                 $og_image_width = $img_size[0];
                 $og_image_height = $img_size[1];
             }
             $v = filemtime($local_img_path);
-            if (!empty($og_image_url) && strpos($og_image_url, '?') === false) $og_image_url .= "?v=" . $v;
-            if (!empty($twitter_image_url) && strpos($twitter_image_url, '?') === false) $twitter_image_url .= "?v=" . $v;
+            if (strpos($og_image_url, '?') === false) {
+                $og_image_url .= "?v=" . $v;
+                $twitter_image_url = $og_image_url;
+            }
         }
     }
 }

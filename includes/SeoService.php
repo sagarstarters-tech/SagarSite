@@ -24,7 +24,9 @@ class SeoService {
                     $p = $res->fetch_assoc();
                     $fallbackData['title'] = $p['name'];
                     $fallbackData['description'] = $p['meta_description'];
-                    $fallbackData['image'] = $p['image'];
+                    if (empty($fallbackData['image'])) {
+                        $fallbackData['image'] = function_exists('resolve_product_image_url') ? resolve_product_image_url($p['image'] ?? '', $this->repo->getConnection(), $id) : ($p['image'] ?? '');
+                    }
                 }
             } elseif ($type === 'category' && $id > 0) {
                 $res = $this->repo->getConnection()->query("SELECT name, image FROM categories WHERE id=$id");
