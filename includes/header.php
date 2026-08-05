@@ -338,13 +338,16 @@ if (isset($product['slug'])) {
 <nav class="navbar navbar-expand-lg navbar-light navbar-custom sticky-top">
   <div class="container">
     <a class="navbar-brand fw-bold montserrat primary-blue fs-3" href="<?php echo (defined('SITE_URL') && !empty(SITE_URL) && strpos(SITE_URL, 'http') !== 0) ? rtrim(SITE_URL, '/') . '/index.php' : (rtrim(SITE_URL, '/') ?: '') . '/index.php'; ?>">
-        <?php if (!isset($global_settings['show_header_logo']) || $global_settings['show_header_logo'] == '1'): 
-            $header_logo = $global_settings['header_logo_image'] ?? 'logo.jpg';
-            if (!file_exists(BASE_PATH . '/assets/images/' . $header_logo)) {
-                $header_logo = file_exists(BASE_PATH . '/assets/images/logo.jpg') ? 'logo.jpg' : 'logo_1772118384.jpeg';
+        <?php if (!isset($global_settings['show_header_logo']) || $global_settings['show_header_logo'] == '1'):
+            $header_logo_val = $global_settings['header_logo_image'] ?? 'logo.jpg';
+            $header_logo_url = resolve_image_url($header_logo_val);
+            // Fallback to assets logo if resolve returns placeholder
+            if (empty($header_logo_url) || strpos($header_logo_url, 'placeholder') !== false) {
+                $fallback = file_exists(BASE_PATH . '/assets/images/logo.jpg') ? 'logo.jpg' : 'logo_1772118384.jpeg';
+                $header_logo_url = ASSETS_URL . '/images/' . $fallback;
             }
         ?>
-            <img src="<?php echo ASSETS_URL; ?>/images/<?php echo htmlspecialchars($header_logo); ?>" alt="Logo" style="height: <?php echo htmlspecialchars($global_settings['header_logo_height'] ?? '40'); ?>px; width: auto; object-fit: contain;">
+            <img src="<?php echo htmlspecialchars($header_logo_url); ?>" alt="Logo" style="height: <?php echo htmlspecialchars($global_settings['header_logo_height'] ?? '40'); ?>px; width: auto; object-fit: contain;">
         <?php else: ?>
             <span>Sagar Starter's</span>
         <?php endif; ?>

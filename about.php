@@ -54,7 +54,7 @@ if (!empty($global_settings['hero_banner_about']) && file_exists(__DIR__ . '/ass
     <div class="row align-items-center mb-5">
         <div class="col-md-6 mb-4 mb-md-0">
             <?php if (!empty($about_who_image)): ?>
-                <img src="<?php echo ASSETS_URL; ?>/images/<?php echo htmlspecialchars($about_who_image); ?>" alt="Our Team" class="img-fluid rounded-4 shadow-lg">
+                <img src="<?php echo htmlspecialchars(resolve_image_url($about_who_image)); ?>" alt="Our Team" class="img-fluid rounded-4 shadow-lg">
             <?php else: ?>
                 <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Our Team" class="img-fluid rounded-4 shadow-lg">
             <?php endif; ?>

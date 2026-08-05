@@ -34,8 +34,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $ext = strtolower(pathinfo($_FILES['about_who_image']['name'], PATHINFO_EXTENSION));
                 if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
                     $filename = 'about_who_' . time() . '.' . $ext;
-                    if (move_uploaded_file($_FILES['about_who_image']['tmp_name'], '../assets/images/' . $filename)) {
-                        $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('$key', '$filename') ON DUPLICATE KEY UPDATE setting_value='$filename'");
+                    // Save to uploads/media/images/ — consistent with media library
+                    $upload_target = '../uploads/media/images/';
+                    if (!is_dir($upload_target)) mkdir($upload_target, 0755, true);
+                    if (move_uploaded_file($_FILES['about_who_image']['tmp_name'], $upload_target . $filename)) {
+                        $full_path = 'uploads/media/images/' . $filename;
+                        $safe_val = $conn->real_escape_string($full_path);
+                        $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('$key', '$safe_val') ON DUPLICATE KEY UPDATE setting_value='$safe_val'");
                     }
                 }
             }

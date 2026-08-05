@@ -24,23 +24,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Handle File Uploads
         if (isset($_FILES['favicon']) && $_FILES['favicon']['error'] === 0) {
-            $ext = pathinfo($_FILES['favicon']['name'], PATHINFO_EXTENSION);
+            $ext = strtolower(pathinfo($_FILES['favicon']['name'], PATHINFO_EXTENSION));
             $favicon = 'favicon.' . $ext;
-            // Save to uploads/images/ — deploy-safe (not wiped by git deployment)
-            $upload_target = '../uploads/images/';
+            // Save to uploads/media/images/ — consistent with media library
+            $upload_target = '../uploads/media/images/';
             if (!is_dir($upload_target)) mkdir($upload_target, 0755, true);
             if (move_uploaded_file($_FILES['favicon']['tmp_name'], $upload_target . $favicon)) {
-                $settings['site_favicon'] = $favicon;
+                $settings['site_favicon'] = 'uploads/media/images/' . $favicon; // full relative path
             }
         }
         if (isset($_FILES['og_image']) && $_FILES['og_image']['error'] === 0) {
-            $ext = pathinfo($_FILES['og_image']['name'], PATHINFO_EXTENSION);
+            $ext = strtolower(pathinfo($_FILES['og_image']['name'], PATHINFO_EXTENSION));
             $og_img = 'og_default.' . $ext;
-            // Save to uploads/images/ — deploy-safe
-            $upload_target = '../uploads/images/';
+            // Save to uploads/media/images/ — consistent with media library
+            $upload_target = '../uploads/media/images/';
             if (!is_dir($upload_target)) mkdir($upload_target, 0755, true);
             if (move_uploaded_file($_FILES['og_image']['tmp_name'], $upload_target . $og_img)) {
-                $settings['og_default_image'] = $og_img;
+                $settings['og_default_image'] = 'uploads/media/images/' . $og_img; // full relative path
             }
         }
 

@@ -28,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['subscribe_email'])) {
         <!-- Column 1: Brand & Slogan -->
         <div class="col-lg-4 col-md-6 mb-4 pe-lg-5">
             <?php if (!isset($global_settings['show_footer_logo']) || $global_settings['show_footer_logo'] == '1'): ?>
-                <img src="<?php echo ASSETS_URL; ?>/images/<?php echo htmlspecialchars($global_settings['footer_logo_image'] ?? 'logo.jpg'); ?>" alt="Sagar Starter's" style="height: <?php echo htmlspecialchars($global_settings['footer_logo_height'] ?? '45'); ?>px; width: auto; object-fit: contain;" class="mb-4">
+                <img src="<?php echo htmlspecialchars(resolve_image_url($global_settings['footer_logo_image'] ?? 'logo.jpg')); ?>" alt="Sagar Starter's" style="height: <?php echo htmlspecialchars($global_settings['footer_logo_height'] ?? '45'); ?>px; width: auto; object-fit: contain;" class="mb-4">
             <?php else: ?>
                 <h4 class="fw-bold mb-3 text-dark">Sagar Starter's</h4>
             <?php endif; ?>

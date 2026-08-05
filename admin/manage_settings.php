@@ -31,11 +31,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             
             if (in_array($ext, $allowed)) {
                 $new_name = 'logo_' . time() . '.' . $ext;
-                // Save to uploads/images/ — deploy-safe (not wiped by git deployment)
-                $upload_dir = '../uploads/images/';
+                // Save to uploads/media/images/ — consistent with media library
+                $upload_dir = '../uploads/media/images/';
                 if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
                 if (move_uploaded_file($tmp_name, $upload_dir . $new_name)) {
-                    $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('header_logo_image', '$new_name') ON DUPLICATE KEY UPDATE setting_value='$new_name'");
+                    $full_path = 'uploads/media/images/' . $new_name;
+                    $safe_path = $conn->real_escape_string($full_path);
+                    $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('header_logo_image', '$safe_path') ON DUPLICATE KEY UPDATE setting_value='$safe_path'");
                 }
             }
         }
@@ -49,11 +51,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             
             if (in_array($ext, $allowed)) {
                 $new_name = 'footer_logo_' . time() . '.' . $ext;
-                // Save to uploads/images/ — deploy-safe (not wiped by git deployment)
-                $upload_dir = '../uploads/images/';
+                // Save to uploads/media/images/ — consistent with media library
+                $upload_dir = '../uploads/media/images/';
                 if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
                 if (move_uploaded_file($tmp_name, $upload_dir . $new_name)) {
-                    $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('footer_logo_image', '$new_name') ON DUPLICATE KEY UPDATE setting_value='$new_name'");
+                    $full_path = 'uploads/media/images/' . $new_name;
+                    $safe_path = $conn->real_escape_string($full_path);
+                    $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('footer_logo_image', '$safe_path') ON DUPLICATE KEY UPDATE setting_value='$safe_path'");
                 }
             }
         }
@@ -256,11 +260,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     }
 
                     $new_name = "hero_{$page}_" . time() . '.' . $ext;
-                    // Save to uploads/images/ — deploy-safe
-                    $upload_target = '../uploads/images/';
+                    // Save to uploads/media/images/ — consistent with media library
+                    $upload_target = '../uploads/media/images/';
                     if (!is_dir($upload_target)) mkdir($upload_target, 0755, true);
                     if (move_uploaded_file($tmp_name, $upload_target . $new_name)) {
-                        $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('$setting_key', '$new_name') ON DUPLICATE KEY UPDATE setting_value='$new_name'");
+                        $full_path = 'uploads/media/images/' . $new_name;
+                        $safe_path = $conn->real_escape_string($full_path);
+                        $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('$setting_key', '$safe_path') ON DUPLICATE KEY UPDATE setting_value='$safe_path'");
                     }
                 }
             }
