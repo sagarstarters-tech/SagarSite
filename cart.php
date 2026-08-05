@@ -84,13 +84,18 @@ if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
                                         </form>
                                     </td>
                                     <td class="fw-bold"><?php echo $global_currency; ?><?php echo number_format($item['total'], 2); ?></td>
-                                    <td class="pe-4 text-end">
-                                        <form action="includes/cart_actions.php" method="POST">
-                                            <input type="hidden" name="action" value="remove">
-                                            <input type="hidden" name="product_id" value="<?php echo $item['id']; ?>">
-                                            <button type="submit" class="btn btn-link text-danger p-0"><i class="fas fa-trash-alt fs-5"></i></button>
-                                        </form>
-                                    </td>
+                                     <td class="pe-4 text-end">
+                                         <form action="includes/cart_actions.php" method="POST" class="mb-2">
+                                             <input type="hidden" name="action" value="remove">
+                                             <input type="hidden" name="product_id" value="<?php echo $item['id']; ?>">
+                                             <button type="submit" class="btn btn-link text-danger p-0" title="Delete Item"><i class="fas fa-trash-alt fs-5"></i></button>
+                                         </form>
+                                         <div>
+                                             <a href="shop.php" class="btn btn-outline-primary btn-sm rounded-pill text-nowrap px-3 py-1 fw-semibold" style="font-size: 0.8rem;">
+                                                 <i class="fas fa-plus me-1"></i>Add More Products
+                                             </a>
+                                         </div>
+                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
                             </tbody>
