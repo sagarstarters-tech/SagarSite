@@ -34,7 +34,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $ext = strtolower(pathinfo($_FILES['icon_value_img']['name'], PATHINFO_EXTENSION));
                 if (in_array($ext, ['jpg', 'jpeg', 'png', 'svg', 'gif', 'webp'])) {
                     $icon_value = 'feature_' . time() . '.' . $ext;
-                    move_uploaded_file($_FILES['icon_value_img']['tmp_name'], '../assets/images/' . $icon_value);
+                    // Save to uploads/images/ — deploy-safe (not wiped by git deployment)
+                    $upload_target = '../uploads/images/';
+                    if (!is_dir($upload_target)) mkdir($upload_target, 0755, true);
+                    move_uploaded_file($_FILES['icon_value_img']['tmp_name'], $upload_target . $icon_value);
                 }
             } else {
                 // Keep existing image if no new file is uploaded
@@ -62,8 +65,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $gal_refs  = (int)$conn->query("SELECT COUNT(*) as c FROM product_images WHERE image='$feat_img'")->fetch_assoc()['c'];
                 $ban_refs  = (int)$conn->query("SELECT COUNT(*) as c FROM banners WHERE image='$feat_img'")->fetch_assoc()['c'];
                 $cat_refs  = (int)$conn->query("SELECT COUNT(*) as c FROM categories WHERE image='$feat_img'")->fetch_assoc()['c'];
-                if ($prod_refs === 0 && $gal_refs === 0 && $ban_refs === 0 && $cat_refs === 0 && file_exists('../assets/images/' . $del_item['icon_value'])) {
-                    unlink('../assets/images/' . $del_item['icon_value']);
+                if ($prod_refs === 0 && $gal_refs === 0 && $ban_refs === 0 && $cat_refs === 0) {
+                    // Check both possible storage locations (backward compatible)
+                    if (file_exists('../uploads/images/' . $del_item['icon_value'])) unlink('../uploads/images/' . $del_item['icon_value']);
+                    elseif (file_exists('../assets/images/' . $del_item['icon_value'])) unlink('../assets/images/' . $del_item['icon_value']);
                 }
             }
         }

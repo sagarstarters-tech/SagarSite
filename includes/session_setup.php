@@ -218,29 +218,48 @@ if (!function_exists('resolve_product_image_url')) {
                 return $img;
             }
             
-            // Clean leading slashes and redundant directory prefixes
+            // Clean leading slashes
             $clean = ltrim($img, '/');
-            if (strpos($clean, 'assets/images/') === 0) {
-                $clean = substr($clean, 14);
-            } elseif (strpos($clean, 'uploads/images/') === 0) {
-                $clean = substr($clean, 15);
-            } elseif (strpos($clean, 'uploads/') === 0) {
-                $clean = substr($clean, 8);
+            
+            // 2. Already stored as full relative path from root (e.g. "uploads/images/testimonials/tst_xxx.jpg")
+            if (strpos($clean, 'uploads/') === 0) {
+                if (file_exists($base_path . '/' . $clean)) {
+                    return $site_url . '/' . $clean;
+                }
+            }
+
+            // Strip directory prefixes to get bare filename
+            $bare = $clean;
+            if (strpos($bare, 'assets/images/') === 0) {
+                $bare = substr($bare, 14);
+            } elseif (strpos($bare, 'uploads/images/') === 0) {
+                $bare = substr($bare, 15);
+            } elseif (strpos($bare, 'uploads/') === 0) {
+                $bare = substr($bare, 8);
+            }
+
+            // Check in /uploads/images/ (new deploy-safe location — priority)
+            if (file_exists($base_path . '/uploads/images/' . $bare)) {
+                return $site_url . '/uploads/images/' . $bare;
+            }
+
+            // Check in /uploads/ (legacy fallback)
+            if (file_exists($base_path . '/uploads/' . $bare)) {
+                return $site_url . '/uploads/' . $bare;
             }
             
-            // Check in /uploads/
-            if (file_exists($base_path . '/uploads/' . $clean)) {
-                return $site_url . '/uploads/' . $clean;
-            }
-            
-            // Check in /assets/images/
-            if (file_exists($base_path . '/assets/images/' . $clean)) {
-                return $assets_url . '/images/' . $clean;
+            // Check in /assets/images/ (git-tracked images)
+            if (file_exists($base_path . '/assets/images/' . $bare)) {
+                return $assets_url . '/images/' . $bare;
             }
             
             // Auto-heal extension mismatch (e.g. db says .jpg, file is .webp)
-            $name_no_ext = pathinfo($clean, PATHINFO_FILENAME);
+            $name_no_ext = pathinfo($bare, PATHINFO_FILENAME);
             if (!empty($name_no_ext)) {
+                $upload_img_matches = glob($base_path . '/uploads/images/' . $name_no_ext . '.*');
+                if (!empty($upload_img_matches)) {
+                    return $site_url . '/uploads/images/' . basename($upload_img_matches[0]);
+                }
                 $matches = glob($base_path . '/assets/images/' . $name_no_ext . '.*');
                 if (!empty($matches)) {
                     return $assets_url . '/images/' . basename($matches[0]);

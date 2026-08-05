@@ -16,7 +16,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (isset($_FILES['image']) && $_FILES['image']['error'] === 0) {
             $ext = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
             $image = uniqid() . '.' . $ext;
-            move_uploaded_file($_FILES['image']['tmp_name'], '../assets/images/' . $image);
+            // Save to uploads/images/ — deploy-safe (not wiped by git deployment)
+            $upload_target = '../uploads/images/';
+            if (!is_dir($upload_target)) mkdir($upload_target, 0755, true);
+            move_uploaded_file($_FILES['image']['tmp_name'], $upload_target . $image);
         }
 
         $conn->query("INSERT INTO categories (name, slug, image) VALUES ('$name', '$slug', '$image')");
@@ -40,7 +43,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (isset($_FILES['image']) && $_FILES['image']['error'] === 0) {
             $ext = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
             $image = uniqid() . '.' . $ext;
-            if (move_uploaded_file($_FILES['image']['tmp_name'], '../assets/images/' . $image)) {
+            // Save to uploads/images/ — deploy-safe (not wiped by git deployment)
+            $upload_target = '../uploads/images/';
+            if (!is_dir($upload_target)) mkdir($upload_target, 0755, true);
+            if (move_uploaded_file($_FILES['image']['tmp_name'], $upload_target . $image)) {
                  $img_q = $conn->query("SELECT image FROM categories WHERE id=$id")->fetch_assoc();
                  if ($img_q && $img_q['image']) {
                      $old_cat_img = $conn->real_escape_string($img_q['image']);
@@ -49,8 +55,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                      $gal_refs   = (int)$conn->query("SELECT COUNT(*) as c FROM product_images WHERE image='$old_cat_img'")->fetch_assoc()['c'];
                      $ban_refs   = (int)$conn->query("SELECT COUNT(*) as c FROM banners WHERE image='$old_cat_img'")->fetch_assoc()['c'];
                      $other_cat  = (int)$conn->query("SELECT COUNT(*) as c FROM categories WHERE image='$old_cat_img' AND id!=$id")->fetch_assoc()['c'];
-                     if ($prod_refs === 0 && $gal_refs === 0 && $ban_refs === 0 && $other_cat === 0 && file_exists('../assets/images/'.$img_q['image'])) {
-                         unlink('../assets/images/'.$img_q['image']);
+                     // Check both possible locations for backward compatibility
+                     $old_path_assets  = '../assets/images/' . $img_q['image'];
+                     $old_path_uploads = '../uploads/images/' . $img_q['image'];
+                     if ($prod_refs === 0 && $gal_refs === 0 && $ban_refs === 0 && $other_cat === 0) {
+                         if (file_exists($old_path_uploads)) unlink($old_path_uploads);
+                         elseif (file_exists($old_path_assets)) unlink($old_path_assets);
                      }
                  }
                  $image_query = ", image='$image'";
@@ -79,8 +89,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $gal_refs   = (int)$conn->query("SELECT COUNT(*) as c FROM product_images WHERE image='$old_cat_img'")->fetch_assoc()['c'];
             $ban_refs   = (int)$conn->query("SELECT COUNT(*) as c FROM banners WHERE image='$old_cat_img'")->fetch_assoc()['c'];
             $other_cat  = (int)$conn->query("SELECT COUNT(*) as c FROM categories WHERE image='$old_cat_img' AND id!=$id")->fetch_assoc()['c'];
-            if ($prod_refs === 0 && $gal_refs === 0 && $ban_refs === 0 && $other_cat === 0 && file_exists('../assets/images/'.$img_q['image'])) {
-                unlink('../assets/images/'.$img_q['image']);
+            if ($prod_refs === 0 && $gal_refs === 0 && $ban_refs === 0 && $other_cat === 0) {
+                // Check both possible storage locations (backward compatible)
+                if (file_exists('../uploads/images/' . $img_q['image'])) unlink('../uploads/images/' . $img_q['image']);
+                elseif (file_exists('../assets/images/' . $img_q['image'])) unlink('../assets/images/' . $img_q['image']);
             }
         }
         

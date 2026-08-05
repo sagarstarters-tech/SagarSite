@@ -164,10 +164,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($_FILES['image']['error'] === 0) {
                 $ext = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
                 $image = uniqid() . '.' . $ext;
-                if (move_uploaded_file($_FILES['image']['tmp_name'], '../assets/images/' . $image)) {
-                    @copy('../assets/images/' . $image, '../uploads/' . $image);
-                } else {
-                    $error = "Failed to move uploaded main image to assets/images/. Please check directory permissions.";
+                // Save to uploads/images/ — deploy-safe (not wiped by git deployment)
+                $upload_target = '../uploads/images/';
+                if (!is_dir($upload_target)) mkdir($upload_target, 0755, true);
+                if (!move_uploaded_file($_FILES['image']['tmp_name'], $upload_target . $image)) {
+                    $error = "Failed to move uploaded main image to uploads/images/. Please check directory permissions.";
                     $image = null;
                 }
             } elseif ($_FILES['image']['error'] !== 4) {
@@ -198,8 +199,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if ($_FILES['gallery']['error'][$i] === 0) {
                         $ext = pathinfo($_FILES['gallery']['name'][$i], PATHINFO_EXTENSION);
                         $g_image = uniqid('gal_') . '.' . $ext;
-                        if (move_uploaded_file($_FILES['gallery']['tmp_name'][$i], '../assets/images/' . $g_image)) {
-                            @copy('../assets/images/' . $g_image, '../uploads/' . $g_image);
+                        // Save to uploads/images/ — deploy-safe
+                        $upload_target = '../uploads/images/';
+                        if (!is_dir($upload_target)) mkdir($upload_target, 0755, true);
+                        if (move_uploaded_file($_FILES['gallery']['tmp_name'][$i], $upload_target . $g_image)) {
                             $conn->query("INSERT INTO product_images (product_id, image, position) VALUES ($product_id, '$g_image', $i)");
                         }
                     }
@@ -274,21 +277,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($_FILES['image']['error'] === 0) {
                 $ext = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
                 $image = uniqid() . '.' . $ext;
-                if (move_uploaded_file($_FILES['image']['tmp_name'], '../assets/images/' . $image)) {
-                     @copy('../assets/images/' . $image, '../uploads/' . $image);
+                // Save to uploads/images/ — deploy-safe (not wiped by git deployment)
+                $upload_target = '../uploads/images/';
+                if (!is_dir($upload_target)) mkdir($upload_target, 0755, true);
+                if (move_uploaded_file($_FILES['image']['tmp_name'], $upload_target . $image)) {
                      $img_q = $conn->query("SELECT image FROM products WHERE id=$id")->fetch_assoc();
                      if ($img_q && $img_q['image']) {
                          $old_main_img = $conn->real_escape_string($img_q['image']);
                          // Safety: only delete old main image if NOT used by any other product or gallery entry
                          $other_prod_refs = (int)$conn->query("SELECT COUNT(*) as c FROM products WHERE image='$old_main_img' AND id!=$id")->fetch_assoc()['c'];
                          $gal_refs        = (int)$conn->query("SELECT COUNT(*) as c FROM product_images WHERE image='$old_main_img'")->fetch_assoc()['c'];
-                         if ($other_prod_refs === 0 && $gal_refs === 0 && file_exists('../assets/images/'.$img_q['image'])) {
-                             unlink('../assets/images/'.$img_q['image']);
+                         if ($other_prod_refs === 0 && $gal_refs === 0) {
+                             // Check both possible storage locations (backward compatible)
+                             if (file_exists('../uploads/images/' . $img_q['image'])) unlink('../uploads/images/' . $img_q['image']);
+                             elseif (file_exists('../assets/images/' . $img_q['image'])) unlink('../assets/images/' . $img_q['image']);
                          }
                      }
                      $image_query = ", image='$image'";
                 } else {
-                    $_SESSION['flash_error'] = "Failed to move uploaded main image to assets/images/. Please check directory permissions.";
+                    $_SESSION['flash_error'] = "Failed to move uploaded main image to uploads/images/. Please check directory permissions.";
                 }
             } elseif ($_FILES['image']['error'] !== 4) {
                 $_SESSION['flash_error'] = "Failed to upload main image. PHP Error code: " . $_FILES['image']['error'];
@@ -317,7 +324,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if ($_FILES['gallery']['error'][$i] === 0) {
                         $ext = pathinfo($_FILES['gallery']['name'][$i], PATHINFO_EXTENSION);
                         $g_image = uniqid('gal_') . '.' . $ext;
-                        if (move_uploaded_file($_FILES['gallery']['tmp_name'][$i], '../assets/images/' . $g_image)) {
+                        // Save to uploads/images/ — deploy-safe
+                        $upload_target = '../uploads/images/';
+                        if (!is_dir($upload_target)) mkdir($upload_target, 0755, true);
+                        if (move_uploaded_file($_FILES['gallery']['tmp_name'][$i], $upload_target . $g_image)) {
                             $max_pos_q = $conn->query("SELECT MAX(position) as max_p FROM product_images WHERE product_id=$id");
                             $max_p = ($max_pos_q && $max_pos_q->num_rows > 0) ? intval($max_pos_q->fetch_assoc()['max_p']) + 1 : 0;
                             $conn->query("INSERT INTO product_images (product_id, image, position) VALUES ($id, '$g_image', $max_p + $i)");
@@ -340,8 +350,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $del_main = $conn->real_escape_string($img_q['image']);
             $other_p  = (int)$conn->query("SELECT COUNT(*) as c FROM products WHERE image='$del_main' AND id!=$id")->fetch_assoc()['c'];
             $gal_ref  = (int)$conn->query("SELECT COUNT(*) as c FROM product_images WHERE image='$del_main'")->fetch_assoc()['c'];
-            if ($other_p === 0 && $gal_ref === 0 && file_exists('../assets/images/'.$img_q['image'])) {
-                unlink('../assets/images/'.$img_q['image']);
+            if ($other_p === 0 && $gal_ref === 0) {
+                // Check both possible storage locations (backward compatible)
+                if (file_exists('../uploads/images/' . $img_q['image'])) unlink('../uploads/images/' . $img_q['image']);
+                elseif (file_exists('../assets/images/' . $img_q['image'])) unlink('../assets/images/' . $img_q['image']);
             }
         }
         
@@ -353,8 +365,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $gal_del     = $conn->real_escape_string($g['image']);
                 $other_gal   = (int)$conn->query("SELECT COUNT(*) as c FROM product_images WHERE image='$gal_del' AND product_id!=$id")->fetch_assoc()['c'];
                 $main_ref_2  = (int)$conn->query("SELECT COUNT(*) as c FROM products WHERE image='$gal_del'")->fetch_assoc()['c'];
-                if ($other_gal === 0 && $main_ref_2 === 0 && file_exists('../assets/images/'.$g['image'])) {
-                    unlink('../assets/images/'.$g['image']);
+                if ($other_gal === 0 && $main_ref_2 === 0) {
+                    // Check both possible storage locations (backward compatible)
+                    if (file_exists('../uploads/images/' . $g['image'])) unlink('../uploads/images/' . $g['image']);
+                    elseif (file_exists('../assets/images/' . $g['image'])) unlink('../assets/images/' . $g['image']);
                 }
             }
         }

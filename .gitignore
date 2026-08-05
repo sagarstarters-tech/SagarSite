@@ -18,10 +18,13 @@ Thumbs.db
 !/assets/images/no-image.png
 !/assets/images/google-icon.svg
 
-# User Uploads Directory Protection (git-ignored)
+# User Uploads Directory Protection (NEVER tracked by git → deploy-safe)
+# The uploads/ directory is intentionally excluded from git so that
+# admin-uploaded images are NEVER wiped when Hostinger does a git deployment.
 /uploads/*
 !/uploads/.gitkeep
 !/uploads/.gitignore
+!/uploads/downloads/.htaccess
 
 # Vendor (if composer is used)
 # Backups & SQL Dumps

@@ -1,10 +1,15 @@
 <?php
 include 'admin_header.php';
 
-// Create slides directory if not exists
-$upload_dir = '../assets/images/slider/';
+// Create slides directory if not exists (deploy-safe location)
+$upload_dir = '../uploads/images/slider/';
 if (!file_exists($upload_dir)) {
     mkdir($upload_dir, 0777, true);
+}
+// Also ensure old location exists for backward compat reads
+$old_upload_dir = '../assets/images/slider/';
+if (!file_exists($old_upload_dir)) {
+    mkdir($old_upload_dir, 0777, true);
 }
 
 // Handle Slide Actions
@@ -82,11 +87,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $media_query = "";
         if (($bg_type === 'image' || $bg_type === 'video') && isset($_FILES['media']) && $_FILES['media']['error'] === 0) {
-            // Delete old media
+            // Delete old media — check both possible locations
             $old_q = $conn->query("SELECT media_path FROM hero_slides WHERE id=$id");
             if ($old_q && $old = $old_q->fetch_assoc()) {
-                if ($old['media_path'] && file_exists($upload_dir . $old['media_path'])) {
-                    unlink($upload_dir . $old['media_path']);
+                if ($old['media_path']) {
+                    if (file_exists($upload_dir . $old['media_path'])) unlink($upload_dir . $old['media_path']);
+                    elseif (file_exists($old_upload_dir . $old['media_path'])) unlink($old_upload_dir . $old['media_path']);
                 }
             }
 
@@ -116,8 +122,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = intval($_POST['id']);
         $old_q = $conn->query("SELECT media_path FROM hero_slides WHERE id=$id");
         if ($old_q && $old = $old_q->fetch_assoc()) {
-            if ($old['media_path'] && file_exists($upload_dir . $old['media_path'])) {
-                unlink($upload_dir . $old['media_path']);
+            if ($old['media_path']) {
+                // Check both possible storage locations (backward compatible)
+                if (file_exists($upload_dir . $old['media_path'])) unlink($upload_dir . $old['media_path']);
+                elseif (file_exists($old_upload_dir . $old['media_path'])) unlink($old_upload_dir . $old['media_path']);
             }
         }
         $conn->query("DELETE FROM hero_slides WHERE id=$id");

@@ -15,7 +15,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (isset($_FILES['image']) && $_FILES['image']['error'] === 0) {
             $ext = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
             $image = uniqid('banner_') . '.' . $ext;
-            move_uploaded_file($_FILES['image']['tmp_name'], '../assets/images/' . $image);
+            // Save to uploads/images/ — deploy-safe (not wiped by git deployment)
+            $upload_target = '../uploads/images/';
+            if (!is_dir($upload_target)) mkdir($upload_target, 0755, true);
+            move_uploaded_file($_FILES['image']['tmp_name'], $upload_target . $image);
         }
         
         if ($image) {
@@ -42,14 +45,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $prod_refs  = (int)$conn->query("SELECT COUNT(*) as c FROM products WHERE image='$old_banner_img'")->fetch_assoc()['c'];
                 $gal_refs   = (int)$conn->query("SELECT COUNT(*) as c FROM product_images WHERE image='$old_banner_img'")->fetch_assoc()['c'];
                 $other_ban  = (int)$conn->query("SELECT COUNT(*) as c FROM banners WHERE image='$old_banner_img' AND id!=$id")->fetch_assoc()['c'];
-                if ($prod_refs === 0 && $gal_refs === 0 && $other_ban === 0 && file_exists('../assets/images/' . $old_img['image'])) {
-                    unlink('../assets/images/' . $old_img['image']);
+                if ($prod_refs === 0 && $gal_refs === 0 && $other_ban === 0) {
+                    // Check both possible storage locations (backward compatible)
+                    if (file_exists('../uploads/images/' . $old_img['image'])) unlink('../uploads/images/' . $old_img['image']);
+                    elseif (file_exists('../assets/images/' . $old_img['image'])) unlink('../assets/images/' . $old_img['image']);
                 }
             }
             
             $ext = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
             $image = uniqid('banner_') . '.' . $ext;
-            move_uploaded_file($_FILES['image']['tmp_name'], '../assets/images/' . $image);
+            // Save to uploads/images/ — deploy-safe
+            $upload_target = '../uploads/images/';
+            if (!is_dir($upload_target)) mkdir($upload_target, 0755, true);
+            move_uploaded_file($_FILES['image']['tmp_name'], $upload_target . $image);
             $image_query = ", image='$image'";
         }
         
@@ -69,8 +77,10 @@ if (isset($_GET['delete'])) {
         $prod_refs  = (int)$conn->query("SELECT COUNT(*) as c FROM products WHERE image='$old_banner_img'")->fetch_assoc()['c'];
         $gal_refs   = (int)$conn->query("SELECT COUNT(*) as c FROM product_images WHERE image='$old_banner_img'")->fetch_assoc()['c'];
         $other_ban  = (int)$conn->query("SELECT COUNT(*) as c FROM banners WHERE image='$old_banner_img' AND id!=$id")->fetch_assoc()['c'];
-        if ($prod_refs === 0 && $gal_refs === 0 && $other_ban === 0 && file_exists('../assets/images/' . $old_img['image'])) {
-            unlink('../assets/images/' . $old_img['image']);
+        if ($prod_refs === 0 && $gal_refs === 0 && $other_ban === 0) {
+            // Check both possible storage locations (backward compatible)
+            if (file_exists('../uploads/images/' . $old_img['image'])) unlink('../uploads/images/' . $old_img['image']);
+            elseif (file_exists('../assets/images/' . $old_img['image'])) unlink('../assets/images/' . $old_img['image']);
         }
     }
     $conn->query("DELETE FROM banners WHERE id=$id");

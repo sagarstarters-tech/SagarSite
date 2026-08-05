@@ -35,14 +35,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         // Handle File Upload
         if (!empty($_FILES['client_image']['name']) && $_FILES['client_image']['error'] === 0) {
-            $upload_dir = '../assets/images/testimonials/';
+            // Save to uploads/images/testimonials/ — deploy-safe (not wiped by git deployment)
+            $upload_dir = '../uploads/images/testimonials/';
             if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
             
             $ext = pathinfo($_FILES['client_image']['name'], PATHINFO_EXTENSION);
             $filename = 'tst_' . time() . '_' . rand(100,999) . '.' . $ext;
             
             if (move_uploaded_file($_FILES['client_image']['tmp_name'], $upload_dir . $filename)) {
-                $image_url = 'assets/images/testimonials/' . $filename;
+                $image_url = 'uploads/images/testimonials/' . $filename;
             }
         }
         

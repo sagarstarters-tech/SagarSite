@@ -31,7 +31,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             
             if (in_array($ext, $allowed)) {
                 $new_name = 'logo_' . time() . '.' . $ext;
-                $upload_dir = '../assets/images/';
+                // Save to uploads/images/ — deploy-safe (not wiped by git deployment)
+                $upload_dir = '../uploads/images/';
+                if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
                 if (move_uploaded_file($tmp_name, $upload_dir . $new_name)) {
                     $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('header_logo_image', '$new_name') ON DUPLICATE KEY UPDATE setting_value='$new_name'");
                 }
@@ -47,7 +49,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             
             if (in_array($ext, $allowed)) {
                 $new_name = 'footer_logo_' . time() . '.' . $ext;
-                $upload_dir = '../assets/images/';
+                // Save to uploads/images/ — deploy-safe (not wiped by git deployment)
+                $upload_dir = '../uploads/images/';
+                if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
                 if (move_uploaded_file($tmp_name, $upload_dir . $new_name)) {
                     $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('footer_logo_image', '$new_name') ON DUPLICATE KEY UPDATE setting_value='$new_name'");
                 }
@@ -241,17 +245,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 $allowed   = ['jpg', 'jpeg', 'png', 'webp'];
                 
                 if (in_array($ext, $allowed)) {
-                    // Get old image to replace
+                    // Check both possible old locations for backward compat
                     $old_q = $conn->query("SELECT setting_value FROM settings WHERE setting_key='$setting_key'");
                     if ($old_q && $old = $old_q->fetch_assoc()) {
                         $old_img = $old['setting_value'];
-                        if ($old_img && file_exists('../assets/images/' . $old_img)) {
-                            unlink('../assets/images/' . $old_img);
+                        if ($old_img) {
+                            if (file_exists('../uploads/images/' . $old_img)) unlink('../uploads/images/' . $old_img);
+                            elseif (file_exists('../assets/images/' . $old_img)) unlink('../assets/images/' . $old_img);
                         }
                     }
 
                     $new_name = "hero_{$page}_" . time() . '.' . $ext;
-                    if (move_uploaded_file($tmp_name, '../assets/images/' . $new_name)) {
+                    // Save to uploads/images/ — deploy-safe
+                    $upload_target = '../uploads/images/';
+                    if (!is_dir($upload_target)) mkdir($upload_target, 0755, true);
+                    if (move_uploaded_file($tmp_name, $upload_target . $new_name)) {
                         $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('$setting_key', '$new_name') ON DUPLICATE KEY UPDATE setting_value='$new_name'");
                     }
                 }
