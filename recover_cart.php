@@ -18,48 +18,84 @@ if (empty($token)) {
     if (!$cart) {
         $error = 'This recovery link has expired or is invalid.';
     } else {
-        // Restore cart
         $userId = intval($cart['user_id']);
-        $cartData = json_decode($cart['cart_data'], true);
         
-        if (!is_array($cartData) || empty($cartData)) {
-            $error = 'Cart data is empty or corrupted.';
-        } else {
-            // Set session
-            $_SESSION['user_id'] = $userId;
-            $_SESSION['cart'] = $cartData;
-            
-            // Load user info into session
-            $userQ = $conn->query("SELECT name, email, phone, role, profile_photo FROM users WHERE id = {$userId}");
-            if ($userQ && $row = $userQ->fetch_assoc()) {
-                $_SESSION['name'] = $row['name'];
-                $_SESSION['email'] = $row['email'];
-                $_SESSION['phone'] = $row['phone'];
-                $_SESSION['role'] = $row['role'];
-                $_SESSION['profile_photo'] = $row['profile_photo'] ?? '';
-            }
-            
-            // Sync cart to DB
-            sync_cart_to_db($conn);
-            
-            // Store coupon if exists
-            if (!empty($cart['coupon_code'])) {
-                $_SESSION['recovery_coupon'] = [
-                    'code' => $cart['coupon_code'],
-                    'discount' => floatval($cart['coupon_discount'] ?? 0)
-                ];
-            }
-            
-            // Mark cart as recovered
-            $repo->markConverted($userId);
-            
-            $success = true;
-            
-            // Redirect to checkout
-            $siteUrl = defined('SITE_URL') ? rtrim(SITE_URL, '/') : '';
-            header('Location: ' . $siteUrl . '/checkout.php');
-            exit;
+        // 1. Decode cart_data from abandoned_carts record
+        $cartData = !empty($cart['cart_data']) ? json_decode($cart['cart_data'], true) : null;
+        if (is_string($cartData)) {
+            $cartData = json_decode($cartData, true);
         }
+        
+        // 2. Fallback: Check users table cart_data column if abandoned cart_data was empty
+        if (!is_array($cartData) || empty($cartData)) {
+            $userCartQ = $conn->query("SELECT cart_data FROM users WHERE id = {$userId}");
+            if ($userCartQ && $userRow = $userCartQ->fetch_assoc()) {
+                $userCart = !empty($userRow['cart_data']) ? json_decode($userRow['cart_data'], true) : null;
+                if (is_string($userCart)) $userCart = json_decode($userCart, true);
+                if (is_array($userCart) && !empty($userCart)) {
+                    $cartData = $userCart;
+                }
+            }
+        }
+        
+        // 3. Fallback: Parse product_names column if cartData is still empty
+        if (!is_array($cartData) || empty($cartData)) {
+            $pNames = $cart['product_names'] ?? '';
+            if (!empty($pNames)) {
+                // Extract first product name (e.g. "3 Hp 3 Phase Automatic Motor Starter x1")
+                $rawFirstName = strtok($pNames, ',');
+                $cleanName = trim(preg_replace('/\s*x\d+$/i', '', $rawFirstName));
+                if (!empty($cleanName)) {
+                    $escName = $conn->real_escape_string($cleanName);
+                    $pRes = $conn->query("SELECT id FROM products WHERE name LIKE '%{$escName}%' OR name = '{$escName}' LIMIT 1");
+                    if ($pRes && $pRow = $pRes->fetch_assoc()) {
+                        $cartData = [$pRow['id'] => 1];
+                    }
+                }
+            }
+        }
+        
+        if (!is_array($cartData)) {
+            $cartData = [];
+        }
+        
+        // Restore user session
+        $_SESSION['user_id'] = $userId;
+        
+        $userQ = $conn->query("SELECT name, email, phone, role, profile_photo FROM users WHERE id = {$userId}");
+        if ($userQ && $row = $userQ->fetch_assoc()) {
+            $_SESSION['name'] = $row['name'];
+            $_SESSION['email'] = $row['email'];
+            $_SESSION['phone'] = $row['phone'];
+            $_SESSION['role'] = $row['role'];
+            $_SESSION['profile_photo'] = $row['profile_photo'] ?? '';
+        }
+
+        if (!empty($cartData)) {
+            $_SESSION['cart'] = $cartData;
+            sync_cart_to_db($conn);
+        } else {
+            load_cart_from_db($conn, $userId);
+        }
+
+        // Store coupon if exists
+        if (!empty($cart['coupon_code'])) {
+            $_SESSION['recovery_coupon'] = [
+                'code' => $cart['coupon_code'],
+                'discount' => floatval($cart['coupon_discount'] ?? 0)
+            ];
+        }
+
+        // Mark cart as recovered
+        $repo->markConverted($userId);
+
+        $siteUrl = defined('SITE_URL') ? rtrim(SITE_URL, '/') : '';
+        if (!empty($_SESSION['cart'])) {
+            header('Location: ' . $siteUrl . '/checkout.php');
+        } else {
+            header('Location: ' . $siteUrl . '/shop.php');
+        }
+        exit;
     }
 }
 

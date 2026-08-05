@@ -150,7 +150,12 @@ class AbandonedCartRepository {
     public function createOrUpdate($userId, $cartData, $cartTotal, $productNames, $productImage = null) {
         $userId = intval($userId);
 
-        $cartJson = is_string($cartData) ? $cartData : json_encode($cartData);
+        if (is_array($cartData)) {
+            $cartJson = json_encode($cartData);
+        } else {
+            $decoded = json_decode((string)$cartData, true);
+            $cartJson = is_array($decoded) && !empty($decoded) ? json_encode($decoded) : (string)$cartData;
+        }
         $token = bin2hex(random_bytes(32));
 
         // Check if active record exists
