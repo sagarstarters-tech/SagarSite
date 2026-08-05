@@ -14,12 +14,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         $image = '';
         if (isset($_FILES['image']) && $_FILES['image']['error'] === 0) {
-            $ext = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
-            $image = uniqid() . '.' . $ext;
-            // Save to uploads/images/ — deploy-safe (not wiped by git deployment)
-            $upload_target = '../uploads/images/';
+            $ext = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
+            $fname = 'cat_' . uniqid() . '.' . $ext;
+            // Save to uploads/media/images/ — consistent with media library
+            $upload_target = '../uploads/media/images/';
             if (!is_dir($upload_target)) mkdir($upload_target, 0755, true);
-            move_uploaded_file($_FILES['image']['tmp_name'], $upload_target . $image);
+            if (move_uploaded_file($_FILES['image']['tmp_name'], $upload_target . $fname)) {
+                $image = 'uploads/media/images/' . $fname; // store full relative path
+            }
         }
 
         $conn->query("INSERT INTO categories (name, slug, image) VALUES ('$name', '$slug', '$image')");
@@ -41,29 +43,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         $image_query = "";
         if (isset($_FILES['image']) && $_FILES['image']['error'] === 0) {
-            $ext = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
-            $image = uniqid() . '.' . $ext;
-            // Save to uploads/images/ — deploy-safe (not wiped by git deployment)
-            $upload_target = '../uploads/images/';
+            $ext   = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
+            $fname = 'cat_' . uniqid() . '.' . $ext;
+            // Save to uploads/media/images/ — consistent with media library
+            $upload_target = '../uploads/media/images/';
             if (!is_dir($upload_target)) mkdir($upload_target, 0755, true);
-            if (move_uploaded_file($_FILES['image']['tmp_name'], $upload_target . $image)) {
-                 $img_q = $conn->query("SELECT image FROM categories WHERE id=$id")->fetch_assoc();
-                 if ($img_q && $img_q['image']) {
-                     $old_cat_img = $conn->real_escape_string($img_q['image']);
-                     // Safety: only delete if not shared with any product, product_images, or banner
-                     $prod_refs  = (int)$conn->query("SELECT COUNT(*) as c FROM products WHERE image='$old_cat_img'")->fetch_assoc()['c'];
-                     $gal_refs   = (int)$conn->query("SELECT COUNT(*) as c FROM product_images WHERE image='$old_cat_img'")->fetch_assoc()['c'];
-                     $ban_refs   = (int)$conn->query("SELECT COUNT(*) as c FROM banners WHERE image='$old_cat_img'")->fetch_assoc()['c'];
-                     $other_cat  = (int)$conn->query("SELECT COUNT(*) as c FROM categories WHERE image='$old_cat_img' AND id!=$id")->fetch_assoc()['c'];
-                     // Check both possible locations for backward compatibility
-                     $old_path_assets  = '../assets/images/' . $img_q['image'];
-                     $old_path_uploads = '../uploads/images/' . $img_q['image'];
-                     if ($prod_refs === 0 && $gal_refs === 0 && $ban_refs === 0 && $other_cat === 0) {
-                         if (file_exists($old_path_uploads)) unlink($old_path_uploads);
-                         elseif (file_exists($old_path_assets)) unlink($old_path_assets);
-                     }
-                 }
-                 $image_query = ", image='$image'";
+            if (move_uploaded_file($_FILES['image']['tmp_name'], $upload_target . $fname)) {
+                $new_image_path = 'uploads/media/images/' . $fname;
+
+                // Delete old category image safely
+                $img_q = $conn->query("SELECT image FROM categories WHERE id=$id")->fetch_assoc();
+                if ($img_q && !empty($img_q['image'])) {
+                    $old_cat_img = $conn->real_escape_string($img_q['image']);
+                    // Safety: only delete if not shared anywhere else
+                    $prod_refs  = (int)$conn->query("SELECT COUNT(*) as c FROM products WHERE image='$old_cat_img'")->fetch_assoc()['c'];
+                    $gal_refs   = (int)$conn->query("SELECT COUNT(*) as c FROM product_images WHERE image='$old_cat_img'")->fetch_assoc()['c'];
+                    $ban_refs   = (int)$conn->query("SELECT COUNT(*) as c FROM banners WHERE image='$old_cat_img'")->fetch_assoc()['c'];
+                    $other_cat  = (int)$conn->query("SELECT COUNT(*) as c FROM categories WHERE image='$old_cat_img' AND id!=$id")->fetch_assoc()['c'];
+                    if ($prod_refs === 0 && $gal_refs === 0 && $ban_refs === 0 && $other_cat === 0) {
+                        // Try both old paths for backward compatibility
+                        $old_path1 = '../' . ltrim($img_q['image'], '/');
+                        $old_path2 = '../uploads/images/' . basename($img_q['image']);
+                        $old_path3 = '../assets/images/' . basename($img_q['image']);
+                        foreach ([$old_path1, $old_path2, $old_path3] as $try_path) {
+                            if (file_exists($try_path)) { @unlink($try_path); break; }
+                        }
+                    }
+                }
+                $esc_new = $conn->real_escape_string($new_image_path);
+                $image_query = ", image='$esc_new'";
             }
         }
         
@@ -83,16 +91,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         // Remove image (safety: only if not shared with any product, product_images, or banner)
         $img_q = $conn->query("SELECT image FROM categories WHERE id=$id")->fetch_assoc();
-        if ($img_q && $img_q['image']) {
+        if ($img_q && !empty($img_q['image'])) {
             $old_cat_img = $conn->real_escape_string($img_q['image']);
             $prod_refs  = (int)$conn->query("SELECT COUNT(*) as c FROM products WHERE image='$old_cat_img'")->fetch_assoc()['c'];
             $gal_refs   = (int)$conn->query("SELECT COUNT(*) as c FROM product_images WHERE image='$old_cat_img'")->fetch_assoc()['c'];
             $ban_refs   = (int)$conn->query("SELECT COUNT(*) as c FROM banners WHERE image='$old_cat_img'")->fetch_assoc()['c'];
             $other_cat  = (int)$conn->query("SELECT COUNT(*) as c FROM categories WHERE image='$old_cat_img' AND id!=$id")->fetch_assoc()['c'];
             if ($prod_refs === 0 && $gal_refs === 0 && $ban_refs === 0 && $other_cat === 0) {
-                // Check both possible storage locations (backward compatible)
-                if (file_exists('../uploads/images/' . $img_q['image'])) unlink('../uploads/images/' . $img_q['image']);
-                elseif (file_exists('../assets/images/' . $img_q['image'])) unlink('../assets/images/' . $img_q['image']);
+                // Try all possible storage locations (backward compatible)
+                $old_path1 = '../' . ltrim($img_q['image'], '/');
+                $old_path2 = '../uploads/images/' . basename($img_q['image']);
+                $old_path3 = '../assets/images/' . basename($img_q['image']);
+                foreach ([$old_path1, $old_path2, $old_path3] as $try_path) {
+                    if (file_exists($try_path)) { @unlink($try_path); break; }
+                }
             }
         }
         
