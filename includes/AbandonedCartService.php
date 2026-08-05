@@ -60,11 +60,17 @@ class AbandonedCartService {
             }
         }
 
-        if (empty($names)) return;
-
         $productNames = implode(', ', $names);
 
         $this->repo->createOrUpdate($userId, $cart, $total, $productNames, $firstImage);
+
+        // Fallback: trigger background auto-reminders check if 3+ minutes since last check
+        if (empty($_SESSION['ac_last_cron_time']) || (time() - $_SESSION['ac_last_cron_time'] > 180)) {
+            $_SESSION['ac_last_cron_time'] = time();
+            try {
+                $this->processAutoReminders();
+            } catch (\Throwable $e) {}
+        }
     }
 
     /**
@@ -399,6 +405,11 @@ class AbandonedCartService {
      * Get admin dashboard data.
      */
     public function getAdminDashboardData($status = 'all', $search = '', $page = 1) {
+        // Auto-process any due reminders when admin loads/refreshes dashboard
+        try {
+            $this->processAutoReminders();
+        } catch (\Throwable $e) {}
+
         return [
             'stats' => $this->repo->getStats(),
             'carts' => $this->repo->getAdminList($status, $search, $page),
