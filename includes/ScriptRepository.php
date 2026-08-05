@@ -5,7 +5,6 @@ class ScriptRepository {
 
     public function __construct($conn) {
         $this->conn = $conn;
-        $this->ensureTable();
     }
 
     /**

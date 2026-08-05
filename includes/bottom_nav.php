@@ -1,6 +1,3 @@
-<!-- Includes the FontAwesome explicitly if it isn't already included in header -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
 <!-- Bottom Navigation UI Custom CSS -->
 <link rel="stylesheet" href="<?php echo ASSETS_URL; ?>/css/bottom-nav.css">
 

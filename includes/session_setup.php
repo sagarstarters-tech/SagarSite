@@ -48,10 +48,13 @@ if (session_status() === PHP_SESSION_NONE) {
     
     session_start();
     
-    // 4. Force browser to revalidate so Home page UI changes after login/logout
-    header("Cache-Control: no-cache, no-store, must-revalidate");
-    header("Pragma: no-cache");
-    header("Expires: 0");
+    // 4. Set browser cache revalidation strategy
+    if (isset($_SESSION['user_id']) || $_SERVER['REQUEST_METHOD'] === 'POST') {
+        header("Cache-Control: no-cache, no-store, must-revalidate");
+        header("Pragma: no-cache");
+    } else {
+        header("Cache-Control: no-cache, must-revalidate");
+    }
 }
 
 // 5. Global CSRF Protection Generation (outside status check for pre-started sessions)

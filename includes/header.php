@@ -237,10 +237,15 @@ if (isset($product['slug'])) {
     <meta name="theme-color" content="#1e3c72">
     <link rel="apple-touch-icon" href="<?php echo ASSETS_URL; ?>/images/logo.jpg">
 
+    <!-- Resource Preconnects -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
     <!-- MDBootstrap CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.css" rel="stylesheet"/>
     <!-- Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet"/>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
     <!-- Custom CSS -->
     <link href="<?php echo ASSETS_URL; ?>/css/style.css?v=1.1" rel="stylesheet">
     <!-- Theme Customizer CSS Variables -->
