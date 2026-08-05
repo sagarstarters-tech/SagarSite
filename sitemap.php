@@ -39,7 +39,7 @@ foreach ($static_pages as $p) {
 }
 
 // ── Dynamic pages ─────────────────────────────────────────────
-$pages_q = $conn->query("SELECT slug, updated_at FROM pages WHERE status = 'published'");
+$pages_q = $conn->query("SELECT slug, updated_at FROM pages");
 if ($pages_q) {
     while ($page = $pages_q->fetch_assoc()) {
         $lastmod = date('Y-m-d', strtotime($page['updated_at'] ?? $today));

@@ -17,18 +17,18 @@ class SeoService {
         $metadata = $this->repo->getMetadata($type, $id);
         
         // Fallback to table-specific metas if available
-        if (!$metadata) {
-            if ($type === 'product' && $id > 0) {
-                $res = $this->repo->getConnection()->query("SELECT name, meta_description, image FROM products WHERE id=$id");
-                if ($res && $res->num_rows > 0) {
-                    $p = $res->fetch_assoc();
-                    $fallbackData['title'] = $p['name'];
-                    $fallbackData['description'] = $p['meta_description'];
-                    if (empty($fallbackData['image'])) {
-                        $fallbackData['image'] = function_exists('resolve_product_image_url') ? resolve_product_image_url($p['image'] ?? '', $this->repo->getConnection(), $id) : ($p['image'] ?? '');
-                    }
+        if ($type === 'product' && $id > 0) {
+            $res = $this->repo->getConnection()->query("SELECT name, meta_description, image FROM products WHERE id=$id");
+            if ($res && $res->num_rows > 0) {
+                $p = $res->fetch_assoc();
+                if (empty($fallbackData['title'])) $fallbackData['title'] = $p['name'];
+                if (empty($fallbackData['description'])) $fallbackData['description'] = $p['meta_description'];
+                if (empty($fallbackData['image'])) {
+                    $fallbackData['image'] = function_exists('resolve_product_image_url') ? resolve_product_image_url($p['image'] ?? '', $this->repo->getConnection(), $id) : ($p['image'] ?? '');
                 }
-            } elseif ($type === 'category' && $id > 0) {
+            }
+        } elseif (!$metadata) {
+            if ($type === 'category' && $id > 0) {
                 $res = $this->repo->getConnection()->query("SELECT name, image FROM categories WHERE id=$id");
                 if ($res && $res->num_rows > 0) {
                     $p = $res->fetch_assoc();
