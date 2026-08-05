@@ -214,6 +214,35 @@ $media_items = $stmt->get_result();
 $total_all    = (int)($conn->query("SELECT COUNT(*) as c FROM media_library")->fetch_assoc()['c'] ?? 0);
 $total_images = (int)($conn->query("SELECT COUNT(*) as c FROM media_library WHERE file_type='image'")->fetch_assoc()['c'] ?? 0);
 $total_videos = (int)($conn->query("SELECT COUNT(*) as c FROM media_library WHERE file_type='video'")->fetch_assoc()['c'] ?? 0);
+
+// ── Pre-compute usage map for 'Used' badge ─────────────────
+// Tables that reference media by basename
+$_usage_tables = [
+    ['table' => 'products',          'col' => 'image'],
+    ['table' => 'product_images',    'col' => 'image'],
+    ['table' => 'banners',           'col' => 'image'],
+    ['table' => 'categories',        'col' => 'image'],
+];
+$_optional_tables = ['hero_slides','sliders','testimonials','homepage_features','slides'];
+foreach ($_optional_tables as $_ot) {
+    $r = $conn->query("SHOW TABLES LIKE '$_ot'");
+    if ($r && $r->num_rows > 0) {
+        $_usage_tables[] = ['table' => $_ot, 'col' => 'image'];
+    }
+}
+// Build a set of used basenames
+$_used_basenames = [];
+foreach ($_usage_tables as $_ut) {
+    $_tr = $conn->query("SELECT DISTINCT `{$_ut['col']}` FROM `{$_ut['table']}`");
+    if ($_tr) {
+        while ($_trow = $_tr->fetch_assoc()) {
+            if (!empty($_trow[$_ut['col']])) {
+                $_used_basenames[basename($_trow[$_ut['col']])] = true;
+            }
+        }
+    }
+}
+// Pages text search is skipped here for performance (checked in AJAX only)
 ?>
 
 <style>
@@ -794,6 +823,336 @@ $total_videos = (int)($conn->query("SELECT COUNT(*) as c FROM media_library WHER
         max-width: 100%;
     }
 }
+
+/* ── Used Badge on Card ──────────────────────────────────── */
+.media-card .used-badge {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: #fff;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    padding: 3px 7px;
+    border-radius: 20px;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    box-shadow: 0 2px 6px rgba(40,167,69,.4);
+    pointer-events: none;
+}
+.media-card .used-badge i { font-size: .65rem; }
+.media-card .unused-badge {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    background: rgba(255,165,0,.85);
+    color: #fff;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    padding: 3px 7px;
+    border-radius: 20px;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    box-shadow: 0 2px 6px rgba(255,165,0,.35);
+    pointer-events: none;
+}
+
+/* ── Duplicate Check Modal ────────────────────────────────── */
+.dup-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.55);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .3s;
+}
+.dup-modal-overlay.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+.dup-modal {
+    background: #fff;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 860px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 24px 64px rgba(0,0,0,.25);
+    transform: translateY(20px) scale(.97);
+    transition: transform .3s cubic-bezier(.4,0,.2,1);
+    overflow: hidden;
+}
+.dup-modal-overlay.show .dup-modal {
+    transform: translateY(0) scale(1);
+}
+.dup-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid #eee;
+    flex-shrink: 0;
+}
+.dup-modal-header h5 {
+    margin: 0;
+    font-weight: 800;
+    font-size: 1.1rem;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.dup-modal-close {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    border: none;
+    background: #f0f0f0;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+    transition: background .2s;
+}
+.dup-modal-close:hover { background: #e0e0e0; }
+.dup-modal-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 12px 24px 0;
+    border-bottom: 2px solid #f0f0f0;
+    flex-shrink: 0;
+    background: #fafafa;
+}
+.dup-modal-tab {
+    padding: 8px 20px 10px;
+    border: none;
+    border-bottom: 3px solid transparent;
+    background: none;
+    font-weight: 600;
+    font-size: .85rem;
+    color: #777;
+    cursor: pointer;
+    transition: all .2s;
+    border-radius: 8px 8px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.dup-modal-tab:hover { color: #667eea; background: rgba(102,126,234,.06); }
+.dup-modal-tab.active {
+    color: #667eea;
+    border-bottom-color: #667eea;
+    background: #fff;
+}
+.dup-modal-tab .tab-count {
+    background: #667eea;
+    color: #fff;
+    font-size: .7rem;
+    padding: 1px 7px;
+    border-radius: 10px;
+    min-width: 22px;
+    text-align: center;
+}
+.dup-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px;
+}
+.dup-stats-bar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+.dup-stat-card {
+    flex: 1;
+    min-width: 120px;
+    background: linear-gradient(135deg, #f8f9ff, #f3f0ff);
+    border: 1px solid #e8e4ff;
+    border-radius: 12px;
+    padding: 14px 16px;
+    text-align: center;
+}
+.dup-stat-card .stat-num {
+    font-size: 1.6rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+}
+.dup-stat-card .stat-label {
+    font-size: .72rem;
+    color: #888;
+    margin-top: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+}
+.dup-stat-card.danger {
+    background: linear-gradient(135deg, #fff5f5, #fff0f0);
+    border-color: #fcc;
+}
+.dup-stat-card.danger .stat-num {
+    background: linear-gradient(135deg, #ff4d4d, #dc3545);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.dup-stat-card.success {
+    background: linear-gradient(135deg, #f0fff4, #e6ffed);
+    border-color: #b2f0c8;
+}
+.dup-stat-card.success .stat-num {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.dup-section-title {
+    font-size: .8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    color: #888;
+    margin: 16px 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.dup-section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #eee;
+}
+.dup-file-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: #fafafa;
+    border: 1px solid #eee;
+    margin-bottom: 8px;
+    transition: all .2s;
+}
+.dup-file-row:hover { background: #f3f0ff; border-color: #d8d0ff; }
+.dup-file-row .dup-thumb {
+    width: 48px; height: 48px;
+    border-radius: 8px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #e0e0e0;
+    display: flex; align-items: center; justify-content: center;
+}
+.dup-file-row .dup-thumb img {
+    width: 100%; height: 100%; object-fit: cover;
+}
+.dup-file-row .dup-info { flex: 1; min-width: 0; }
+.dup-file-row .dup-info .dup-name {
+    font-size: .82rem; font-weight: 600; color: #333;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.dup-file-row .dup-info .dup-meta {
+    font-size: .72rem; color: #999; margin-top: 2px;
+}
+.dup-file-row .dup-usage-badge {
+    font-size: .7rem; font-weight: 700; padding: 3px 10px; border-radius: 20px;
+    white-space: nowrap; flex-shrink: 0;
+}
+.dup-file-row .dup-usage-badge.used   { background: #e6f4ea; color: #28a745; }
+.dup-file-row .dup-usage-badge.unused { background: #fff3cd; color: #856404; }
+.dup-file-row .dup-del-btn {
+    flex-shrink: 0;
+    padding: 6px 12px;
+    background: #fff0f0;
+    color: #dc3545;
+    border: 1px solid #fcc;
+    border-radius: 8px;
+    font-size: .78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s;
+}
+.dup-file-row .dup-del-btn:hover { background: #dc3545; color: #fff; border-color: #dc3545; }
+.dup-file-row .dup-del-btn:disabled { opacity: .4; cursor: not-allowed; }
+.dup-group-box {
+    border: 1px solid #e0e0e0;
+    border-radius: 14px;
+    margin-bottom: 16px;
+    overflow: hidden;
+}
+.dup-group-header {
+    padding: 10px 16px;
+    background: linear-gradient(135deg, #f5f7ff, #f0f0ff);
+    font-size: .78rem;
+    font-weight: 700;
+    color: #667eea;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid #e0e0e0;
+}
+.dup-modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid #eee;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-shrink: 0;
+    background: #fafafa;
+}
+.btn-delete-all-unused {
+    background: linear-gradient(135deg, #ff4d4d, #dc3545);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 22px;
+    font-size: .85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .25s;
+    box-shadow: 0 4px 14px rgba(220,53,69,.3);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.btn-delete-all-unused:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(220,53,69,.45);
+}
+.btn-delete-all-unused:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+.dup-loading {
+    text-align: center;
+    padding: 48px 20px;
+    color: #888;
+}
+.dup-loading .spinner {
+    width: 44px; height: 44px;
+    border: 4px solid #e0e0e0;
+    border-top-color: #667eea;
+    border-radius: 50%;
+    animation: dupSpin .8s linear infinite;
+    margin: 0 auto 16px;
+}
+@keyframes dupSpin { to { transform: rotate(360deg); } }
+.dup-empty { text-align: center; padding: 32px 20px; color: #888; font-size: .9rem; }
+.dup-empty i { font-size: 2.5rem; color: #28a745; display: block; margin-bottom: 12px; }
 </style>
 
 <style>
@@ -874,6 +1233,9 @@ $total_videos = (int)($conn->query("SELECT COUNT(*) as c FROM media_library WHER
             <button type="submit" class="btn btn-outline-primary btn-sm rounded-pill"><i class="fas fa-sync-alt me-1"></i>Fetched Images</button>
         </form>
         <?php if ($total_all > 0): ?>
+        <button type="button" class="btn btn-outline-warning btn-sm rounded-pill ms-1 fw-bold" id="btnCheckDuplicates" onclick="openDupModal()" title="Find duplicate &amp; unused media files">
+            <i class="fas fa-search-minus me-1"></i>Check Duplicates &amp; Unused
+        </button>
         <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill ms-1" id="btnSelectAll" onclick="toggleSelectAll()">
             <i class="fas fa-check-square me-1"></i>Select All
         </button>
@@ -897,6 +1259,9 @@ $total_videos = (int)($conn->query("SELECT COUNT(*) as c FROM media_library WHER
         $filesize_kb = round($m['file_size'] / 1024);
         $filesize_display = $filesize_kb >= 1024 ? round($filesize_kb / 1024, 1) . ' MB' : $filesize_kb . ' KB';
         $dims = ($m['width'] && $m['height']) ? $m['width'] . '×' . $m['height'] : '';
+        // Check if this file is used anywhere
+        $_card_basename = basename($m['file_path']);
+        $_is_used = isset($_used_basenames[$_card_basename]);
     ?>
     <?php 
         $display_url = (strpos($m['file_url'], 'http') === 0) ? $m['file_url'] : '../' . $m['file_url'];
@@ -914,6 +1279,7 @@ $total_videos = (int)($conn->query("SELECT COUNT(*) as c FROM media_library WHER
          data-alt="<?php echo htmlspecialchars($m['alt_text']); ?>"
          data-caption="<?php echo htmlspecialchars($m['caption'] ?? ''); ?>"
          data-date="<?php echo date('M d, Y h:i A', strtotime($m['created_at'])); ?>"
+         data-is-used="<?php echo $_is_used ? '1' : '0'; ?>"
          onclick="handleCardClick(event, this)">
         <div class="media-thumb">
             <?php if ($is_video): ?>
@@ -925,6 +1291,11 @@ $total_videos = (int)($conn->query("SELECT COUNT(*) as c FROM media_library WHER
             <?php else: ?>
                 <img src="<?php echo $display_url; ?>" alt="<?php echo htmlspecialchars($m['alt_text']); ?>" loading="lazy" onerror="this.onerror=null; this.src='../assets/images/placeholder.svg';">
                 <span class="type-badge image">Image</span>
+            <?php endif; ?>
+            <?php if ($_is_used): ?>
+            <span class="used-badge" title="This file is actively used">
+                <i class="fas fa-check-circle"></i> Used
+            </span>
             <?php endif; ?>
         </div>
         <div class="media-info">
@@ -1046,6 +1417,56 @@ $total_videos = (int)($conn->query("SELECT COUNT(*) as c FROM media_library WHER
     <input type="hidden" name="media_action" value="bulk_delete">
     <input type="hidden" name="media_ids" id="bulkDeleteIdsInput" value="">
 </form>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!--  DUPLICATE & UNUSED MEDIA MODAL                          -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="dup-modal-overlay" id="dupModalOverlay">
+    <div class="dup-modal">
+        <div class="dup-modal-header">
+            <h5><i class="fas fa-search-minus me-2"></i>Duplicate &amp; Unused Media Checker</h5>
+            <button class="dup-modal-close" onclick="closeDupModal()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="dup-modal-tabs">
+            <button class="dup-modal-tab active" data-tab="unused" onclick="switchDupTab('unused', this)">
+                <i class="fas fa-unlink"></i>Unused Files <span class="tab-count" id="unusedTabCount">0</span>
+            </button>
+            <button class="dup-modal-tab" data-tab="hash" onclick="switchDupTab('hash', this)">
+                <i class="fas fa-copy"></i>Exact Duplicates <span class="tab-count" id="hashTabCount">0</span>
+            </button>
+            <button class="dup-modal-tab" data-tab="name" onclick="switchDupTab('name', this)">
+                <i class="fas fa-font"></i>Same Name <span class="tab-count" id="nameTabCount">0</span>
+            </button>
+        </div>
+        <div class="dup-modal-body" id="dupModalBody">
+            <div class="dup-loading" id="dupLoading">
+                <div class="spinner"></div>
+                <p>Scanning all media files…<br><small>Checking usage across products, banners, categories & more</small></p>
+            </div>
+            <div id="dupContent" style="display:none;">
+                <!-- Stats Bar -->
+                <div class="dup-stats-bar" id="dupStatsBar"></div>
+                <!-- Tab Panels -->
+                <div id="tabPanelUnused"></div>
+                <div id="tabPanelHash" style="display:none;"></div>
+                <div id="tabPanelName" style="display:none;"></div>
+            </div>
+        </div>
+        <div class="dup-modal-footer">
+            <div style="font-size:.8rem; color:#888;" id="dupFooterNote">
+                <i class="fas fa-shield-alt me-1 text-success"></i>
+                Only unused files can be deleted. Used files are protected.
+            </div>
+            <button class="btn-delete-all-unused" id="btnDeleteAllUnused" onclick="deleteAllUnused()" disabled>
+                <i class="fas fa-trash-alt"></i>
+                <span id="btnDeleteAllText">Delete All Unused</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden form for AJAX CSRF token -->
+<input type="hidden" id="dupCsrfToken" value="<?php echo csrf_token(); ?>">
 
 <script>
 // ═══════════════════════════════════════════════════════════
@@ -1341,8 +1762,306 @@ function deleteMedia() {
 
 // Close panel on Escape
 document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeMediaDetail();
+    if (e.key === 'Escape') {
+        closeMediaDetail();
+        closeDupModal();
+    }
 });
+
+// ═══════════════════════════════════════════════════════════
+//  DUPLICATE & UNUSED MEDIA CHECKER
+// ═══════════════════════════════════════════════════════════
+let _dupData = null;
+let _currentDupTab = 'unused';
+
+function openDupModal() {
+    const overlay = document.getElementById('dupModalOverlay');
+    overlay.classList.add('show');
+    document.body.style.overflow = 'hidden';
+    // Reset state
+    document.getElementById('dupLoading').style.display = 'block';
+    document.getElementById('dupContent').style.display = 'none';
+    document.getElementById('btnDeleteAllUnused').disabled = true;
+    _dupData = null;
+    fetchDupData();
+}
+
+function closeDupModal() {
+    document.getElementById('dupModalOverlay').classList.remove('show');
+    document.body.style.overflow = '';
+}
+
+// Close if backdrop clicked
+document.getElementById('dupModalOverlay').addEventListener('click', function(e) {
+    if (e.target === this) closeDupModal();
+});
+
+function switchDupTab(tab, btn) {
+    _currentDupTab = tab;
+    document.querySelectorAll('.dup-modal-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    ['unused','hash','name'].forEach(t => {
+        const el = document.getElementById('tabPanel' + t.charAt(0).toUpperCase() + t.slice(1));
+        if (el) el.style.display = (t === tab) ? 'block' : 'none';
+    });
+}
+
+async function fetchDupData() {
+    try {
+        const resp = await fetch('ajax_media_check_duplicates.php?action=check_all', {
+            credentials: 'same-origin'
+        });
+        const data = await resp.json();
+        if (!data.success) {
+            document.getElementById('dupLoading').innerHTML =
+                `<i class="fas fa-exclamation-circle" style="font-size:2rem;color:#dc3545;"></i><p class="mt-2 text-danger">${data.message || 'Error loading data.'}</p>`;
+            return;
+        }
+        _dupData = data;
+        renderDupModal(data);
+    } catch(err) {
+        document.getElementById('dupLoading').innerHTML =
+            `<i class="fas fa-exclamation-circle" style="font-size:2rem;color:#dc3545;"></i><p class="mt-2 text-danger">Network error: ${err.message}</p>`;
+    }
+}
+
+function renderDupModal(data) {
+    document.getElementById('dupLoading').style.display = 'none';
+    document.getElementById('dupContent').style.display = 'block';
+
+    // Tab counts
+    document.getElementById('unusedTabCount').textContent = data.unused_files.length;
+    document.getElementById('hashTabCount').textContent   = data.duplicates_by_hash.length;
+    document.getElementById('nameTabCount').textContent   = data.duplicates_by_name.length;
+
+    // Stats bar
+    const totalSize = data.unused_files.reduce((s, f) => s + f.file_size, 0);
+    document.getElementById('dupStatsBar').innerHTML = `
+        <div class="dup-stat-card">
+            <div class="stat-num">${data.total}</div>
+            <div class="stat-label">Total Files</div>
+        </div>
+        <div class="dup-stat-card danger">
+            <div class="stat-num">${data.unused_files.length}</div>
+            <div class="stat-label">Unused Files</div>
+        </div>
+        <div class="dup-stat-card">
+            <div class="stat-num">${data.duplicate_hash_groups}</div>
+            <div class="stat-label">Exact Dup Groups</div>
+        </div>
+        <div class="dup-stat-card">
+            <div class="stat-num">${data.duplicate_name_groups}</div>
+            <div class="stat-label">Same-Name Groups</div>
+        </div>
+        <div class="dup-stat-card success">
+            <div class="stat-num">${formatSize(totalSize)}</div>
+            <div class="stat-label">Reclaimable Space</div>
+        </div>
+    `;
+
+    // Unused tab
+    renderUnusedTab(data.unused_files);
+    // Hash duplicates tab
+    renderDupGroupTab('tabPanelHash', data.duplicates_by_hash, 'Exact content duplicate');
+    // Name duplicates tab
+    renderDupGroupTab('tabPanelName', data.duplicates_by_name, 'Same original filename');
+
+    // Enable delete all unused btn
+    if (data.unused_files.length > 0) {
+        document.getElementById('btnDeleteAllUnused').disabled = false;
+        document.getElementById('btnDeleteAllText').textContent =
+            `Delete All Unused (${data.unused_files.length})`;
+    }
+}
+
+function renderUnusedTab(files) {
+    const container = document.getElementById('tabPanelUnused');
+    if (files.length === 0) {
+        container.innerHTML = `<div class="dup-empty"><i class="fas fa-check-circle text-success"></i><strong>No unused files found!</strong><p>All your media files are actively used.</p></div>`;
+        return;
+    }
+    let html = `<div class="dup-section-title"><i class="fas fa-unlink me-1"></i>${files.length} unused file(s) — safe to delete</div>`;
+    files.forEach(f => {
+        const sizeStr = formatSize(f.file_size);
+        const thumbSrc = (f.file_url.startsWith('http') ? f.file_url : '../' + f.file_url);
+        const isImg = f.file_type === 'image';
+        const thumbHtml = isImg
+            ? `<img src="${escHtml(thumbSrc)}" alt="" onerror="this.onerror=null;this.src='../assets/images/placeholder.svg'">`
+            : `<i class="fas fa-video" style="font-size:1.4rem;color:#764ba2;"></i>`;
+        html += `
+        <div class="dup-file-row" id="duprow-${f.id}">
+            <div class="dup-thumb">${thumbHtml}</div>
+            <div class="dup-info">
+                <div class="dup-name" title="${escHtml(f.original_name)}">${escHtml(f.original_name)}</div>
+                <div class="dup-meta">${escHtml(f.mime_type)} &middot; ${sizeStr}</div>
+            </div>
+            <span class="dup-usage-badge unused"><i class="fas fa-unlink me-1"></i>Unused</span>
+            <button class="dup-del-btn" onclick="deleteSingleMedia(${f.id}, this)">
+                <i class="fas fa-trash-alt me-1"></i>Delete
+            </button>
+        </div>`;
+    });
+    container.innerHTML = html;
+}
+
+function renderDupGroupTab(containerId, groups, label) {
+    const container = document.getElementById(containerId);
+    if (groups.length === 0) {
+        container.innerHTML = `<div class="dup-empty"><i class="fas fa-check-circle text-success"></i><strong>No duplicates found!</strong></div>`;
+        return;
+    }
+    let html = '';
+    groups.forEach((group, gi) => {
+        const groupName = group.hash ? `Hash: ${group.hash.substring(0,12)}…` : `Name: "${escHtml(group.name)}"`;
+        html += `<div class="dup-group-box">
+            <div class="dup-group-header"><i class="fas fa-layer-group"></i>${label} &mdash; ${group.files.length} copies</div>`;
+        group.files.forEach((f, fi) => {
+            const sizeStr = formatSize(f.file_size);
+            const thumbSrc = (f.file_url.startsWith('http') ? f.file_url : '../' + f.file_url);
+            const isImg = f.file_type === 'image';
+            const thumbHtml = isImg
+                ? `<img src="${escHtml(thumbSrc)}" alt="" onerror="this.onerror=null;this.src='../assets/images/placeholder.svg'">`
+                : `<i class="fas fa-video" style="font-size:1.4rem;color:#764ba2;"></i>`;
+            const usedClass = f.is_used ? 'used' : 'unused';
+            const usedLabel = f.is_used
+                ? `<i class="fas fa-check-circle me-1"></i>Used (${f.usage_count})`
+                : `<i class="fas fa-unlink me-1"></i>Unused`;
+            const canDelete = !f.is_used;
+            html += `
+            <div class="dup-file-row" id="duprow-${f.id}" style="border-radius:0; border-left:none; border-right:none; border-top:${fi===0?'none':'1px solid #eee'};">
+                <div class="dup-thumb">${thumbHtml}</div>
+                <div class="dup-info">
+                    <div class="dup-name" title="${escHtml(f.original_name)}">${escHtml(f.original_name)}</div>
+                    <div class="dup-meta">${escHtml(f.mime_type)} &middot; ${sizeStr}</div>
+                </div>
+                <span class="dup-usage-badge ${usedClass}">${usedLabel}</span>
+                ${canDelete
+                    ? `<button class="dup-del-btn" onclick="deleteSingleMedia(${f.id}, this)"><i class="fas fa-trash-alt me-1"></i>Delete</button>`
+                    : `<button class="dup-del-btn" disabled title="File is in use"><i class="fas fa-lock me-1"></i>Protected</button>`
+                }
+            </div>`;
+        });
+        html += `</div>`;
+    });
+    container.innerHTML = html;
+}
+
+async function deleteSingleMedia(id, btn) {
+    if (!confirm('Are you sure you want to permanently delete this unused file?')) return;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Deleting…';
+
+    const fd = new FormData();
+    fd.append('action', 'delete_safe');
+    fd.append('media_id', id);
+    fd.append('_csrf_token', document.getElementById('dupCsrfToken').value);
+
+    try {
+        const resp = await fetch('ajax_media_check_duplicates.php', {
+            method: 'POST',
+            body: fd,
+            credentials: 'same-origin'
+        });
+        const data = await resp.json();
+        if (data.success) {
+            // Remove row from modal
+            const row = document.getElementById('duprow-' + id);
+            if (row) {
+                row.style.transition = 'all .3s';
+                row.style.opacity = '0';
+                row.style.height = row.offsetHeight + 'px';
+                setTimeout(() => {
+                    row.style.height = '0';
+                    row.style.padding = '0';
+                    row.style.margin = '0';
+                    setTimeout(() => row.remove(), 300);
+                }, 300);
+            }
+            // Also remove from page grid
+            const gridCard = document.querySelector(`.media-card[data-id="${id}"]`);
+            if (gridCard) {
+                gridCard.style.transition = 'all .3s';
+                gridCard.style.opacity = '0';
+                gridCard.style.transform = 'scale(0.8)';
+                setTimeout(() => gridCard.remove(), 300);
+            }
+            // Update unused count in _dupData
+            if (_dupData) {
+                _dupData.unused_files = _dupData.unused_files.filter(f => f.id !== id);
+                document.getElementById('unusedTabCount').textContent = _dupData.unused_files.length;
+                if (_dupData.unused_files.length === 0) {
+                    document.getElementById('btnDeleteAllUnused').disabled = true;
+                    document.getElementById('btnDeleteAllText').textContent = 'Delete All Unused';
+                } else {
+                    document.getElementById('btnDeleteAllText').textContent =
+                        `Delete All Unused (${_dupData.unused_files.length})`;
+                }
+            }
+        } else {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-trash-alt me-1"></i>Delete';
+            alert('Could not delete: ' + (data.message || 'Unknown error'));
+        }
+    } catch(err) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-trash-alt me-1"></i>Delete';
+        alert('Network error: ' + err.message);
+    }
+}
+
+async function deleteAllUnused() {
+    if (!_dupData || _dupData.unused_files.length === 0) return;
+    const count = _dupData.unused_files.length;
+    if (!confirm(`Are you sure you want to delete ALL ${count} unused media file(s)?\n\nThis action cannot be undone.\nOnly files not used anywhere will be deleted.`)) return;
+
+    const btn = document.getElementById('btnDeleteAllUnused');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Deleting…';
+
+    const ids = _dupData.unused_files.map(f => f.id).join(',');
+    const fd = new FormData();
+    fd.append('action', 'bulk_delete_unused');
+    fd.append('media_ids', ids);
+    fd.append('_csrf_token', document.getElementById('dupCsrfToken').value);
+
+    try {
+        const resp = await fetch('ajax_media_check_duplicates.php', {
+            method: 'POST',
+            body: fd,
+            credentials: 'same-origin'
+        });
+        const data = await resp.json();
+        if (data.success) {
+            alert(`✅ ${data.message}`);
+            closeDupModal();
+            location.reload();
+        } else {
+            alert('Error: ' + (data.message || 'Unknown error'));
+            btn.disabled = false;
+            btn.innerHTML = `<i class="fas fa-trash-alt"></i><span>Delete All Unused (${count})</span>`;
+        }
+    } catch(err) {
+        alert('Network error: ' + err.message);
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fas fa-trash-alt"></i><span>Delete All Unused (${count})</span>`;
+    }
+}
+
+function formatSize(bytes) {
+    if (!bytes) return '0 B';
+    if (bytes >= 1048576) return (bytes / 1048576).toFixed(1) + ' MB';
+    if (bytes >= 1024) return Math.round(bytes / 1024) + ' KB';
+    return bytes + ' B';
+}
+
+function escHtml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
 </script>
 </div>
 
