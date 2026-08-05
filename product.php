@@ -70,10 +70,12 @@ $productSchema = $seoService->generateProductSchema($product);
 <?php 
 $hero_bg_style = "";
 $show_product_hero = false;
-if (!empty($global_settings['hero_banner_product']) && file_exists(__DIR__ . '/assets/images/' . $global_settings['hero_banner_product'])) {
-    $img_url = htmlspecialchars(ASSETS_URL . '/images/' . $global_settings['hero_banner_product']);
-    $hero_bg_style = "background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('{$img_url}') center/cover no-repeat !important;";
-    $show_product_hero = true;
+if (!empty($global_settings['hero_banner_product'])) {
+    $img_url = htmlspecialchars(resolve_image_url($global_settings['hero_banner_product']));
+    if (!empty($img_url) && strpos($img_url, 'placeholder') === false) {
+        $hero_bg_style = "background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('{$img_url}') center/cover no-repeat !important;";
+        $show_product_hero = true;
+    }
 }
 ?>
 
@@ -574,7 +576,7 @@ if (!empty($global_settings['hero_banner_product']) && file_exists(__DIR__ . '/a
             <?php $delay=100; while($p = $related->fetch_assoc()): ?>
             <div class="col-md-3" data-aos="zoom-in" data-aos-delay="<?php echo $delay; $delay+=100; ?>">
                 <div class="card product-card h-100 border-0 shadow-sm">
-                    <img src="<?php echo htmlspecialchars($p['image'] ? ASSETS_URL.'/images/'.$p['image'] : ASSETS_URL.'/images/placeholder.svg'); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="card-img-top" alt="<?php echo htmlspecialchars($p['name']); ?>" loading="lazy" style="object-fit: <?php echo htmlspecialchars($p['image_fit'] ?? 'contain'); ?>; background-color:#fff;">
+                    <img src="<?php echo htmlspecialchars(resolve_product_image_url($p['image'] ?? '', $conn, $p['id'])); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="card-img-top" alt="<?php echo htmlspecialchars($p['name']); ?>" loading="lazy" style="object-fit: <?php echo htmlspecialchars($p['image_fit'] ?? 'contain'); ?>; background-color:#fff;">
                     <div class="card-body">
                         <h6 class="card-title fw-bold text-truncate"><?php echo htmlspecialchars($p['name']); ?></h6>
                         <div class="d-flex flex-wrap justify-content-between align-items-center mt-3 gap-2">

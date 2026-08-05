@@ -57,7 +57,7 @@ $downloads = $conn->query($query);
                                         <tr>
                                             <td>
                                                 <div class="d-flex align-items-center">
-                                                    <img src="<?php echo ASSETS_URL.'/images/'.$d['image']; ?>" class="rounded" style="width: 40px; height: 40px; object-fit: cover;">
+                                                    <img src="<?php echo htmlspecialchars(resolve_product_image_url($d['image'] ?? '')); ?>" class="rounded" style="width: 40px; height: 40px; object-fit: cover;" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';">
                                                     <div class="ms-3">
                                                         <div class="fw-bold"><?php echo htmlspecialchars($d['product_name']); ?></div>
                                                     </div>

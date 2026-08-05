@@ -117,9 +117,11 @@ if (!empty($c_map_embed)) {
 
 <?php 
 $hero_bg_style = "background: " . htmlspecialchars($c_hero_gradient) . " !important;";
-if (!empty($global_settings['hero_banner_contact']) && file_exists(__DIR__ . '/assets/images/' . $global_settings['hero_banner_contact'])) {
-    $img_url = htmlspecialchars(ASSETS_URL . '/images/' . $global_settings['hero_banner_contact']);
-    $hero_bg_style = "background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('{$img_url}') center/cover no-repeat !important;";
+if (!empty($global_settings['hero_banner_contact'])) {
+    $img_url = htmlspecialchars(resolve_image_url($global_settings['hero_banner_contact']));
+    if (!empty($img_url) && strpos($img_url, 'placeholder') === false) {
+        $hero_bg_style = "background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('{$img_url}') center/cover no-repeat !important;";
+    }
 }
 ?>
 <!-- Hero Section -->

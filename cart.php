@@ -59,7 +59,7 @@ if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
                                 <tr>
                                     <td class="ps-4">
                                         <div class="d-flex align-items-center">
-                                            <img src="<?php echo htmlspecialchars($item['image'] ? ASSETS_URL.'/images/'.$item['image'] : ASSETS_URL.'/images/placeholder.svg'); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="rounded" style="width: 60px; height: 60px; object-fit: contain; background-color: #fff; padding: 5px;">
+                                            <img src="<?php echo htmlspecialchars(resolve_product_image_url($item['image'] ?? '', $conn, $item['id'])); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="rounded" style="width: 60px; height: 60px; object-fit: contain; background-color: #fff; padding: 5px;">
                                             <div class="ms-3">
                                                 <h6 class="fw-bold mb-0"><?php echo htmlspecialchars($item['name']); ?></h6>
                                             </div>

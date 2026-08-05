@@ -54,8 +54,7 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
           $product_url = !empty($product['slug']) ? $site_url . '/product.php?slug=' . urlencode($product['slug']) : $site_url . '/product.php?id=' . $prod_id;
           
           // Image URL
-          $image_name = !empty($product['image']) ? $product['image'] : 'default.jpg';
-          $image_url  = ASSETS_URL . '/images/' . $image_name;
+          $image_url = resolve_product_image_url($product['image'] ?? '', $conn, $prod_id);
 
           // Price calculation
           $effective_price = (!empty($product['sale_price']) && $product['sale_price'] > 0) ? $product['sale_price'] : $product['price'];

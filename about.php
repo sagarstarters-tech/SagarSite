@@ -37,9 +37,11 @@ $features = [
 
 <?php 
 $hero_bg_style = "background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);";
-if (!empty($global_settings['hero_banner_about']) && file_exists(__DIR__ . '/assets/images/' . $global_settings['hero_banner_about'])) {
-    $img_url = htmlspecialchars(ASSETS_URL . '/images/' . $global_settings['hero_banner_about']);
-    $hero_bg_style = "background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('{$img_url}') center/cover no-repeat !important;";
+if (!empty($global_settings['hero_banner_about'])) {
+    $img_url = htmlspecialchars(resolve_image_url($global_settings['hero_banner_about']));
+    if (!empty($img_url) && strpos($img_url, 'placeholder') === false) {
+        $hero_bg_style = "background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('{$img_url}') center/cover no-repeat !important;";
+    }
 }
 ?>
 <!-- Hero Section -->

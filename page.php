@@ -45,9 +45,11 @@ if (strpos($slug_lower, 'support') !== false || strpos($title_lower, 'support') 
     $setting_key = 'hero_banner_faq';
 }
 
-if (!empty($global_settings[$setting_key]) && file_exists(__DIR__ . '/assets/images/' . $global_settings[$setting_key])) {
-    $img_url = htmlspecialchars(ASSETS_URL . '/images/' . $global_settings[$setting_key]);
-    $hero_bg_style = "background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('{$img_url}') center/cover no-repeat !important;";
+if (!empty($global_settings[$setting_key])) {
+    $img_url = htmlspecialchars(resolve_image_url($global_settings[$setting_key]));
+    if (!empty($img_url) && strpos($img_url, 'placeholder') === false) {
+        $hero_bg_style = "background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('{$img_url}') center/cover no-repeat !important;";
+    }
 }
 ?>
 <!-- Hero Section for custom pages -->
