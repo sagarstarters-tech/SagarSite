@@ -256,33 +256,69 @@ document.addEventListener('DOMContentLoaded', function() {
         imgElement.parentElement.appendChild(overlay);
 
         try {
-            // Fetch the image as a Blob
+            // Also update any corresponding hidden path input in the form
+            if (currentFileInput && currentFileInput.form) {
+                let hiddenInput = currentFileInput.form.querySelector(`input[name="${currentFileInput.name}_path"]`) ||
+                                  currentFileInput.form.querySelector(`input[name="${currentFileInput.id}_path"]`);
+                if (hiddenInput) {
+                    hiddenInput.value = url;
+                }
+            }
+
+            // Immediately update live image preview on screen
+            const container = currentFileInput.closest('.card-body') || currentFileInput.closest('.card') || currentFileInput.parentElement;
+            if (container) {
+                let imgPreview = container.querySelector('img');
+                if (imgPreview) {
+                    imgPreview.src = url;
+                    imgPreview.style.display = 'inline-block';
+                }
+                const placeholderDiv = container.querySelector('.border-dashed');
+                if (placeholderDiv) placeholderDiv.style.display = 'none';
+            }
+
+            // Fetch the image as a Blob to populate file input
             const response = await fetch(url);
-            if(!response.ok) throw new Error("Network response was not ok");
-            const blob = await response.blob();
+            if(response.ok) {
+                const blob = await response.blob();
+                const file = new File([blob], fileName, { type: blob.type || 'image/jpeg' });
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                currentFileInput.files = dt.files;
+            }
             
-            // Reconstruct File object
-            const file = new File([blob], fileName, { type: blob.type || 'image/jpeg' });
-            
-            // Create a DataTransfer to assign to file input
-            const dt = new DataTransfer();
-            dt.items.add(file);
-            currentFileInput.files = dt.files;
-            
-            // Trigger change event to update any UI previews attached to the normal upload
+            // Trigger change event
             currentFileInput.dispatchEvent(new Event('change', { bubbles: true }));
             
             // Close modal
             mediaGallerySelectorModalInstance.hide();
         } catch(err) {
             console.error("Error fetching gallery image:", err);
-            alert("Could not load the image from the gallery.");
+            // Even if blob fetch failed (e.g. CORS), hidden path and live preview are set
+            mediaGallerySelectorModalInstance.hide();
         } finally {
             imgElement.style.border = oldBorder;
             imgElement.style.opacity = '1';
             if (overlay.parentElement) overlay.remove();
         }
     }
+
+    // Generic live preview listener for local computer file uploads
+    document.addEventListener('change', function(e) {
+        if (e.target.tagName === 'INPUT' && e.target.type === 'file' && e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            const container = e.target.closest('.card-body') || e.target.closest('.card') || e.target.parentElement;
+            if (container) {
+                let imgPreview = container.querySelector('img');
+                if (imgPreview) {
+                    imgPreview.src = URL.createObjectURL(file);
+                    imgPreview.style.display = 'inline-block';
+                }
+                const placeholderDiv = container.querySelector('.border-dashed');
+                if (placeholderDiv) placeholderDiv.style.display = 'none';
+            }
+        }
+    });
 });
 </script>
 

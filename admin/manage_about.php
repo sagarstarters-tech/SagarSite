@@ -30,6 +30,7 @@ $about_keys = [
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     foreach ($about_keys as $key => $default) {
         if ($key === 'about_who_image') {
+            $image_saved = false;
             if (isset($_FILES['about_who_image']) && $_FILES['about_who_image']['error'] === UPLOAD_ERR_OK) {
                 $ext = strtolower(pathinfo($_FILES['about_who_image']['name'], PATHINFO_EXTENSION));
                 if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
@@ -41,8 +42,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $full_path = 'uploads/media/images/' . $filename;
                         $safe_val = $conn->real_escape_string($full_path);
                         $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('$key', '$safe_val') ON DUPLICATE KEY UPDATE setting_value='$safe_val'");
+                        
+                        // Also sync to media_library DB table
+                        $rel_path = $full_path;
+                        $safe_rel = $conn->real_escape_string($rel_path);
+                        $check = $conn->query("SELECT id FROM media_library WHERE file_url = '$safe_rel' OR file_name = '$filename'");
+                        if (!$check || $check->num_rows == 0) {
+                            $size = filesize($upload_target . $filename);
+                            $finfo = new finfo(FILEINFO_MIME_TYPE);
+                            $mime = $finfo->file($upload_target . $filename) ?: 'image/jpeg';
+                            $info = @getimagesize($upload_target . $filename);
+                            $w = $info ? $info[0] : null;
+                            $h = $info ? $info[1] : null;
+                            $m_stmt = $conn->prepare("INSERT INTO media_library (file_name, original_name, file_path, file_url, file_type, mime_type, file_size, width, height) VALUES (?, ?, ?, ?, 'image', ?, ?, ?, ?)");
+                            $orig_name = $_FILES['about_who_image']['name'];
+                            $m_stmt->bind_param('sssssiii', $filename, $orig_name, $rel_path, $rel_path, $mime, $size, $w, $h);
+                            $m_stmt->execute();
+                            $m_stmt->close();
+                        }
+                        $image_saved = true;
                     }
                 }
+            }
+            // Fallback: If no file uploaded or move_uploaded_file failed, check gallery image path input
+            if (!$image_saved && !empty($_POST['about_who_image_path'])) {
+                $raw_path = trim($_POST['about_who_image_path']);
+                // Clean absolute URL to relative path if needed
+                $clean_path = preg_replace('#^https?://[^/]+(/SagarSite)?/#i', '', $raw_path);
+                $safe_val = $conn->real_escape_string($clean_path);
+                $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('$key', '$safe_val') ON DUPLICATE KEY UPDATE setting_value='$safe_val'");
             }
             continue;
         }
@@ -144,7 +172,8 @@ $current_settings = $global_settings;
                     </div>
                     <div class="mb-3">
                         <label class="form-label d-block fw-bold">Upload New Image</label>
-                        <input type="file" name="about_who_image" class="form-control" accept="image/*">
+                        <input type="file" name="about_who_image" id="about_who_image" class="form-control" accept="image/*">
+                        <input type="hidden" name="about_who_image_path" id="about_who_image_path" value="<?php echo htmlspecialchars($who_img_val); ?>">
                         <small class="text-muted">Recommended: 800x600px landscape image.</small>
                     </div>
                 </div>
