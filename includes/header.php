@@ -323,9 +323,10 @@ if (isset($product['slug'])) {
     <link rel="preload" href="<?php echo ASSETS_URL; ?>/css/hero-slider-style.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link href="<?php echo ASSETS_URL; ?>/css/hero-slider-style.css" rel="stylesheet"></noscript>
 
-    <!-- Google Fonts with font-display:swap (non-render-blocking) -->
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet"></noscript>
+    <!-- Google Fonts with font-display:swap (non-render-blocking) —
+         Montserrat (headings) + Poppins (body) — replaces @import in style.css -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght@300;400;500;600&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet"></noscript>
 
     <!-- MDBootstrap CSS (preload for faster render) -->
     <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
@@ -442,19 +443,17 @@ if (isset($product['slug'])) {
           <form action="<?php echo SITE_URL; ?>/shop.php" method="GET" class="me-3 d-none d-lg-flex">
               <div class="input-group input-group-sm" style="width: 200px;">
                   <input type="text" name="search" class="form-control border-0 bg-light rounded-pill-start ps-3" placeholder="Search..." style="border-radius: 20px 0 0 20px;">
-                  <button class="btn btn-light border-0 bg-light text-muted px-3" type="submit" style="border-radius: 0 20px 20px 0;">
+                  <button class="btn btn-light border-0 bg-light text-muted px-3" type="submit" style="border-radius: 0 20px 20px 0;" aria-label="Search">
                       <i class="fas fa-search"></i>
                   </button>
               </div>
           </form>
           <!-- Mobile Search Toggle Icon -->
-          <a class="text-reset me-3 d-lg-none" href="#" data-mdb-toggle="collapse" data-mdb-target="#mobileSearchForm" aria-expanded="false">
-              <i class="fas fa-search fs-5"></i>
-          </a>
+          <a class="text-reset me-3 d-lg-none" href="#" data-mdb-toggle="collapse" data-mdb-target="#mobileSearchForm" aria-expanded="false" aria-label="Toggle search"><i class="fas fa-search fs-5"></i></a>
       <?php endif; ?>
 
       <div id="header-cart-container">
-          <a class="text-reset me-3 position-relative d-flex align-items-center" href="<?php echo SITE_URL; ?>/cart.php">
+          <a class="text-reset me-3 position-relative d-flex align-items-center" href="<?php echo SITE_URL; ?>/cart.php" aria-label="Shopping cart<?php echo $cart_count > 0 ? ' (' . $cart_count . ' items)' : ''; ?>">
             <div class="position-relative">
                 <i class="fas fa-shopping-cart fs-5"></i>
                 <?php if($cart_count > 0): ?>

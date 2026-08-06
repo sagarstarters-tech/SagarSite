@@ -39,19 +39,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['subscribe_email'])) {
             
             <div class="d-flex mt-4">
                 <?php if(!empty($global_settings['social_facebook'])): ?>
-                    <a href="<?php echo htmlspecialchars($global_settings['social_facebook']); ?>" target="_blank" class="social-icon-circle me-3"><i class="fab fa-facebook-f"></i></a>
+                    <a href="<?php echo htmlspecialchars($global_settings['social_facebook']); ?>" target="_blank" rel="noopener noreferrer" class="social-icon-circle me-3" aria-label="Follow us on Facebook"><i class="fab fa-facebook-f"></i></a>
                 <?php endif; ?>
                 
                 <?php if(!empty($global_settings['social_twitter'])): ?>
-                    <a href="<?php echo htmlspecialchars($global_settings['social_twitter']); ?>" target="_blank" class="social-icon-circle me-3"><i class="fab fa-twitter"></i></a>
+                    <a href="<?php echo htmlspecialchars($global_settings['social_twitter']); ?>" target="_blank" rel="noopener noreferrer" class="social-icon-circle me-3" aria-label="Follow us on Twitter"><i class="fab fa-twitter"></i></a>
                 <?php endif; ?>
                 
                 <?php if(!empty($global_settings['social_instagram'])): ?>
-                    <a href="<?php echo htmlspecialchars($global_settings['social_instagram']); ?>" target="_blank" class="social-icon-circle me-3"><i class="fab fa-instagram"></i></a>
+                    <a href="<?php echo htmlspecialchars($global_settings['social_instagram']); ?>" target="_blank" rel="noopener noreferrer" class="social-icon-circle me-3" aria-label="Follow us on Instagram"><i class="fab fa-instagram"></i></a>
                 <?php endif; ?>
                 
                 <?php if(!empty($global_settings['social_linkedin'])): ?>
-                    <a href="<?php echo htmlspecialchars($global_settings['social_linkedin']); ?>" target="_blank" class="social-icon-circle"><i class="fab fa-linkedin-in"></i></a>
+                    <a href="<?php echo htmlspecialchars($global_settings['social_linkedin']); ?>" target="_blank" rel="noopener noreferrer" class="social-icon-circle" aria-label="Follow us on LinkedIn"><i class="fab fa-linkedin-in"></i></a>
                 <?php endif; ?>
             </div>
         </div>
@@ -134,8 +134,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['subscribe_email'])) {
   </div>
 </footer>
 
-<!-- jQuery — loaded at end of body (non-render-blocking) -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- jQuery — loaded at end of body, deferred (non-render-blocking) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" defer></script>
 <!-- MDB JS -->
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.js" defer></script>
 
