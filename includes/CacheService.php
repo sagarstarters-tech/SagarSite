@@ -53,6 +53,31 @@ class CacheService {
     }
 
     /**
+     * Prime and update site cache version key in database settings table.
+     * This forces browser cache bust for updated CSS/JS assets without data loss.
+     */
+    public function primeSiteCache() {
+        $version = time();
+        $stmt = $this->conn->prepare("INSERT INTO settings (setting_key, setting_value) VALUES ('site_cache_version', ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)");
+        if ($stmt) {
+            $stmt->bind_param('s', $version);
+            $stmt->execute();
+            $stmt->close();
+        }
+        return $version;
+    }
+
+    /**
+     * Clear PHP Bytecode / OPcache if OPcache extension is enabled.
+     */
+    public function resetOpCache() {
+        if (function_exists('opcache_reset') && @opcache_reset()) {
+            return 'OPcache successfully flushed';
+        }
+        return 'OPcache not active or not configurable on host';
+    }
+
+    /**
      * Placeholder for compiled template cache clearing if implemented in future.
      */
     public function clearTemplateCache() {
@@ -60,3 +85,4 @@ class CacheService {
         return 0;
     }
 }
+

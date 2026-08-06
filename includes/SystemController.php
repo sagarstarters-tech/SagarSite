@@ -42,6 +42,38 @@ class SystemController {
     }
 
     /**
+     * Execute website speed boost optimizations safely without deleting data.
+     */
+    public function boostWebsiteSpeed() {
+        $startTime = microtime(true);
+        
+        $report = [
+            'analyzed_tables' => [],
+            'cache_version' => '',
+            'opcache_status' => '',
+            'execution_time' => 0,
+            'timestamp' => date('Y-m-d H:i:s')
+        ];
+
+        // 1. Analyze Database Tables for optimal query execution plans
+        $report['analyzed_tables'] = $this->optimizationService->analyzeDatabaseTables();
+
+        // 2. Prime & update static site asset cache version
+        $report['cache_version'] = $this->cacheService->primeSiteCache();
+
+        // 3. Reset PHP OPcache Bytecode Cache
+        $report['opcache_status'] = $this->cacheService->resetOpCache();
+
+        // 4. Record execution time
+        $report['execution_time'] = round((microtime(true) - $startTime) * 1000, 2); // ms
+
+        // 5. Save audit timestamp
+        $this->conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('last_speed_boost', '" . date('Y-m-d H:i:s') . "') ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value)");
+
+        return $report;
+    }
+
+    /**
      * Log maintenance activity to a persistent storage or file.
      * For now, we will log to a dedicated table or file.
      */
@@ -58,3 +90,4 @@ class SystemController {
         // Optionally create a dedicated log entry in a generic logs table if available
     }
 }
+

@@ -21,6 +21,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $clear_logs = isset($_POST['clear_logs']) && $_POST['clear_logs'] === 'true';
             $report = $controller->runFullMaintenance(['clear_logs' => $clear_logs]);
             echo json_encode(['success' => true, 'report' => $report]);
+        } elseif ($action === 'boost_speed') {
+            $report = $controller->boostWebsiteSpeed();
+            echo json_encode(['success' => true, 'report' => $report]);
         } else {
             echo json_encode(['error' => 'Invalid action']);
         }
