@@ -134,6 +134,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['subscribe_email'])) {
   </div>
 </footer>
 
+<!-- jQuery — loaded at end of body (non-render-blocking) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <!-- MDB JS -->
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.js" defer></script>
 

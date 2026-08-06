@@ -201,12 +201,15 @@ if (!empty($og_image_url)) {
         }
         $base_dir = defined('BASE_PATH') ? BASE_PATH : __DIR__ . '/..';
         $local_img_path = $base_dir . '/' . ltrim(urldecode($clean_url_path), '/');
-        
+
         if (file_exists($local_img_path)) {
-            $img_size = @getimagesize($local_img_path);
-            if ($img_size && $img_size[0] >= 100 && $img_size[1] >= 100) {
-                $og_image_width = $img_size[0];
-                $og_image_height = $img_size[1];
+            // Only call getimagesize on non-product pages to avoid per-request disk I/O overhead
+            if ($entity_type !== 'product') {
+                $img_size = @getimagesize($local_img_path);
+                if ($img_size && $img_size[0] >= 100 && $img_size[1] >= 100) {
+                    $og_image_width = $img_size[0];
+                    $og_image_height = $img_size[1];
+                }
             }
             $v = filemtime($local_img_path);
             if (strpos($og_image_url, '?') === false) {
@@ -300,13 +303,20 @@ if (isset($product['slug'])) {
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="dns-prefetch" href="https://code.jquery.com">
 
-    <!-- MDBootstrap CSS -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.css" rel="stylesheet"/>
-    <!-- Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+    <!-- MDBootstrap CSS (preload for faster render) -->
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.css" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.css" rel="stylesheet"></noscript>
+
+    <!-- Font Awesome — async load (non-render-blocking) -->
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"></noscript>
+
     <!-- Custom CSS -->
-    <link href="<?php echo ASSETS_URL; ?>/css/style.css?v=1.1" rel="stylesheet">
+    <link href="<?php echo ASSETS_URL; ?>/css/style.css?v=1.2" rel="stylesheet">
     <!-- Theme Customizer CSS Variables -->
     <?php
     require_once __DIR__ . '/ThemeService.php';
@@ -315,8 +325,8 @@ if (isset($product['slug'])) {
     <!-- WhatsApp Widget CSS -->
     <link href="<?php echo SITE_URL; ?>/whatsapp-style.css" rel="stylesheet">
     <!-- Custom Animations CSS -->
-    <link href="<?php echo ASSETS_URL; ?>/css/animations.css?v=1.1" rel="stylesheet">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link href="<?php echo ASSETS_URL; ?>/css/animations.css?v=1.2" rel="stylesheet">
+    <!-- jQuery moved to footer for non-render-blocking load -->
 
     <?php
     require_once 'ScriptService.php';
@@ -381,10 +391,7 @@ if (isset($product['slug'])) {
 <body class="body-fade-in">
 <?php echo isset($scriptService) ? $scriptService->getBodyScripts() : ''; ?>
 
-<!-- Page Load Animation Overlay -->
-<div id="page-loader">
-    <div class="loader-spinner"></div>
-</div>
+<!-- Page loader removed for performance: content renders instantly -->
 
 <!-- Announcement Top Bar -->
 <?php if (!empty($global_settings['header_announcement'])): ?>

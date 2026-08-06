@@ -92,7 +92,7 @@ Options -Indexes
 </IfModule>
 
 # ══════════════════════════════════════════════════════════════
-# 6. GZIP COMPRESSION
+# 6. GZIP + BROTLI COMPRESSION
 # ══════════════════════════════════════════════════════════════
 <IfModule mod_deflate.c>
     AddOutputFilterByType DEFLATE text/plain
@@ -107,12 +107,24 @@ Options -Indexes
     AddOutputFilterByType DEFLATE application/x-javascript
     AddOutputFilterByType DEFLATE application/json
     AddOutputFilterByType DEFLATE image/svg+xml
+    AddOutputFilterByType DEFLATE application/font-woff
+    AddOutputFilterByType DEFLATE application/font-woff2
+    AddOutputFilterByType DEFLATE font/woff
+    AddOutputFilterByType DEFLATE font/woff2
     # Don't compress already-compressed types
     SetEnvIfNoCase Request_URI \.(?:gif|jpe?g|png|webp|ico)$ no-gzip dont-vary
 </IfModule>
 
+# Brotli compression (Hostinger & LiteSpeed support)
+<IfModule mod_brotli.c>
+    AddOutputFilterByType BROTLI_COMPRESS text/html text/plain text/css
+    AddOutputFilterByType BROTLI_COMPRESS application/javascript application/x-javascript
+    AddOutputFilterByType BROTLI_COMPRESS application/json image/svg+xml
+    AddOutputFilterByType BROTLI_COMPRESS font/woff2 font/woff
+</IfModule>
+
 # ══════════════════════════════════════════════════════════════
-# 7. BROWSER CACHING
+# 7. BROWSER CACHING — Long cache for versioned assets
 # ══════════════════════════════════════════════════════════════
 <IfModule mod_expires.c>
     ExpiresActive On
@@ -123,30 +135,40 @@ Options -Indexes
     ExpiresByType image/webp "access plus 1 year"
     ExpiresByType image/svg+xml "access plus 1 year"
     ExpiresByType image/x-icon "access plus 1 year"
-    # CSS & JS — 1 week
-    ExpiresByType text/css "access plus 1 week"
-    ExpiresByType application/javascript "access plus 1 week"
-    ExpiresByType text/javascript "access plus 1 week"
-    # Fonts — 1 month
-    ExpiresByType font/woff2 "access plus 1 month"
-    ExpiresByType font/woff "access plus 1 month"
-    ExpiresByType application/font-woff "access plus 1 month"
-    # HTML — 1 hour
-    ExpiresByType text/html "access plus 1 hour"
+    # CSS & JS — 1 year (safe because files use ?v= versioning for cache-busting)
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType text/javascript "access plus 1 year"
+    # Fonts — 1 year
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType font/woff "access plus 1 year"
+    ExpiresByType application/font-woff "access plus 1 year"
+    ExpiresByType application/font-woff2 "access plus 1 year"
+    # HTML/PHP — no cache (dynamic content)
+    ExpiresByType text/html "access plus 0 seconds"
     # Default
     ExpiresDefault "access plus 1 week"
 </IfModule>
 
 <IfModule mod_headers.c>
+    # CSS/JS — 1 year, immutable (versioned via ?v= params)
     <FilesMatch "\.(css|js)$">
-        Header set Cache-Control "public, max-age=604800, must-revalidate"
+        Header set Cache-Control "public, max-age=31536000, immutable"
     </FilesMatch>
+    # Images — 1 year, immutable
     <FilesMatch "\.(jpg|jpeg|png|gif|webp|ico|svg)$">
         Header set Cache-Control "public, max-age=31536000, immutable"
     </FilesMatch>
+    # Fonts — 1 year
+    <FilesMatch "\.(woff|woff2|ttf|otf|eot)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+    # HTML/PHP — no cache
     <FilesMatch "\.(php|html)$">
         Header set Cache-Control "no-cache, must-revalidate"
     </FilesMatch>
+    # Enable HSTS on HTTPS
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" env=HTTPS
 </IfModule>
 
 # ══════════════════════════════════════════════════════════════

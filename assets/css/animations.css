@@ -1,1 +1,102 @@
-﻿/* ========================================================= GLOBAL ANIMATION STYLES UI/UX Upgrades for eCommerce Platform ========================================================= */ #page-loader { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #ffffff; z-index: 99999; display: flex; justify-content: center; align-items: center; transition: opacity 0.5s ease-out, visibility 0.5s ease-out; } #page-loader.hidden { opacity: 0; visibility: hidden; } .loader-spinner { width: 50px; height: 50px; border: 4px solid #f3f3f3; border-top: 4px solid #0d6efd; border-radius: 50%; animation: spin 1s linear infinite; } @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } } .product-card { transition: transform 0.3s cubic-bezier(0.165, 0.84, 0.44, 1), box-shadow 0.3s cubic-bezier(0.165, 0.84, 0.44, 1) !important; } .product-card:hover { transform: translateY(-5px) scale(1.01) !important; box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important; } .product-card img, .product-img-zoom { transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important; } .product-card:hover img { transform: scale(1.05) !important; } img[loading="lazy"].lazy-anim { filter: blur(5px); transition: filter 0.5s ease-in-out; } img[loading="lazy"].lazy-anim.loaded { filter: blur(0); } .btn-custom, .btn-primary, .btn-outline-primary, .btn { transition: transform 0.2s ease, filter 0.2s ease, box-shadow 0.2s ease; position: relative; overflow: hidden; } .btn-custom:hover, .btn-primary:hover, .btn-outline-primary:hover { transform: translateY(-2px) scale(1.02); filter: brightness(1.05); box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3) !important; } .ripple { position: absolute; border-radius: 50%; transform: scale(0); animation: ripple-animation 0.6s linear; background-color: rgba(255, 255, 255, 0.4); } @keyframes ripple-animation { to { transform: scale(4); opacity: 0; } } .flying-img { position: fixed; z-index: 9999; width: 60px; height: 60px; object-fit: cover; border-radius: 50%; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2); pointer-events: none; } .anim-slide-in { animation: slideInRight 0.5s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; } @keyframes slideInRight { from { opacity: 0; transform: translateX(100%) scale(0.9); } to { opacity: 1; transform: translateX(0) scale(1); } } .offcanvas, .navbar-collapse { transition: transform 0.3s cubic-bezier(0.77, 0, 0.175, 1) !important; } body.body-fade-in { opacity: 0; transition: opacity 0.3s ease-in-out; } body.body-fade-in.loaded { opacity: 1; } .cart-shake { animation: cart-shake-anim 0.4s ease-in-out; } @keyframes cart-shake-anim { 0% { transform: scale(1) rotate(0); } 25% { transform: scale(1.2) rotate(15deg); } 50% { transform: scale(1.2) rotate(-15deg); } 75% { transform: scale(1.2) rotate(15deg); } 100% { transform: scale(1) rotate(0); } }
+/* =========================================================
+   GLOBAL ANIMATION STYLES
+   UI/UX Upgrades for eCommerce Platform
+   ========================================================= */
+
+/* Page loader REMOVED — content now renders instantly */
+/* body-fade-in: no longer hides content, just smooth transition */
+body.body-fade-in {
+    opacity: 1;
+    transition: opacity 0.2s ease-in-out;
+}
+body.body-fade-in.loaded {
+    opacity: 1;
+}
+
+/* ── Product Card Hover Animations ──────────────────────── */
+.product-card {
+    transition: transform 0.3s cubic-bezier(0.165, 0.84, 0.44, 1),
+                box-shadow 0.3s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
+}
+.product-card:hover {
+    transform: translateY(-5px) scale(1.01) !important;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important;
+}
+.product-card img,
+.product-img-zoom {
+    transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+}
+.product-card:hover img {
+    transform: scale(1.05) !important;
+}
+
+/* ── Lazy Image Blur-In ─────────────────────────────────── */
+img[loading="lazy"].lazy-anim {
+    filter: blur(5px);
+    transition: filter 0.5s ease-in-out;
+}
+img[loading="lazy"].lazy-anim.loaded {
+    filter: blur(0);
+}
+
+/* ── Button Hover Animations ────────────────────────────── */
+.btn-custom, .btn-primary, .btn-outline-primary, .btn {
+    transition: transform 0.2s ease, filter 0.2s ease, box-shadow 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+.btn-custom:hover, .btn-primary:hover, .btn-outline-primary:hover {
+    transform: translateY(-2px) scale(1.02);
+    filter: brightness(1.05);
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3) !important;
+}
+
+/* ── Ripple Effect ──────────────────────────────────────── */
+.ripple {
+    position: absolute;
+    border-radius: 50%;
+    transform: scale(0);
+    animation: ripple-animation 0.6s linear;
+    background-color: rgba(255, 255, 255, 0.4);
+}
+@keyframes ripple-animation {
+    to { transform: scale(4); opacity: 0; }
+}
+
+/* ── Flying Cart Image ──────────────────────────────────── */
+.flying-img {
+    position: fixed;
+    z-index: 9999;
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 50%;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    pointer-events: none;
+}
+
+/* ── Slide-In Notification ──────────────────────────────── */
+.anim-slide-in {
+    animation: slideInRight 0.5s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+}
+@keyframes slideInRight {
+    from { opacity: 0; transform: translateX(100%) scale(0.9); }
+    to   { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+/* ── Off-canvas / Navbar Transitions ───────────────────── */
+.offcanvas, .navbar-collapse {
+    transition: transform 0.3s cubic-bezier(0.77, 0, 0.175, 1) !important;
+}
+
+/* ── Cart Shake Animation ───────────────────────────────── */
+.cart-shake {
+    animation: cart-shake-anim 0.4s ease-in-out;
+}
+@keyframes cart-shake-anim {
+    0%   { transform: scale(1) rotate(0); }
+    25%  { transform: scale(1.2) rotate(15deg); }
+    50%  { transform: scale(1.2) rotate(-15deg); }
+    75%  { transform: scale(1.2) rotate(15deg); }
+    100% { transform: scale(1) rotate(0); }
+}
