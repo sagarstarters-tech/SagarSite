@@ -211,11 +211,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         return;
                     }
                     data.data.forEach(item => {
+                        if (!item.file_url || item.file_url.includes('placeholder') || item.file_url.includes('no-image')) {
+                            return;
+                        }
                         const col = document.createElement('div');
                         col.className = 'col-6 col-md-4 col-lg-3 col-xl-2';
                         col.innerHTML = `
                             <div class="card h-100 border-0 shadow-sm overflow-hidden bg-white">
-                                <img src="${item.file_url}" class="card-img-top gallery-select-item w-100" data-url="${item.file_url}" data-name="${item.file_name}" alt="${item.original_name}">
+                                <img src="${item.file_url}" class="card-img-top gallery-select-item w-100" data-url="${item.file_url}" data-name="${item.file_name}" alt="${item.original_name}" onerror="this.closest('.col-6').remove();">
                             </div>
                         `;
                         grid.appendChild(col);
