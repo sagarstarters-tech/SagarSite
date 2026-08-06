@@ -48,8 +48,12 @@ $transition_type = $settings['transition_type'] ?? 'slide'; // fade, slide, zoom
                 
                 <!-- Background Layer -->
                 <div class="hero-bg">
-                    <?php if($slide['bg_type'] === 'image' && $slide['media_path']): ?>
-                        <img src="<?php echo htmlspecialchars(resolve_image_url($slide['media_path'])); ?>" alt="<?php echo htmlspecialchars($slide['title']); ?>" loading="<?php echo $slide_index === 0 ? 'eager' : 'lazy'; ?>">
+            <?php if($slide['bg_type'] === 'image' && $slide['media_path']): ?>
+                        <img src="<?php echo htmlspecialchars(resolve_image_url($slide['media_path'])); ?>" 
+                             alt="<?php echo htmlspecialchars($slide['title'] ?: 'Hero Banner'); ?>" 
+                             loading="<?php echo $slide_index === 0 ? 'eager' : 'lazy'; ?>"
+                             <?php if($slide_index === 0): ?>fetchpriority="high" decoding="async"<?php endif; ?>
+                             width="1920" height="700">
                     <?php elseif($slide['bg_type'] === 'video' && $slide['media_path']): ?>
                         <video src="<?php echo htmlspecialchars(resolve_image_url($slide['media_path'])); ?>" autoplay loop muted playsinline <?php echo $slide_index !== 0 ? 'data-lazy-video' : ''; ?>></video>
                     <?php elseif($slide['bg_type'] === 'color'): ?>
@@ -143,6 +147,5 @@ $transition_type = $settings['transition_type'] ?? 'slide'; // fade, slide, zoom
     </div>
 </div>
 
-<!-- Enqueue CSS/JS -->
-<link rel="stylesheet" href="<?php echo ASSETS_URL; ?>/css/hero-slider-style.css">
+<!-- hero-slider CSS is preloaded in <head> via header.php -->
 <script src="<?php echo ASSETS_URL; ?>/js/hero-slider-script.js" defer></script>

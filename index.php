@@ -18,7 +18,7 @@ include 'includes/hero-slider.php';
         <?php $delay=100; while($c = $cats->fetch_assoc()): ?>
         <div class="col-md-4" data-aos="zoom-in" data-aos-delay="<?php echo $delay; $delay+=100; ?>">
             <div class="card product-card text-white">
-                <img src="<?php echo !empty($c['image']) ? htmlspecialchars(resolve_image_url($c['image'])) : 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=600'; ?>" class="card-img" alt="<?php echo htmlspecialchars($c['name']); ?>" loading="lazy" style="aspect-ratio: 1 / 1; width: 100%; object-fit: cover; filter: brightness(0.85);" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=600';">
+                <img src="<?php echo !empty($c['image']) ? htmlspecialchars(resolve_image_url($c['image'])) : 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=600'; ?>" class="card-img" alt="<?php echo htmlspecialchars($c['name']); ?>" loading="lazy" width="600" height="600" style="aspect-ratio: 1 / 1; width: 100%; object-fit: cover; filter: brightness(0.85);" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=600';">
                 <div class="card-img-overlay d-flex flex-column justify-content-end align-items-start p-4" style="background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.5) 40%, transparent 100%); z-index: 1;">
                     <h3 class="card-title fw-bold montserrat mb-3" style="color: #ffffff !important; text-shadow: 0 2px 8px rgba(0,0,0,0.9), 0 0 15px rgba(0,0,0,0.6); font-size: 1.4rem; z-index: 2;"><?php echo htmlspecialchars($c['name']); ?></h3>
                     <a href="shop.php?category=<?php echo $c['id']; ?>" class="btn btn-light btn-custom">View Products</a>
@@ -43,7 +43,7 @@ include 'includes/hero-slider.php';
                     <?php
                     $main_img_src = resolve_product_image_url($p['image'] ?? '', $conn, $p['id']);
                     ?>
-                    <img src="<?php echo htmlspecialchars($main_img_src); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="card-img-top" alt="<?php echo htmlspecialchars($p['name']); ?>" loading="lazy" style="object-fit: <?php echo htmlspecialchars($p['image_fit'] ?? 'contain'); ?>; background-color:#fff;">
+                    <img src="<?php echo htmlspecialchars($main_img_src); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="card-img-top" alt="<?php echo htmlspecialchars($p['name']); ?>" loading="lazy" width="400" height="400" style="object-fit: <?php echo htmlspecialchars($p['image_fit'] ?? 'contain'); ?>; background-color:#fff;">
                     <div class="card-body d-flex flex-column">
                         <h5 class="card-title fw-bold text-truncate"><?php echo htmlspecialchars($p['name']); ?></h5>
                         <p class="card-text text-muted small text-truncate"><?php echo htmlspecialchars(!empty($p['short_description']) ? $p['short_description'] : $p['description']); ?></p>

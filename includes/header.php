@@ -7,6 +7,15 @@ require_once __DIR__ . '/maintenance.php';
 require_once __DIR__ . '/cart_functions.php';
 checkMaintenanceMode();
 
+// ── Pre-fetch first hero slide image for LCP preload ────────
+$_lcp_hero_img_url = '';
+$_lcp_hero_q = $conn->query("SELECT media_path FROM hero_slides WHERE is_active=1 AND bg_type='image' ORDER BY display_order ASC LIMIT 1");
+if ($_lcp_hero_q && $_lcp_hero_row = $_lcp_hero_q->fetch_assoc()) {
+    if (!empty($_lcp_hero_row['media_path'])) {
+        $_lcp_hero_img_url = resolve_image_url($_lcp_hero_row['media_path']);
+    }
+}
+
 // Sync cart to DB on every page load for logged-in users (ensures DB stays current)
 if (isset($_SESSION['user_id'])) {
     sync_cart_to_db($conn);
@@ -305,6 +314,19 @@ if (isset($product['slug'])) {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="dns-prefetch" href="https://code.jquery.com">
 
+    <!-- LCP Critical Image Preload (first hero slide = LCP element) -->
+    <?php if (!empty($_lcp_hero_img_url) && strpos($_lcp_hero_img_url, 'placeholder') === false): ?>
+    <link rel="preload" as="image" href="<?php echo htmlspecialchars($_lcp_hero_img_url); ?>" fetchpriority="high">
+    <?php endif; ?>
+
+    <!-- Preload hero slider CSS (used above fold) -->
+    <link rel="preload" href="<?php echo ASSETS_URL; ?>/css/hero-slider-style.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link href="<?php echo ASSETS_URL; ?>/css/hero-slider-style.css" rel="stylesheet"></noscript>
+
+    <!-- Google Fonts with font-display:swap (non-render-blocking) -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet"></noscript>
+
     <!-- MDBootstrap CSS (preload for faster render) -->
     <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.css" rel="stylesheet" media="print" onload="this.media='all'">
@@ -363,12 +385,7 @@ if (isset($product['slug'])) {
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('<?php echo SITE_URL; ?>/sw.js?v=2').then(registration => {
-            registration.update();
-            console.log('SW registered: ', registration);
-          }).catch(registrationError => {
-            console.log('SW registration failed: ', registrationError);
-          });
+          navigator.serviceWorker.register('<?php echo SITE_URL; ?>/sw.js?v=2').then(r => r.update()).catch(() => {});
         });
       }
     </script>
