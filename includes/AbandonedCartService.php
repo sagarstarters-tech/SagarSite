@@ -371,7 +371,7 @@ class AbandonedCartService {
                 customer_number VARCHAR(20),
                 message TEXT,
                 sending_mode VARCHAR(10),
-                status VARCHAR(255),
+                status TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 INDEX idx_cart_id (cart_id)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -424,6 +424,17 @@ class AbandonedCartService {
         $cartId = intval($cartId);
         $logs = [];
         try {
+            $this->conn->query("CREATE TABLE IF NOT EXISTS abandoned_cart_wa_logs (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                cart_id INT NOT NULL,
+                customer_number VARCHAR(20),
+                message TEXT,
+                sending_mode VARCHAR(10),
+                status TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_cart_id (cart_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
             $stmt = $this->conn->prepare("SELECT * FROM abandoned_cart_wa_logs WHERE cart_id = ? ORDER BY created_at DESC");
             if ($stmt) {
                 $stmt->bind_param("i", $cartId);
@@ -435,7 +446,7 @@ class AbandonedCartService {
                 $stmt->close();
             }
         } catch (\Throwable $e) {
-            // Table might not exist yet
+            error_log("[AbandonedCart] getCartLogs error: " . $e->getMessage());
         }
         return $logs;
     }
