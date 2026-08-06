@@ -129,8 +129,12 @@ $current_settings = $global_settings;
                 </div>
                 <div class="card-body text-center">
                     <div class="mb-4">
-                        <?php if (isset($current_settings['about_who_image']) && !empty($current_settings['about_who_image'])): ?>
-                            <img src="../assets/images/<?php echo $current_settings['about_who_image']; ?>" class="img-fluid rounded-4 shadow-sm mb-3" style="max-height: 250px;">
+                        <?php 
+                        $who_img_val = $current_settings['about_who_image'] ?? $about_keys['about_who_image'];
+                        $who_img_url = resolve_image_url($who_img_val);
+                        ?>
+                        <?php if (!empty($who_img_url) && strpos($who_img_url, 'placeholder') === false): ?>
+                            <img src="<?php echo htmlspecialchars($who_img_url); ?>" class="img-fluid rounded-4 shadow-sm mb-3" style="max-height: 250px;" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';">
                         <?php else: ?>
                             <div class="bg-light py-5 rounded-4 mb-3 border border-dashed">
                                 <i class="fas fa-image fa-3x text-muted"></i>

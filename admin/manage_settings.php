@@ -1127,9 +1127,12 @@ $active_tab = isset($_GET['tab']) ? $_GET['tab'] : 'general';
                         <div class="col-md-6 border-bottom pb-3">
                             <label class="form-label fw-bold mb-3"><?php echo htmlspecialchars($label); ?></label>
                             
-                            <?php if(!empty($current_img) && file_exists('../assets/images/' . $current_img)): ?>
+                            <?php 
+                            $hero_img_url = !empty($current_img) ? resolve_image_url($current_img) : '';
+                            if(!empty($hero_img_url) && strpos($hero_img_url, 'placeholder') === false): 
+                            ?>
                                 <div class="mb-3 position-relative">
-                                    <img src="../assets/images/<?php echo htmlspecialchars($current_img); ?>" class="img-fluid rounded shadow-sm" style="max-height: 120px; width: 100%; object-fit: cover;">
+                                    <img src="<?php echo htmlspecialchars($hero_img_url); ?>" class="img-fluid rounded shadow-sm" style="max-height: 120px; width: 100%; object-fit: cover;" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';">
                                 </div>
                                 <div class="d-flex gap-2">
                                     <div class="flex-grow-1">
