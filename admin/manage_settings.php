@@ -234,11 +234,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 $old_q = $conn->query("SELECT setting_value FROM settings WHERE setting_key='$setting_key'");
                 if ($old_q && $old = $old_q->fetch_assoc()) {
                     $old_img = $old['setting_value'];
-                    if ($old_img && file_exists('../assets/images/' . $old_img)) {
-                        unlink('../assets/images/' . $old_img);
+                    if ($old_img) {
+                        $try1 = '../' . ltrim($old_img, '/');
+                        $try2 = '../uploads/media/images/' . basename($old_img);
+                        $try3 = '../uploads/images/' . basename($old_img);
+                        $try4 = '../assets/images/' . basename($old_img);
+                        foreach ([$try1, $try2, $try3, $try4] as $tp) {
+                            if (file_exists($tp)) { @unlink($tp); break; }
+                        }
                     }
                 }
                 $conn->query("DELETE FROM settings WHERE setting_key='$setting_key'");
+                unset($global_settings[$setting_key]);
+                unset($current_settings[$setting_key]);
             }
             
             // Handle Upload
@@ -1139,9 +1147,10 @@ $active_tab = isset($_GET['tab']) ? $_GET['tab'] : 'general';
                                         <input type="file" name="<?php echo $setting_key; ?>" class="form-control form-control-sm" accept="image/*">
                                         <small class="text-muted">Upload to replace.</small>
                                     </div>
-                                    <div class="form-check p-0 m-0 ms-2 d-flex align-items-center">
-                                        <input type="checkbox" class="btn-check" name="delete_<?php echo $setting_key; ?>" id="del_<?php echo $setting_key; ?>" value="1" autocomplete="off">
-                                        <label class="btn btn-outline-danger btn-sm m-0" for="del_<?php echo $setting_key; ?>"><i class="fas fa-trash"></i> Remove</label>
+                                    <div class="p-0 m-0 ms-2 d-flex align-items-center">
+                                        <button type="submit" name="delete_<?php echo $setting_key; ?>" value="1" onclick="return confirm('Are you sure you want to remove this hero banner image?');" class="btn btn-outline-danger btn-sm m-0">
+                                            <i class="fas fa-trash me-1"></i> Remove
+                                        </button>
                                     </div>
                                 </div>
                             <?php else: ?>
