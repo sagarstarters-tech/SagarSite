@@ -25,15 +25,20 @@ $statusCounts = [
     'failed' => 0
 ];
 
-// Clean existing duplicate queued items if any
+// Fix platform case inconsistencies first (normalize to lowercase)
+try {
+    $pdo->query("UPDATE sm_queue SET platform = LOWER(platform) WHERE platform != LOWER(platform)");
+} catch (Exception $e) {}
+
+// Clean existing duplicate queued items — keep the NEWEST entry per product+platform+account combination
 try {
     $pdo->query("DELETE q1 FROM sm_queue q1
         INNER JOIN sm_queue q2 
         ON q1.product_id = q2.product_id 
-        AND q1.platform = q2.platform 
+        AND LOWER(q1.platform) = LOWER(q2.platform) 
         AND q1.account_id = q2.account_id 
         AND q1.status = q2.status
-        AND q1.id > q2.id
+        AND q1.id < q2.id
         WHERE q1.status IN ('pending', 'scheduled')");
 } catch (Exception $e) {}
 

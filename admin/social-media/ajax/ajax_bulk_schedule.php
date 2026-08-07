@@ -115,11 +115,14 @@ try {
         }
 
         foreach ($connectedAccounts as $acc) {
-            // Duplicate Check: Don't add if already pending/scheduled/publishing for this platform & account
-            $chkStmt = $pdo->prepare("SELECT COUNT(*) FROM sm_queue WHERE product_id = ? AND platform = ? AND account_id = ? AND status IN ('pending', 'scheduled', 'publishing')");
-            $chkStmt->execute([$prod['id'], $acc['platform'], $acc['id']]);
+            // Duplicate Check: Skip if this product is already queued (any active/waiting status)
+            // This prevents duplicates when Bulk Schedule is run multiple times
+            $chkStmt = $pdo->prepare("SELECT COUNT(*) FROM sm_queue 
+                WHERE product_id = ? AND platform = ? AND account_id = ? 
+                AND status IN ('pending', 'scheduled', 'publishing')");
+            $chkStmt->execute([$prod['id'], strtolower($acc['platform']), $acc['id']]);
             if ($chkStmt->fetchColumn() > 0) {
-                continue; // Skip duplicate
+                continue; // Skip - already in active queue
             }
 
             $renderedContent = $templateEngine->render($templateBody, $prod, [
@@ -129,13 +132,13 @@ try {
             ]);
 
             // Stagger posts by intervalMinutes
+            // NOTE: $staggerIndex increments ONLY when we actually insert, not when skipped
             $scheduledTimestamp = time() + ($staggerIndex * $intervalMinutes * 60);
             $scheduledAt = date('Y-m-d H:i:s', $scheduledTimestamp);
-            $staggerIndex++;
 
             $stmtQueue->execute([
                 $prod['id'],
-                $acc['platform'],
+                strtolower($acc['platform']),
                 $acc['id'],
                 $templateId,
                 $renderedContent,
@@ -143,6 +146,7 @@ try {
                 $prodUrl,
                 $scheduledAt
             ]);
+            $staggerIndex++; // Only increment AFTER successful insert
             $totalPostsScheduled++;
         }
     }
