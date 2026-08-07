@@ -135,20 +135,33 @@ class LinkedInAdapter implements PlatformAdapterInterface {
         ];
 
         $link = $postData['link'] ?? '';
-        
+        $assetUrn = null;
+
         if (!empty($imageUrl)) {
             if (strpos($imageUrl, 'http') !== 0) {
                 $siteUrl = rtrim(defined('SITE_URL') ? SITE_URL : 'https://www.sagarstarters.com', '/');
                 $imageUrl = $siteUrl . '/' . ltrim($imageUrl, '/');
             }
             
-            $targetUrl = !empty($link) ? $link : $imageUrl;
+            // Upload product image asset directly to LinkedIn
+            $assetUrn = $this->uploadImageAsset($accessToken, $personUrn, $imageUrl);
+        }
 
+        if ($assetUrn) {
+            $shareContent['shareMediaCategory'] = 'IMAGE';
+            $shareContent['media'] = [
+                [
+                    'status' => 'READY',
+                    'media' => $assetUrn,
+                    'title' => ['text' => mb_substr($text, 0, 100)]
+                ]
+            ];
+        } elseif (!empty($link)) {
             $shareContent['shareMediaCategory'] = 'ARTICLE';
             $shareContent['media'] = [
                 [
                     'status' => 'READY',
-                    'originalUrl' => $targetUrl,
+                    'originalUrl' => $link,
                     'title' => ['text' => mb_substr($text, 0, 100)],
                     'description' => ['text' => mb_substr($text, 0, 200)]
                 ]
@@ -197,12 +210,75 @@ class LinkedInAdapter implements PlatformAdapterInterface {
         return $platformPostId ? "https://www.linkedin.com/feed/update/$platformPostId" : '';
     }
 
-    public function getPlatformLimits(): array {
-        return [
-            'max_chars' => 3000,
-            'max_images' => 9,
-            'rate_limit' => '100 calls/day'
+    private function uploadImageAsset(string $accessToken, string $personUrn, string $imageUrl): ?string {
+        // 1. Download product image binary data
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $imageUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        $imageData = curl_exec($ch);
+        $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if (!$imageData || $httpCode !== 200) {
+            error_log("LinkedIn Image Download Failed ($httpCode): $imageUrl");
+            return null;
+        }
+
+        // 2. Register Upload Request with LinkedIn Assets API
+        $registerUrl = 'https://api.linkedin.com/v2/assets?action=registerUpload';
+        $registerPayload = [
+            'registerUploadRequest' => [
+                'recipes' => ['urn:li:digitalmediaRecipe:feedshare-image'],
+                'owner' => $personUrn,
+                'serviceRelationships' => [
+                    [
+                        'relationshipType' => 'OWNER',
+                        'identifier' => 'urn:li:userGeneratedContent'
+                    ]
+                ]
+            ]
         ];
+
+        $headers = [
+            'Authorization: Bearer ' . $accessToken,
+            'Content-Type: application/json',
+            'X-Restli-Protocol-Version: 2.0.0'
+        ];
+
+        $res = $this->curlRequest($registerUrl, 'POST', json_encode($registerPayload), $headers);
+
+        $uploadUrl = $res['value']['uploadMechanism']['com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest']['uploadUrl'] ?? null;
+        $assetUrn  = $res['value']['asset'] ?? null;
+
+        if (!$uploadUrl || !$assetUrn) {
+            error_log('LinkedIn Asset Register Failed: ' . json_encode($res));
+            return null;
+        }
+
+        // 3. Upload Raw Image Bytes to uploadUrl
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $uploadUrl);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $imageData);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Authorization: Bearer ' . $accessToken,
+            'Content-Type: application/octet-stream'
+        ]);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_exec($ch);
+        $putCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($putCode >= 200 && $putCode < 300) {
+            return $assetUrn;
+        }
+
+        error_log("LinkedIn Image PUT Failed ($putCode) for Asset: $assetUrn");
+        return null;
     }
 
     private function curlRequest(string $url, string $method = 'GET', $data = null, array $headers = []): array {
