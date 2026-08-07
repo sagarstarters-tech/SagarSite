@@ -30,16 +30,15 @@ try {
     $pdo->query("UPDATE sm_queue SET platform = LOWER(platform) WHERE platform != LOWER(platform)");
 } catch (Exception $e) {}
 
-// Clean existing duplicate queued items — keep the NEWEST entry per product+platform+account combination
+// Clean existing duplicate queued items — keep the NEWEST entry per product + platform combination
 try {
     $pdo->query("DELETE q1 FROM sm_queue q1
         INNER JOIN sm_queue q2 
         ON q1.product_id = q2.product_id 
         AND LOWER(q1.platform) = LOWER(q2.platform) 
-        AND q1.account_id = q2.account_id 
-        AND q1.status = q2.status
         AND q1.id < q2.id
-        WHERE q1.status IN ('pending', 'scheduled')");
+        WHERE q1.status IN ('pending', 'scheduled')
+          AND q2.status IN ('pending', 'scheduled')");
 } catch (Exception $e) {}
 
 $stmtCounts = $pdo->query("SELECT status, COUNT(*) as c FROM sm_queue GROUP BY status");
@@ -279,22 +278,22 @@ $statusBadges = [
                                         </div>
                                     </td>
                                     <td class="text-end">
-                                        <div class="btn-group btn-group-sm">
-                                            <button class="btn btn-outline-success btn-post-now" 
+                                        <div class="d-flex justify-content-end align-items-center gap-1">
+                                            <button type="button" class="btn btn-sm btn-success px-2 py-1 btn-post-now text-white fw-bold shadow-sm" 
                                                     data-id="<?php echo $item['id']; ?>" title="Post Immediately">
-                                                <i class="fas fa-bolt"></i> Post Now
+                                                <i class="fas fa-bolt me-1"></i> Post Now
                                             </button>
                                             
-                                            <?php if ($item['status'] === 'failed'): ?>
-                                                <button class="btn btn-outline-warning btn-retry-item" 
+                                            <?php if (strtolower($item['status']) === 'failed'): ?>
+                                                <button type="button" class="btn btn-sm btn-warning px-2 py-1 btn-retry-item text-dark fw-bold shadow-sm" 
                                                         data-id="<?php echo $item['id']; ?>" title="Retry Failed Post">
-                                                    <i class="fas fa-redo"></i> Retry
+                                                    <i class="fas fa-redo me-1"></i> Retry
                                                 </button>
                                             <?php endif; ?>
 
-                                            <button class="btn btn-outline-danger btn-delete-item" 
+                                            <button type="button" class="btn btn-sm btn-danger px-2 py-1 btn-delete-item text-white shadow-sm" 
                                                     data-id="<?php echo $item['id']; ?>" title="Delete Queue Item">
-                                                <i class="fas fa-trash"></i>
+                                                <i class="fas fa-trash-alt"></i>
                                             </button>
                                         </div>
                                     </td>

@@ -78,7 +78,16 @@ try {
     }, $platforms));
 
     $stmtAcc = $pdo->query("SELECT * FROM sm_connected_accounts WHERE is_active = 1 AND LOWER(platform) IN ($inPlatforms)");
-    $connectedAccounts = $stmtAcc->fetchAll(PDO::FETCH_ASSOC);
+    $rawAccounts = $stmtAcc->fetchAll(PDO::FETCH_ASSOC);
+
+    // Map 1 active account per platform to prevent multi-account duplication for the same platform
+    $connectedAccounts = [];
+    foreach ($rawAccounts as $acc) {
+        $pKey = strtolower(trim($acc['platform']));
+        if (!isset($connectedAccounts[$pKey])) {
+            $connectedAccounts[$pKey] = $acc;
+        }
+    }
 
     if (empty($connectedAccounts)) {
         throw new Exception('No active connected accounts found for the selected platforms. Please connect accounts on the Accounts page first.');
@@ -115,14 +124,13 @@ try {
         }
 
         foreach ($connectedAccounts as $acc) {
-            // Duplicate Check: Skip if this product is already queued (any active/waiting status)
-            // This prevents duplicates when Bulk Schedule is run multiple times
+            // Duplicate Check: Skip if this product is already queued for this platform in any active/waiting status
             $chkStmt = $pdo->prepare("SELECT COUNT(*) FROM sm_queue 
-                WHERE product_id = ? AND platform = ? AND account_id = ? 
+                WHERE product_id = ? AND LOWER(platform) = ? 
                 AND status IN ('pending', 'scheduled', 'publishing')");
-            $chkStmt->execute([$prod['id'], strtolower($acc['platform']), $acc['id']]);
+            $chkStmt->execute([$prod['id'], strtolower($acc['platform'])]);
             if ($chkStmt->fetchColumn() > 0) {
-                continue; // Skip - already in active queue
+                continue; // Skip - already in active queue for this platform
             }
 
             $renderedContent = $templateEngine->render($templateBody, $prod, [
