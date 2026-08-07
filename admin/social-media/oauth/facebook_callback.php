@@ -86,7 +86,7 @@ try {
 
     // 3. Fetch user's Facebook Pages and linked Instagram accounts
     $pagesUrl = "https://graph.facebook.com/v21.0/me/accounts?" . http_build_query([
-        'fields' => 'name,id,access_token,instagram_business_account{id,username,name}',
+        'fields' => 'name,id,access_token,instagram_business_account{id,username,name},connected_instagram_account{id,username,name}',
         'access_token' => $userToken
     ]);
 
@@ -101,6 +101,7 @@ try {
 
     $userId = $_SESSION['user_id'] ?? 1;
     $foundInstagram = false;
+    $foundFacebook = false;
 
     if (empty($pages)) {
         // Fallback: If no specific Pages returned, store the user profile account
@@ -120,6 +121,7 @@ try {
             VALUES ('facebook', ?, ?, ?, ?, 1, ?)
             ON DUPLICATE KEY UPDATE account_name = VALUES(account_name), access_token_encrypted = VALUES(access_token_encrypted), is_active = 1");
         $stmt->execute([$fbName, $fbId, $fbId, $encryptedToken, $userId]);
+        $foundFacebook = true;
     } else {
         foreach ($pages as $page) {
             $pageId = $page['id'];
@@ -132,14 +134,15 @@ try {
                 VALUES ('facebook', ?, ?, ?, ?, 1, ?)
                 ON DUPLICATE KEY UPDATE account_name = VALUES(account_name), access_token_encrypted = VALUES(access_token_encrypted), is_active = 1");
             $stmt->execute([$pageName, $pageId, $pageId, $encryptedToken, $userId]);
+            $foundFacebook = true;
 
-            // Check linked Instagram Business Account
-            $igAccount = $page['instagram_business_account'] ?? null;
+            // Check linked Instagram Business Account (try both fields)
+            $igAccount = $page['instagram_business_account'] ?? $page['connected_instagram_account'] ?? null;
             
-            // Fallback direct check if nested field didn't return
+            // Fallback direct page check if nested field didn't return
             if (!$igAccount) {
                 $igCheckUrl = "https://graph.facebook.com/v21.0/{$pageId}?" . http_build_query([
-                    'fields' => 'instagram_business_account{id,username,name}',
+                    'fields' => 'instagram_business_account{id,username,name},connected_instagram_account{id,username,name}',
                     'access_token' => $pageAccessToken
                 ]);
                 $ch = curl_init();
@@ -148,13 +151,13 @@ try {
                 $igCheckStr = curl_exec($ch);
                 curl_close($ch);
                 $igCheckRes = json_decode($igCheckStr ?: '', true);
-                $igAccount = $igCheckRes['instagram_business_account'] ?? null;
+                $igAccount = $igCheckRes['instagram_business_account'] ?? $igCheckRes['connected_instagram_account'] ?? null;
             }
 
             if (!empty($igAccount['id'])) {
                 $foundInstagram = true;
                 $igId = $igAccount['id'];
-                $igHandle = !empty($igAccount['username']) ? '@' . $igAccount['username'] : $pageName . ' (Instagram)';
+                $igHandle = !empty($igAccount['username']) ? '@' . $igAccount['username'] : (!empty($igAccount['name']) ? $igAccount['name'] : $pageName . ' (Instagram)');
                 $stmtIg = $pdo->prepare("INSERT INTO sm_connected_accounts (platform, account_name, account_id, page_id, access_token_encrypted, is_active, connected_by) 
                     VALUES ('instagram', ?, ?, ?, ?, 1, ?)
                     ON DUPLICATE KEY UPDATE account_name = VALUES(account_name), access_token_encrypted = VALUES(access_token_encrypted), is_active = 1");
@@ -163,7 +166,13 @@ try {
         }
     }
 
-    set_flash('success', 'Facebook & Instagram account(s) connected successfully!');
+    if ($foundInstagram) {
+        set_flash('success', '✅ Facebook Page & Instagram Business Account connected successfully!');
+    } elseif ($foundFacebook) {
+        set_flash('warning', '✅ Facebook Page connected! ⚠️ Instagram Note: No Instagram Business Account is currently linked to your Facebook Page in Meta. To connect Instagram: Open your Facebook Page Settings → Linked Accounts → Connect your Instagram Business Account, then click Connect Instagram again.');
+    } else {
+        set_flash('success', 'Facebook account connected successfully!');
+    }
 } catch (Exception $e) {
     error_log('[Facebook Callback Error] ' . $e->getMessage());
     set_flash('error', 'Failed to connect Facebook: ' . $e->getMessage());
