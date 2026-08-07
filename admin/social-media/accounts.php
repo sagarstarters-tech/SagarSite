@@ -175,8 +175,14 @@ $platformsConfig = [
                             <?php if ($key === 'telegram'): ?>
                                 <button class="btn text-white rounded-pill shadow-sm" 
                                         style="background-color: <?php echo $p['color']; ?>;" 
-                                        data-mdb-toggle="modal" data-mdb-target="#telegramModal">
+                                        data-mdb-toggle="modal" data-mdb-target="#telegramModal" data-bs-toggle="modal" data-bs-target="#telegramModal">
                                     <i class="fas fa-plug me-2"></i> Connect Telegram
+                                </button>
+                            <?php elseif ($key === 'facebook'): ?>
+                                <button class="btn text-white rounded-pill shadow-sm" 
+                                        style="background-color: <?php echo $p['color']; ?>;" 
+                                        data-mdb-toggle="modal" data-mdb-target="#facebookModal" data-bs-toggle="modal" data-bs-target="#facebookModal">
+                                    <i class="fas fa-plug me-2"></i> Connect Facebook Page Token
                                 </button>
                             <?php elseif ($p['has_keys']): ?>
                                 <a href="<?php echo htmlspecialchars($authUrl); ?>" 
@@ -197,6 +203,54 @@ $platformsConfig = [
             </div>
         </div>
         <?php endforeach; ?>
+    </div>
+</div>
+
+<!-- Facebook Connection Modal -->
+<div class="modal fade" id="facebookModal" tabindex="-1" aria-labelledby="facebookModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="facebookModalLabel">
+                    <i class="fab fa-facebook text-primary me-2 fs-3"></i>Connect Facebook Page Access Token
+                </h5>
+                <button type="button" class="btn-close" data-mdb-dismiss="modal" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="facebookForm">
+                <div class="modal-body p-4">
+                    <input type="hidden" name="_csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
+                    <input type="hidden" name="action" value="save_facebook">
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Facebook Page Name <span class="text-danger">*</span></label>
+                        <input type="text" name="account_name" class="form-control rounded-3" 
+                               placeholder="e.g. Sagar Starter's Official Page" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Facebook Page ID <span class="text-danger">*</span></label>
+                        <input type="text" name="page_id" class="form-control rounded-3" 
+                               placeholder="e.g. 104829384910234" required>
+                        <div class="form-text">Find your Page ID under Facebook Page Settings ➔ About / Page Information.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Page Access Token <span class="text-danger">*</span></label>
+                        <textarea name="access_token" class="form-control rounded-3" rows="3" 
+                                  placeholder="e.g. EAAB..." required></textarea>
+                        <div class="form-text">Generate a Page Access Token from Meta Graph API Explorer or Facebook Developer App.</div>
+                    </div>
+
+                    <div id="facebookAlert"></div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light rounded-pill" data-mdb-dismiss="modal" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4" id="btnSaveFacebook">
+                        <i class="fas fa-save me-1"></i> Save & Connect Facebook
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -316,6 +370,44 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(err => {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-save me-1"></i> Save & Connect';
+                alertDiv.innerHTML = `<div class="alert alert-danger mt-3"><i class="fas fa-exclamation-triangle me-1"></i> Network error: ${err.message}</div>`;
+            });
+        });
+    }
+
+    // Save Facebook Form AJAX
+    const facebookForm = document.getElementById('facebookForm');
+    if (facebookForm) {
+        facebookForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnSaveFacebook');
+            const alertDiv = document.getElementById('facebookAlert');
+            
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Connecting...';
+            alertDiv.innerHTML = '';
+
+            const formData = new FormData(this);
+
+            fetch('ajax/ajax_account_actions.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save me-1"></i> Save & Connect Facebook';
+                
+                if (data.success) {
+                    alertDiv.innerHTML = '<div class="alert alert-success mt-3"><i class="fas fa-check-circle me-1"></i> Facebook Page Access Token saved! Reloading...</div>';
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    alertDiv.innerHTML = `<div class="alert alert-danger mt-3"><i class="fas fa-exclamation-triangle me-1"></i> ${data.error || 'Connection failed'}</div>`;
+                }
+            })
+            .catch(err => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save me-1"></i> Save & Connect Facebook';
                 alertDiv.innerHTML = `<div class="alert alert-danger mt-3"><i class="fas fa-exclamation-triangle me-1"></i> Network error: ${err.message}</div>`;
             });
         });

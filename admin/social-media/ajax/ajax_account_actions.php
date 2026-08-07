@@ -112,6 +112,34 @@ try {
             $response['data'] = 'Telegram connected successfully';
             break;
 
+        case 'save_facebook':
+            $page_id = trim($_POST['page_id'] ?? '');
+            $access_token = trim($_POST['access_token'] ?? '');
+            $account_name = trim($_POST['account_name'] ?? 'Facebook Page');
+
+            if (empty($page_id) || empty($access_token)) {
+                throw new Exception('Facebook Page ID and Page Access Token are required');
+            }
+
+            $encryptedToken = TokenEncryption::encrypt($access_token);
+            $userId = $_SESSION['user_id'] ?? 1;
+
+            $stmt = $pdo->prepare("SELECT id FROM sm_connected_accounts WHERE platform = 'facebook' AND page_id = ?");
+            $stmt->execute([$page_id]);
+            $existing = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($existing) {
+                $updateStmt = $pdo->prepare("UPDATE sm_connected_accounts SET account_name = ?, access_token_encrypted = ?, is_active = 1, connected_by = ?, updated_at = NOW() WHERE id = ?");
+                $updateStmt->execute([$account_name, $encryptedToken, $userId, $existing['id']]);
+            } else {
+                $insertStmt = $pdo->prepare("INSERT INTO sm_connected_accounts (platform, account_name, account_id, page_id, access_token_encrypted, is_active, connected_by) VALUES ('facebook', ?, ?, ?, ?, 1, ?)");
+                $insertStmt->execute([$account_name, $page_id, $page_id, $encryptedToken, $userId]);
+            }
+
+            $response['success'] = true;
+            $response['data'] = 'Facebook Page Access Token saved successfully!';
+            break;
+
         default:
             throw new Exception('Invalid action');
     }
