@@ -62,7 +62,7 @@ if (!empty($searchQuery)) {
 $whereSql = !empty($whereClauses) ? "WHERE " . implode(" AND ", $whereClauses) : "";
 
 // 3. Fetch Queue Items
-$sql = "SELECT q.*, p.name as product_name, p.main_image, p.image, a.account_name 
+$sql = "SELECT q.*, p.name as product_name, p.image, a.account_name 
         FROM sm_queue q 
         LEFT JOIN products p ON q.product_id = p.id 
         LEFT JOIN sm_connected_accounts a ON q.account_id = a.id 
