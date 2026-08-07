@@ -30,6 +30,24 @@ try {
     ob_end_clean();
 }
 
+// Direct Disconnect Handler
+if (isset($_GET['action']) && $_GET['action'] === 'disconnect') {
+    $discId = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
+    $discPlatform = trim($_GET['platform'] ?? '');
+
+    if ($discId) {
+        $stmt = $pdo->prepare("UPDATE sm_connected_accounts SET is_active = 0 WHERE id = ?");
+        $stmt->execute([$discId]);
+    } elseif (!empty($discPlatform)) {
+        $stmt = $pdo->prepare("UPDATE sm_connected_accounts SET is_active = 0 WHERE platform = ?");
+        $stmt->execute([$discPlatform]);
+    }
+
+    set_flash('success', 'Account disconnected successfully.');
+    header('Location: ' . SITE_URL . '/admin/social-media/accounts.php');
+    exit;
+}
+
 // Fetch all connected accounts
 $stmt = $pdo->query("SELECT * FROM sm_connected_accounts WHERE is_active = 1");
 $dbAccounts = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -147,10 +165,11 @@ $platformsConfig = [
                                         data-id="<?php echo $accInfo['id']; ?>">
                                     <i class="fas fa-vial me-1"></i> Test
                                 </button>
-                                <button class="btn btn-outline-danger btn-sm flex-fill rounded-pill btn-disconnect-acc" 
-                                        data-id="<?php echo $accInfo['id']; ?>" data-name="<?php echo htmlspecialchars($p['name']); ?>">
+                                <a href="accounts.php?action=disconnect&id=<?php echo $accInfo['id']; ?>&platform=<?php echo $key; ?>" 
+                                   class="btn btn-outline-danger btn-sm flex-fill rounded-pill" 
+                                   onclick="return confirm('Are you sure you want to disconnect <?php echo htmlspecialchars($p['name']); ?>?');">
                                     <i class="fas fa-unlink me-1"></i> Disconnect
-                                </button>
+                                </a>
                             </div>
                         <?php else: ?>
                             <?php if ($key === 'telegram'): ?>

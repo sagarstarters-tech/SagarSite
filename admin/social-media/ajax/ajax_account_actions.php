@@ -62,9 +62,16 @@ try {
             break;
 
         case 'disconnect':
-            if (!$account_id) throw new Exception('Invalid Account ID');
-            $stmt = $pdo->prepare("UPDATE sm_connected_accounts SET is_active = 0 WHERE id = ?");
-            $stmt->execute([$account_id]);
+            $platform = trim($_POST['platform'] ?? '');
+            if ($account_id) {
+                $stmt = $pdo->prepare("UPDATE sm_connected_accounts SET is_active = 0 WHERE id = ?");
+                $stmt->execute([$account_id]);
+            } elseif (!empty($platform)) {
+                $stmt = $pdo->prepare("UPDATE sm_connected_accounts SET is_active = 0 WHERE platform = ?");
+                $stmt->execute([$platform]);
+            } else {
+                throw new Exception('Invalid Account ID or Platform');
+            }
             $response['success'] = true;
             break;
 
