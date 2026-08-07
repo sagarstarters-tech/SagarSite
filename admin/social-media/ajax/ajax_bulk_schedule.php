@@ -52,8 +52,8 @@ try {
         $stmt = $pdo->query("SELECT * FROM products");
         $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } elseif ($filterType === 'category' && !empty($filterValue)) {
-        $stmt = $pdo->prepare("SELECT * FROM products WHERE category_id = ? OR category = ?");
-        $stmt->execute([$filterValue, $filterValue]);
+        $stmt = $pdo->prepare("SELECT * FROM products WHERE category_id = ?");
+        $stmt->execute([$filterValue]);
         $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } elseif ($filterType === 'brand' && !empty($filterValue)) {
         $stmt = $pdo->prepare("SELECT * FROM products WHERE brand = ?");
