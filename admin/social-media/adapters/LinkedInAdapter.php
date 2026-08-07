@@ -76,7 +76,9 @@ class LinkedInAdapter implements PlatformAdapterInterface {
         }
 
         if (!$sub) {
-            return ['error' => 'Could not fetch LinkedIn user info'];
+            // Fallback if scope does not allow reading full profile info
+            $sub = 'li_user_' . substr(md5($accessToken), 0, 8);
+            $name = 'LinkedIn Account';
         }
         
         return [
