@@ -248,6 +248,8 @@ class LinkedInAdapter implements PlatformAdapterInterface {
             'X-Restli-Protocol-Version: 2.0.0'
         ];
 
+        $res = $this->curlRequest($registerUrl, 'POST', json_encode($registerPayload), $headers);
+
         $uploadUrl = null;
         $assetUrn  = null;
 
