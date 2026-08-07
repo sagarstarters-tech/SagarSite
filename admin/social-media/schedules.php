@@ -47,7 +47,7 @@ $scheduleTypes = [
             <h2 class="fw-bold m-0">Posting Schedules</h2>
             <p class="text-muted small m-0">Create and manage automated posting intervals across social media platforms.</p>
         </div>
-        <button type="button" class="btn btn-primary rounded-pill px-4 shadow-sm" id="btnOpenCreateModal">
+        <button type="button" class="btn btn-primary rounded-pill px-4 shadow-sm" id="btnOpenCreateModal" data-mdb-toggle="modal" data-mdb-target="#scheduleModal" data-bs-toggle="modal" data-bs-target="#scheduleModal">
             <i class="fas fa-plus me-2"></i> Create Schedule
         </button>
     </div>
@@ -58,7 +58,7 @@ $scheduleTypes = [
                 <i class="fas fa-calendar-times fa-4x text-muted mb-3 d-block"></i>
                 <h4 class="fw-bold text-secondary">No schedules defined yet</h4>
                 <p class="text-muted mb-4">Create a schedule to define automated posting intervals for your products.</p>
-                <button type="button" class="btn btn-primary rounded-pill px-4" id="btnOpenCreateModalEmpty">
+                <button type="button" class="btn btn-primary rounded-pill px-4" id="btnOpenCreateModalEmpty" data-mdb-toggle="modal" data-mdb-target="#scheduleModal" data-bs-toggle="modal" data-bs-target="#scheduleModal">
                     <i class="fas fa-plus me-2"></i> Create Your First Schedule
                 </button>
             </div>
@@ -146,7 +146,7 @@ $scheduleTypes = [
 
                 <div class="modal-header border-0 pb-0">
                     <h5 class="modal-title fw-bold" id="scheduleModalLabel">Create Posting Schedule</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-mdb-dismiss="modal" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4">
                     <div class="mb-3">
@@ -193,7 +193,7 @@ $scheduleTypes = [
                     </div>
                 </div>
                 <div class="modal-footer border-0 pt-0">
-                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-mdb-dismiss="modal" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary rounded-pill px-4 shadow-sm" id="btnSaveSchedule">Save Schedule</button>
                 </div>
             </form>
@@ -203,30 +203,47 @@ $scheduleTypes = [
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const scheduleModal = new bootstrap.Modal(document.getElementById('scheduleModal'));
     const scheduleForm = document.getElementById('scheduleForm');
     const schedTypeSelect = document.getElementById('schedType');
     const customIntervalGroup = document.getElementById('customIntervalGroup');
+    const modalEl = document.getElementById('scheduleModal');
+
+    function showScheduleModal() {
+        if (typeof mdb !== 'undefined' && mdb.Modal) {
+            const inst = mdb.Modal.getInstance(modalEl) || new mdb.Modal(modalEl);
+            inst.show();
+        } else if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+            const inst = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+            inst.show();
+        } else if (typeof $ !== 'undefined' && $.fn.modal) {
+            $(modalEl).modal('show');
+        }
+    }
 
     // Toggle custom interval input visibility
     function checkIntervalVisibility() {
-        if (schedTypeSelect.value === 'custom') {
+        if (schedTypeSelect && schedTypeSelect.value === 'custom') {
             customIntervalGroup.style.display = 'block';
-        } else {
+        } else if (customIntervalGroup) {
             customIntervalGroup.style.display = 'none';
         }
     }
-    schedTypeSelect.addEventListener('change', checkIntervalVisibility);
+    if (schedTypeSelect) {
+        schedTypeSelect.addEventListener('change', checkIntervalVisibility);
+    }
 
     // Open Modal Create
     function openCreateModal() {
-        scheduleForm.reset();
-        document.getElementById('scheduleId').value = '';
-        document.getElementById('scheduleModalLabel').textContent = 'Create Posting Schedule';
+        if (scheduleForm) scheduleForm.reset();
+        const idField = document.getElementById('scheduleId');
+        if (idField) idField.value = '';
+        const titleField = document.getElementById('scheduleModalLabel');
+        if (titleField) titleField.textContent = 'Create Posting Schedule';
         document.querySelectorAll('.platform-chk').forEach(c => c.checked = true);
-        document.getElementById('schedActive').checked = true;
+        const activeField = document.getElementById('schedActive');
+        if (activeField) activeField.checked = true;
         checkIntervalVisibility();
-        scheduleModal.show();
+        showScheduleModal();
     }
 
     const btnOpenCreate = document.getElementById('btnOpenCreateModal');
@@ -238,43 +255,49 @@ document.addEventListener('DOMContentLoaded', function() {
     // Edit Schedule
     document.querySelectorAll('.btn-edit-schedule').forEach(btn => {
         btn.addEventListener('click', function() {
-            const data = JSON.parse(this.dataset.schedule);
-            document.getElementById('scheduleId').value = data.id;
-            document.getElementById('schedName').value = data.name;
-            document.getElementById('schedType').value = data.schedule_type;
-            document.getElementById('schedInterval').value = data.interval_minutes || 60;
-            document.getElementById('schedActive').checked = parseInt(data.is_active) === 1;
+            try {
+                const data = JSON.parse(this.dataset.schedule);
+                document.getElementById('scheduleId').value = data.id;
+                document.getElementById('schedName').value = data.name;
+                document.getElementById('schedType').value = data.schedule_type;
+                document.getElementById('schedInterval').value = data.interval_minutes || 60;
+                document.getElementById('schedActive').checked = parseInt(data.is_active) === 1;
 
-            const pIds = JSON.parse(data.platform_ids || '[]');
-            document.querySelectorAll('.platform-chk').forEach(chk => {
-                chk.checked = pIds.includes(chk.value);
-            });
+                const pIds = JSON.parse(data.platform_ids || '[]');
+                document.querySelectorAll('.platform-chk').forEach(chk => {
+                    chk.checked = pIds.includes(chk.value);
+                });
 
-            document.getElementById('scheduleModalLabel').textContent = 'Edit Schedule';
-            checkIntervalVisibility();
-            scheduleModal.show();
+                document.getElementById('scheduleModalLabel').textContent = 'Edit Schedule';
+                checkIntervalVisibility();
+                showScheduleModal();
+            } catch (err) {
+                console.error('Error opening edit modal:', err);
+            }
         });
     });
 
     // Save Schedule Form Submit
-    scheduleForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const formData = new FormData(this);
+    if (scheduleForm) {
+        scheduleForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
 
-        fetch('ajax/ajax_schedule_actions.php', {
-            method: 'POST',
-            body: formData
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                window.location.reload();
-            } else {
-                alert('Failed to save schedule: ' + (data.error || 'Unknown error'));
-            }
-        })
-        .catch(err => alert('Error saving schedule: ' + err.message));
-    });
+            fetch('ajax/ajax_schedule_actions.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert('Failed to save schedule: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(err => alert('Error saving schedule: ' + err.message));
+        });
+    }
 
     // Toggle Active Status
     document.querySelectorAll('.btn-toggle-status').forEach(btn => {
