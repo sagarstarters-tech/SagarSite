@@ -23,8 +23,8 @@ class LinkedInAdapter implements PlatformAdapterInterface {
 
     public function getAuthUrl(string $redirectUri, string $state): string {
         $clientId = _env('LINKEDIN_CLIENT_ID') ?? '';
-        // Scope for 'Share on LinkedIn' product
-        $scopes = explode(' ', _env('LINKEDIN_SCOPES', 'w_member_social'));
+        // Scopes for 'Sign In with LinkedIn using OpenID Connect' and 'Share on LinkedIn'
+        $scopes = ['openid', 'profile', 'email', 'w_member_social'];
         $params = [
             'response_type' => 'code',
             'client_id' => $clientId,
