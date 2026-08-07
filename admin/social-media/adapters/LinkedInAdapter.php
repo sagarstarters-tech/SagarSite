@@ -95,12 +95,16 @@ class LinkedInAdapter implements PlatformAdapterInterface {
 
     public function publishPost(array $postData): array {
         $accessToken = $postData['access_token'] ?? '';
-        $personUrn = $postData['person_urn'] ?? '';
+        $personUrn = $postData['person_urn'] ?? $postData['account_id'] ?? $postData['page_id'] ?? '';
         $text = $postData['message'] ?? '';
         $imageUrl = $postData['image_url'] ?? '';
 
+        if ($personUrn && strpos($personUrn, 'urn:li:') !== 0) {
+            $personUrn = 'urn:li:person:' . $personUrn;
+        }
+
         if (!$accessToken || !$personUrn) {
-            return ['success' => false, 'post_id' => null, 'post_url' => null, 'error' => 'Missing access token or URN'];
+            return ['success' => false, 'post_id' => null, 'post_url' => null, 'error' => 'Missing access token or Person URN'];
         }
         
         $headers = [
@@ -109,26 +113,38 @@ class LinkedInAdapter implements PlatformAdapterInterface {
             'X-Restli-Protocol-Version: 2.0.0'
         ];
         
+        $shareContent = [
+            'shareCommentary' => ['text' => $text],
+            'shareMediaCategory' => 'NONE'
+        ];
+
+        if (!empty($imageUrl)) {
+            $shareContent['shareMediaCategory'] = 'ARTICLE';
+            $shareContent['media'] = [
+                [
+                    'status' => 'READY',
+                    'originalUrl' => $imageUrl,
+                    'title' => ['text' => mb_substr($text, 0, 100)]
+                ]
+            ];
+        }
+
         $data = [
             'author' => $personUrn,
             'lifecycleState' => 'PUBLISHED',
             'specificContent' => [
-                'com.linkedin.ugc.ShareContent' => [
-                    'shareCommentary' => ['text' => $text],
-                    'shareMediaCategory' => 'NONE'
-                ]
+                'com.linkedin.ugc.ShareContent' => $shareContent
             ],
             'visibility' => ['com.linkedin.ugc.MemberNetworkVisibility' => 'PUBLIC']
         ];
         
-        // Add image handling if $imageUrl is provided, omitted for brevity
-        
         $postUrl = 'https://api.linkedin.com/v2/ugcPosts';
         $res = $this->curlRequest($postUrl, 'POST', json_encode($data), $headers);
 
-        if (isset($res['error']) || !isset($res['id'])) {
-            error_log('LinkedIn Publish Error: ' . json_encode($res));
-            return ['success' => false, 'post_id' => null, 'post_url' => null, 'error' => 'Failed to publish post'];
+        if (isset($res['error']) || isset($res['message']) || !isset($res['id'])) {
+            $errorMsg = $res['message'] ?? ($res['error']['message'] ?? (json_encode($res)));
+            error_log('LinkedIn Publish Error: ' . $errorMsg);
+            return ['success' => false, 'post_id' => null, 'post_url' => null, 'error' => 'LinkedIn API Error: ' . $errorMsg];
         }
 
         $postId = $res['id'] ?? null;

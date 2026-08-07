@@ -84,6 +84,8 @@ class QueueProcessor {
 
             $postData = [
                 'page_id' => $acc['page_id'] ?? $acc['account_id'] ?? '',
+                'account_id' => $acc['account_id'] ?? '',
+                'person_urn' => $acc['account_id'] ?? '',
                 'access_token' => $plainToken,
                 'bot_token' => $plainToken,
                 'channel_id' => $acc['page_id'] ?? $acc['account_id'] ?? '',
