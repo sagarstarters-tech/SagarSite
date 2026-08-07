@@ -101,11 +101,11 @@ $platformIcons = [
 ];
 
 $statusBadges = [
-    'pending' => ['bg' => 'bg-warning text-dark', 'label' => 'Pending'],
-    'scheduled' => ['bg' => 'bg-info text-dark', 'label' => 'Scheduled'],
-    'publishing' => ['bg' => 'bg-primary text-white', 'label' => 'Publishing'],
-    'posted' => ['bg' => 'bg-success text-white', 'label' => 'Posted'],
-    'failed' => ['bg' => 'bg-danger text-white', 'label' => 'Failed']
+    'pending' => ['bg' => 'bg-warning text-dark border border-warning fw-bold', 'label' => 'Pending'],
+    'scheduled' => ['bg' => 'bg-primary text-white border border-primary fw-bold', 'label' => 'Scheduled'],
+    'publishing' => ['bg' => 'bg-info text-white border border-info fw-bold', 'label' => 'Publishing'],
+    'posted' => ['bg' => 'bg-success text-white border border-success fw-bold', 'label' => 'Posted'],
+    'failed' => ['bg' => 'bg-danger text-white border border-danger fw-bold', 'label' => 'Failed']
 ];
 ?>
 <link href="<?php echo SITE_URL; ?>/admin/social-media/assets/social-media.css" rel="stylesheet">
@@ -126,26 +126,25 @@ $statusBadges = [
     <div class="card shadow border-0 rounded-4 mb-4">
         <div class="card-body p-4">
             <!-- Filter Tabs -->
-            <ul class="nav nav-tabs nav-justified mb-4" id="queueTabs" role="tablist">
+            <ul class="nav nav-tabs nav-justified queue-tabs-wrapper mb-4" id="queueTabs" role="tablist">
                 <?php 
                 $tabs = [
-                    'all' => 'All',
-                    'pending' => 'Pending',
-                    'scheduled' => 'Scheduled',
-                    'publishing' => 'Publishing',
-                    'posted' => 'Posted',
-                    'failed' => 'Failed'
+                    'all' => ['label' => 'ALL', 'badge' => 'badge-all'],
+                    'pending' => ['label' => 'PENDING', 'badge' => 'badge-pending'],
+                    'scheduled' => ['label' => 'SCHEDULED', 'badge' => 'badge-scheduled'],
+                    'publishing' => ['label' => 'PUBLISHING', 'badge' => 'badge-publishing'],
+                    'posted' => ['label' => 'POSTED', 'badge' => 'badge-posted'],
+                    'failed' => ['label' => 'FAILED', 'badge' => 'badge-failed']
                 ];
-                foreach ($tabs as $key => $label):
+                foreach ($tabs as $key => $tData):
                     $isActive = ($currentStatus === $key);
                     $count = $statusCounts[$key] ?? 0;
-                    $badgeBg = $key === 'all' ? 'bg-secondary' : ($statusBadges[$key]['bg'] ?? 'bg-secondary');
                 ?>
                     <li class="nav-item">
-                        <a class="nav-link fw-bold <?php echo $isActive ? 'active' : ''; ?>" 
+                        <a class="nav-link <?php echo $isActive ? 'active' : ''; ?>" 
                            href="queue.php?status=<?php echo $key; ?><?php echo !empty($currentPlatform) ? '&platform=' . urlencode($currentPlatform) : ''; ?>">
-                            <?php echo $label; ?> 
-                            <span class="badge <?php echo $badgeBg; ?> ms-1 rounded-pill"><?php echo $count; ?></span>
+                            <?php echo $tData['label']; ?> 
+                            <span class="status-pill-badge <?php echo $tData['badge']; ?> ms-2"><?php echo $count; ?></span>
                         </a>
                     </li>
                 <?php endforeach; ?>
@@ -309,8 +308,47 @@ $statusBadges = [
 
 <style>
 .extra-small { font-size: 0.75rem; }
-.nav-tabs .nav-link.active { border-bottom: 3px solid #0d6efd; color: #0d6efd !important; background: transparent; }
-.nav-tabs .nav-link { color: #4f4f4f; border: none; padding: 12px 16px; }
+.queue-tabs-wrapper {
+    border-bottom: 2px solid #e9ecef;
+}
+.queue-tabs-wrapper .nav-link {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #495057 !important;
+    border: none;
+    border-bottom: 3px solid transparent;
+    padding: 12px 18px;
+    transition: all 0.2s ease;
+    letter-spacing: 0.5px;
+}
+.queue-tabs-wrapper .nav-link:hover {
+    color: #0d6efd !important;
+    background: rgba(13, 110, 253, 0.04);
+    border-radius: 8px 8px 0 0;
+}
+.queue-tabs-wrapper .nav-link.active {
+    border-bottom: 3px solid #0d6efd !important;
+    color: #0d6efd !important;
+    background: rgba(13, 110, 253, 0.08);
+    border-radius: 8px 8px 0 0;
+}
+.status-pill-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    font-size: 0.82rem;
+    font-weight: 800;
+    border-radius: 50rem;
+    line-height: 1;
+    min-width: 28px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+.status-pill-badge.badge-all { background-color: #495057; color: #ffffff !important; }
+.status-pill-badge.badge-pending { background-color: #ffc107; color: #000000 !important; }
+.status-pill-badge.badge-scheduled { background-color: #0dcaf0; color: #000000 !important; }
+.status-pill-badge.badge-publishing { background-color: #0d6efd; color: #ffffff !important; }
+.status-pill-badge.badge-posted { background-color: #198754; color: #ffffff !important; }
+.status-pill-badge.badge-failed { background-color: #dc3545; color: #ffffff !important; }
 </style>
 
 <script>
