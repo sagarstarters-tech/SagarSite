@@ -134,13 +134,23 @@ class LinkedInAdapter implements PlatformAdapterInterface {
             'shareMediaCategory' => 'NONE'
         ];
 
+        $link = $postData['link'] ?? '';
+        
         if (!empty($imageUrl)) {
+            if (strpos($imageUrl, 'http') !== 0) {
+                $siteUrl = rtrim(defined('SITE_URL') ? SITE_URL : 'https://www.sagarstarters.com', '/');
+                $imageUrl = $siteUrl . '/' . ltrim($imageUrl, '/');
+            }
+            
+            $targetUrl = !empty($link) ? $link : $imageUrl;
+
             $shareContent['shareMediaCategory'] = 'ARTICLE';
             $shareContent['media'] = [
                 [
                     'status' => 'READY',
-                    'originalUrl' => $imageUrl,
-                    'title' => ['text' => mb_substr($text, 0, 100)]
+                    'originalUrl' => $targetUrl,
+                    'title' => ['text' => mb_substr($text, 0, 100)],
+                    'description' => ['text' => mb_substr($text, 0, 200)]
                 ]
             ];
         }

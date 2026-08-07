@@ -82,6 +82,19 @@ class QueueProcessor {
 
             $adapter = $this->getAdapterForPlatform($platform);
 
+            $rawImg = trim($queueItem['post_image_url'] ?? '');
+            $siteUrl = rtrim(defined('SITE_URL') ? SITE_URL : '', '/');
+            $fullImgUrl = '';
+            if (!empty($rawImg)) {
+                if (strpos($rawImg, 'http://') === 0 || strpos($rawImg, 'https://') === 0) {
+                    $fullImgUrl = $rawImg;
+                } elseif (strpos($rawImg, 'uploads/') === 0 || strpos($rawImg, 'assets/') === 0) {
+                    $fullImgUrl = $siteUrl . '/' . ltrim($rawImg, '/');
+                } else {
+                    $fullImgUrl = $siteUrl . '/uploads/media/images/' . ltrim($rawImg, '/');
+                }
+            }
+
             $postData = [
                 'page_id' => $acc['page_id'] ?? $acc['account_id'] ?? '',
                 'account_id' => $acc['account_id'] ?? '',
@@ -90,7 +103,7 @@ class QueueProcessor {
                 'bot_token' => $plainToken,
                 'channel_id' => $acc['page_id'] ?? $acc['account_id'] ?? '',
                 'message' => $queueItem['post_content'] ?? '',
-                'image_url' => $queueItem['post_image_url'] ?? '',
+                'image_url' => $fullImgUrl,
                 'link' => $queueItem['post_link'] ?? ''
             ];
 
