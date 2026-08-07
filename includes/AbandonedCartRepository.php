@@ -53,6 +53,18 @@ class AbandonedCartRepository {
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+            // Logs table for abandoned cart WhatsApp notifications
+            $this->conn->query("CREATE TABLE IF NOT EXISTS abandoned_cart_wa_logs (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                cart_id INT NOT NULL,
+                customer_number VARCHAR(20),
+                message TEXT,
+                sending_mode VARCHAR(10),
+                status TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_cart_id (cart_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
             // Insert default settings if not exist
             // Insert default settings if not exist
             $defaults = [
@@ -85,9 +97,33 @@ class AbandonedCartRepository {
                 $stmt->close();
             }
 
-            // Ensure product_image column exists (for older installations)
-            try { $this->conn->query("ALTER TABLE abandoned_carts ADD COLUMN product_image VARCHAR(255) DEFAULT NULL AFTER product_names"); } catch (\Throwable $e) {}
-            try { $this->conn->query("ALTER TABLE abandoned_carts ADD COLUMN coupon_discount DECIMAL(5,2) DEFAULT NULL AFTER coupon_code"); } catch (\Throwable $e) {}
+            // Ensure all required columns exist in abandoned_carts table (for existing installations)
+            $columnsToEnsure = [
+                'product_names'   => "TEXT DEFAULT NULL",
+                'product_image'   => "VARCHAR(255) DEFAULT NULL",
+                'reminder_1_sent' => "DATETIME DEFAULT NULL",
+                'reminder_2_sent' => "DATETIME DEFAULT NULL",
+                'reminder_3_sent' => "DATETIME DEFAULT NULL",
+                'reminder_4_sent' => "DATETIME DEFAULT NULL",
+                'coupon_code'     => "VARCHAR(50) DEFAULT NULL",
+                'coupon_discount' => "DECIMAL(5,2) DEFAULT NULL",
+                'recovery_token'  => "VARCHAR(64) DEFAULT NULL",
+                'recovered_at'    => "DATETIME DEFAULT NULL",
+            ];
+
+            foreach ($columnsToEnsure as $colName => $colDef) {
+                try {
+                    $check = $this->conn->query("SHOW COLUMNS FROM abandoned_carts LIKE '{$colName}'");
+                    if ($check && $check->num_rows === 0) {
+                        $this->conn->query("ALTER TABLE abandoned_carts ADD COLUMN {$colName} {$colDef}");
+                    }
+                } catch (\Throwable $e) {}
+            }
+
+            // Ensure status column allows all modern status values
+            try {
+                $this->conn->query("ALTER TABLE abandoned_carts MODIFY COLUMN status VARCHAR(20) NOT NULL DEFAULT 'active'");
+            } catch (\Throwable $e) {}
 
         } catch (\Throwable $e) {
             error_log('[AbandonedCartRepository] Table setup warning: ' . $e->getMessage());
@@ -247,29 +283,29 @@ class AbandonedCartRepository {
     /**
      * Get abandoned carts due for a specific reminder level.
      * @param int $level Reminder level (1-4)
-     * @param int $delayMinutes Delay in minutes since cart creation
+     * @param int $delayMinutes Delay in minutes
      */
     public function getDueReminders($level, $delayMinutes) {
         $col = "reminder_{$level}_sent";
         if (!in_array($level, [1, 2, 3, 4])) return [];
 
         $prevColCheck = "";
+        $timeBase = "ac.updated_at"; // Level 1: delay from when cart was last updated/abandoned
+
         if ($level > 1) {
             $prevCol = "reminder_" . ($level - 1) . "_sent";
             $prevColCheck = " AND ac.{$prevCol} IS NOT NULL";
+            $timeBase = "ac.{$prevCol}"; // Level 2, 3, 4: delay from when PREVIOUS reminder was sent
         }
 
-        // FIXED: Use updated_at (last cart activity time) instead of created_at
-        // A cart is "abandoned" from the moment the user last touched it (updated_at),
-        // not from when the cart record was first created.
         $sql = "SELECT ac.*, u.name AS customer_name, u.phone AS customer_phone, u.email AS customer_email
                 FROM abandoned_carts ac
                 LEFT JOIN users u ON ac.user_id = u.id
                 WHERE ac.status = 'active'
                   AND ac.{$col} IS NULL
                   {$prevColCheck}
-                  AND ac.updated_at <= DATE_SUB(NOW(), INTERVAL ? MINUTE)
-                ORDER BY ac.updated_at ASC
+                  AND {$timeBase} <= DATE_SUB(NOW(), INTERVAL ? MINUTE)
+                ORDER BY ac.created_at ASC
                 LIMIT 50";
 
         $stmt = $this->conn->prepare($sql);

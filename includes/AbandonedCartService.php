@@ -158,6 +158,12 @@ class AbandonedCartService {
             else return false; // All reminders already sent
         }
 
+        // Auto-generate recovery token if missing (for legacy database records)
+        if (empty($cart['recovery_token'])) {
+            $cart['recovery_token'] = bin2hex(random_bytes(32));
+            $this->conn->query("UPDATE abandoned_carts SET recovery_token = '" . $this->conn->real_escape_string($cart['recovery_token']) . "' WHERE id = " . intval($cartId));
+        }
+
         // Generate coupon for level 4
         $couponCode = '';
         $couponDiscount = 0;
@@ -177,6 +183,9 @@ class AbandonedCartService {
             }
         }
         $siteUrl = preg_replace('#/(admin|api|user|auth|cron)(/.*)?$#i', '', $siteUrl);
+        if (empty($siteUrl)) {
+            $siteUrl = 'https://www.sagarstarters.com';
+        }
         $recoveryLink = $siteUrl . '/recover_cart.php?token=' . urlencode($cart['recovery_token']);
 
         // Build message from template
@@ -263,6 +272,15 @@ class AbandonedCartService {
             // Check if cart abandonment template is configured for this level
             $tplLevel = $level > 0 ? $level : 1;
             $abandonTemplate = trim($this->settings["meta_template_{$tplLevel}"] ?? '');
+
+            // Fallback chain for Meta templates so reminders don't fail when level 2/3/4 templates aren't explicitly filled
+            if (empty($abandonTemplate)) {
+                if (!empty($this->settings['meta_template_1'])) {
+                    $abandonTemplate = trim($this->settings['meta_template_1']);
+                } elseif (!empty($waSettings['meta_template_name'])) {
+                    $abandonTemplate = trim($waSettings['meta_template_name']);
+                }
+            }
 
             if (!empty($abandonTemplate)) {
                 // Template mode

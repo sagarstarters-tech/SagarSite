@@ -80,7 +80,8 @@ function runMigration() {
             INDEX (status),
             INDEX (scheduled_at),
             INDEX (product_id),
-            INDEX (platform)
+            INDEX (platform),
+            INDEX (status, scheduled_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
 
         'sm_hashtag_groups' => "CREATE TABLE IF NOT EXISTS sm_hashtag_groups (

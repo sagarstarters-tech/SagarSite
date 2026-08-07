@@ -15,19 +15,7 @@ try {
 
 $csrfToken = csrf_token();
 
-// Reset stuck 'publishing' items older than 1 minute back to 'scheduled'
-try {
-    $pdo->query("UPDATE sm_queue SET status = 'scheduled' WHERE status = 'publishing' AND (updated_at <= NOW() - INTERVAL 1 MINUTE OR updated_at IS NULL)");
-} catch (Exception $e) {}
-
-// Auto-process any due scheduled posts automatically on page load
-try {
-    require_once __DIR__ . '/services/QueueProcessor.php';
-    $autoProcessor = new \Admin\SocialMedia\Services\QueueProcessor();
-    $autoProcessor->processBatch(10);
-} catch (Exception $e) {}
-
-// 1. Fetch Queue Status Counters
+// Fast GET Page Load: Fetch Queue Status Counters without blocking network API calls
 $statusCounts = [
     'all' => 0,
     'pending' => 0,
@@ -36,22 +24,6 @@ $statusCounts = [
     'posted' => 0,
     'failed' => 0
 ];
-
-// Fix platform case inconsistencies first (normalize to lowercase)
-try {
-    $pdo->query("UPDATE sm_queue SET platform = LOWER(platform) WHERE platform != LOWER(platform)");
-} catch (Exception $e) {}
-
-// Clean existing duplicate queued items — keep the NEWEST entry per product + platform combination
-try {
-    $pdo->query("DELETE q1 FROM sm_queue q1
-        INNER JOIN sm_queue q2 
-        ON q1.product_id = q2.product_id 
-        AND LOWER(q1.platform) = LOWER(q2.platform) 
-        AND q1.id < q2.id
-        WHERE q1.status IN ('pending', 'scheduled')
-          AND q2.status IN ('pending', 'scheduled')");
-} catch (Exception $e) {}
 
 $stmtCounts = $pdo->query("SELECT status, COUNT(*) as c FROM sm_queue GROUP BY status");
 while ($row = $stmtCounts->fetch(PDO::FETCH_ASSOC)) {
@@ -521,8 +493,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Background Auto-Runner: Automatically process due posts every 60 seconds
-    setInterval(function() {
+    // Background Auto-Runner: Automatically process due posts asynchronously without blocking page render
+    function triggerAsyncQueueProcessing() {
         fetch('ajax/ajax_process_queue.php')
             .then(res => res.json())
             .then(data => {
@@ -532,7 +504,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             })
             .catch(err => console.error('Auto-runner ping error:', err));
-    }, 60000);
+    }
+
+    // Run async trigger shortly after DOM load, then repeat every 60 seconds
+    setTimeout(triggerAsyncQueueProcessing, 500);
+    setInterval(triggerAsyncQueueProcessing, 60000);
 });
 </script>
 
