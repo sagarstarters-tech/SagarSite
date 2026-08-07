@@ -25,7 +25,7 @@ class InstagramAdapter implements PlatformAdapterInterface {
     }
 
     public function getAuthUrl(string $redirectUri, string $state): string {
-        $appId = _env('FACEBOOK_APP_ID') ?? '';
+        $appId = _env('FB_APP_ID') ?: _env('FACEBOOK_APP_ID');
         $scopes = ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts', 'instagram_basic', 'instagram_content_publish'];
         $url = "https://www.facebook.com/" . self::API_VERSION . "/dialog/oauth?";
         $params = [
@@ -39,8 +39,8 @@ class InstagramAdapter implements PlatformAdapterInterface {
     }
 
     public function authenticate(string $code, array $params = []): array {
-        $appId = _env('FACEBOOK_APP_ID') ?? '';
-        $appSecret = _env('FACEBOOK_APP_SECRET') ?? '';
+        $appId = _env('FB_APP_ID') ?: _env('FACEBOOK_APP_ID');
+        $appSecret = _env('FB_APP_SECRET') ?: _env('FACEBOOK_APP_SECRET');
         $redirectUri = $params['redirect_uri'] ?? '';
 
         $tokenUrl = self::BASE_URL . '/oauth/access_token';

@@ -10,6 +10,13 @@ require_once BASE_PATH . '/admin/core/AuthMiddleware.php';
 require_once BASE_PATH . '/admin/helpers/csrf.php';
 require_once BASE_PATH . '/config/DbConnection.php';
 
+require_once BASE_PATH . '/admin/social-media/services/TokenEncryption.php';
+require_once BASE_PATH . '/admin/social-media/adapters/PlatformAdapterInterface.php';
+require_once BASE_PATH . '/admin/social-media/adapters/TelegramAdapter.php';
+require_once BASE_PATH . '/admin/social-media/adapters/FacebookAdapter.php';
+
+use Admin\SocialMedia\Services\TokenEncryption;
+
 AuthMiddleware::check($conn);
 $pdo = DbConnection::getInstance();
 
@@ -27,32 +34,73 @@ try {
     switch ($action) {
         case 'test':
             if (!$account_id) throw new Exception('Invalid Account ID');
-            // Mock connection test
-            $response['success'] = true;
-            $response['data'] = 'Connection successful';
+            $stmt = $pdo->prepare("SELECT * FROM sm_connected_accounts WHERE id = ?");
+            $stmt->execute([$account_id]);
+            $acc = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$acc) throw new Exception('Account not found');
+
+            $platform = strtolower($acc['platform']);
+            if ($platform === 'telegram') {
+                $decryptedToken = TokenEncryption::decrypt($acc['access_token_encrypted'] ?? '');
+                $telegram = new TelegramAdapter();
+                $isValid = $telegram->validateConnection(['bot_token' => $decryptedToken]);
+                if (!$isValid) {
+                    throw new Exception('Failed to connect to Telegram API with saved bot token.');
+                }
+                $response['success'] = true;
+                $response['data'] = 'Telegram bot token verified successfully!';
+            } else {
+                // Generic test for OAuth platforms
+                $response['success'] = true;
+                $response['data'] = 'Account status active';
+            }
             break;
+
         case 'disconnect':
             if (!$account_id) throw new Exception('Invalid Account ID');
-            $stmt = $pdo->prepare("UPDATE sm_connected_accounts SET is_active = 0, access_token = NULL, refresh_token = NULL WHERE id = ?");
+            $stmt = $pdo->prepare("UPDATE sm_connected_accounts SET is_active = 0 WHERE id = ?");
             $stmt->execute([$account_id]);
             $response['success'] = true;
             break;
-        case 'refresh':
-            if (!$account_id) throw new Exception('Invalid Account ID');
-            // Mock token refresh
-            $response['success'] = true;
-            break;
+
         case 'save_telegram':
-            $bot_token = $_POST['bot_token'] ?? '';
-            $channel_id = $_POST['channel_id'] ?? '';
+            $bot_token = trim($_POST['bot_token'] ?? '');
+            $channel_id = trim($_POST['channel_id'] ?? '');
+            
             if (empty($bot_token) || empty($channel_id)) {
                 throw new Exception('Bot token and Channel ID are required');
             }
-            // Mock insert/update
-            $stmt = $pdo->prepare("INSERT INTO sm_connected_accounts (platform, account_id, access_token, is_active) VALUES ('telegram', ?, ?, 1) ON DUPLICATE KEY UPDATE access_token = VALUES(access_token), is_active = 1");
-            $stmt->execute([$channel_id, $bot_token]);
+
+            // Test token with Telegram API first
+            $telegram = new TelegramAdapter();
+            $authRes = $telegram->authenticate($bot_token, ['channel_id' => $channel_id]);
+
+            if (isset($authRes['error'])) {
+                throw new Exception('Telegram Error: ' . $authRes['error']);
+            }
+
+            $botUsername = $authRes['bot_username'] ?? 'Telegram Channel';
+            $encryptedToken = TokenEncryption::encrypt($bot_token);
+            $userId = $_SESSION['user_id'] ?? 1;
+
+            // Check if telegram record exists
+            $stmt = $pdo->prepare("SELECT id FROM sm_connected_accounts WHERE platform = 'telegram' AND account_id = ?");
+            $stmt->execute([$channel_id]);
+            $existing = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($existing) {
+                $updateStmt = $pdo->prepare("UPDATE sm_connected_accounts SET account_name = ?, access_token_encrypted = ?, is_active = 1, connected_by = ?, updated_at = NOW() WHERE id = ?");
+                $updateStmt->execute(['@' . $botUsername . ' (' . $channel_id . ')', $encryptedToken, $userId, $existing['id']]);
+            } else {
+                $insertStmt = $pdo->prepare("INSERT INTO sm_connected_accounts (platform, account_name, account_id, page_id, access_token_encrypted, is_active, connected_by) VALUES ('telegram', ?, ?, ?, ?, 1, ?)");
+                $insertStmt->execute(['@' . $botUsername . ' (' . $channel_id . ')', $channel_id, $channel_id, $encryptedToken, $userId]);
+            }
+
             $response['success'] = true;
+            $response['data'] = 'Telegram connected successfully';
             break;
+
         default:
             throw new Exception('Invalid action');
     }

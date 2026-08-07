@@ -22,7 +22,7 @@ class PinterestAdapter implements PlatformAdapterInterface {
     }
 
     public function getAuthUrl(string $redirectUri, string $state): string {
-        $clientId = _env('PINTEREST_CLIENT_ID') ?? '';
+        $clientId = _env('PINTEREST_APP_ID') ?: _env('PINTEREST_CLIENT_ID');
         $scopes = ['boards:read', 'pins:read', 'pins:write'];
         $params = [
             'client_id' => $clientId,
@@ -35,8 +35,8 @@ class PinterestAdapter implements PlatformAdapterInterface {
     }
 
     public function authenticate(string $code, array $params = []): array {
-        $clientId = _env('PINTEREST_CLIENT_ID') ?? '';
-        $clientSecret = _env('PINTEREST_CLIENT_SECRET') ?? '';
+        $clientId = _env('PINTEREST_APP_ID') ?: _env('PINTEREST_CLIENT_ID');
+        $clientSecret = _env('PINTEREST_APP_SECRET') ?: _env('PINTEREST_CLIENT_SECRET');
         $redirectUri = $params['redirect_uri'] ?? '';
         
         $tokenUrl = 'https://api.pinterest.com/v5/oauth/token';
