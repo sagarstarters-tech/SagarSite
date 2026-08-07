@@ -203,8 +203,15 @@ class QueueProcessor {
      */
     public function getAdapterForPlatform(string $platform): \PlatformAdapterInterface {
         $platform = strtolower(trim($platform));
-        $className = ucfirst($platform) . 'Adapter';
-        if ($platform === 'twitter') $className = 'TwitterAdapter';
+        $map = [
+            'facebook'  => 'FacebookAdapter',
+            'instagram' => 'InstagramAdapter',
+            'twitter'   => 'TwitterAdapter',
+            'linkedin'  => 'LinkedInAdapter',
+            'telegram'  => 'TelegramAdapter',
+            'pinterest' => 'PinterestAdapter'
+        ];
+        $className = $map[$platform] ?? (ucfirst($platform) . 'Adapter');
 
         $adapterFile = dirname(__DIR__) . '/adapters/' . $className . '.php';
         if (file_exists($adapterFile)) {
