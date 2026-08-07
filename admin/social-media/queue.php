@@ -271,6 +271,17 @@ $statusBadges = [
                                     </td>
                                     <td class="text-end">
                                         <div class="d-flex justify-content-end align-items-center gap-1">
+                                             <?php if (strtolower($item['status']) === 'posted' && !empty($item['platform_post_id'])): 
+                                                 $postUrl = (strpos($item['platform_post_id'], 'http') === 0) 
+                                                     ? $item['platform_post_id'] 
+                                                     : ($pKey === 'linkedin' ? 'https://www.linkedin.com/feed/update/' . $item['platform_post_id'] : '#');
+                                                 if ($postUrl !== '#'):
+                                             ?>
+                                                 <a href="<?php echo htmlspecialchars($postUrl); ?>" target="_blank" class="btn btn-sm btn-outline-primary px-2 py-1 shadow-sm" title="View Published Post">
+                                                     <i class="fas fa-external-link-alt me-1"></i> View Post
+                                                 </a>
+                                             <?php endif; endif; ?>
+
                                             <button type="button" class="btn btn-sm btn-success px-2 py-1 btn-post-now text-white fw-bold shadow-sm" 
                                                     data-id="<?php echo $item['id']; ?>" title="Post Immediately">
                                                 <i class="fas fa-bolt me-1"></i> Post Now
