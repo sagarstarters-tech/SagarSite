@@ -39,9 +39,16 @@ try {
 // 4. Fetch Products for Manual Selection
 $productList = $pdo->query("SELECT id, name, price FROM products ORDER BY id DESC LIMIT 100")->fetchAll(PDO::FETCH_ASSOC);
 
-// 5. Fetch Active Connected Accounts
-$stmtAccounts = $pdo->query("SELECT * FROM sm_connected_accounts WHERE is_active = 1 ORDER BY platform ASC");
-$connectedAccounts = $stmtAccounts->fetchAll(PDO::FETCH_ASSOC);
+// 5. Fetch Active Connected Accounts & Map by Platform
+$stmtAccounts = $pdo->query("SELECT * FROM sm_connected_accounts WHERE is_active = 1 ORDER BY id DESC");
+$dbAccounts = $stmtAccounts->fetchAll(PDO::FETCH_ASSOC);
+$connectedMap = [];
+foreach ($dbAccounts as $acc) {
+    $pKey = strtolower($acc['platform']);
+    if (!isset($connectedMap[$pKey])) {
+        $connectedMap[$pKey] = $acc;
+    }
+}
 
 // 6. Fetch Templates
 $stmtTemplates = $pdo->query("SELECT id, name, is_default FROM sm_templates WHERE is_active = 1 ORDER BY is_default DESC, name ASC");
@@ -168,32 +175,33 @@ $platformIcons = [
                     <div class="col-lg-6">
                         <label class="form-label fw-bold">Target Platforms <span class="text-danger">*</span></label>
                         
-                        <?php if (empty($connectedAccounts)): ?>
-                            <div class="alert alert-warning rounded-3 small">
-                                <i class="fas fa-exclamation-triangle me-1"></i> No active social accounts connected. 
-                                <a href="accounts.php" class="fw-bold alert-link">Connect Accounts First</a>
-                            </div>
-                        <?php else: ?>
-                            <div class="d-flex flex-column gap-2 border p-3 rounded-3 bg-light">
-                                <?php foreach ($connectedAccounts as $acc): 
-                                    $pKey = strtolower($acc['platform']);
-                                    $pMeta = $platformIcons[$pKey] ?? ['icon' => 'fas fa-share-alt', 'color' => '#0d6efd', 'name' => ucfirst($pKey)];
-                                ?>
-                                    <div class="form-check">
-                                        <input class="form-check-input platform-check" type="checkbox" 
-                                               name="platforms[]" value="<?php echo htmlspecialchars($pKey); ?>" 
-                                               id="plat_<?php echo $acc['id']; ?>" checked>
-                                        <label class="form-check-label fw-semibold" for="plat_<?php echo $acc['id']; ?>">
-                                            <i class="<?php echo $pMeta['icon']; ?> me-2" style="color: <?php echo $pMeta['color']; ?>;"></i>
-                                            <?php echo htmlspecialchars($pMeta['name']); ?>
-                                            <span class="badge bg-secondary ms-1 small fw-normal">
-                                                <?php echo htmlspecialchars($acc['account_name'] ?? 'Connected'); ?>
+                        <div class="d-flex flex-column gap-2 border p-3 rounded-3 bg-light">
+                            <?php foreach ($platformIcons as $pKey => $pMeta): 
+                                $isConnected = isset($connectedMap[$pKey]);
+                                $accInfo = $isConnected ? $connectedMap[$pKey] : null;
+                            ?>
+                                <div class="form-check">
+                                    <input class="form-check-input platform-check" type="checkbox" 
+                                           name="platforms[]" value="<?php echo htmlspecialchars($pKey); ?>" 
+                                           id="plat_<?php echo $pKey; ?>" 
+                                           <?php echo $isConnected ? 'checked' : 'disabled'; ?>>
+                                    <label class="form-check-label fw-semibold" for="plat_<?php echo $pKey; ?>">
+                                        <i class="<?php echo $pMeta['icon']; ?> me-2" style="color: <?php echo $pMeta['color']; ?>;"></i>
+                                        <?php echo htmlspecialchars($pMeta['name']); ?>
+                                        
+                                        <?php if ($isConnected): ?>
+                                            <span class="badge bg-success ms-2 font-normal">
+                                                <i class="fas fa-check-circle me-1"></i> Connected (<?php echo htmlspecialchars($accInfo['account_name'] ?? 'Active'); ?>)
                                             </span>
-                                        </label>
-                                    </div>
-                                <?php endforeach; ?>
-                            </div>
-                        <?php endif; ?>
+                                        <?php else: ?>
+                                            <span class="badge bg-light text-muted border ms-2 font-normal">
+                                                Not Connected — <a href="accounts.php" class="text-decoration-underline text-muted">Connect</a>
+                                            </span>
+                                        <?php endif; ?>
+                                    </label>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
 
                         <div class="mt-3">
                             <label class="form-label fw-bold">Post Stagger Interval</label>
