@@ -378,33 +378,48 @@ document.addEventListener('DOMContentLoaded', function() {
     // Apply Bulk Actions
     const btnApplyBulk = document.getElementById('btnApplyBulk');
     if (btnApplyBulk) {
-        btnApplyBulk.addEventListener('click', function() {
-            const bulkAction = document.getElementById('bulkActionSelect').value;
-            if (!bulkAction) {
-                alert('Please select a bulk action to apply.');
-                return;
-            }
+        btnApplyBulk.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
 
+            let bulkAction = document.getElementById('bulkActionSelect').value;
             const selectedIds = Array.from(document.querySelectorAll('.queue-chk:checked')).map(c => c.value);
+
             if (selectedIds.length === 0) {
                 alert('Please select at least one item from the queue.');
                 return;
             }
 
-            if (confirm(`Apply ${bulkAction.replace('bulk_', '')} to ${selectedIds.length} selected items?`)) {
+            // If no dropdown action selected, default to Delete Selected
+            if (!bulkAction) {
+                bulkAction = 'bulk_delete';
+                const sel = document.getElementById('bulkActionSelect');
+                if (sel) sel.value = 'bulk_cancel';
+            }
+
+            const actionLabel = bulkAction.replace('bulk_', '').replace('_', ' ');
+            if (confirm(`Apply '${actionLabel}' to ${selectedIds.length} selected item(s)?`)) {
                 handleQueueAction(bulkAction, null, selectedIds);
             }
         });
     }
+
     // Delete Selected Button
     const btnDeleteSelected = document.getElementById('btnDeleteSelected');
     if (btnDeleteSelected) {
-        btnDeleteSelected.addEventListener('click', function() {
+        btnDeleteSelected.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
             const selectedIds = Array.from(document.querySelectorAll('.queue-chk:checked')).map(c => c.value);
             if (selectedIds.length === 0) {
                 alert('Please select at least one item from the queue to delete.');
                 return;
             }
+
+            const sel = document.getElementById('bulkActionSelect');
+            if (sel) sel.value = 'bulk_cancel';
+
             if (confirm(`Are you sure you want to delete ${selectedIds.length} selected item(s)?`)) {
                 handleQueueAction('bulk_delete', null, selectedIds);
             }
@@ -414,7 +429,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Delete All Button
     const btnDeleteAllQueue = document.getElementById('btnDeleteAllQueue');
     if (btnDeleteAllQueue) {
-        btnDeleteAllQueue.addEventListener('click', function() {
+        btnDeleteAllQueue.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
             const currentStatus = '<?php echo $currentStatus; ?>';
             const confirmMsg = currentStatus === 'all' 
                 ? 'Are you SURE you want to delete ALL items in the entire queue?' 
