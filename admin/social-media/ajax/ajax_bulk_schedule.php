@@ -115,6 +115,13 @@ try {
         }
 
         foreach ($connectedAccounts as $acc) {
+            // Duplicate Check: Don't add if already pending/scheduled/publishing for this platform & account
+            $chkStmt = $pdo->prepare("SELECT COUNT(*) FROM sm_queue WHERE product_id = ? AND platform = ? AND account_id = ? AND status IN ('pending', 'scheduled', 'publishing')");
+            $chkStmt->execute([$prod['id'], $acc['platform'], $acc['id']]);
+            if ($chkStmt->fetchColumn() > 0) {
+                continue; // Skip duplicate
+            }
+
             $renderedContent = $templateEngine->render($templateBody, $prod, [
                 'hashtags' => $hashtags,
                 'cta' => $cta,

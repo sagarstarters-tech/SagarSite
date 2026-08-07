@@ -25,6 +25,18 @@ $statusCounts = [
     'failed' => 0
 ];
 
+// Clean existing duplicate queued items if any
+try {
+    $pdo->query("DELETE q1 FROM sm_queue q1
+        INNER JOIN sm_queue q2 
+        ON q1.product_id = q2.product_id 
+        AND q1.platform = q2.platform 
+        AND q1.account_id = q2.account_id 
+        AND q1.status = q2.status
+        AND q1.id > q2.id
+        WHERE q1.status IN ('pending', 'scheduled')");
+} catch (Exception $e) {}
+
 $stmtCounts = $pdo->query("SELECT status, COUNT(*) as c FROM sm_queue GROUP BY status");
 while ($row = $stmtCounts->fetch(PDO::FETCH_ASSOC)) {
     $st = strtolower($row['status']);
