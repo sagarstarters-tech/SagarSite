@@ -50,3 +50,8 @@ function render_flash(): void
         echo "</div>";
     }
 }
+
+function display_flash(): void
+{
+    render_flash();
+}
