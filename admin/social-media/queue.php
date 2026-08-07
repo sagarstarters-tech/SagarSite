@@ -197,7 +197,17 @@ $statusBadges = [
                                 $pMeta = $platformIcons[$pKey] ?? ['icon' => 'fas fa-share-alt', 'color' => '#0d6efd', 'name' => ucfirst($pKey)];
                                 $stMeta = $statusBadges[strtolower($item['status'])] ?? ['bg' => 'bg-secondary', 'label' => ucfirst($item['status'])];
                                 
-                                $imgSrc = resolve_product_image_url($item['post_image_url'] ?: ($item['image'] ?? ''), $conn, $item['product_id']);
+                                $rawPath = trim($item['post_image_url'] ?: ($item['image'] ?? ''));
+                                if (empty($rawPath)) {
+                                    $imgSrc = SITE_URL . '/assets/images/logo.jpg';
+                                } elseif (strpos($rawPath, 'http://') === 0 || strpos($rawPath, 'https://') === 0) {
+                                    $imgSrc = $rawPath;
+                                } elseif (strpos($rawPath, 'uploads/') === 0 || strpos($rawPath, 'assets/') === 0) {
+                                    $imgSrc = SITE_URL . '/' . ltrim($rawPath, '/');
+                                } else {
+                                    $imgSrc = SITE_URL . '/uploads/media/images/' . ltrim($rawPath, '/');
+                                }
+
                                 $prodName = !empty($item['product_name']) ? $item['product_name'] : 'Product #' . $item['product_id'];
                             ?>
                                 <tr>
@@ -209,7 +219,7 @@ $statusBadges = [
                                             <img src="<?php echo htmlspecialchars($imgSrc); ?>" 
                                                  alt="Thumb" class="rounded border object-fit-cover" 
                                                  style="width: 45px; height: 45px;"
-                                                 onerror="this.src='<?php echo SITE_URL; ?>/assets/images/placeholder.jpg'">
+                                                 onerror="this.onerror=null; this.src='<?php echo SITE_URL; ?>/assets/images/logo.jpg';">
                                             <div>
                                                 <div class="fw-bold small text-truncate" style="max-width: 180px;">
                                                     <?php echo htmlspecialchars($prodName); ?>
