@@ -15,6 +15,11 @@ try {
 
 $csrfToken = csrf_token();
 
+// Reset stuck 'publishing' items older than 1 minute back to 'scheduled'
+try {
+    $pdo->query("UPDATE sm_queue SET status = 'scheduled' WHERE status = 'publishing' AND (updated_at <= NOW() - INTERVAL 1 MINUTE OR updated_at IS NULL)");
+} catch (Exception $e) {}
+
 // Auto-process any due scheduled posts automatically on page load
 try {
     require_once __DIR__ . '/services/QueueProcessor.php';

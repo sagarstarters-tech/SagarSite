@@ -26,7 +26,11 @@ class QueueProcessor {
         $db = DbConnection::getInstance();
         $now = date('Y-m-d H:i:s');
         
-        $stmt = $db->prepare("SELECT * FROM sm_queue WHERE status IN ('scheduled', 'pending', 'retry') AND (scheduled_at <= ? OR scheduled_at IS NULL) ORDER BY scheduled_at ASC LIMIT ?");
+        $stmt = $db->prepare("SELECT * FROM sm_queue 
+            WHERE (status IN ('scheduled', 'pending', 'retry') OR (status = 'publishing' AND (updated_at <= NOW() - INTERVAL 2 MINUTE OR updated_at IS NULL))) 
+            AND (scheduled_at <= ? OR scheduled_at IS NULL) 
+            ORDER BY scheduled_at ASC 
+            LIMIT ?");
         $stmt->bindValue(1, $now);
         $stmt->bindValue(2, $batchSize, PDO::PARAM_INT);
         $stmt->execute();
