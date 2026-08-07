@@ -5,13 +5,13 @@ declare(strict_types=1);
  * Migration: Create Social Media Automation Tables
  */
 
-$baseDir = dirname(__DIR__, 4);
+$baseDir = dirname(__DIR__, 3);
 if (file_exists($baseDir . '/config/DbConnection.php')) {
     require_once $baseDir . '/config/DbConnection.php';
 }
 
 function runMigration() {
-    $db = DbConnection::getInstance()->getConnection();
+    $db = DbConnection::getInstance();
     
     $tables = [
         'sm_connected_accounts' => "CREATE TABLE IF NOT EXISTS sm_connected_accounts (
