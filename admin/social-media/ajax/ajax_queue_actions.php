@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+ob_start();
 header('Content-Type: application/json');
 
 define('BASE_PATH', dirname(__DIR__, 3));
@@ -12,8 +13,6 @@ require_once BASE_PATH . '/config/DbConnection.php';
 
 AuthMiddleware::check($conn);
 $pdo = DbConnection::getInstance();
-
-ob_start();
 
 try {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST' && (!isset($_GET['action']) || $_GET['action'] !== 'get_preview')) {

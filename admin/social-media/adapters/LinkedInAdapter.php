@@ -248,10 +248,13 @@ class LinkedInAdapter implements PlatformAdapterInterface {
             'X-Restli-Protocol-Version: 2.0.0'
         ];
 
-        $res = $this->curlRequest($registerUrl, 'POST', json_encode($registerPayload), $headers);
+        $uploadUrl = null;
+        $assetUrn  = null;
 
-        $uploadUrl = $res['value']['uploadMechanism']['com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest']['uploadUrl'] ?? null;
-        $assetUrn  = $res['value']['asset'] ?? null;
+        if (isset($res['value']['uploadMechanism']['com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest']['uploadUrl'])) {
+            $uploadUrl = $res['value']['uploadMechanism']['com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest']['uploadUrl'];
+            $assetUrn  = $res['value']['asset'] ?? null;
+        }
 
         if (!$uploadUrl || !$assetUrn) {
             error_log('LinkedIn Asset Register Failed: ' . json_encode($res));
