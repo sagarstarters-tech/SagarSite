@@ -292,6 +292,75 @@ return [
         ],
     ],
 
+    // ── Social Media ─────────────────────────────────────────
+    [
+        'label'    => 'Social Media',
+        'icon'     => 'fa-share-alt',
+        'pages'    => [
+            'social-media/index.php', 'social-media/accounts.php',
+            'social-media/queue.php', 'social-media/bulk-schedule.php',
+            'social-media/templates.php', 'social-media/schedules.php',
+            'social-media/analytics.php', 'social-media/logs.php',
+            'social-media/settings.php',
+        ],
+        'children' => [
+            [
+                'label' => 'Dashboard',
+                'icon'  => 'fa-tachometer-alt',
+                'url'   => 'social-media/index.php',
+                'pages' => ['social-media/index.php'],
+            ],
+            [
+                'label' => 'Accounts',
+                'icon'  => 'fa-plug',
+                'url'   => 'social-media/accounts.php',
+                'pages' => ['social-media/accounts.php'],
+            ],
+            [
+                'label' => 'Post Queue',
+                'icon'  => 'fa-stream',
+                'url'   => 'social-media/queue.php',
+                'pages' => ['social-media/queue.php'],
+            ],
+            [
+                'label' => 'Bulk Schedule',
+                'icon'  => 'fa-layer-group',
+                'url'   => 'social-media/bulk-schedule.php',
+                'pages' => ['social-media/bulk-schedule.php'],
+            ],
+            [
+                'label' => 'Templates',
+                'icon'  => 'fa-file-alt',
+                'url'   => 'social-media/templates.php',
+                'pages' => ['social-media/templates.php'],
+            ],
+            [
+                'label' => 'Schedules',
+                'icon'  => 'fa-clock',
+                'url'   => 'social-media/schedules.php',
+                'pages' => ['social-media/schedules.php'],
+            ],
+            [
+                'label' => 'Analytics',
+                'icon'  => 'fa-chart-bar',
+                'url'   => 'social-media/analytics.php',
+                'pages' => ['social-media/analytics.php'],
+            ],
+            [
+                'label' => 'Logs',
+                'icon'  => 'fa-clipboard-list',
+                'url'   => 'social-media/logs.php',
+                'pages' => ['social-media/logs.php'],
+            ],
+            [
+                'label' => 'Settings',
+                'icon'  => 'fa-cog',
+                'url'   => 'social-media/settings.php',
+                'pages' => ['social-media/settings.php'],
+            ],
+        ],
+    ],
+
     // ── Appearance ────────────────────────────────────────────
     [
         'label'    => 'Appearance',

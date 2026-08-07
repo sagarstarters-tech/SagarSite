@@ -1,0 +1,88 @@
+/* Premium Social Media Automation Module CSS */
+:root {
+    --platform-fb: #1877F2;
+    --platform-ig: #E4405F;
+    --platform-tw: #1DA1F2;
+    --platform-li: #0A66C2;
+    --platform-pi: #E60023;
+    
+    --grad-blue: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --grad-green: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    --grad-red: linear-gradient(135deg, #ff9a44 0%, #fc6076 100%);
+    --grad-purple: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);
+}
+
+.sm-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 1px solid rgba(0,0,0,0.05);
+}
+.sm-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.stat-card {
+    border-radius: 16px;
+    padding: 24px;
+    color: white;
+}
+.stat-card.bg-grad-blue { background: var(--grad-blue); }
+.stat-card.bg-grad-green { background: var(--grad-green); }
+.stat-card.bg-grad-red { background: var(--grad-red); }
+.stat-card.bg-grad-purple { background: var(--grad-purple); }
+
+.status-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+.badge-pending { background: #fff3cd; color: #856404; }
+.badge-scheduled { background: #cce5ff; color: #004085; }
+.badge-publishing { background: #d1ecf1; color: #0c5460; animation: pulse 2s infinite; }
+.badge-posted { background: #d4edda; color: #155724; }
+.badge-failed { background: #f8d7da; color: #721c24; }
+.badge-retry { background: #e2e3e5; color: #383d41; }
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.6; }
+    100% { opacity: 1; }
+}
+
+.platform-card {
+    border-radius: 12px;
+    border: 1px solid #eaeaea;
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+.platform-card:hover {
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+}
+
+.status-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+.status-indicator.active {
+    background-color: #28a745;
+    box-shadow: 0 0 0 rgba(40, 167, 69, 0.4);
+    animation: pulse-dot 2s infinite;
+}
+.status-indicator.inactive {
+    background-color: #dc3545;
+}
+
+@keyframes pulse-dot {
+    0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
+}
+
+/* More premium styles can be added here */

@@ -213,6 +213,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
             $_SESSION['flash_success'] = "Product added successfully.";
+
+            // ── Social Media Auto-Queue Hook ─────────────────────
+            try {
+                require_once __DIR__ . '/social-media/services/SocialMediaService.php';
+                $smService = new SocialMediaService();
+                $smService->onProductCreated((int)$product_id);
+            } catch (Throwable $e) {
+                error_log('[SocialMedia] Auto-queue hook error: ' . $e->getMessage());
+                // Don't block product creation if social media fails
+            }
+
             header("Location: manage_products.php?action=list");
             exit;
         } else {
