@@ -50,19 +50,41 @@ try {
 
     $encryptedToken = TokenEncryption::encrypt($accessToken);
 
-    $stmt = $pdo->prepare("
-        INSERT INTO sm_connected_accounts (platform, account_id, access_token, account_name, is_active) 
-        VALUES ('linkedin', :account_id, :access_token, :account_name, 1) 
-        ON DUPLICATE KEY UPDATE 
-            access_token = VALUES(access_token), 
-            account_name = VALUES(account_name), 
-            is_active = 1
-    ");
-    $stmt->execute([
-        ':account_id'   => $personUrn,
-        ':access_token' => $encryptedToken,
-        ':account_name' => $accountName
-    ]);
+    $userId = $_SESSION['user_id'] ?? null;
+
+    $stmtCheck = $pdo->prepare("SELECT id FROM sm_connected_accounts WHERE platform = 'linkedin' LIMIT 1");
+    $stmtCheck->execute();
+    $existing = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+
+    if ($existing) {
+        $stmt = $pdo->prepare("
+            UPDATE sm_connected_accounts 
+            SET account_name = :account_name, 
+                account_id = :account_id, 
+                access_token_encrypted = :token, 
+                is_active = 1,
+                updated_at = NOW()
+            WHERE id = :id
+        ");
+        $stmt->execute([
+            ':account_name' => $accountName,
+            ':account_id'   => $personUrn,
+            ':token'        => $encryptedToken,
+            ':id'           => $existing['id']
+        ]);
+    } else {
+        $stmt = $pdo->prepare("
+            INSERT INTO sm_connected_accounts 
+            (platform, account_name, account_id, access_token_encrypted, is_active, connected_by) 
+            VALUES ('linkedin', :account_name, :account_id, :token, 1, :connected_by)
+        ");
+        $stmt->execute([
+            ':account_name' => $accountName,
+            ':account_id'   => $personUrn,
+            ':token'        => $encryptedToken,
+            ':connected_by' => $userId
+        ]);
+    }
 
     set_flash('success', 'LinkedIn account connected successfully!');
 } catch (Exception $e) {
