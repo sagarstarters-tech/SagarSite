@@ -26,7 +26,7 @@ class FacebookAdapter implements PlatformAdapterInterface {
 
     public function getAuthUrl(string $redirectUri, string $state): string {
         $appId = _env('FB_APP_ID') ?: _env('FACEBOOK_APP_ID');
-        $scopes = ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts', 'publish_video'];
+        $scopes = ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts', 'publish_video', 'instagram_basic', 'instagram_content_publish'];
         $url = "https://www.facebook.com/" . self::API_VERSION . "/dialog/oauth?";
         $params = [
             'client_id' => $appId,

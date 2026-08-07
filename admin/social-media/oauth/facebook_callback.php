@@ -86,7 +86,7 @@ try {
 
     // 3. Fetch user's Facebook Pages and linked Instagram accounts
     $pagesUrl = "https://graph.facebook.com/v21.0/me/accounts?" . http_build_query([
-        'fields' => 'name,id,access_token,instagram_business_account',
+        'fields' => 'name,id,access_token,instagram_business_account{id,username,name}',
         'access_token' => $userToken
     ]);
 
@@ -100,6 +100,7 @@ try {
     $pages = $pagesRes['data'] ?? [];
 
     $userId = $_SESSION['user_id'] ?? 1;
+    $foundInstagram = false;
 
     if (empty($pages)) {
         // Fallback: If no specific Pages returned, store the user profile account
@@ -132,14 +133,32 @@ try {
                 ON DUPLICATE KEY UPDATE account_name = VALUES(account_name), access_token_encrypted = VALUES(access_token_encrypted), is_active = 1");
             $stmt->execute([$pageName, $pageId, $pageId, $encryptedToken, $userId]);
 
-            // Save linked Instagram Business Account if present
-            if (!empty($page['instagram_business_account']['id'])) {
-                $igId = $page['instagram_business_account']['id'];
-                $igName = $pageName . ' (Instagram)';
+            // Check linked Instagram Business Account
+            $igAccount = $page['instagram_business_account'] ?? null;
+            
+            // Fallback direct check if nested field didn't return
+            if (!$igAccount) {
+                $igCheckUrl = "https://graph.facebook.com/v21.0/{$pageId}?" . http_build_query([
+                    'fields' => 'instagram_business_account{id,username,name}',
+                    'access_token' => $pageAccessToken
+                ]);
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, $igCheckUrl);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                $igCheckStr = curl_exec($ch);
+                curl_close($ch);
+                $igCheckRes = json_decode($igCheckStr ?: '', true);
+                $igAccount = $igCheckRes['instagram_business_account'] ?? null;
+            }
+
+            if (!empty($igAccount['id'])) {
+                $foundInstagram = true;
+                $igId = $igAccount['id'];
+                $igHandle = !empty($igAccount['username']) ? '@' . $igAccount['username'] : $pageName . ' (Instagram)';
                 $stmtIg = $pdo->prepare("INSERT INTO sm_connected_accounts (platform, account_name, account_id, page_id, access_token_encrypted, is_active, connected_by) 
                     VALUES ('instagram', ?, ?, ?, ?, 1, ?)
                     ON DUPLICATE KEY UPDATE account_name = VALUES(account_name), access_token_encrypted = VALUES(access_token_encrypted), is_active = 1");
-                $stmtIg->execute([$igName, $igId, $pageId, $encryptedToken, $userId]);
+                $stmtIg->execute([$igHandle, $igId, $pageId, $encryptedToken, $userId]);
             }
         }
     }
