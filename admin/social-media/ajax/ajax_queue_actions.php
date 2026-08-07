@@ -13,6 +13,8 @@ require_once BASE_PATH . '/config/DbConnection.php';
 AuthMiddleware::check($conn);
 $pdo = DbConnection::getInstance();
 
+ob_start();
+
 try {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST' && (!isset($_GET['action']) || $_GET['action'] !== 'get_preview')) {
         throw new Exception('Invalid request method');
@@ -93,19 +95,20 @@ try {
         case 'bulk_delete':
         case 'bulk_retry':
             $ids = $_POST['ids'] ?? [];
-            if (empty($ids) || !is_array($ids)) throw new Exception('No IDs provided');
-            $idList = implode(',', array_map('intval', $ids));
-            if ($action === 'bulk_post_now') {
-                $pdo->query("UPDATE sm_queue 
-                    SET status = 'posted', 
-                        scheduled_at = NOW(), 
-                        published_at = NOW(), 
-                        platform_post_id = CONCAT('post_', UNIX_TIMESTAMP(), '_', id) 
-                    WHERE id IN ($idList)");
+            if (!is_array($ids) || empty($ids)) {
+                throw new Exception('No queue items selected');
+            }
+            $cleanIds = array_map('intval', array_filter($ids));
+            if (empty($cleanIds)) throw new Exception('Invalid selection');
+
+            $idList = implode(',', $cleanIds);
+
+            if ($action === 'bulk_delete') {
+                $pdo->query("DELETE FROM sm_queue WHERE id IN ($idList)");
             } elseif ($action === 'bulk_approve') {
                 $pdo->query("UPDATE sm_queue SET status = 'scheduled' WHERE id IN ($idList) AND status = 'pending'");
-            } elseif ($action === 'bulk_cancel' || $action === 'bulk_delete') {
-                $pdo->query("DELETE FROM sm_queue WHERE id IN ($idList)");
+            } elseif ($action === 'bulk_cancel') {
+                $pdo->query("UPDATE sm_queue SET status = 'pending' WHERE id IN ($idList) AND status = 'scheduled'");
             } elseif ($action === 'bulk_retry') {
                 $pdo->query("UPDATE sm_queue SET status = 'scheduled', retry_count = 0 WHERE id IN ($idList)");
             }
@@ -132,7 +135,9 @@ try {
             throw new Exception('Invalid action');
     }
 
+    if (ob_get_length()) ob_clean();
     echo json_encode($response);
 } catch (Exception $e) {
+    if (ob_get_length()) ob_clean();
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
