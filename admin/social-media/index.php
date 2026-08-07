@@ -1,6 +1,12 @@
 <?php
 $current_page = 'social-media/index.php';
-require_once __DIR__ . '/../../config/DbConnection.php';
+$pdo = DbConnection::getInstance();
+try {
+    $pdo->query("SELECT 1 FROM sm_connected_accounts LIMIT 1");
+} catch (PDOException $e) {
+    require_once __DIR__ . '/migrations/001_create_social_media_tables.php';
+    runMigration();
+}
 include_once __DIR__ . '/../admin_header.php';
 ?>
 <link href="<?php echo SITE_URL; ?>/admin/social-media/assets/social-media.css" rel="stylesheet">

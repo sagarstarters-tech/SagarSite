@@ -132,7 +132,7 @@ class TemplateEngine {
     private function getCategoryName(int $categoryId): string {
         if ($categoryId <= 0) return '';
         try {
-            $db = DbConnection::getInstance()->getConnection();
+            $db = DbConnection::getInstance();
             $stmt = $db->prepare("SELECT name FROM categories WHERE id = ?");
             $stmt->execute([$categoryId]);
             return $stmt->fetchColumn() ?: '';

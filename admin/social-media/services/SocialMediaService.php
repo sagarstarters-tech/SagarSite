@@ -33,7 +33,7 @@ class SocialMediaService {
      * @return int
      */
     public function addToQueue(int $productId, string $platform, int $accountId, ?int $scheduleId, ?int $templateId): int {
-        $db = DbConnection::getInstance()->getConnection();
+        $db = DbConnection::getInstance();
         
         if (!$this->duplicateGuard->canPost($productId, $platform, $accountId)) {
             throw new \Exception("Duplicate guard prevented adding post to queue.");
@@ -109,7 +109,7 @@ class SocialMediaService {
      * @return array
      */
     public function getQueueStats(): array {
-        $db = DbConnection::getInstance()->getConnection();
+        $db = DbConnection::getInstance();
         $stmt = $db->query("SELECT status, COUNT(*) as count FROM sm_queue GROUP BY status");
         $stats = [];
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
@@ -125,7 +125,7 @@ class SocialMediaService {
      * @return mixed
      */
     public function getSettings(string $key = null) {
-        $db = DbConnection::getInstance()->getConnection();
+        $db = DbConnection::getInstance();
         if ($key) {
             $stmt = $db->prepare("SELECT setting_value FROM sm_settings WHERE setting_key = ?");
             $stmt->execute([$key]);
@@ -144,7 +144,7 @@ class SocialMediaService {
      * @return void
      */
     public function updateSetting(string $key, string $value): void {
-        $db = DbConnection::getInstance()->getConnection();
+        $db = DbConnection::getInstance();
         $stmt = $db->prepare("INSERT INTO sm_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?");
         $stmt->execute([$key, $value, $value]);
     }
@@ -156,7 +156,7 @@ class SocialMediaService {
      * @return array
      */
     public function getConnectedAccounts(bool $activeOnly = true): array {
-        $db = DbConnection::getInstance()->getConnection();
+        $db = DbConnection::getInstance();
         $sql = "SELECT * FROM sm_connected_accounts";
         if ($activeOnly) {
             $sql .= " WHERE is_active = 1";
@@ -166,7 +166,7 @@ class SocialMediaService {
     }
     
     private function logError(string $message): void {
-        $db = DbConnection::getInstance()->getConnection();
+        $db = DbConnection::getInstance();
         $stmt = $db->prepare("INSERT INTO sm_logs (level, message, category) VALUES ('error', ?, 'service')");
         $stmt->execute([$message]);
     }

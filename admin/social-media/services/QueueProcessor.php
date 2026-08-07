@@ -27,7 +27,7 @@ class QueueProcessor {
      * @return array
      */
     public function processBatch(int $batchSize = 10): array {
-        $db = DbConnection::getInstance()->getConnection();
+        $db = DbConnection::getInstance();
         $now = date('Y-m-d H:i:s');
         
         $stmt = $db->prepare("SELECT * FROM sm_queue WHERE status IN ('scheduled', 'retry') AND scheduled_at <= ? LIMIT ?");
@@ -55,7 +55,7 @@ class QueueProcessor {
      * @return bool
      */
     public function processPost(array $queueItem): bool {
-        $db = DbConnection::getInstance()->getConnection();
+        $db = DbConnection::getInstance();
         $id = (int)$queueItem['id'];
         
         try {
@@ -102,7 +102,7 @@ class QueueProcessor {
      * @return bool
      */
     public function retryPost(int $queueId): bool {
-        $db = DbConnection::getInstance()->getConnection();
+        $db = DbConnection::getInstance();
         $stmt = $db->prepare("SELECT * FROM sm_queue WHERE id = ?");
         $stmt->execute([$queueId]);
         $item = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -138,7 +138,7 @@ class QueueProcessor {
      * @return void
      */
     public function updateStatus(int $queueId, string $status, ?string $error = null, ?string $platformPostId = null): void {
-        $db = DbConnection::getInstance()->getConnection();
+        $db = DbConnection::getInstance();
         $publishedAt = $status === 'posted' ? date('Y-m-d H:i:s') : null;
         
         $sql = "UPDATE sm_queue SET status = ?";

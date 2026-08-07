@@ -21,7 +21,7 @@ class DuplicateGuard {
      * @return bool
      */
     public function canPost(int $productId, string $platform, int $accountId): bool {
-        $db = DbConnection::getInstance()->getConnection();
+        $db = DbConnection::getInstance();
         
         // Fetch repost rules
         $stmt = $db->prepare("SELECT is_enabled, repost_interval_days, max_reposts FROM sm_repost_rules WHERE (platform = ? AND account_id = ?) OR (platform IS NULL AND account_id IS NULL) ORDER BY platform DESC LIMIT 1");
@@ -68,7 +68,7 @@ class DuplicateGuard {
      * @return void
      */
     public function recordPost(int $productId, string $platform, int $accountId, int $queueId): void {
-        $db = DbConnection::getInstance()->getConnection();
+        $db = DbConnection::getInstance();
         $hash = $this->generateHash($productId, $platform, $accountId);
         $postedAt = date('Y-m-d H:i:s');
         
@@ -96,7 +96,7 @@ class DuplicateGuard {
      * @return int
      */
     public function getRepostInterval(string $platform, int $accountId): int {
-        $db = DbConnection::getInstance()->getConnection();
+        $db = DbConnection::getInstance();
         $stmt = $db->prepare("SELECT repost_interval_days FROM sm_repost_rules WHERE platform = ? AND account_id = ? LIMIT 1");
         $stmt->execute([$platform, $accountId]);
         $interval = $stmt->fetchColumn();
