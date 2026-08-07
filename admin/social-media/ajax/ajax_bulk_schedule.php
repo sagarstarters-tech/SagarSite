@@ -106,11 +106,7 @@ try {
 
     foreach ($products as $prod) {
         // Resolve image URL
-        $rawImg = $prod['main_image'] ?? $prod['image'] ?? '';
-        $imgUrl = '';
-        if (!empty($rawImg)) {
-            $imgUrl = (strpos($rawImg, 'http') === 0) ? $rawImg : SITE_URL . '/' . ltrim($rawImg, '/');
-        }
+        $imgUrl = resolve_product_image_url($prod['image'] ?? '', $conn, (int)$prod['id']);
 
         // Resolve product URL
         $prodUrl = SITE_URL . '/product.php?id=' . $prod['id'];

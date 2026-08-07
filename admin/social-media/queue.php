@@ -197,7 +197,7 @@ $statusBadges = [
                                 $pMeta = $platformIcons[$pKey] ?? ['icon' => 'fas fa-share-alt', 'color' => '#0d6efd', 'name' => ucfirst($pKey)];
                                 $stMeta = $statusBadges[strtolower($item['status'])] ?? ['bg' => 'bg-secondary', 'label' => ucfirst($item['status'])];
                                 
-                                $imgSrc = !empty($item['post_image_url']) ? $item['post_image_url'] : (!empty($item['main_image']) ? SITE_URL . '/' . ltrim($item['main_image'], '/') : SITE_URL . '/assets/images/placeholder.jpg');
+                                $imgSrc = resolve_product_image_url($item['post_image_url'] ?: ($item['image'] ?? ''), $conn, $item['product_id']);
                                 $prodName = !empty($item['product_name']) ? $item['product_name'] : 'Product #' . $item['product_id'];
                             ?>
                                 <tr>
