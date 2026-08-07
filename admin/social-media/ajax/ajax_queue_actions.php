@@ -19,7 +19,11 @@ try {
     }
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        csrf_verify();
+        $submittedToken = $_POST['_csrf_token'] ?? '';
+        $storedToken = $_SESSION['csrf_token'] ?? '';
+        if (empty($storedToken) || !hash_equals($storedToken, $submittedToken)) {
+            throw new Exception('Security token mismatch (CSRF). Please refresh the page.');
+        }
         $action = $_POST['action'] ?? '';
     } else {
         $action = $_GET['action'] ?? '';
