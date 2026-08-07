@@ -18,7 +18,7 @@ if (empty($_SESSION['oauth_state'])) {
     $_SESSION['oauth_state'] = bin2hex(random_bytes(16));
 }
 $csrfState = $_SESSION['oauth_state'];
-$csrfToken = $_SESSION['csrf_token'] ?? '';
+$csrfToken = csrf_token();
 
 // Auto-migrate tables if not created yet (e.g. on live Hostinger production server)
 try {
@@ -321,10 +321,13 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    window.location.reload();
+                    window.location.href = 'accounts.php';
                 } else {
                     alert('Failed to disconnect: ' + (data.error || 'Unknown error'));
                 }
+            })
+            .catch(err => {
+                alert('Error disconnecting account: ' + err.message);
             });
         });
     });

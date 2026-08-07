@@ -25,7 +25,11 @@ try {
         throw new Exception('Invalid request method');
     }
 
-    csrf_verify();
+    $submittedToken = $_POST['_csrf_token'] ?? '';
+    $storedToken = $_SESSION['csrf_token'] ?? '';
+    if (empty($storedToken) || !hash_equals($storedToken, $submittedToken)) {
+        throw new Exception('Security token mismatch (CSRF). Please refresh the page and try again.');
+    }
     $action = $_POST['action'] ?? '';
     $account_id = filter_input(INPUT_POST, 'account_id', FILTER_VALIDATE_INT);
 
