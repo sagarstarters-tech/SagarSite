@@ -1,5 +1,8 @@
 <?php
 $current_page = 'social-media/index.php';
+require_once __DIR__ . '/../../config/DbConnection.php';
+include_once __DIR__ . '/../admin_header.php';
+
 $pdo = DbConnection::getInstance();
 try {
     $pdo->query("SELECT 1 FROM sm_connected_accounts LIMIT 1");
@@ -9,7 +12,6 @@ try {
     runMigration();
     ob_end_clean();
 }
-include_once __DIR__ . '/../admin_header.php';
 ?>
 <link href="<?php echo SITE_URL; ?>/admin/social-media/assets/social-media.css" rel="stylesheet">
 <div class="container-fluid py-4">
