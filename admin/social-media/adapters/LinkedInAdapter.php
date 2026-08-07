@@ -59,13 +59,29 @@ class LinkedInAdapter implements PlatformAdapterInterface {
             return ['error' => 'No access token received'];
         }
         
-        // Fetch Profile URN via userinfo (OpenID) or /v2/me fallback
-        $profileRes = $this->curlRequest('https://api.linkedin.com/v2/userinfo', 'GET', [], [
-            'Authorization: Bearer ' . $accessToken
-        ]);
-        
-        $sub = $profileRes['sub'] ?? '';
-        $name = $profileRes['name'] ?? ($profileRes['given_name'] ?? 'LinkedIn User');
+        $sub = '';
+        $name = '';
+
+        // 1. Try decoding id_token JWT if OpenID Connect returned it
+        if (!empty($res['id_token'])) {
+            $parts = explode('.', $res['id_token']);
+            if (isset($parts[1])) {
+                $jwtPayload = json_decode(base64_decode(strtr($parts[1], '-_', '+/')), true);
+                if (!empty($jwtPayload['sub'])) {
+                    $sub = $jwtPayload['sub'];
+                    $name = $jwtPayload['name'] ?? ($jwtPayload['given_name'] ?? 'LinkedIn Member');
+                }
+            }
+        }
+
+        // 2. Fetch Profile URN via userinfo (OpenID) or /v2/me fallback
+        if (!$sub) {
+            $profileRes = $this->curlRequest('https://api.linkedin.com/v2/userinfo', 'GET', [], [
+                'Authorization: Bearer ' . $accessToken
+            ]);
+            $sub = $profileRes['sub'] ?? '';
+            $name = $profileRes['name'] ?? ($profileRes['given_name'] ?? 'LinkedIn User');
+        }
 
         if (!$sub) {
             $meRes = $this->curlRequest('https://api.linkedin.com/v2/me', 'GET', [], [
