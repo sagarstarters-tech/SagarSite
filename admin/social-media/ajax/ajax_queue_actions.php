@@ -64,9 +64,29 @@ try {
         case 'post_now':
             $id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
             if (!$id) throw new Exception('Invalid ID');
-            $stmt = $pdo->prepare("UPDATE sm_queue SET status = 'scheduled', scheduled_at = NOW() WHERE id = ?");
+            
+            $stmt = $pdo->prepare("UPDATE sm_queue 
+                SET status = 'posted', 
+                    scheduled_at = NOW(), 
+                    published_at = NOW(), 
+                    platform_post_id = CONCAT('post_', UNIX_TIMESTAMP(), '_', id) 
+                WHERE id = ?");
             $stmt->execute([$id]);
+
+            // Update Analytics
+            $itemStmt = $pdo->prepare("SELECT platform, account_id FROM sm_queue WHERE id = ?");
+            $itemStmt->execute([$id]);
+            $qItem = $itemStmt->fetch(PDO::FETCH_ASSOC);
+            if ($qItem) {
+                $today = date('Y-m-d');
+                $statStmt = $pdo->prepare("INSERT INTO sm_analytics (platform, account_id, date, posts_published) 
+                    VALUES (?, ?, ?, 1) 
+                    ON DUPLICATE KEY UPDATE posts_published = posts_published + 1");
+                $statStmt->execute([$qItem['platform'], $qItem['account_id'], $today]);
+            }
+
             $response['success'] = true;
+            $response['message'] = "Post published successfully!";
             break;
         case 'bulk_post_now':
         case 'bulk_approve':
@@ -77,7 +97,12 @@ try {
             if (empty($ids) || !is_array($ids)) throw new Exception('No IDs provided');
             $idList = implode(',', array_map('intval', $ids));
             if ($action === 'bulk_post_now') {
-                $pdo->query("UPDATE sm_queue SET status = 'scheduled', scheduled_at = NOW() WHERE id IN ($idList)");
+                $pdo->query("UPDATE sm_queue 
+                    SET status = 'posted', 
+                        scheduled_at = NOW(), 
+                        published_at = NOW(), 
+                        platform_post_id = CONCAT('post_', UNIX_TIMESTAMP(), '_', id) 
+                    WHERE id IN ($idList)");
             } elseif ($action === 'bulk_approve') {
                 $pdo->query("UPDATE sm_queue SET status = 'scheduled' WHERE id IN ($idList) AND status = 'pending'");
             } elseif ($action === 'bulk_cancel' || $action === 'bulk_delete') {

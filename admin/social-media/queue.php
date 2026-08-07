@@ -390,7 +390,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Post Now Button
     document.querySelectorAll('.btn-post-now').forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
             if (confirm('Post this product immediately now?')) {
                 handleQueueAction('post_now', this.dataset.id);
             }
@@ -399,14 +401,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Retry Button
     document.querySelectorAll('.btn-retry-item').forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
             handleQueueAction('retry', this.dataset.id);
         });
     });
 
     // Delete Button
     document.querySelectorAll('.btn-delete-item').forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
             if (confirm('Are you sure you want to delete this queue item?')) {
                 handleQueueAction('delete', this.dataset.id);
             }
