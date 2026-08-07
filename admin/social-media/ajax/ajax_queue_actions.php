@@ -68,6 +68,7 @@ try {
             $stmt->execute([$id]);
             $response['success'] = true;
             break;
+        case 'bulk_post_now':
         case 'bulk_approve':
         case 'bulk_cancel':
         case 'bulk_delete':
@@ -75,12 +76,24 @@ try {
             $ids = $_POST['ids'] ?? [];
             if (empty($ids) || !is_array($ids)) throw new Exception('No IDs provided');
             $idList = implode(',', array_map('intval', $ids));
-            if ($action === 'bulk_approve') {
+            if ($action === 'bulk_post_now') {
+                $pdo->query("UPDATE sm_queue SET status = 'scheduled', scheduled_at = NOW() WHERE id IN ($idList)");
+            } elseif ($action === 'bulk_approve') {
                 $pdo->query("UPDATE sm_queue SET status = 'scheduled' WHERE id IN ($idList) AND status = 'pending'");
             } elseif ($action === 'bulk_cancel' || $action === 'bulk_delete') {
                 $pdo->query("DELETE FROM sm_queue WHERE id IN ($idList)");
             } elseif ($action === 'bulk_retry') {
                 $pdo->query("UPDATE sm_queue SET status = 'scheduled', retry_count = 0 WHERE id IN ($idList)");
+            }
+            $response['success'] = true;
+            break;
+        case 'delete_all':
+            $status = trim($_POST['status'] ?? 'all');
+            if ($status !== 'all' && !empty($status)) {
+                $stmt = $pdo->prepare("DELETE FROM sm_queue WHERE status = ?");
+                $stmt->execute([$status]);
+            } else {
+                $pdo->query("DELETE FROM sm_queue");
             }
             $response['success'] = true;
             break;

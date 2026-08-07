@@ -156,7 +156,7 @@ $statusBadges = [
             <form method="GET" action="queue.php" class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-3">
                 <input type="hidden" name="status" value="<?php echo htmlspecialchars($currentStatus); ?>">
                 
-                <div class="d-flex gap-2 align-items-center">
+                <div class="d-flex gap-2 align-items-center flex-wrap">
                     <select id="bulkActionSelect" class="form-select rounded-3" style="width: 180px;">
                         <option value="">Bulk Actions</option>
                         <option value="bulk_post_now">Post Now Selected</option>
@@ -165,6 +165,12 @@ $statusBadges = [
                         <option value="bulk_retry">Retry Failed</option>
                     </select>
                     <button type="button" id="btnApplyBulk" class="btn btn-outline-primary rounded-3 px-3">Apply</button>
+                    <button type="button" id="btnDeleteSelected" class="btn btn-danger rounded-3 px-3">
+                        <i class="fas fa-trash-alt me-1"></i> Delete Selected
+                    </button>
+                    <button type="button" id="btnDeleteAllQueue" class="btn btn-outline-danger rounded-3 px-3">
+                        <i class="fas fa-trash me-1"></i> Delete All
+                    </button>
                 </div>
 
                 <div class="d-flex gap-2 align-items-center">
@@ -388,6 +394,52 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (confirm(`Apply ${bulkAction.replace('bulk_', '')} to ${selectedIds.length} selected items?`)) {
                 handleQueueAction(bulkAction, null, selectedIds);
+            }
+        });
+    }
+    // Delete Selected Button
+    const btnDeleteSelected = document.getElementById('btnDeleteSelected');
+    if (btnDeleteSelected) {
+        btnDeleteSelected.addEventListener('click', function() {
+            const selectedIds = Array.from(document.querySelectorAll('.queue-chk:checked')).map(c => c.value);
+            if (selectedIds.length === 0) {
+                alert('Please select at least one item from the queue to delete.');
+                return;
+            }
+            if (confirm(`Are you sure you want to delete ${selectedIds.length} selected item(s)?`)) {
+                handleQueueAction('bulk_delete', null, selectedIds);
+            }
+        });
+    }
+
+    // Delete All Button
+    const btnDeleteAllQueue = document.getElementById('btnDeleteAllQueue');
+    if (btnDeleteAllQueue) {
+        btnDeleteAllQueue.addEventListener('click', function() {
+            const currentStatus = '<?php echo $currentStatus; ?>';
+            const confirmMsg = currentStatus === 'all' 
+                ? 'Are you SURE you want to delete ALL items in the entire queue?' 
+                : `Are you SURE you want to delete ALL '${currentStatus}' items from the queue?`;
+            
+            if (confirm(confirmMsg)) {
+                const formData = new FormData();
+                formData.append('_csrf_token', csrfToken);
+                formData.append('action', 'delete_all');
+                formData.append('status', currentStatus);
+
+                fetch('ajax/ajax_queue_actions.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.reload();
+                    } else {
+                        alert('Delete all failed: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(err => alert('Error executing action: ' + err.message));
             }
         });
     }
