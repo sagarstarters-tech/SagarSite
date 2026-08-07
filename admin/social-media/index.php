@@ -5,7 +5,9 @@ try {
     $pdo->query("SELECT 1 FROM sm_connected_accounts LIMIT 1");
 } catch (PDOException $e) {
     require_once __DIR__ . '/migrations/001_create_social_media_tables.php';
+    ob_start();
     runMigration();
+    ob_end_clean();
 }
 include_once __DIR__ . '/../admin_header.php';
 ?>
