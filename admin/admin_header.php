@@ -138,4 +138,5 @@ $__admin_menu = require __DIR__ . '/config/menu.php';
 
             <!-- Page Content Wrapper -->
             <div class="admin-content">
+            <?php display_flash(); ?>
 <?php endif; ?>
