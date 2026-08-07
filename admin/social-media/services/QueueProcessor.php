@@ -6,10 +6,9 @@ namespace Admin\SocialMedia\Services;
 use DbConnection;
 use PDO;
 
-if (!interface_exists('Admin\SocialMedia\Adapters\PlatformAdapterInterface')) {
+if (!interface_exists('PlatformAdapterInterface')) {
     require_once dirname(__DIR__) . '/adapters/PlatformAdapterInterface.php';
 }
-use Admin\SocialMedia\Adapters\PlatformAdapterInterface;
 
 /**
  * Class QueueProcessor
@@ -196,7 +195,7 @@ class QueueProcessor {
      * @return PlatformAdapterInterface
      * @throws \Exception
      */
-    public function getAdapterForPlatform(string $platform): PlatformAdapterInterface {
+    public function getAdapterForPlatform(string $platform): \PlatformAdapterInterface {
         $platform = strtolower(trim($platform));
         $className = ucfirst($platform) . 'Adapter';
         if ($platform === 'twitter') $className = 'TwitterAdapter';
