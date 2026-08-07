@@ -4,8 +4,7 @@ require_once __DIR__ . '/../../config/DbConnection.php';
 include_once __DIR__ . '/../admin_header.php';
 ?>
 <link href="<?php echo SITE_URL; ?>/admin/social-media/assets/social-media.css" rel="stylesheet">
-<div class="admin-content">
-    <div class="container-fluid py-4">
+<div class="container-fluid py-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="fw-bold m-0">Analytics Dashboard</h2>
             <select class="form-select w-auto rounded-pill shadow-sm">
@@ -31,7 +30,6 @@ include_once __DIR__ . '/../admin_header.php';
             </div>
         </div>
     </div>
-</div>
 <style></style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>

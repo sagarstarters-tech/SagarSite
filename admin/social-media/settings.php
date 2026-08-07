@@ -4,8 +4,7 @@ require_once __DIR__ . '/../../config/DbConnection.php';
 include_once __DIR__ . '/../admin_header.php';
 ?>
 <link href="<?php echo SITE_URL; ?>/admin/social-media/assets/social-media.css" rel="stylesheet">
-<div class="admin-content">
-    <div class="container-fluid py-4">
+<div class="container-fluid py-4">
         <h2 class="mb-4 fw-bold">Module Settings</h2>
         <div class="card shadow" style="border-radius: 15px; border: none;">
             <div class="card-body p-0">
@@ -59,7 +58,6 @@ include_once __DIR__ . '/../admin_header.php';
             </div>
         </div>
     </div>
-</div>
 <style>
 .nav-pills .nav-link.active { background-color: rgba(13, 110, 253, 0.1); color: #0d6efd !important; }
 .nav-pills .nav-link { color: #4f4f4f; }

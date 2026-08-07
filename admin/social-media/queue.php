@@ -4,8 +4,7 @@ require_once __DIR__ . '/../../config/DbConnection.php';
 include_once __DIR__ . '/../admin_header.php';
 ?>
 <link href="<?php echo SITE_URL; ?>/admin/social-media/assets/social-media.css" rel="stylesheet">
-<div class="admin-content">
-    <div class="container-fluid py-4">
+<div class="container-fluid py-4">
         <h2 class="mb-4 fw-bold">Queue Management</h2>
         
         <div class="card shadow mb-4" style="border-radius: 15px; border: none;">
@@ -60,7 +59,6 @@ include_once __DIR__ . '/../admin_header.php';
             </div>
         </div>
     </div>
-</div>
 <style>
 .nav-tabs .nav-link.active { border-bottom: 3px solid #0d6efd; color: #0d6efd !important; }
 .nav-tabs .nav-link { color: #4f4f4f; border: none; }

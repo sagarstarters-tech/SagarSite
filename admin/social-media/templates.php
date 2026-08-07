@@ -4,8 +4,7 @@ require_once __DIR__ . '/../../config/DbConnection.php';
 include_once __DIR__ . '/../admin_header.php';
 ?>
 <link href="<?php echo SITE_URL; ?>/admin/social-media/assets/social-media.css" rel="stylesheet">
-<div class="admin-content">
-    <div class="container-fluid py-4">
+<div class="container-fluid py-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="fw-bold m-0">Caption Templates</h2>
             <button class="btn btn-primary mdb-ripple fw-bold" style="border-radius: 30px;" data-mdb-toggle="modal" data-mdb-target="#createTemplateModal">
@@ -36,7 +35,6 @@ include_once __DIR__ . '/../admin_header.php';
             </div>
         </div>
     </div>
-</div>
 
 <div class="modal fade" id="createTemplateModal" tabindex="-1">
     <div class="modal-dialog modal-xl">

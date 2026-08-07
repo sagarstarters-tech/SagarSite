@@ -9,6 +9,16 @@
  *   $global_settings - app settings array
  */
 
+if (!function_exists('admin_url')) {
+    function admin_url(string $url): string {
+        if (strpos($url, 'http://') === 0 || strpos($url, 'https://') === 0) {
+            return $url;
+        }
+        $base = defined('ADMIN_BASE_URL') ? ADMIN_BASE_URL : '/admin/';
+        return $base . ltrim($url, '/');
+    }
+}
+
 /**
  * Helper: Determine if a menu item is "active" (expanded / highlighted).
  * Returns true if the current page is in the item's pages array.
@@ -17,10 +27,19 @@
  */
 function admin_menu_is_active(array $item): bool
 {
-    $current_page = basename($_SERVER['PHP_SELF']);
+    global $current_page;
+    $cp = $current_page ?? basename($_SERVER['PHP_SELF']);
     $pages = $item['pages'] ?? [];
 
-    if (!in_array($current_page, $pages, true)) {
+    $match = false;
+    foreach ($pages as $p) {
+        if ($cp === $p || basename($_SERVER['PHP_SELF']) === $p) {
+            $match = true;
+            break;
+        }
+    }
+
+    if (!$match) {
         return false;
     }
 
@@ -45,6 +64,9 @@ function admin_menu_is_active(array $item): bool
  */
 function admin_group_is_active(array $item): bool
 {
+    global $current_page;
+    $cp = $current_page ?? basename($_SERVER['PHP_SELF']);
+
     if (!empty($item['url']) && empty($item['children'])) {
         return admin_menu_is_active($item);
     }
@@ -56,8 +78,8 @@ function admin_group_is_active(array $item): bool
         }
     }
     // Also check top-level pages for the group
-    $current_page = basename($_SERVER['PHP_SELF']);
-    return in_array($current_page, $item['pages'] ?? [], true);
+    $pages = $item['pages'] ?? [];
+    return in_array($cp, $pages, true) || in_array(basename($_SERVER['PHP_SELF']), $pages, true);
 }
 
 // Fetch Orders Count for Notifications (Pending & Processing)
@@ -155,7 +177,7 @@ if (isset($conn)) {
                                 $subchild_active = admin_menu_is_active($subchild);
                                 ?>
                                 <li>
-                                    <a href="<?php echo htmlspecialchars($subchild['url']); ?>"
+                                    <a href="<?php echo htmlspecialchars(admin_url($subchild['url'])); ?>"
                                        class="list-group-item list-group-item-action <?php echo $subchild_active ? 'active' : ''; ?>">
                                         <span><?php echo $subchild['label']; ?></span>
                                     </a>
@@ -166,7 +188,7 @@ if (isset($conn)) {
                     </li>
                 <?php else: ?>
                     <li>
-                        <a href="<?php echo htmlspecialchars($child['url']); ?>"
+                        <a href="<?php echo htmlspecialchars(admin_url($child['url'])); ?>"
                            class="list-group-item list-group-item-action <?php echo $child_active ? 'active' : ''; ?>">
                             <?php if ($child_icon): ?><i class="<?php echo $child_icon; ?>"></i><?php endif; ?>
                             <span><?php echo $child['label']; ?></span>
@@ -188,7 +210,7 @@ if (isset($conn)) {
 
     <?php else: ?>
         <!-- Direct Link -->
-        <a href="<?php echo htmlspecialchars($item['url']); ?>"
+        <a href="<?php echo htmlspecialchars(admin_url($item['url'])); ?>"
            class="list-group-item list-group-item-action <?php echo $group_active ? 'active' : ''; ?>">
             <i class="<?php echo $icon_full; ?>"></i>
             <span><?php echo $item['label']; ?></span>

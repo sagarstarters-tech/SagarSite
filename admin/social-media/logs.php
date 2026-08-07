@@ -4,8 +4,7 @@ require_once __DIR__ . '/../../config/DbConnection.php';
 include_once __DIR__ . '/../admin_header.php';
 ?>
 <link href="<?php echo SITE_URL; ?>/admin/social-media/assets/social-media.css" rel="stylesheet">
-<div class="admin-content">
-    <div class="container-fluid py-4">
+<div class="container-fluid py-4">
         <h2 class="mb-4 fw-bold">Activity Logs</h2>
         <div class="card shadow" style="border-radius: 15px; border: none;">
             <div class="card-body">
@@ -47,7 +46,6 @@ include_once __DIR__ . '/../admin_header.php';
             </div>
         </div>
     </div>
-</div>
 <style></style>
 <script></script>
 <?php include_once __DIR__ . '/../admin_footer.php'; ?>

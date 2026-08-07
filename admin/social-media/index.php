@@ -4,8 +4,7 @@ require_once __DIR__ . '/../../config/DbConnection.php';
 include_once __DIR__ . '/../admin_header.php';
 ?>
 <link href="<?php echo SITE_URL; ?>/admin/social-media/assets/social-media.css" rel="stylesheet">
-<div class="admin-content">
-    <div class="container-fluid py-4">
+<div class="container-fluid py-4">
         <h2 class="mb-4 fw-bold">Social Media Dashboard</h2>
         
         <div class="row mb-4">
@@ -102,7 +101,6 @@ include_once __DIR__ . '/../admin_header.php';
             </div>
         </div>
     </div>
-</div>
 <style>
 .card { transition: transform 0.2s ease; }
 .card:hover { transform: translateY(-3px); }

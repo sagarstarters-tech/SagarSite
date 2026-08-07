@@ -4,8 +4,7 @@ require_once __DIR__ . '/../../config/DbConnection.php';
 include_once __DIR__ . '/../admin_header.php';
 ?>
 <link href="<?php echo SITE_URL; ?>/admin/social-media/assets/social-media.css" rel="stylesheet">
-<div class="admin-content">
-    <div class="container-fluid py-4">
+<div class="container-fluid py-4">
         <h2 class="mb-4 fw-bold">Connected Accounts</h2>
         <div class="row">
             <?php 
@@ -38,7 +37,6 @@ include_once __DIR__ . '/../admin_header.php';
             <?php endforeach; ?>
         </div>
     </div>
-</div>
 <style>
 .card { transition: all 0.3s ease; }
 .card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important; }

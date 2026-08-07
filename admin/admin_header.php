@@ -20,7 +20,7 @@ require_once __DIR__ . '/helpers/flash.php';
 require_once __DIR__ . '/helpers/url.php';
 
 // 4. Current Page
-$current_page = basename($_SERVER['PHP_SELF']);
+$current_page = $current_page ?? basename($_SERVER['PHP_SELF']);
 
 // 5. Load Menu Config
 $__admin_menu = require __DIR__ . '/config/menu.php';
@@ -36,9 +36,9 @@ $__admin_menu = require __DIR__ . '/config/menu.php';
     <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet"/>
     <!-- Custom CSS -->
-    <link href="../assets/css/style.css" rel="stylesheet">
-    <link href="../assets/css/admin-sidebar.css" rel="stylesheet">
-    <link href="../assets/css/admin-responsive.css" rel="stylesheet">
+    <link href="<?php echo ASSETS_URL; ?>/css/style.css" rel="stylesheet">
+    <link href="<?php echo ASSETS_URL; ?>/css/admin-sidebar.css" rel="stylesheet">
+    <link href="<?php echo ASSETS_URL; ?>/css/admin-responsive.css" rel="stylesheet">
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- Chart.js -->
@@ -50,7 +50,7 @@ $__admin_menu = require __DIR__ . '/config/menu.php';
     echo $scriptService->getHeaderScripts();
     ?>
     <!-- Auto Contrast Algorithm -->
-    <script src="../assets/js/auto-contrast.js" defer></script>
+    <script src="<?php echo ASSETS_URL; ?>/js/auto-contrast.js" defer></script>
 </head>
 <body class="bg-light">
 
@@ -101,7 +101,7 @@ $__admin_menu = require __DIR__ . '/config/menu.php';
                                 ?>
                             </span>
                             <div class="admin-breadcrumb d-none d-sm-block">
-                                <a href="index.php" class="text-decoration-none text-muted small">Admin</a>
+                                <a href="<?php echo ADMIN_BASE_URL; ?>index.php" class="text-decoration-none text-muted small">Admin</a>
                                 <span class="mx-1 small">/</span>
                                 <span class="small"><?php echo ucwords(trim($page_label)); ?></span>
                             </div>
@@ -126,9 +126,9 @@ $__admin_menu = require __DIR__ . '/config/menu.php';
                                      <?php endif; ?>
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 mt-2">
-                                    <li><a class="dropdown-item py-2" href="manage_settings.php"><i class="fas fa-cog me-2"></i>Settings</a></li>
+                                    <li><a class="dropdown-item py-2" href="<?php echo ADMIN_BASE_URL; ?>manage_settings.php"><i class="fas fa-cog me-2"></i>Settings</a></li>
                                     <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item py-2 text-danger" href="../includes/auth.php?action=logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                                    <li><a class="dropdown-item py-2 text-danger" href="<?php echo STORE_BASE_URL; ?>includes/auth.php?action=logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
                                 </ul>
                             </div>
                         </div>
