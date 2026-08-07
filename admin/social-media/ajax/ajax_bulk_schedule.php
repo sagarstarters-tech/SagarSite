@@ -94,7 +94,14 @@ try {
     }
 
     // 3. Fetch template
-    $templateBody = "Check out {product_name}! Price: ₹{price}\nShop here: {product_url}\n{hashtags}\n{cta}";
+    $templateBody = "🔥 PREMIUM PRODUCT SPOTLIGHT 🔥\n\n"
+                  . "✨ {product_name}\n\n"
+                  . "💰 Best Price: ₹{price}\n"
+                  . "✅ Guaranteed Quality & Heavy Duty Performance\n"
+                  . "🚚 Express Shipping Across India\n\n"
+                  . "🛒 Order Direct Here: {product_url}\n\n"
+                  . "{cta}\n\n"
+                  . "{hashtags}";
     if ($templateId) {
         $stmtTpl = $pdo->prepare("SELECT template_body FROM sm_templates WHERE id = ?");
         $stmtTpl->execute([$templateId]);

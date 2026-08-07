@@ -174,23 +174,18 @@ function runMigration() {
     // Insert Default Templates
     $templates = [
         [
-            'name' => 'New Arrival',
-            'body' => "🚀 New Arrival! ✨\n{product_name}\nOnly at {price}\n\nShop now: {product_url}\n\n{hashtags}",
+            'name' => 'Premium Spotlight',
+            'body' => "🔥 PREMIUM PRODUCT SPOTLIGHT 🔥\n\n✨ {product_name}\n\n💰 Best Price: ₹{price}\n✅ Guaranteed Quality & Heavy Duty Performance\n🚚 Express Shipping Across India\n\n🛒 Order Direct Here: {product_url}\n\n{cta}\n\n{hashtags}",
             'is_default' => 1
         ],
         [
             'name' => 'Special Offer',
-            'body' => "🔥 Special Offer! 💸\n{product_name}\nRegular: {regular_price} | Now: {sale_price} ({discount_percent}% OFF!)\n\nGrab it here: {product_url}\n\n{hashtags}",
+            'body' => "⚡ SPECIAL LIMITED OFFER ⚡\n\n🛍️ {product_name}\n\n💸 Special Price: ₹{price}\n🔥 Discount: Up to {discount_percent}% OFF!\n\n👇 Claim Offer Now:\n{product_url}\n\n{cta}\n\n{hashtags}",
             'is_default' => 0
         ],
         [
-            'name' => 'Festival Special',
-            'body' => "🎉 Festival Special! 🎊\nCelebrate with {product_name}!\n\nGet yours now: {product_url}\n\n{hashtags}",
-            'is_default' => 0
-        ],
-        [
-            'name' => 'Quick Share',
-            'body' => "Check out {product_name}: {product_url}",
+            'name' => 'New Arrival',
+            'body' => "🚀 NEW ARRIVAL IN STORE ✨\n\n⭐ {product_name}\n\n🏷️ Price: ₹{price}\n\n👇 Check details & order online:\n{product_url}\n\n{cta}\n\n{hashtags}",
             'is_default' => 0
         ]
     ];
