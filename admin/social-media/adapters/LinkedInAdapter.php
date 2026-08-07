@@ -23,7 +23,8 @@ class LinkedInAdapter implements PlatformAdapterInterface {
 
     public function getAuthUrl(string $redirectUri, string $state): string {
         $clientId = _env('LINKEDIN_CLIENT_ID') ?? '';
-        $scopes = ['r_liteprofile', 'w_member_social', 'r_organization_social', 'w_organization_social'];
+        // Scope for 'Share on LinkedIn' product
+        $scopes = explode(' ', _env('LINKEDIN_SCOPES', 'w_member_social'));
         $params = [
             'response_type' => 'code',
             'client_id' => $clientId,
@@ -50,23 +51,39 @@ class LinkedInAdapter implements PlatformAdapterInterface {
 
         if (isset($res['error'])) {
             error_log('LinkedIn Auth Error: ' . json_encode($res));
-            return ['error' => 'Authentication failed'];
+            return ['error' => $res['error_description'] ?? 'Authentication failed'];
         }
         
         $accessToken = $res['access_token'] ?? '';
+        if (!$accessToken) {
+            return ['error' => 'No access token received'];
+        }
         
-        // Fetch Profile URN
-        $profileRes = $this->curlRequest('https://api.linkedin.com/v2/me', 'GET', [], [
+        // Fetch Profile URN via userinfo (OpenID) or /v2/me fallback
+        $profileRes = $this->curlRequest('https://api.linkedin.com/v2/userinfo', 'GET', [], [
             'Authorization: Bearer ' . $accessToken
         ]);
         
-        if (isset($profileRes['error']) && !isset($profileRes['id'])) {
-             return ['error' => 'Could not fetch profile info'];
+        $sub = $profileRes['sub'] ?? '';
+        $name = $profileRes['name'] ?? ($profileRes['given_name'] ?? 'LinkedIn User');
+
+        if (!$sub) {
+            $meRes = $this->curlRequest('https://api.linkedin.com/v2/me', 'GET', [], [
+                'Authorization: Bearer ' . $accessToken
+            ]);
+            $sub = $meRes['id'] ?? '';
+            $name = isset($meRes['localizedFirstName']) ? ($meRes['localizedFirstName'] . ' ' . ($meRes['localizedLastName'] ?? '')) : 'LinkedIn Member';
+        }
+
+        if (!$sub) {
+            return ['error' => 'Could not fetch LinkedIn user info'];
         }
         
         return [
             'access_token' => $accessToken,
-            'person_urn' => 'urn:li:person:' . ($profileRes['id'] ?? '')
+            'person_urn' => 'urn:li:person:' . $sub,
+            'account_id' => $sub,
+            'account_name' => $name
         ];
     }
 

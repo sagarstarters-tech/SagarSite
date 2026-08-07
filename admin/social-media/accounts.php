@@ -57,6 +57,8 @@ foreach ($dbAccounts as $acc) {
     $connectedMap[strtolower($acc['platform'])] = $acc;
 }
 
+$baseUrl = rtrim(SITE_URL, '/');
+
 // Define platforms and their configuration checks
 $platformsConfig = [
     'facebook' => [
@@ -64,7 +66,7 @@ $platformsConfig = [
         'icon' => 'fab fa-facebook',
         'color' => '#1877F2',
         'adapter' => new FacebookAdapter(),
-        'callback' => SITE_URL . '/admin/social-media/oauth/facebook_callback.php',
+        'callback' => $baseUrl . '/admin/social-media/oauth/facebook_callback.php',
         'has_keys' => !empty(_env('FB_APP_ID') ?: _env('FACEBOOK_APP_ID')) && !empty(_env('FB_APP_SECRET') ?: _env('FACEBOOK_APP_SECRET')),
         'keys_needed' => 'FB_APP_ID & FB_APP_SECRET'
     ],
@@ -73,7 +75,7 @@ $platformsConfig = [
         'icon' => 'fab fa-instagram',
         'color' => '#E4405F',
         'adapter' => new InstagramAdapter(),
-        'callback' => SITE_URL . '/admin/social-media/oauth/facebook_callback.php',
+        'callback' => $baseUrl . '/admin/social-media/oauth/facebook_callback.php',
         'has_keys' => !empty(_env('FB_APP_ID') ?: _env('FACEBOOK_APP_ID')) && !empty(_env('FB_APP_SECRET') ?: _env('FACEBOOK_APP_SECRET')),
         'keys_needed' => 'FB_APP_ID & FB_APP_SECRET (Instagram uses Meta Graph API)'
     ],
@@ -82,7 +84,7 @@ $platformsConfig = [
         'icon' => 'fab fa-x-twitter',
         'color' => '#000000',
         'adapter' => new TwitterAdapter(),
-        'callback' => SITE_URL . '/admin/social-media/oauth/twitter_callback.php',
+        'callback' => $baseUrl . '/admin/social-media/oauth/twitter_callback.php',
         'has_keys' => !empty(_env('TWITTER_CLIENT_ID')) && !empty(_env('TWITTER_CLIENT_SECRET')),
         'keys_needed' => 'TWITTER_CLIENT_ID & TWITTER_CLIENT_SECRET'
     ],
@@ -91,7 +93,7 @@ $platformsConfig = [
         'icon' => 'fab fa-linkedin',
         'color' => '#0A66C2',
         'adapter' => new LinkedInAdapter(),
-        'callback' => SITE_URL . '/admin/social-media/oauth/linkedin_callback.php',
+        'callback' => $baseUrl . '/admin/social-media/oauth/linkedin_callback.php',
         'has_keys' => !empty(_env('LINKEDIN_CLIENT_ID')) && !empty(_env('LINKEDIN_CLIENT_SECRET')),
         'keys_needed' => 'LINKEDIN_CLIENT_ID & LINKEDIN_CLIENT_SECRET'
     ],
@@ -109,7 +111,7 @@ $platformsConfig = [
         'icon' => 'fab fa-pinterest',
         'color' => '#E60023',
         'adapter' => new PinterestAdapter(),
-        'callback' => SITE_URL . '/admin/social-media/oauth/pinterest_callback.php',
+        'callback' => $baseUrl . '/admin/social-media/oauth/pinterest_callback.php',
         'has_keys' => !empty(_env('PINTEREST_APP_ID') ?: _env('PINTEREST_CLIENT_ID')) && !empty(_env('PINTEREST_APP_SECRET') ?: _env('PINTEREST_CLIENT_SECRET')),
         'keys_needed' => 'PINTEREST_APP_ID & PINTEREST_APP_SECRET'
     ]
