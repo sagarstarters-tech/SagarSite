@@ -143,28 +143,40 @@ $platformsConfig = [
                         <h4 class="card-title fw-bold mb-2"><?php echo $p['name']; ?></h4>
                         
                         <div class="mb-3">
-                            <?php if ($isConnected): ?>
+                            <?php 
+                            $hasRealToken = !empty($accInfo['access_token_encrypted']) && (!empty($accInfo['page_id']) || $key === 'telegram');
+                            if ($isConnected && $hasRealToken): ?>
                                 <span class="badge bg-success rounded-pill px-3 py-2">
-                                    <i class="fas fa-check-circle me-1"></i> Connected
+                                    <i class="fas fa-check-circle me-1"></i> API Connected
                                 </span>
-                                <?php if (!empty($accInfo['account_name'])): ?>
-                                    <div class="small text-muted mt-2 fw-semibold">
-                                        <i class="fas fa-user-circle me-1"></i> <?php echo htmlspecialchars($accInfo['account_name']); ?>
-                                    </div>
-                                <?php endif; ?>
+                            <?php elseif ($isConnected): ?>
+                                <span class="badge bg-warning text-dark rounded-pill px-3 py-2">
+                                    <i class="fas fa-exclamation-triangle me-1"></i> Token Needed
+                                </span>
                             <?php else: ?>
                                 <span class="badge bg-secondary rounded-pill px-3 py-2">Disconnected</span>
+                            <?php endif; ?>
+                            <?php if (!empty($accInfo['account_name'])): ?>
+                                <div class="small text-muted mt-2 fw-semibold">
+                                    <i class="fas fa-user-circle me-1"></i> <?php echo htmlspecialchars($accInfo['account_name']); ?>
+                                </div>
                             <?php endif; ?>
                         </div>
                     </div>
 
                     <div class="d-grid gap-2 mt-3">
                         <?php if ($isConnected): ?>
-                            <div class="d-flex gap-2">
+                            <div class="d-flex gap-2 flex-wrap">
                                 <button class="btn btn-outline-primary btn-sm flex-fill rounded-pill btn-test-conn" 
                                         data-id="<?php echo $accInfo['id']; ?>">
-                                    <i class="fas fa-vial me-1"></i> Test
+                                    <i class="fas fa-vial me-1"></i> Test API
                                 </button>
+                                <?php if ($key === 'facebook'): ?>
+                                    <button class="btn btn-primary btn-sm flex-fill rounded-pill" 
+                                            data-mdb-toggle="modal" data-mdb-target="#facebookModal" data-bs-toggle="modal" data-bs-target="#facebookModal">
+                                        <i class="fas fa-key me-1"></i> Edit Token
+                                    </button>
+                                <?php endif; ?>
                                 <a href="accounts.php?action=disconnect&id=<?php echo $accInfo['id']; ?>&platform=<?php echo $key; ?>" 
                                    class="btn btn-outline-danger btn-sm flex-fill rounded-pill" 
                                    onclick="return confirm('Are you sure you want to disconnect <?php echo htmlspecialchars($p['name']); ?>?');">

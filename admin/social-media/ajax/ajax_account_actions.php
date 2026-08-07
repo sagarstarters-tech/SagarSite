@@ -54,6 +54,18 @@ try {
                 }
                 $response['success'] = true;
                 $response['data'] = 'Telegram bot token verified successfully!';
+            } elseif ($platform === 'facebook') {
+                if (empty($acc['access_token_encrypted']) || empty($acc['page_id'])) {
+                    throw new Exception("Facebook Page ID or Access Token is missing. Please click 'Configure Token' to enter your Facebook Page Access Token.");
+                }
+                $decryptedToken = TokenEncryption::decrypt($acc['access_token_encrypted'] ?? '');
+                $fb = new FacebookAdapter();
+                $isValid = $fb->validateConnection(['access_token' => $decryptedToken]);
+                if (!$isValid) {
+                    throw new Exception('Facebook Page Access Token is invalid or expired. Please update your token.');
+                }
+                $response['success'] = true;
+                $response['data'] = 'Facebook Page Token verified successfully! Page ID: ' . $acc['page_id'];
             } else {
                 // Generic test for OAuth platforms
                 $response['success'] = true;
