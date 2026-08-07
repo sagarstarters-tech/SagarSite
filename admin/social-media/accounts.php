@@ -146,7 +146,7 @@ $platformsConfig = [
                         
                         <div class="mb-3">
                             <?php 
-                            $hasRealToken = !empty($accInfo['access_token_encrypted']) && (!empty($accInfo['page_id']) || $key === 'telegram');
+                            $hasRealToken = !empty($accInfo['access_token_encrypted']);
                             if ($isConnected && $hasRealToken): ?>
                                 <span class="badge bg-success rounded-pill px-3 py-2">
                                     <i class="fas fa-check-circle me-1"></i> API Connected
