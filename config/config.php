@@ -16,6 +16,9 @@
  * ============================================================
  */
 
+// ── Set Application Timezone (Indian Standard Time) ─────────
+date_default_timezone_set('Asia/Kolkata');
+
 // ── Path Constants ───────────────────────────────────────────
 if (!defined('BASE_PATH')) {
     define('BASE_PATH', dirname(__DIR__));

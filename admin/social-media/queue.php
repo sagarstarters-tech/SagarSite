@@ -281,11 +281,15 @@ $statusBadges = [
                                         </span>
                                     </td>
                                     <td>
-                                        <div class="small fw-semibold">
-                                            <?php echo $item['scheduled_at'] ? date('M d, Y', strtotime($item['scheduled_at'])) : 'Immediate'; ?>
+                                        <?php 
+                                        $displayTime = !empty($item['published_at']) ? $item['published_at'] : (!empty($item['scheduled_at']) ? $item['scheduled_at'] : null);
+                                        $isPosted = strtolower($item['status']) === 'posted';
+                                        ?>
+                                        <div class="small fw-semibold <?php echo $isPosted ? 'text-success' : 'text-dark'; ?>">
+                                            <?php echo $displayTime ? date('M d, Y', strtotime($displayTime)) : 'Immediate'; ?>
                                         </div>
                                         <div class="extra-small text-muted">
-                                            <?php echo $item['scheduled_at'] ? date('h:i A', strtotime($item['scheduled_at'])) : ''; ?>
+                                            <?php echo $displayTime ? date('h:i A', strtotime($displayTime)) : ''; ?>
                                         </div>
                                     </td>
                                     <td class="text-end">
