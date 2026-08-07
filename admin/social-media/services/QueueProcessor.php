@@ -6,9 +6,6 @@ namespace Admin\SocialMedia\Services;
 use DbConnection;
 use PDO;
 
-/**
- * Interface PlatformAdapterInterface
- */
 if (!interface_exists('Admin\SocialMedia\Adapters\PlatformAdapterInterface')) {
     require_once dirname(__DIR__) . '/adapters/PlatformAdapterInterface.php';
 }
@@ -16,12 +13,12 @@ use Admin\SocialMedia\Adapters\PlatformAdapterInterface;
 
 /**
  * Class QueueProcessor
- * Processes the social media post queue.
+ * Processes the social media post queue automatically.
  */
 class QueueProcessor {
 
     /**
-     * Processes a batch of pending/scheduled posts.
+     * Processes a batch of pending/scheduled posts where scheduled_at <= NOW().
      *
      * @param int $batchSize
      * @return array
@@ -30,7 +27,7 @@ class QueueProcessor {
         $db = DbConnection::getInstance();
         $now = date('Y-m-d H:i:s');
         
-        $stmt = $db->prepare("SELECT * FROM sm_queue WHERE status IN ('scheduled', 'retry') AND scheduled_at <= ? LIMIT ?");
+        $stmt = $db->prepare("SELECT * FROM sm_queue WHERE status IN ('scheduled', 'pending', 'retry') AND (scheduled_at <= ? OR scheduled_at IS NULL) ORDER BY scheduled_at ASC LIMIT ?");
         $stmt->bindValue(1, $now);
         $stmt->bindValue(2, $batchSize, PDO::PARAM_INT);
         $stmt->execute();
@@ -41,6 +38,7 @@ class QueueProcessor {
         foreach ($queueItems as $item) {
             $results[] = [
                 'id' => $item['id'],
+                'platform' => $item['platform'],
                 'success' => $this->processPost($item)
             ];
         }
@@ -49,7 +47,7 @@ class QueueProcessor {
     }
 
     /**
-     * Processes a single post.
+     * Processes a single post using its platform adapter.
      *
      * @param array $queueItem
      * @return bool
@@ -61,14 +59,40 @@ class QueueProcessor {
         try {
             $this->updateStatus($id, 'publishing');
             
-            $adapter = $this->getAdapterForPlatform($queueItem['platform']);
+            $platform = strtolower(trim($queueItem['platform']));
             
-            // Post logic using adapter goes here
-            // Mocking success
-            $success = true; 
-            $platformPostId = "mock_" . time();
-            
-            if ($success) {
+            // Fetch connected account details
+            $stmtAcc = $db->prepare("SELECT * FROM sm_connected_accounts WHERE id = ? OR (LOWER(platform) = ? AND is_active = 1) LIMIT 1");
+            $stmtAcc->execute([(int)$queueItem['account_id'], $platform]);
+            $acc = $stmtAcc->fetch(PDO::FETCH_ASSOC);
+
+            if (!$acc) {
+                throw new \Exception("No active connected account found for platform $platform.");
+            }
+
+            require_once __DIR__ . '/TokenEncryption.php';
+            $plainToken = TokenEncryption::decrypt($acc['access_token_encrypted'] ?? '');
+
+            if (!$plainToken && $platform !== 'telegram') {
+                throw new \Exception("Missing or invalid API Access Token for platform $platform.");
+            }
+
+            $adapter = $this->getAdapterForPlatform($platform);
+
+            $postData = [
+                'page_id' => $acc['page_id'] ?? $acc['account_id'] ?? '',
+                'access_token' => $plainToken,
+                'bot_token' => $plainToken,
+                'channel_id' => $acc['page_id'] ?? $acc['account_id'] ?? '',
+                'message' => $queueItem['post_content'] ?? '',
+                'image_url' => $queueItem['post_image_url'] ?? '',
+                'link' => $queueItem['post_link'] ?? ''
+            ];
+
+            $pubRes = $adapter->publishPost($postData);
+
+            if (!empty($pubRes['success'])) {
+                $platformPostId = (string)($pubRes['post_id'] ?? ('post_' . time() . '_' . $id));
                 $this->updateStatus($id, 'posted', null, $platformPostId);
                 
                 // Update analytics
@@ -78,7 +102,8 @@ class QueueProcessor {
                 
                 return true;
             } else {
-                $this->updateStatus($id, 'failed', "Adapter reported failure");
+                $errorMsg = $pubRes['error'] ?? 'Platform adapter reported failure';
+                $this->updateStatus($id, 'failed', $errorMsg);
                 $this->retryPost($id);
                 return false;
             }
@@ -172,8 +197,17 @@ class QueueProcessor {
      * @throws \Exception
      */
     public function getAdapterForPlatform(string $platform): PlatformAdapterInterface {
-        // Since we don't have the real adapters yet, we throw exception or return a mock.
-        // For Phase 1 we will define a mock or just throw if not implemented.
+        $platform = strtolower(trim($platform));
+        $className = ucfirst($platform) . 'Adapter';
+        if ($platform === 'twitter') $className = 'TwitterAdapter';
+
+        $adapterFile = dirname(__DIR__) . '/adapters/' . $className . '.php';
+        if (file_exists($adapterFile)) {
+            require_once $adapterFile;
+            if (class_exists($className)) {
+                return new $className();
+            }
+        }
         throw new \Exception("Adapter for platform $platform not found.");
     }
 }

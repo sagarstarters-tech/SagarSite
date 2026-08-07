@@ -15,6 +15,13 @@ try {
 
 $csrfToken = csrf_token();
 
+// Auto-process any due scheduled posts automatically on page load
+try {
+    require_once __DIR__ . '/services/QueueProcessor.php';
+    $autoProcessor = new \Admin\SocialMedia\Services\QueueProcessor();
+    $autoProcessor->processBatch(10);
+} catch (Exception $e) {}
+
 // 1. Fetch Queue Status Counters
 $statusCounts = [
     'all' => 0,
@@ -504,6 +511,19 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // Background Auto-Runner: Automatically process due posts every 60 seconds
+    setInterval(function() {
+        fetch('ajax/ajax_process_queue.php')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.processed > 0 && data.succeeded > 0) {
+                    console.log(`Auto-processed ${data.succeeded} due social media posts!`);
+                    window.location.reload();
+                }
+            })
+            .catch(err => console.error('Auto-runner ping error:', err));
+    }, 60000);
 });
 </script>
 
