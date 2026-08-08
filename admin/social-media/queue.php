@@ -173,9 +173,12 @@ $statusBadges = [
                             </option>
                         <?php endforeach; ?>
                     </select>
-                    <input type="text" name="search" class="form-control rounded-3" 
+                    <input type="text" name="search" id="queueSearchInput" class="form-control rounded-3" 
                            placeholder="Search product or content..." value="<?php echo htmlspecialchars($searchQuery); ?>" style="width: 220px;">
-                    <button type="submit" class="btn btn-light border rounded-3"><i class="fas fa-search"></i></button>
+                    <button type="submit" class="btn btn-light border rounded-3" title="Search"><i class="fas fa-search"></i></button>
+                    <button type="button" class="btn btn-white border rounded-3 shadow-sm px-3" onclick="safelyRefreshQueuePage(true)" title="Refresh Queue (Auto-refreshes every 60s)">
+                        <i class="fas fa-sync-alt text-muted" id="queueRefreshIcon"></i>
+                    </button>
                 </div>
             </form>
 
@@ -518,18 +521,45 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Background Auto-Runner: Automatically process due posts asynchronously without blocking page render
-    function triggerAsyncQueueProcessing() {
+    // Helper to check if user is selecting checkboxes, typing in search, or viewing a modal
+    function isUserBusyWithQueue() {
+        const checkedCount = document.querySelectorAll('.queue-chk:checked, #checkAllQueue:checked').length;
+        if (checkedCount > 0) return true;
+
+        const activeElem = document.activeElement;
+        if (activeElem && (activeElem.tagName === 'INPUT' || activeElem.tagName === 'SELECT' || activeElem.tagName === 'TEXTAREA')) {
+            return true;
+        }
+
+        if (document.querySelector('.modal.show')) return true;
+
+        return false;
+    }
+
+    // Global safe refresh function (Manual click forces refresh; auto timer skips if user is busy)
+    window.safelyRefreshQueuePage = function(forceManual = false) {
+        if (!forceManual && isUserBusyWithQueue()) {
+            console.log('[Queue] Skipping auto-refresh: User is typing or selecting items.');
+            return;
+        }
+
+        const icon = document.getElementById('queueRefreshIcon');
+        if (icon) icon.classList.add('fa-spin');
+
         fetch('ajax/ajax_process_queue.php')
             .then(res => res.json())
             .then(data => {
-                if (data.success && data.processed > 0 && data.succeeded > 0) {
-                    console.log(`Auto-processed ${data.succeeded} due social media posts!`);
+                setTimeout(() => {
                     window.location.reload();
-                }
+                }, 300);
             })
-            .catch(err => console.error('Auto-runner ping error:', err));
-    }
+            .catch(err => {
+                console.error('[Queue] Refresh ping error:', err);
+                setTimeout(() => {
+                    window.location.reload();
+                }, 300);
+            });
+    };
 
     // Reset Stuck Publishing Button
     const btnResetStuck = document.getElementById('btnResetStuck');
@@ -554,9 +584,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Run async trigger shortly after DOM load, then repeat every 60 seconds
-    setTimeout(triggerAsyncQueueProcessing, 500);
-    setInterval(triggerAsyncQueueProcessing, 60000);
+    // Initial async trigger after DOM load, then safe auto-refresh every 60 seconds (1 minute)
+    setTimeout(function() {
+        fetch('ajax/ajax_process_queue.php').catch(err => {});
+    }, 500);
+
+    setInterval(function() {
+        safelyRefreshQueuePage(false);
+    }, 60000);
 });
 </script>
 
