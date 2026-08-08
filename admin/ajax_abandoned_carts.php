@@ -34,7 +34,14 @@ try {
 
         case 'send_reminder':
             $cartId = intval($_POST['cart_id'] ?? 0);
-            $result = $controller->sendReminder($cartId);
+            $level   = intval($_POST['level'] ?? 0);
+            $result  = $controller->sendReminder($cartId, $level);
+            echo json_encode($result);
+            break;
+
+        case 'reset_reminders':
+            $cartId = intval($_POST['cart_id'] ?? 0);
+            $result = $controller->resetReminders($cartId);
             echo json_encode($result);
             break;
 
@@ -42,6 +49,7 @@ try {
             $result = $controller->triggerAutoReminders();
             echo json_encode($result);
             break;
+
 
         case 'mark_expired':
             $cartId = intval($_POST['cart_id'] ?? 0);

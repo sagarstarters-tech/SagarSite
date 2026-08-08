@@ -738,7 +738,15 @@ button.ac-btn-white:hover {
                     <!-- Logs list -->
                 </div>
             </div>
-            <div class="modal-footer bg-white border-top p-3">
+            <div class="modal-footer bg-white border-top p-3 justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-outline-warning btn-sm rounded-3" onclick="resetModalReminders()">
+                        <i class="fas fa-undo me-1"></i> Reset Stages to 0
+                    </button>
+                    <button type="button" class="btn btn-success btn-sm rounded-3" onclick="sendModalReminder(1)">
+                        <i class="fab fa-whatsapp me-1"></i> Send Stage 1
+                    </button>
+                </div>
                 <button type="button" class="btn btn-secondary px-4 rounded-3" data-mdb-dismiss="modal">Close</button>
             </div>
         </div>
@@ -904,14 +912,17 @@ function renderCartsTable(carts) {
                 <td>${statusHtml}</td>
                 <td class="pe-4 text-end">
                     <div class="d-flex align-items-center justify-content-end gap-1">
-                        <button type="button" class="ac-btn-icon ac-btn-wa" onclick="sendReminder(${cart.id}, this)" title="Send Next Reminder">
+                        <button type="button" class="ac-btn-icon ac-btn-wa" onclick="sendReminder(${cart.id}, this, 0)" title="Send Next Reminder">
                             <i class="fab fa-whatsapp"></i>
                         </button>
                         <button type="button" class="ac-btn-icon ac-btn-info" onclick='openCartModal(${cartJsonEscaped})' title="Inspect Cart & Logs">
                             <i class="fas fa-eye"></i>
                         </button>
+                        <button type="button" class="ac-btn-icon ac-btn-warn" onclick="resetReminders(${cart.id}, this)" title="Reset Reminder Stages (0/4)">
+                            <i class="fas fa-undo"></i>
+                        </button>
                         ${cart.status === 'active' ? `
-                            <button type="button" class="ac-btn-icon ac-btn-warn" onclick="markExpired(${cart.id}, this)" title="Mark Expired">
+                            <button type="button" class="ac-btn-icon ac-btn-del" onclick="markExpired(${cart.id}, this)" title="Mark Expired">
                                 <i class="fas fa-ban"></i>
                             </button>
                         ` : ''}
@@ -956,7 +967,10 @@ function renderPagination(totalPages, page, totalRecords) {
     $('#paginationContainer').html(html);
 }
 
+let currentModalCartId = 0;
+
 function openCartModal(cart) {
+    currentModalCartId = cart.id;
     const customerName = cart.customer_name || 'Guest User';
     const customerPhone = cart.customer_phone || 'No Phone';
     const initials = customerName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
@@ -975,24 +989,37 @@ function openCartModal(cart) {
     let itemsHtml = `<div class="fw-bold text-dark mb-2">${htmlEscape(cart.product_names || 'Cart Items')}</div>`;
     $('#modalCartItems').html(itemsHtml);
 
-    // Fetch logs
+    loadModalLogs(cart.id);
+
+    const modal = new mdb.Modal(document.getElementById('cartDetailModal'));
+    modal.show();
+}
+
+function loadModalLogs(cartId) {
     $('#modalCartLogs').html('<div class="small text-muted"><i class="fas fa-spinner fa-spin me-1"></i> Loading WhatsApp logs...</div>');
 
     $.ajax({
         url: 'ajax_abandoned_carts.php',
         type: 'GET',
-        data: { action: 'get_cart_logs', cart_id: cart.id },
+        data: { action: 'get_cart_logs', cart_id: cartId },
         dataType: 'json',
         success: function(res) {
             if (res.success && res.data && res.data.length > 0) {
                 let logsHtml = '<ul class="list-group list-group-flush small">';
                 res.data.forEach(log => {
+                    const statusText = log.status || '';
+                    let badgeClass = 'bg-secondary';
+                    if (statusText.toLowerCase().includes('sent via meta')) badgeClass = 'bg-success';
+                    else if (statusText.toLowerCase().includes('failed') || statusText.toLowerCase().includes('error')) badgeClass = 'bg-danger';
+                    else if (statusText.toLowerCase().includes('wa.me') || statusText.toLowerCase().includes('reset')) badgeClass = 'bg-warning text-dark';
+
                     logsHtml += `
-                        <li class="list-group-item px-0 py-2 d-flex align-items-center justify-content-between">
+                        <li class="list-group-item px-0 py-2 d-flex align-items-center justify-content-between gap-2">
                             <div>
-                                <strong class="text-dark">[${log.created_at}]</strong> ${htmlEscape(log.status || '')}
+                                <span class="badge ${badgeClass} me-1">${htmlEscape(log.sending_mode || 'api')}</span>
+                                <strong class="text-dark">[${log.created_at}]</strong>
+                                <div class="text-muted mt-1" style="word-break: break-word;">${htmlEscape(statusText)}</div>
                             </div>
-                            <span class="badge bg-light text-dark border">${htmlEscape(log.sending_mode || 'api')}</span>
                         </li>
                     `;
                 });
@@ -1006,22 +1033,65 @@ function openCartModal(cart) {
             $('#modalCartLogs').html('<div class="small text-danger">Failed to fetch logs.</div>');
         }
     });
-
-    const modal = new mdb.Modal(document.getElementById('cartDetailModal'));
-    modal.show();
 }
 
-function sendReminder(cartId, btn) {
-    const $btn = $(btn);
-    const originalHtml = $btn.html();
-    $btn.html('<i class="fas fa-spinner fa-spin"></i>').prop('disabled', true);
+function resetModalReminders() {
+    if (currentModalCartId > 0) {
+        resetReminders(currentModalCartId, null, function() {
+            loadModalLogs(currentModalCartId);
+        });
+    }
+}
+
+function sendModalReminder(level = 1) {
+    if (currentModalCartId > 0) {
+        sendReminder(currentModalCartId, null, level, function() {
+            loadModalLogs(currentModalCartId);
+        });
+    }
+}
+
+function resetReminders(cartId, btn, callback = null) {
+    if (!confirm(`Reset all reminder stages for Cart #${cartId} back to 0?`)) return;
+
+    const $btn = btn ? $(btn) : null;
+    const originalHtml = $btn ? $btn.html() : '';
+    if ($btn) $btn.html('<i class="fas fa-spinner fa-spin"></i>').prop('disabled', true);
 
     $.ajax({
         url: 'ajax_abandoned_carts.php',
         type: 'POST',
-        data: { action: 'send_reminder', cart_id: cartId },
+        data: { action: 'reset_reminders', cart_id: cartId },
         dataType: 'json',
         success: function(res) {
+            if ($btn) $btn.html(originalHtml).prop('disabled', false);
+            if (res.success) {
+                alert(res.message || 'Reminder stages reset to 0!');
+                refreshTableAndStats();
+                if (callback) callback();
+            } else {
+                alert(res.error || res.message || 'Error resetting reminders');
+            }
+        },
+        error: function() {
+            if ($btn) $btn.html(originalHtml).prop('disabled', false);
+            alert('Request failed');
+        }
+    });
+}
+
+function sendReminder(cartId, btn, level = 0, callback = null) {
+    const $btn = btn ? $(btn) : null;
+    const originalHtml = $btn ? $btn.html() : '';
+    if ($btn) $btn.html('<i class="fas fa-spinner fa-spin"></i>').prop('disabled', true);
+
+    $.ajax({
+        url: 'ajax_abandoned_carts.php',
+        type: 'POST',
+        data: { action: 'send_reminder', cart_id: cartId, level: level },
+        dataType: 'json',
+        success: function(res) {
+            if ($btn) $btn.html(originalHtml).prop('disabled', false);
             if (res.success) {
                 if (res.link) {
                     window.open(res.link, '_blank');
@@ -1030,14 +1100,14 @@ function sendReminder(cartId, btn) {
                     alert(res.message || 'Reminder sent successfully!');
                 }
                 refreshTableAndStats();
+                if (callback) callback();
             } else {
                 alert(res.error || res.message || 'Error sending reminder');
-                $btn.html(originalHtml).prop('disabled', false);
             }
         },
         error: function() {
+            if ($btn) $btn.html(originalHtml).prop('disabled', false);
             alert('Request failed');
-            $btn.html(originalHtml).prop('disabled', false);
         }
     });
 }

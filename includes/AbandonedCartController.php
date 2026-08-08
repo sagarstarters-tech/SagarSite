@@ -35,17 +35,18 @@ class AbandonedCartController {
     /**
      * Send a manual WhatsApp reminder for a specific cart.
      */
-    public function sendReminder($cartId) {
+    public function sendReminder($cartId, $level = 0) {
         try {
             $cartId = intval($cartId);
+            $level  = intval($level);
             if ($cartId <= 0) {
                 return ['success' => false, 'error' => 'Invalid cart ID'];
             }
 
-            $result = $this->service->sendManualReminder($cartId);
+            $result = $this->service->sendManualReminder($cartId, $level);
 
             if (!empty($result['success'])) {
-                $response = ['success' => true, 'message' => 'Reminder sent successfully'];
+                $response = ['success' => true, 'message' => $result['message'] ?? 'Reminder sent successfully'];
                 if (!empty($result['link'])) {
                     $response['link'] = $result['link'];
                 }
@@ -57,6 +58,26 @@ class AbandonedCartController {
             return ['success' => false, 'error' => $e->getMessage()];
         }
     }
+
+    /**
+     * Reset all reminder stages for a cart back to 0 (NULL).
+     */
+    public function resetReminders($cartId) {
+        try {
+            $cartId = intval($cartId);
+            if ($cartId <= 0) {
+                return ['success' => false, 'error' => 'Invalid cart ID'];
+            }
+
+            $result = $this->service->resetReminders($cartId);
+            return $result
+                ? ['success' => true, 'message' => 'Cart reminder stages reset to 0']
+                : ['success' => false, 'error' => 'Failed to reset reminder stages'];
+        } catch (\Throwable $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
 
     /**
      * Trigger auto reminders processing manually (for testing / admin trigger).

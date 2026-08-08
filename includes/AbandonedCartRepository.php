@@ -346,6 +346,20 @@ class AbandonedCartRepository {
     }
 
     /**
+     * Reset all reminder timestamps for a specific cart back to NULL.
+     */
+    public function resetReminders($cartId) {
+        $cartId = intval($cartId);
+        $stmt = $this->conn->prepare("UPDATE abandoned_carts SET reminder_1_sent = NULL, reminder_2_sent = NULL, reminder_3_sent = NULL, reminder_4_sent = NULL WHERE id = ?");
+        if (!$stmt) return false;
+        $stmt->bind_param("i", $cartId);
+        $result = $stmt->execute();
+        $stmt->close();
+        return $result;
+    }
+
+
+    /**
      * Set coupon code for a cart (4th reminder).
      */
     public function setCoupon($cartId, $couponCode, $discount) {

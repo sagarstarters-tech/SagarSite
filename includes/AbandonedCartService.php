@@ -156,7 +156,14 @@ class AbandonedCartService {
      * @param int $level Reminder level (1-4)
      * @return bool
      */
-    public function sendReminder($cartId, $level = 0) {
+    /**
+     * Send a WhatsApp reminder for a specific abandoned cart.
+     * @param int $cartId
+     * @param int $level Reminder level (1-4). If 0, auto-detects first unsent level.
+     * @param bool $isManual Whether this request was manually triggered by admin
+     * @return array
+     */
+    public function sendReminder($cartId, $level = 0, $isManual = false) {
         $cart = $this->repo->getById($cartId);
         if (!$cart) return ['success' => false, 'error' => 'Cart not found'];
 
@@ -203,18 +210,18 @@ class AbandonedCartService {
         $messageTemplate = $this->settings["reminder_{$level}_message"] ?? "Hi {CustomerName}, you left items in your cart. Complete your purchase: {RecoveryLink}";
 
         $variables = [
-            '{CustomerName}' => $cart['customer_name'] ?? 'Customer',
-            '{ProductNames}' => $cart['product_names'] ?? 'Your items',
-            '{CartTotal}'    => number_format($cart['cart_total'], 2),
-            '{RecoveryLink}' => $recoveryLink,
-            '{CouponCode}'   => $couponCode,
+            '{CustomerName}'   => $cart['customer_name'] ?? 'Customer',
+            '{ProductNames}'   => $cart['product_names'] ?? 'Your items',
+            '{CartTotal}'      => number_format($cart['cart_total'], 2),
+            '{RecoveryLink}'   => $recoveryLink,
+            '{CouponCode}'     => $couponCode,
             '{CouponDiscount}' => $couponDiscount . '%',
         ];
 
         $message = str_replace(array_keys($variables), array_values($variables), $messageTemplate);
 
         // Send via WhatsApp API (reuse existing infrastructure)
-        $sent = $this->sendWhatsAppMessage($cart['customer_phone'], $message, $cartId, $level, $variables, $messageTemplate);
+        $sent = $this->sendWhatsAppMessage($cart['customer_phone'], $message, $cartId, $level, $variables, $messageTemplate, $isManual);
 
         if (!empty($sent['success'])) {
             $this->repo->markReminderSent($cartId, $level);
@@ -226,8 +233,20 @@ class AbandonedCartService {
     /**
      * Send manual reminder from admin panel.
      */
-    public function sendManualReminder($cartId) {
-        return $this->sendReminder($cartId, 0);
+    public function sendManualReminder($cartId, $forceLevel = 0) {
+        return $this->sendReminder($cartId, $forceLevel, true);
+    }
+
+    /**
+     * Reset all reminder timestamps for a cart back to 0 (NULL).
+     */
+    public function resetReminders($cartId) {
+        $cartId = intval($cartId);
+        $result = $this->repo->resetReminders($cartId);
+        if ($result) {
+            $this->logWhatsApp($cartId, '', 'Admin reset reminder stages', 'admin', 'Reset all reminder stages to 0');
+        }
+        return $result;
     }
 
     /**
@@ -242,7 +261,7 @@ class AbandonedCartService {
     /**
      * Send WhatsApp message using the existing Meta Cloud API setup.
      */
-    private function sendWhatsAppMessage($phone, $message, $cartId = 0, $level = 0, $variables = [], $messageTemplate = '') {
+    private function sendWhatsAppMessage($phone, $message, $cartId = 0, $level = 0, $variables = [], $messageTemplate = '', $isManual = false) {
         // Get WhatsApp settings
         $waSettings = null;
         try {
@@ -252,7 +271,7 @@ class AbandonedCartService {
             }
         } catch (\Throwable $e) {
             error_log("[AbandonedCart] WhatsApp settings fetch error: " . $e->getMessage());
-            return false;
+            return ['success' => false, 'error' => 'Database error fetching WhatsApp settings'];
         }
 
         if (!$waSettings || ($waSettings['is_enabled'] ?? '0') != 1) {
@@ -284,53 +303,44 @@ class AbandonedCartService {
             $tplLevel = $level > 0 ? $level : 1;
             $abandonTemplate = trim($this->settings["meta_template_{$tplLevel}"] ?? '');
 
-            // Fallback chain for Meta templates so reminders don't fail when level 2/3/4 templates aren't explicitly filled
+            // Fallback: check Level 1 template only (do NOT fallback to order_status_updates template)
+            if (empty($abandonTemplate) && !empty($this->settings['meta_template_1'])) {
+                $abandonTemplate = trim($this->settings['meta_template_1']);
+            }
+
             if (empty($abandonTemplate)) {
-                if (!empty($this->settings['meta_template_1'])) {
-                    $abandonTemplate = trim($this->settings['meta_template_1']);
-                } elseif (!empty($waSettings['meta_template_name'])) {
-                    $abandonTemplate = trim($waSettings['meta_template_name']);
+                $err = "Meta Template for Cart Recovery (Level {$tplLevel}) is not set in Cart Recovery -> Settings & Templates.";
+                $this->logWhatsApp($cartId, $cleanNumber, $message, 'api', "Failed: " . $err);
+                return ['success' => false, 'error' => $err];
+            }
+
+            // Template mode
+            preg_match_all('/\{(CustomerName|ProductNames|CartTotal|RecoveryLink|CouponCode|CouponDiscount)\}/', $messageTemplate, $matches);
+            $params = [];
+            if (!empty($matches[0])) {
+                foreach ($matches[0] as $varKey) {
+                    $val = (string)($variables[$varKey] ?? '');
+                    if ($val === '') $val = ' '; // Meta API doesn't like empty strings for parameters
+                    $params[] = ["type" => "text", "text" => $val];
                 }
             }
 
-            if (!empty($abandonTemplate)) {
-                // Template mode
-                preg_match_all('/\{(CustomerName|ProductNames|CartTotal|RecoveryLink|CouponCode|CouponDiscount)\}/', $messageTemplate, $matches);
-                $params = [];
-                if (!empty($matches[0])) {
-                    foreach ($matches[0] as $varKey) {
-                        $val = (string)($variables[$varKey] ?? '');
-                        if ($val === '') $val = ' '; // Meta API doesn't like empty strings for parameters
-                        $params[] = ["type" => "text", "text" => $val];
-                    }
-                }
-
-                $payload = [
-                    "messaging_product" => "whatsapp",
-                    "recipient_type"    => "individual",
-                    "to"                => $cleanNumber,
-                    "type"              => "template",
-                    "template"          => [
-                        "name"     => $abandonTemplate,
-                        "language" => ["code" => trim($this->settings['meta_template_lang'] ?? 'en')],
-                        "components" => []
-                    ]
-                ];
-                
-                if (!empty($params)) {
-                    $payload["template"]["components"][] = [
-                        "type" => "body",
-                        "parameters" => $params
-                    ];
-                }
-            } else {
-                // Text mode fallback
-                $payload = [
-                    "messaging_product" => "whatsapp",
-                    "recipient_type"    => "individual",
-                    "to"                => $cleanNumber,
-                    "type"              => "text",
-                    "text"              => ["preview_url" => true, "body" => $message]
+            $payload = [
+                "messaging_product" => "whatsapp",
+                "recipient_type"    => "individual",
+                "to"                => $cleanNumber,
+                "type"              => "template",
+                "template"          => [
+                    "name"     => $abandonTemplate,
+                    "language" => ["code" => trim($this->settings['meta_template_lang'] ?? 'en')],
+                    "components" => []
+                ]
+            ];
+            
+            if (!empty($params)) {
+                $payload["template"]["components"][] = [
+                    "type" => "body",
+                    "parameters" => $params
                 ];
             }
 
@@ -364,15 +374,16 @@ class AbandonedCartService {
                 return ['success' => false, 'error' => "cURL Error: " . $curlError];
             }
 
-            $success = ($httpCode == 200);
             $metaResponse = json_decode($result, true);
-            $statusMsg = $success
-                ? 'Sent via Meta API (Cart Recovery) ID:' . substr($metaResponse['messages'][0]['id'] ?? 'unknown', 0, 20)
-                : 'Failed API (HTTP ' . $httpCode . '): ' . substr($metaResponse['error']['message'] ?? 'Unknown error', 0, 100);
+            $isMetaSuccess = ($httpCode == 200) && isset($metaResponse['messages'][0]['id']) && empty($metaResponse['error']);
+
+            $statusMsg = $isMetaSuccess
+                ? 'Sent via Meta API (Cart Recovery) ID:' . substr($metaResponse['messages'][0]['id'], 0, 20)
+                : 'Failed API (HTTP ' . $httpCode . '): ' . substr($metaResponse['error']['message'] ?? 'Unknown Meta API error', 0, 120);
 
             $this->logWhatsApp($cartId, $cleanNumber, $message, 'api', $statusMsg);
 
-            return ['success' => $success, 'error' => $success ? null : $statusMsg];
+            return ['success' => $isMetaSuccess, 'error' => $isMetaSuccess ? null : $statusMsg];
         }
 
         // Web mode fallback — generate wa.me link
@@ -380,12 +391,11 @@ class AbandonedCartService {
         $this->logWhatsApp($cartId, $cleanNumber, $message, 'web', 'Generated wa.me link');
         error_log("[AbandonedCart] Web mode link generated for cart #{$cartId}: {$waLink}");
 
-        if ($level > 0) {
-            // Auto-reminders cannot send automatically over Web Mode without Meta Cloud API
-            return ['success' => false, 'error' => 'Auto reminders require Meta API mode in WhatsApp Notifs Settings. Web Mode only creates manual wa.me links.', 'link' => $waLink];
+        if ($isManual) {
+            return ['success' => true, 'link' => $waLink, 'message' => 'WhatsApp Web link generated successfully.'];
         }
 
-        return ['success' => true, 'link' => $waLink];
+        return ['success' => false, 'error' => 'Auto reminders require Meta API mode in WhatsApp Notifs Settings. Web Mode only creates manual wa.me links.', 'link' => $waLink];
     }
 
     /**
