@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-header('Content-Type: application/json');
+ob_start(); // Prevent headers-already-sent from session_setup.php
 
 define('BASE_PATH', dirname(__DIR__, 3));
 require_once BASE_PATH . '/config/config.php';
@@ -12,6 +12,10 @@ require_once BASE_PATH . '/config/DbConnection.php';
 
 AuthMiddleware::check($conn);
 $pdo = DbConnection::getInstance();
+
+// Clean buffer and send JSON header after all includes
+if (ob_get_length()) ob_clean();
+header('Content-Type: application/json; charset=UTF-8');
 
 try {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -25,7 +29,7 @@ try {
     }
 
     $action = trim($_POST['action'] ?? '');
-    $userId = $_SESSION['user_id'] ?? 1;
+    $userId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
 
     switch ($action) {
         case 'save':
@@ -40,11 +44,19 @@ try {
                 throw new Exception('Schedule name is required.');
             }
 
+            // Validate schedule_type against allowed ENUM values
+            $validTypes = ['every_30min','every_1hr','every_2hr','every_6hr','daily','weekly','monthly','custom'];
+            if (!in_array($scheduleType, $validTypes, true)) {
+                $scheduleType = 'every_1hr'; // Safe fallback
+            }
+
             if (is_array($rawPlatforms)) {
-                $platformsJson = json_encode(array_values(array_filter($rawPlatforms)));
+                $filteredPlatforms = array_values(array_filter(array_map('strtolower', $rawPlatforms)));
+                $platformsJson = json_encode($filteredPlatforms); // Empty array = all platforms
             } else {
                 $platformsJson = json_encode([]);
             }
+
 
             if ($id) {
                 // Update
@@ -89,5 +101,6 @@ try {
             throw new Exception('Invalid action requested.');
     }
 } catch (Exception $e) {
+    if (ob_get_length()) ob_clean();
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }

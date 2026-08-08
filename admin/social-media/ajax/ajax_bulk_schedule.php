@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-header('Content-Type: application/json');
+ob_start(); // Buffer output to prevent session_setup.php header issues
 
 define('BASE_PATH', dirname(__DIR__, 3));
 require_once BASE_PATH . '/config/config.php';
@@ -15,6 +15,10 @@ use Admin\SocialMedia\Services\TemplateEngine;
 
 AuthMiddleware::check($conn);
 $pdo = DbConnection::getInstance();
+
+// Clean output buffer and set JSON header after all includes are done
+if (ob_get_length()) ob_clean();
+header('Content-Type: application/json; charset=UTF-8');
 
 try {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -33,14 +37,28 @@ try {
     $cta = trim($_POST['cta'] ?? '');
     $hashtags = trim($_POST['hashtags'] ?? '');
     $intervalMinutes = filter_input(INPUT_POST, 'interval_minutes', FILTER_VALIDATE_INT) ?: 15;
+    if ($intervalMinutes < 1) $intervalMinutes = 5;
 
-    // Parse platforms
-    $rawPlatforms = $_POST['platforms'] ?? [];
-    if (is_string($rawPlatforms)) {
-        $platforms = json_decode($rawPlatforms, true) ?: [];
-    } else {
-        $platforms = (array)$rawPlatforms;
+    // Parse platforms — handle both JSON string (from JS) and PHP array (from form checkboxes)
+    // JS sends: formData.append('platforms', JSON.stringify([...])) AND checkboxes also send platforms[]
+    // We prioritize JSON string if present, fallback to array
+    $platforms = [];
+    $rawPlatformJson = null;
+    // Check for JSON-encoded platforms key (set by JS)
+    if (!empty($_POST['platforms']) && is_string($_POST['platforms'])) {
+        $decoded = json_decode($_POST['platforms'], true);
+        if (is_array($decoded) && !empty($decoded)) {
+            $rawPlatformJson = $decoded;
+        }
     }
+    // Also check platforms[] array from form (checkboxes)
+    $rawPlatformsArray = [];
+    if (isset($_POST['platforms']) && is_array($_POST['platforms'])) {
+        $rawPlatformsArray = $_POST['platforms'];
+    }
+    // Merge: JSON takes priority, fallback to checkbox array
+    $merged = array_unique(array_merge($rawPlatformJson ?? [], $rawPlatformsArray));
+    $platforms = array_values(array_filter(array_map(fn($p) => strtolower(trim($p)), $merged)));
 
     if (empty($platforms)) {
         throw new Exception('Please select at least one social media platform.');
@@ -49,15 +67,21 @@ try {
     // 1. Fetch matching products
     $products = [];
     if ($filterType === 'all') {
-        $stmt = $pdo->query("SELECT * FROM products");
+        $stmt = $pdo->query("SELECT * FROM products WHERE is_active = 1 OR is_active IS NULL ORDER BY id ASC");
         $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } elseif ($filterType === 'category' && !empty($filterValue)) {
-        $stmt = $pdo->prepare("SELECT * FROM products WHERE category_id = ?");
-        $stmt->execute([$filterValue]);
+        $catVal = trim((string)$filterValue);
+        // Support both category_id (int) and category name (string)
+        if (ctype_digit($catVal)) {
+            $stmt = $pdo->prepare("SELECT * FROM products WHERE category_id = ?");
+        } else {
+            $stmt = $pdo->prepare("SELECT * FROM products WHERE category = ?");
+        }
+        $stmt->execute([$catVal]);
         $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } elseif ($filterType === 'brand' && !empty($filterValue)) {
         $stmt = $pdo->prepare("SELECT * FROM products WHERE brand = ?");
-        $stmt->execute([$filterValue]);
+        $stmt->execute([trim((string)$filterValue)]);
         $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } elseif ($filterType === 'selected') {
         $selectedIds = is_array($filterValue) ? $filterValue : json_decode($filterValue ?: '[]', true);
@@ -191,5 +215,7 @@ try {
     ]);
 
 } catch (Exception $e) {
+    if (ob_get_length()) ob_clean();
+    http_response_code(400);
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }

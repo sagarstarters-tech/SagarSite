@@ -352,18 +352,42 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const formData = new FormData(this);
 
-        // Gather platforms array
-        const selectedPlatforms = Array.from(checkedPlatforms).map(c => c.value);
-        formData.append('platforms', JSON.stringify(selectedPlatforms));
+        // Remove old checkbox-submitted platforms[] from FormData to avoid duplicates
+        // Then add the clean JSON-encoded platforms array
+        formData.delete('platforms');
+        formData.delete('platforms[]');
+        const selectedPlatformValues = Array.from(checkedPlatforms).map(c => c.value);
+        formData.append('platforms', JSON.stringify(selectedPlatformValues));
 
-        // Gather filter_value
-        const filterVal = document.querySelector('input[name="filter_type"]:checked').value;
-        if (filterVal === 'category') {
-            formData.append('filter_value', document.getElementById('categorySelect').value);
-        } else if (filterVal === 'brand') {
-            formData.append('filter_value', document.getElementById('brandSelect').value);
-        } else if (filterVal === 'selected') {
+        // Gather filter_value based on selected filter type
+        const filterType = document.querySelector('input[name="filter_type"]:checked').value;
+        formData.delete('filter_value'); // Ensure no duplicates
+        if (filterType === 'category') {
+            const catVal = document.getElementById('categorySelect').value;
+            if (!catVal) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane me-2"></i> Confirm & Schedule Posts';
+                alertDiv.innerHTML = '<div class="alert alert-warning mt-3"><i class="fas fa-exclamation-circle me-1"></i> Please select a category first.</div>';
+                return;
+            }
+            formData.append('filter_value', catVal);
+        } else if (filterType === 'brand') {
+            const brandVal = document.getElementById('brandSelect').value;
+            if (!brandVal) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane me-2"></i> Confirm & Schedule Posts';
+                alertDiv.innerHTML = '<div class="alert alert-warning mt-3"><i class="fas fa-exclamation-circle me-1"></i> Please select a brand first.</div>';
+                return;
+            }
+            formData.append('filter_value', brandVal);
+        } else if (filterType === 'selected') {
             const manualIds = Array.from(document.querySelectorAll('.manual-product-check:checked')).map(c => c.value);
+            if (manualIds.length === 0) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane me-2"></i> Confirm & Schedule Posts';
+                alertDiv.innerHTML = '<div class="alert alert-warning mt-3"><i class="fas fa-exclamation-circle me-1"></i> Please select at least one product.</div>';
+                return;
+            }
             formData.append('filter_value', JSON.stringify(manualIds));
         }
 

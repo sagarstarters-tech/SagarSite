@@ -106,12 +106,34 @@ try {
 
             if ($action === 'bulk_delete') {
                 $pdo->query("DELETE FROM sm_queue WHERE id IN ($idList)");
+                $response['message'] = 'Selected items deleted.';
             } elseif ($action === 'bulk_approve') {
-                $pdo->query("UPDATE sm_queue SET status = 'scheduled' WHERE id IN ($idList) AND status = 'pending'");
+                $pdo->query("UPDATE sm_queue SET status = 'scheduled' WHERE id IN ($idList) AND status IN ('pending','failed')");
+                $response['message'] = 'Selected items approved and scheduled.';
             } elseif ($action === 'bulk_cancel') {
-                $pdo->query("UPDATE sm_queue SET status = 'pending' WHERE id IN ($idList) AND status = 'scheduled'");
+                // Cancel moves scheduled back to pending
+                $pdo->query("UPDATE sm_queue SET status = 'pending' WHERE id IN ($idList) AND status IN ('scheduled','publishing')");
+                $response['message'] = 'Selected items moved back to pending.';
             } elseif ($action === 'bulk_retry') {
-                $pdo->query("UPDATE sm_queue SET status = 'scheduled', retry_count = 0 WHERE id IN ($idList)");
+                $pdo->query("UPDATE sm_queue SET status = 'scheduled', retry_count = 0, last_error = NULL, scheduled_at = NOW() WHERE id IN ($idList)");
+                $response['message'] = 'Selected failed items queued for retry.';
+            } elseif ($action === 'bulk_post_now') {
+                // Post each selected item immediately
+                require_once BASE_PATH . '/admin/social-media/services/QueueProcessor.php';
+                $processor = new \Admin\SocialMedia\Services\QueueProcessor();
+                $okCount = 0;
+                $failCount = 0;
+                foreach ($cleanIds as $itemId) {
+                    $stmtItem = $pdo->prepare("SELECT * FROM sm_queue WHERE id = ?");
+                    $stmtItem->execute([$itemId]);
+                    $item = $stmtItem->fetch(PDO::FETCH_ASSOC);
+                    if ($item && $processor->processPost($item)) {
+                        $okCount++;
+                    } else {
+                        $failCount++;
+                    }
+                }
+                $response['message'] = "Posted {$okCount} item(s) successfully" . ($failCount > 0 ? ", {$failCount} failed." : '.');
             }
             $response['success'] = true;
             break;
@@ -128,9 +150,18 @@ try {
         case 'get_preview':
             $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
             if (!$id) throw new Exception('Invalid ID');
-            // Simplified preview logic
+            $stmtPrev = $pdo->prepare("SELECT post_content, post_image_url, post_link, platform FROM sm_queue WHERE id = ?");
+            $stmtPrev->execute([$id]);
+            $prevItem = $stmtPrev->fetch(PDO::FETCH_ASSOC);
             $response['success'] = true;
-            $response['data'] = ['rendered' => "Live preview content for post ID: $id"];
+            $response['data'] = $prevItem ?: ['rendered' => "No content for post ID: $id"];
+            break;
+        case 'reset_stuck_publishing':
+            // Reset posts stuck in 'publishing' state for more than 5 minutes
+            $pdo->query("UPDATE sm_queue SET status = 'scheduled', retry_count = 0 WHERE status = 'publishing' AND updated_at <= DATE_SUB(NOW(), INTERVAL 5 MINUTE)");
+            $affected = $pdo->query("SELECT ROW_COUNT()")->fetchColumn();
+            $response['success'] = true;
+            $response['message'] = "Reset {$affected} stuck publishing item(s) to scheduled.";
             break;
         default:
             throw new Exception('Invalid action');

@@ -153,6 +153,15 @@ $statusBadges = [
                     <button type="button" id="btnDeleteAllQueue" class="btn btn-outline-danger rounded-3 px-3">
                         <i class="fas fa-trash me-1"></i> Delete All
                     </button>
+                    <?php
+                    // Show reset button only if there are stuck publishing items
+                    $stuckCount = (int)$pdo->query("SELECT COUNT(*) FROM sm_queue WHERE status='publishing' AND updated_at <= DATE_SUB(NOW(), INTERVAL 5 MINUTE)")->fetchColumn();
+                    if ($stuckCount > 0):
+                    ?>
+                    <button type="button" id="btnResetStuck" class="btn btn-warning rounded-3 px-3">
+                        <i class="fas fa-sync-alt me-1"></i> Reset <?php echo $stuckCount; ?> Stuck Post(s)
+                    </button>
+                    <?php endif; ?>
                 </div>
 
                 <div class="d-flex gap-2 align-items-center">
@@ -520,6 +529,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             })
             .catch(err => console.error('Auto-runner ping error:', err));
+    }
+
+    // Reset Stuck Publishing Button
+    const btnResetStuck = document.getElementById('btnResetStuck');
+    if (btnResetStuck) {
+        btnResetStuck.addEventListener('click', function() {
+            if (confirm('Reset all stuck publishing posts back to scheduled status?')) {
+                const formData = new FormData();
+                formData.append('_csrf_token', csrfToken);
+                formData.append('action', 'reset_stuck_publishing');
+                fetch('ajax/ajax_queue_actions.php', { method: 'POST', body: formData })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert(data.message || 'Stuck posts reset successfully!');
+                            window.location.reload();
+                        } else {
+                            alert('Reset failed: ' + (data.error || 'Unknown error'));
+                        }
+                    })
+                    .catch(err => alert('Error: ' + err.message));
+            }
+        });
     }
 
     // Run async trigger shortly after DOM load, then repeat every 60 seconds
