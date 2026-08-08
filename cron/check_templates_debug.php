@@ -2,6 +2,7 @@
 /**
  * Diagnostic tool to list approved Meta Cloud API templates and recent logs
  * URL: /cron/check_templates_debug.php?key=sagar_cart_recovery_cron_secret
+ * Optional test send: &test_phone=918573934013
  */
 
 header('Content-Type: application/json; charset=UTF-8');
@@ -22,6 +23,69 @@ if ($key !== $secretKey) {
     http_response_code(403);
     echo json_encode(['error' => 'Access denied']);
     exit;
+}
+
+$testResult = null;
+if (!empty($_GET['test_phone'])) {
+    $phone = preg_replace('/[^0-9]/', '', $_GET['test_phone']);
+    if (strpos($phone, '0') === 0) $phone = ltrim($phone, '0');
+    if (strlen($phone) == 10) $phone = '91' . $phone;
+
+    $set_q = $conn->query("SELECT api_token, phone_number_id FROM whatsapp_settings WHERE id = 1");
+    $waSettings = $set_q ? $set_q->fetch_assoc() : null;
+
+    if ($waSettings && !empty($waSettings['api_token']) && !empty($waSettings['phone_number_id'])) {
+        $token = trim($waSettings['api_token']);
+        $phoneId = trim($waSettings['phone_number_id']);
+        $url = "https://graph.facebook.com/v19.0/{$phoneId}/messages";
+
+        $payload = [
+            "messaging_product" => "whatsapp",
+            "recipient_type"    => "individual",
+            "to"                => $phone,
+            "type"              => "template",
+            "template"          => [
+                "name"     => "reminder_1__gentle_nudge",
+                "language" => ["code" => "en"],
+                "components" => [
+                    [
+                        "type" => "body",
+                        "parameters" => [
+                            ["type" => "text", "text" => "Test Customer"],
+                            ["type" => "text", "text" => "Sample Automatic Motor Starter x1"],
+                            ["type" => "text", "text" => "1,500.00"],
+                            ["type" => "text", "text" => "https://www.sagarstarters.com/recover_cart.php?token=test"]
+                        ]
+                    ]
+                ]
+            ]
+        ];
+
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Authorization: Bearer ' . $token,
+            'Content-Type: application/json'
+        ]);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+        $resStr = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
+        curl_close($ch);
+
+        $testResult = [
+            'sent_to' => $phone,
+            'http_code' => $httpCode,
+            'curl_error' => $curlError,
+            'payload' => $payload,
+            'response' => json_decode($resStr, true)
+        ];
+    } else {
+        $testResult = ['error' => 'Missing Meta API token or Phone Number ID'];
+    }
 }
 
 // Fetch recent abandoned cart logs
@@ -57,6 +121,7 @@ if (file_exists($logPath)) {
 
 echo json_encode([
     'success' => true,
+    'test_result' => $testResult,
     'active_carts' => $activeCarts,
     'recent_wa_logs' => $recentLogs,
     'cart_abandonment_whatsapp_log_tail' => $logContent
