@@ -1,6 +1,6 @@
 <?php
 /**
- * Diagnostic tool to list approved Meta Cloud API templates
+ * Diagnostic tool to list approved Meta Cloud API templates and recent logs
  * URL: /cron/check_templates_debug.php?key=sagar_cart_recovery_cron_secret
  */
 
@@ -24,79 +24,40 @@ if ($key !== $secretKey) {
     exit;
 }
 
-$set_q = $conn->query("SELECT api_token, phone_number_id, waba_id FROM whatsapp_settings WHERE id = 1");
-$settings = $set_q->fetch_assoc();
-
-if (empty($settings['api_token']) || empty($settings['phone_number_id'])) {
-    echo json_encode(['error' => 'API token or Phone Number ID is missing in whatsapp_settings']);
-    exit;
-}
-
-$token = trim($settings['api_token']);
-$phone_id = trim($settings['phone_number_id']);
-$waba_id = trim($settings['waba_id'] ?? '');
-
-if (empty($waba_id)) {
-    $ch = curl_init("https://graph.facebook.com/v19.0/{$phone_id}?fields=whatsapp_business_account_id");
-    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $token]);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    $res = curl_exec($ch);
-    $data = json_decode($res, true);
-    $waba_id = $data['whatsapp_business_account_id'] ?? '';
-    curl_close($ch);
-}
-
-if (empty($waba_id)) {
-    echo json_encode(['error' => 'Could not detect WABA ID. Please enter WABA ID in WhatsApp Notifs Settings.']);
-    exit;
-}
-
-$ch = curl_init("https://graph.facebook.com/v19.0/{$waba_id}/message_templates?limit=100");
-curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $token]);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-$res = curl_exec($ch);
-$templates_data = json_decode($res, true);
-curl_close($ch);
-
-if (isset($templates_data['error'])) {
-    echo json_encode(['error' => $templates_data['error']['message'] ?? 'Meta API error']);
-    exit;
-}
-
-$approved = [];
-if (!empty($templates_data['data'])) {
-    foreach ($templates_data['data'] as $tpl) {
-        if (($tpl['status'] ?? '') === 'APPROVED') {
-            $approved[] = [
-                'name' => $tpl['name'],
-                'language' => $tpl['language'],
-                'category' => $tpl['category'],
-                'components' => $tpl['components'] ?? []
-            ];
-        }
+// Fetch recent abandoned cart logs
+$recentLogs = [];
+$res = $conn->query("SELECT * FROM abandoned_cart_wa_logs ORDER BY id DESC LIMIT 20");
+if ($res) {
+    while ($row = $res->fetch_assoc()) {
+        $recentLogs[] = $row;
     }
 }
 
-// Fetch current abandoned cart settings
-$ac_settings = [];
-$res = $conn->query("SELECT setting_key, setting_value FROM abandoned_cart_settings");
+// Fetch active carts
+$activeCarts = [];
+$res = $conn->query("SELECT ac.*, u.name as uname, u.phone as uphon FROM abandoned_carts ac LEFT JOIN users u ON ac.user_id = u.id ORDER BY ac.id DESC LIMIT 10");
 if ($res) {
     while ($row = $res->fetch_assoc()) {
-        $ac_settings[$row['setting_key']] = $row['setting_value'];
+        $activeCarts[] = $row;
+    }
+}
+
+// Read last 2000 bytes of cart_abandonment_whatsapp.log
+$logContent = '';
+$logPath = __DIR__ . '/../logs/cart_abandonment_whatsapp.log';
+if (file_exists($logPath)) {
+    $size = filesize($logPath);
+    $fp = fopen($logPath, 'r');
+    if ($fp) {
+        if ($size > 3000) fseek($fp, $size - 3000);
+        $logContent = fread($fp, 3000);
+        fclose($fp);
     }
 }
 
 echo json_encode([
     'success' => true,
-    'waba_id' => $waba_id,
-    'abandoned_cart_settings' => [
-        'is_enabled' => $ac_settings['is_enabled'] ?? '',
-        'reminder_1_delay' => $ac_settings['reminder_1_delay'] ?? '',
-        'meta_template_1' => $ac_settings['meta_template_1'] ?? '',
-        'meta_template_2' => $ac_settings['meta_template_2'] ?? '',
-        'meta_template_3' => $ac_settings['meta_template_3'] ?? '',
-        'meta_template_4' => $ac_settings['meta_template_4'] ?? '',
-        'meta_template_lang' => $ac_settings['meta_template_lang'] ?? '',
-    ],
-    'approved_templates' => $approved
+    'active_carts' => $activeCarts,
+    'recent_wa_logs' => $recentLogs,
+    'cart_abandonment_whatsapp_log_tail' => $logContent
 ], JSON_PRETTY_PRINT);
