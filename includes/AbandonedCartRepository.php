@@ -290,33 +290,41 @@ class AbandonedCartRepository {
      * @param int $delayMinutes Delay in minutes
      */
     public function getDueReminders($level, $delayMinutes) {
-        $col = "reminder_{$level}_sent";
         if (!in_array($level, [1, 2, 3, 4])) return [];
+        $col = "reminder_{$level}_sent";
+        $delayMinutes = max(1, intval($delayMinutes));
 
-        $prevColCheck = "";
-        // Level 1: use created_at as time base (NOT updated_at) so that
-        // cart edits don't restart the delay window and reset R1 eligibility.
-        $timeBase = "ac.created_at";
+        if ($level === 1) {
+            $sql = "SELECT ac.*, u.name AS customer_name, u.phone AS customer_phone, u.email AS customer_email
+                    FROM abandoned_carts ac
+                    LEFT JOIN users u ON ac.user_id = u.id
+                    WHERE ac.status = 'active'
+                      AND ac.{$col} IS NULL
+                      AND ac.created_at <= DATE_SUB(NOW(), INTERVAL ? MINUTE)
+                    ORDER BY ac.created_at ASC
+                    LIMIT 50";
 
-        if ($level > 1) {
+            $stmt = $this->conn->prepare($sql);
+            if (!$stmt) return [];
+            $stmt->bind_param("i", $delayMinutes);
+        } else {
             $prevCol = "reminder_" . ($level - 1) . "_sent";
-            $prevColCheck = " AND ac.{$prevCol} IS NOT NULL";
-            $timeBase = "ac.{$prevCol}"; // Level 2, 3, 4: delay from when PREVIOUS reminder was sent
+            $sql = "SELECT ac.*, u.name AS customer_name, u.phone AS customer_phone, u.email AS customer_email
+                    FROM abandoned_carts ac
+                    LEFT JOIN users u ON ac.user_id = u.id
+                    WHERE ac.status = 'active'
+                      AND ac.{$col} IS NULL
+                      AND ac.{$prevCol} IS NOT NULL
+                      AND ac.{$prevCol} <= DATE_SUB(NOW(), INTERVAL 1 MINUTE)
+                      AND (ac.created_at <= DATE_SUB(NOW(), INTERVAL ? MINUTE) OR ac.{$prevCol} <= DATE_SUB(NOW(), INTERVAL ? MINUTE))
+                    ORDER BY ac.created_at ASC
+                    LIMIT 50";
+
+            $stmt = $this->conn->prepare($sql);
+            if (!$stmt) return [];
+            $stmt->bind_param("ii", $delayMinutes, $delayMinutes);
         }
 
-        $sql = "SELECT ac.*, u.name AS customer_name, u.phone AS customer_phone, u.email AS customer_email
-                FROM abandoned_carts ac
-                LEFT JOIN users u ON ac.user_id = u.id
-                WHERE ac.status = 'active'
-                  AND ac.{$col} IS NULL
-                  {$prevColCheck}
-                  AND {$timeBase} <= DATE_SUB(NOW(), INTERVAL ? MINUTE)
-                ORDER BY ac.created_at ASC
-                LIMIT 50";
-
-        $stmt = $this->conn->prepare($sql);
-        if (!$stmt) return [];
-        $stmt->bind_param("i", $delayMinutes);
         $stmt->execute();
         $res = $stmt->get_result();
         $carts = [];
@@ -350,7 +358,7 @@ class AbandonedCartRepository {
      */
     public function resetReminders($cartId) {
         $cartId = intval($cartId);
-        $stmt = $this->conn->prepare("UPDATE abandoned_carts SET reminder_1_sent = NULL, reminder_2_sent = NULL, reminder_3_sent = NULL, reminder_4_sent = NULL WHERE id = ?");
+        $stmt = $this->conn->prepare("UPDATE abandoned_carts SET status = 'active', reminder_1_sent = NULL, reminder_2_sent = NULL, reminder_3_sent = NULL, reminder_4_sent = NULL WHERE id = ?");
         if (!$stmt) return false;
         $stmt->bind_param("i", $cartId);
         $result = $stmt->execute();

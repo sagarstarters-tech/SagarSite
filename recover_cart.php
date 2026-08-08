@@ -86,9 +86,6 @@ if (empty($token)) {
             ];
         }
 
-        // Mark cart as recovered
-        $repo->markConverted($userId);
-
         $siteUrl = defined('SITE_URL') ? rtrim(SITE_URL, '/') : '';
         if (!empty($_SESSION['cart'])) {
             header('Location: ' . $siteUrl . '/checkout.php');
