@@ -3,10 +3,12 @@
  * Social Media System Diagnostic
  * Checks: DB tables, schedule state, queue state, adapters
  */
-define('BASE_PATH', dirname(__DIR__));
+define('BASE_PATH', __DIR__);
+require_once BASE_PATH . '/includes/session_setup.php';
 require_once BASE_PATH . '/config/config.php';
 require_once BASE_PATH . '/includes/db_connect.php';
 require_once BASE_PATH . '/config/DbConnection.php';
+
 
 header('Content-Type: text/plain; charset=UTF-8');
 
