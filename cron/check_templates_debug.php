@@ -1,8 +1,7 @@
 <?php
 /**
- * Diagnostic tool to list approved Meta Cloud API templates and recent logs
- * URL: /cron/check_templates_debug.php?key=sagar_cart_recovery_cron_secret
- * Optional test send: &test_phone=918573934013
+ * Diagnostic tool to list approved Meta Cloud API templates and test live send
+ * URL: /cron/check_templates_debug.php?key=sagar_cart_recovery_cron_secret&phone=918573934013
  */
 
 header('Content-Type: application/json; charset=UTF-8');
@@ -25,9 +24,11 @@ if ($key !== $secretKey) {
     exit;
 }
 
+$testPhoneInput = $_GET['phone'] ?? $_GET['test_phone'] ?? '';
 $testResult = null;
-if (!empty($_GET['test_phone'])) {
-    $phone = preg_replace('/[^0-9]/', '', $_GET['test_phone']);
+
+if (!empty($testPhoneInput)) {
+    $phone = preg_replace('/[^0-9]/', '', $testPhoneInput);
     if (strpos($phone, '0') === 0) $phone = ltrim($phone, '0');
     if (strlen($phone) == 10) $phone = '91' . $phone;
 
@@ -52,7 +53,7 @@ if (!empty($_GET['test_phone'])) {
                         "type" => "body",
                         "parameters" => [
                             ["type" => "text", "text" => "Test Customer"],
-                            ["type" => "text", "text" => "Sample Automatic Motor Starter x1"],
+                            ["type" => "text", "text" => "Sample Motor Starter x1"],
                             ["type" => "text", "text" => "1,500.00"],
                             ["type" => "text", "text" => "https://www.sagarstarters.com/recover_cart.php?token=test"]
                         ]
