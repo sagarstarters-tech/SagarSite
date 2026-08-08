@@ -168,6 +168,9 @@ class InstagramAdapter implements PlatformAdapterInterface {
 
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 25);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         
         if ($method === 'POST') {
             curl_setopt($ch, CURLOPT_POST, true);
@@ -187,6 +190,6 @@ class InstagramAdapter implements PlatformAdapterInterface {
         }
 
         $decoded = json_decode($response, true);
-        return $decoded ?? ['error' => ['message' => 'Invalid JSON response']];
+        return is_array($decoded) ? $decoded : ['error' => ['message' => 'Invalid or empty JSON response']];
     }
 }

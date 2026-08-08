@@ -253,7 +253,7 @@ class LinkedInAdapter implements PlatformAdapterInterface {
         $uploadUrl = null;
         $assetUrn  = null;
 
-        if (isset($res['value']['uploadMechanism']['com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest']['uploadUrl'])) {
+        if (is_array($res) && isset($res['value']['uploadMechanism']['com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest']['uploadUrl'])) {
             $uploadUrl = $res['value']['uploadMechanism']['com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest']['uploadUrl'];
             $assetUrn  = $res['value']['asset'] ?? null;
         }
@@ -273,6 +273,8 @@ class LinkedInAdapter implements PlatformAdapterInterface {
             'Content-Type: application/octet-stream'
         ]);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 25);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_exec($ch);
         $putCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -295,6 +297,9 @@ class LinkedInAdapter implements PlatformAdapterInterface {
 
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 25);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         
         if ($method === 'POST') {
             curl_setopt($ch, CURLOPT_POST, true);
@@ -320,6 +325,6 @@ class LinkedInAdapter implements PlatformAdapterInterface {
         }
 
         $decoded = json_decode($response, true);
-        return $decoded ?? ['error' => ['message' => 'Invalid JSON response']];
+        return is_array($decoded) ? $decoded : ['error' => ['message' => 'Invalid or empty JSON response']];
     }
 }

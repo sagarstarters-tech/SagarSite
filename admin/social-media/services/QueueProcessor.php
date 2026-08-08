@@ -126,7 +126,7 @@ class QueueProcessor {
                 return false;
             }
             
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->updateStatus($id, 'failed', $e->getMessage());
             $this->retryPost($id);
             
