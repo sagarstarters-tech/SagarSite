@@ -67,7 +67,7 @@ try {
     // 1. Fetch matching products
     $products = [];
     if ($filterType === 'all') {
-        $stmt = $pdo->query("SELECT * FROM products WHERE is_active = 1 OR is_active IS NULL ORDER BY id ASC");
+        $stmt = $pdo->query("SELECT * FROM products ORDER BY id ASC");
         $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } elseif ($filterType === 'category' && !empty($filterValue)) {
         $catVal = trim((string)$filterValue);
