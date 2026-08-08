@@ -210,6 +210,14 @@ class LinkedInAdapter implements PlatformAdapterInterface {
         return $platformPostId ? "https://www.linkedin.com/feed/update/$platformPostId" : '';
     }
 
+    public function getPlatformLimits(): array {
+        return [
+            'max_chars' => 3000,
+            'max_images' => 9,
+            'rate_limit' => '100 posts/24hr'
+        ];
+    }
+
     private function uploadImageAsset(string $accessToken, string $personUrn, string $imageUrl): ?string {
         // 1. Download product image binary data
         $ch = curl_init();
