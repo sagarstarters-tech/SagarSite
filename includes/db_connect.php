@@ -67,3 +67,19 @@ try {
 
 // ── Global Currency Symbol ───────────────────────────────────
 $global_currency = !empty($global_settings['currency_symbol']) ? $global_settings['currency_symbol'] : '₹';
+
+// ── Cart Abandonment Background Auto-Trigger ──────────────────
+if (!defined('DISABLE_AUTO_REMINDER_TRIGGER')) {
+    try {
+        $lastRunTs = 0;
+        $ac_res = $conn->query("SELECT setting_value FROM abandoned_cart_settings WHERE setting_key = 'last_auto_run' LIMIT 1");
+        if ($ac_res && $ac_row = $ac_res->fetch_assoc()) {
+            $lastRunTs = intval($ac_row['setting_value']);
+        }
+        if ((time() - $lastRunTs) >= 60) { // 60 seconds throttle
+            $conn->query("INSERT INTO abandoned_cart_settings (setting_key, setting_value) VALUES ('last_auto_run', '" . time() . "') ON DUPLICATE KEY UPDATE setting_value = '" . time() . "'");
+            require_once __DIR__ . '/AbandonedCartService.php';
+            (new AbandonedCartService($conn))->processAutoReminders();
+        }
+    } catch (\Throwable $e) {}
+}
