@@ -42,7 +42,7 @@ if ($res) {
     }
 }
 
-// Read last 2000 bytes of cart_abandonment_whatsapp.log
+// Read last 3000 bytes of cart_abandonment_whatsapp.log
 $logContent = '';
 $logPath = __DIR__ . '/../logs/cart_abandonment_whatsapp.log';
 if (file_exists($logPath)) {
