@@ -64,10 +64,21 @@ class AbandonedCartService {
 
         $this->repo->createOrUpdate($userId, $cart, $total, $productNames, $firstImage);
 
-        // Fallback: trigger background auto-reminders check if 3+ minutes since last check
-        if (empty($_SESSION['ac_last_cron_time']) || (time() - $_SESSION['ac_last_cron_time'] > 180)) {
-            $_SESSION['ac_last_cron_time'] = time();
+        // Fallback: trigger background auto-reminders check using a DB-based global timestamp.
+        // This fires for ANY user visiting the site (not session-scoped), ensuring reminders
+        // run even when the cron job doesn't execute or is late.
+        $lastRunTs = 0;
+        try {
+            $res = $this->conn->query("SELECT setting_value FROM abandoned_cart_settings WHERE setting_key = 'last_auto_run' LIMIT 1");
+            if ($res && $row = $res->fetch_assoc()) {
+                $lastRunTs = intval($row['setting_value']);
+            }
+        } catch (\Throwable $e) {}
+
+        if ((time() - $lastRunTs) > 300) { // 5 minutes throttle (global, not per-session)
             try {
+                // Update timestamp first to prevent concurrent execution
+                $this->conn->query("INSERT INTO abandoned_cart_settings (setting_key, setting_value) VALUES ('last_auto_run', '" . time() . "') ON DUPLICATE KEY UPDATE setting_value = '" . time() . "'");
                 $this->processAutoReminders();
             } catch (\Throwable $e) {}
         }
@@ -147,7 +158,7 @@ class AbandonedCartService {
      */
     public function sendReminder($cartId, $level = 0) {
         $cart = $this->repo->getById($cartId);
-        if (!$cart) return false;
+        if (!$cart) return ['success' => false, 'error' => 'Cart not found'];
 
         // Auto-detect level if not specified
         if ($level <= 0) {
@@ -155,7 +166,7 @@ class AbandonedCartService {
             elseif (empty($cart['reminder_2_sent'])) $level = 2;
             elseif (empty($cart['reminder_3_sent'])) $level = 3;
             elseif (empty($cart['reminder_4_sent'])) $level = 4;
-            else return false; // All reminders already sent
+            else return ['success' => false, 'error' => 'All reminders already sent']; // All done
         }
 
         // Auto-generate recovery token if missing (for legacy database records)

@@ -157,7 +157,7 @@ class AbandonedCartRepository {
             'reminder_1_message', 'reminder_2_message', 'reminder_3_message', 'reminder_4_message',
             'coupon_discount_percent', 'coupon_validity_hours', 'auto_expire_days',
             'meta_template_1', 'meta_template_2', 'meta_template_3', 'meta_template_4', 'meta_template_lang',
-            'cron_secret_key'
+            'cron_secret_key', 'last_auto_run'
         ];
         if (!in_array($key, $allowed)) return false;
 
@@ -194,8 +194,8 @@ class AbandonedCartRepository {
         }
         $token = bin2hex(random_bytes(32));
 
-        // Check if active record exists
-        $stmt = $this->conn->prepare("SELECT id, cart_data FROM abandoned_carts WHERE user_id = ? AND status = 'active' LIMIT 1");
+        // Check if active record exists (fetch reminder timestamps too)
+        $stmt = $this->conn->prepare("SELECT id, cart_data, reminder_1_sent, reminder_2_sent, reminder_3_sent, reminder_4_sent FROM abandoned_carts WHERE user_id = ? AND status = 'active' LIMIT 1");
         if (!$stmt) return false;
         $stmt->bind_param("i", $userId);
         $stmt->execute();
@@ -209,8 +209,12 @@ class AbandonedCartRepository {
                 return $existing['id'];
             }
 
-            // 2. Cart content changed (user added/removed items) -> Update record & reset reminder timers
-            $stmt = $this->conn->prepare("UPDATE abandoned_carts SET cart_data = ?, cart_total = ?, product_names = ?, product_image = ?, recovery_token = ?, reminder_1_sent = NULL, reminder_2_sent = NULL, reminder_3_sent = NULL, reminder_4_sent = NULL, updated_at = NOW() WHERE id = ?");
+            // 2. Cart content changed (user added/removed items) -> Update cart data ONLY.
+            //    IMPORTANT: Do NOT reset already-sent reminders — preserve reminder timestamps
+            //    so that R2/R3/R4 can still be sent based on previously sent R1/R2/R3 times.
+            //    Only reset reminders that haven't been sent yet (they are already NULL).
+            //    We do NOT update updated_at here so Level-1 delay window is not restarted.
+            $stmt = $this->conn->prepare("UPDATE abandoned_carts SET cart_data = ?, cart_total = ?, product_names = ?, product_image = ?, recovery_token = ? WHERE id = ?");
             if (!$stmt) return false;
             $stmt->bind_param("sdsssi", $cartJson, $cartTotal, $productNames, $productImage, $token, $existing['id']);
             $result = $stmt->execute();
@@ -290,7 +294,9 @@ class AbandonedCartRepository {
         if (!in_array($level, [1, 2, 3, 4])) return [];
 
         $prevColCheck = "";
-        $timeBase = "ac.updated_at"; // Level 1: delay from when cart was last updated/abandoned
+        // Level 1: use created_at as time base (NOT updated_at) so that
+        // cart edits don't restart the delay window and reset R1 eligibility.
+        $timeBase = "ac.created_at";
 
         if ($level > 1) {
             $prevCol = "reminder_" . ($level - 1) . "_sent";
