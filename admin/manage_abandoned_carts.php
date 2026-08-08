@@ -660,8 +660,8 @@ button.ac-btn-white:hover {
                 <span class="input-group-text bg-white border-end-0 text-muted rounded-start-3"><i class="fas fa-search"></i></span>
                 <input type="text" class="form-control border-start-0 ps-0 rounded-end-3" id="searchKeyword" placeholder="Search customer name or phone..." onkeypress="if(event.key==='Enter') loadCarts(1)">
             </div>
-            <button class="btn btn-white border rounded-3 p-2 px-3 shadow-sm" onclick="refreshTableAndStats()" title="Refresh list">
-                <i class="fas fa-sync-alt text-muted"></i>
+            <button class="btn btn-white border rounded-3 p-2 px-3 shadow-sm" onclick="refreshTableAndStats()" title="Refresh list (Auto-refreshes every 60s)">
+                <i class="fas fa-sync-alt text-muted" id="refreshSpinIcon"></i>
             </button>
         </div>
     </div>
@@ -1211,12 +1211,24 @@ function refreshStats() {
 }
 
 function refreshTableAndStats() {
+    const icon = document.getElementById('refreshSpinIcon');
+    if (icon) icon.classList.add('fa-spin');
+
     loadCarts(currentPage);
     refreshStats();
+
+    setTimeout(function() {
+        if (icon) icon.classList.remove('fa-spin');
+    }, 1000);
 }
 
 $(document).ready(function() {
     loadCarts(1);
+
+    // Auto-refresh table data & stats every 60 seconds (1 minute)
+    setInterval(function() {
+        refreshTableAndStats();
+    }, 60000);
 });
 
 // Meta Templates Sync
