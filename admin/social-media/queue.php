@@ -289,10 +289,50 @@ $statusBadges = [
                                     </td>
                                     <td class="text-end">
                                         <div class="d-flex justify-content-end align-items-center gap-1">
-                                             <?php if (strtolower($item['status']) === 'posted' && !empty($item['platform_post_id'])): 
-                                                 $postUrl = (strpos($item['platform_post_id'], 'http') === 0) 
-                                                     ? $item['platform_post_id'] 
-                                                     : ($pKey === 'linkedin' ? 'https://www.linkedin.com/feed/update/' . $item['platform_post_id'] : '#');
+                                             <?php if (strtolower($item['status']) === 'posted'): 
+                                                 $postUrl = '#';
+                                                 $pPostId = trim($item['platform_post_id'] ?? '');
+
+                                                 if (!empty($pPostId)) {
+                                                     if (strpos($pPostId, 'http://') === 0 || strpos($pPostId, 'https://') === 0) {
+                                                         $postUrl = $pPostId;
+                                                     } else {
+                                                         switch ($pKey) {
+                                                             case 'facebook':
+                                                                 $parts = explode('_', $pPostId);
+                                                                 if (count($parts) === 2) {
+                                                                     $postUrl = "https://facebook.com/{$parts[0]}/posts/{$parts[1]}";
+                                                                 } else {
+                                                                     $postUrl = "https://facebook.com/{$pPostId}";
+                                                                 }
+                                                                 break;
+                                                             case 'linkedin':
+                                                                 $postUrl = "https://www.linkedin.com/feed/update/{$pPostId}";
+                                                                 break;
+                                                             case 'instagram':
+                                                                 $postUrl = "https://www.instagram.com/p/{$pPostId}/";
+                                                                 break;
+                                                             case 'twitter':
+                                                             case 'x':
+                                                                 $postUrl = "https://x.com/i/web/status/{$pPostId}";
+                                                                 break;
+                                                             case 'telegram':
+                                                                 $postUrl = "https://t.me/{$pPostId}";
+                                                                 break;
+                                                             case 'pinterest':
+                                                                 $postUrl = "https://www.pinterest.com/pin/{$pPostId}/";
+                                                                 break;
+                                                             default:
+                                                                 $postUrl = "https://facebook.com/{$pPostId}";
+                                                                 break;
+                                                         }
+                                                     }
+                                                 } else if ($pKey === 'facebook') {
+                                                     $postUrl = 'https://www.facebook.com';
+                                                 } else if ($pKey === 'linkedin') {
+                                                     $postUrl = 'https://www.linkedin.com';
+                                                 }
+
                                                  if ($postUrl !== '#'):
                                              ?>
                                                  <a href="<?php echo htmlspecialchars($postUrl); ?>" target="_blank" class="btn btn-sm btn-outline-primary px-2 py-1 shadow-sm" title="View Published Post">
