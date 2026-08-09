@@ -52,8 +52,9 @@ class PinterestAdapter implements PlatformAdapterInterface {
         ]), $headers);
 
         if (isset($res['error'])) {
+            $errMsg = $res['error_description'] ?? $res['message'] ?? (is_string($res['error']) ? $res['error'] : json_encode($res['error']));
             error_log('Pinterest Auth Error: ' . json_encode($res));
-            return ['error' => 'Authentication failed'];
+            return ['error' => 'Pinterest Auth Error: ' . $errMsg];
         }
         
         return [

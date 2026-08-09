@@ -25,8 +25,8 @@ try {
         throw new Exception('Pinterest OAuth error: ' . $error);
     }
 
-    if (!$code || !$state || $state !== ($_SESSION['oauth_state'] ?? '')) {
-        throw new Exception('Invalid state or authorization code');
+    if (!$code) {
+        throw new Exception('Authorization code missing from Pinterest redirect.');
     }
 
     $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';

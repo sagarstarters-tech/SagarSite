@@ -65,7 +65,11 @@ foreach ($dbAccounts as $acc) {
     $connectedMap[strtolower($acc['platform'])] = $acc;
 }
 
-$baseUrl = rtrim(SITE_URL, '/');
+$protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
+if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+    $protocol = 'https';
+}
+$baseUrl = $protocol . '://' . $_SERVER['HTTP_HOST'];
 
 // Define platforms and their configuration checks
 $platformsConfig = [
