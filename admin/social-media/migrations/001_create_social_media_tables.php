@@ -39,6 +39,13 @@ function runMigration() {
             custom_cron VARCHAR(100) NULL,
             days_of_week JSON NULL,
             time_slots JSON NULL,
+            template_id INT NULL,
+            cta VARCHAR(255) NULL,
+            hashtags TEXT NULL,
+            filter_type VARCHAR(50) DEFAULT 'all',
+            filter_value TEXT NULL,
+            last_run_at DATETIME NULL,
+            next_run_at DATETIME NULL,
             is_active TINYINT(1) DEFAULT 1,
             created_by INT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -170,6 +177,28 @@ function runMigration() {
         } catch (PDOException $e) {
             echo "Error creating table {$name}: " . $e->getMessage() . "<br>\n";
         }
+    }
+
+    // Upgrade sm_schedules table if missing new columns
+    $scheduleColumnsToAdd = [
+        'template_id'  => "INT NULL",
+        'cta'          => "VARCHAR(255) NULL",
+        'hashtags'     => "TEXT NULL",
+        'filter_type'  => "VARCHAR(50) DEFAULT 'all'",
+        'filter_value' => "TEXT NULL",
+        'last_run_at'  => "DATETIME NULL",
+        'next_run_at'  => "DATETIME NULL"
+    ];
+    try {
+        $existingCols = $db->query("DESCRIBE sm_schedules")->fetchAll(PDO::FETCH_COLUMN);
+        foreach ($scheduleColumnsToAdd as $colName => $colDef) {
+            if (!in_array($colName, $existingCols, true)) {
+                $db->exec("ALTER TABLE sm_schedules ADD COLUMN {$colName} {$colDef}");
+                echo "Added column {$colName} to sm_schedules.<br>\n";
+            }
+        }
+    } catch (PDOException $e) {
+        echo "Error upgrading sm_schedules columns: " . $e->getMessage() . "<br>\n";
     }
 
     // Insert Default Templates

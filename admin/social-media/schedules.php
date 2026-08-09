@@ -19,6 +19,27 @@ $csrfToken = csrf_token();
 $stmtSchedules = $pdo->query("SELECT * FROM sm_schedules ORDER BY id DESC");
 $schedules = $stmtSchedules->fetchAll(PDO::FETCH_ASSOC);
 
+// Fetch Templates
+$stmtTemplates = $pdo->query("SELECT id, name, is_default FROM sm_templates WHERE is_active = 1 ORDER BY is_default DESC, name ASC");
+$templates = $stmtTemplates->fetchAll(PDO::FETCH_ASSOC);
+
+// Fetch Categories
+$categories = [];
+try {
+    $stmtCat = $pdo->query("SELECT id, name FROM categories ORDER BY name ASC");
+    $categories = $stmtCat->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    $stmtCat = $pdo->query("SELECT DISTINCT category as name FROM products WHERE category IS NOT NULL AND category != ''");
+    $categories = $stmtCat->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Fetch Brands
+$brands = [];
+try {
+    $stmtBrand = $pdo->query("SELECT DISTINCT brand FROM products WHERE brand IS NOT NULL AND brand != '' ORDER BY brand ASC");
+    $brands = $stmtBrand->fetchAll(PDO::FETCH_COLUMN);
+} catch (PDOException $e) {}
+
 $platformIcons = [
     'facebook' => ['icon' => 'fab fa-facebook', 'color' => '#1877F2', 'name' => 'Facebook'],
     'instagram' => ['icon' => 'fab fa-instagram', 'color' => '#E4405F', 'name' => 'Instagram'],
@@ -47,10 +68,12 @@ $scheduleTypes = [
             <h2 class="fw-bold m-0">Posting Schedules</h2>
             <p class="text-muted small m-0">Create and manage automated posting intervals across social media platforms.</p>
         </div>
-        <button type="button" class="btn btn-primary rounded-pill px-4 shadow-sm" id="btnOpenCreateModal" data-mdb-toggle="modal" data-mdb-target="#scheduleModal" data-bs-toggle="modal" data-bs-target="#scheduleModal">
+        <button type="button" class="btn btn-primary rounded-pill px-4 shadow-sm" id="btnOpenCreateModal">
             <i class="fas fa-plus me-2"></i> Create Schedule
         </button>
     </div>
+
+    <div id="pageAlert"></div>
 
     <?php if (empty($schedules)): ?>
         <div class="card shadow border-0 rounded-4">
@@ -58,7 +81,7 @@ $scheduleTypes = [
                 <i class="fas fa-calendar-times fa-4x text-muted mb-3 d-block"></i>
                 <h4 class="fw-bold text-secondary">No schedules defined yet</h4>
                 <p class="text-muted mb-4">Create a schedule to define automated posting intervals for your products.</p>
-                <button type="button" class="btn btn-primary rounded-pill px-4" id="btnOpenCreateModalEmpty" data-mdb-toggle="modal" data-mdb-target="#scheduleModal" data-bs-toggle="modal" data-bs-target="#scheduleModal">
+                <button type="button" class="btn btn-primary rounded-pill px-4" id="btnOpenCreateModalEmpty">
                     <i class="fas fa-plus me-2"></i> Create Your First Schedule
                 </button>
             </div>
@@ -91,7 +114,7 @@ $scheduleTypes = [
                                     </span>
                                 </div>
 
-                                <div class="mb-4">
+                                <div class="mb-3">
                                     <span class="text-muted small d-block mb-2">Target Platforms:</span>
                                     <div class="d-flex flex-wrap gap-2">
                                         <?php if (empty($pIds)): ?>
@@ -108,18 +131,35 @@ $scheduleTypes = [
                                         <?php endif; ?>
                                     </div>
                                 </div>
+
+                                <div class="border-top pt-2 mt-3">
+                                    <div class="text-muted extra-small mb-1">
+                                        <i class="fas fa-history text-secondary me-1"></i> <strong>Last Run:</strong> 
+                                        <?php echo !empty($sched['last_run_at']) ? date('M d, Y h:i A', strtotime($sched['last_run_at'])) : 'Never'; ?>
+                                    </div>
+                                    <div class="text-muted extra-small">
+                                        <i class="fas fa-hourglass-half text-primary me-1"></i> <strong>Next Run:</strong> 
+                                        <?php echo !empty($sched['next_run_at']) ? date('M d, Y h:i A', strtotime($sched['next_run_at'])) : ($isActive ? 'Due Now / On Cron' : 'Paused'); ?>
+                                    </div>
+                                </div>
                             </div>
 
-                            <div class="pt-3 border-top d-flex justify-content-between align-items-center">
-                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill btn-toggle-status" 
-                                        data-id="<?php echo $sched['id']; ?>">
-                                    <i class="fas <?php echo $isActive ? 'fa-pause text-warning' : 'fa-play text-success'; ?> me-1"></i>
-                                    <?php echo $isActive ? 'Pause' : 'Activate'; ?>
-                                </button>
+                            <div class="pt-3 border-top mt-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                <div class="d-flex gap-1">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill btn-toggle-status" 
+                                            data-id="<?php echo $sched['id']; ?>">
+                                        <i class="fas <?php echo $isActive ? 'fa-pause text-warning' : 'fa-play text-success'; ?> me-1"></i>
+                                        <?php echo $isActive ? 'Pause' : 'Activate'; ?>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-success rounded-pill btn-run-now" 
+                                            data-id="<?php echo $sched['id']; ?>" title="Execute Schedule Now">
+                                        <i class="fas fa-bolt me-1"></i> Run Now
+                                    </button>
+                                </div>
                                 <div class="btn-group">
                                     <button type="button" class="btn btn-sm btn-outline-primary btn-edit-schedule" 
                                             data-schedule='<?php echo htmlspecialchars(json_encode($sched), ENT_QUOTES); ?>'>
-                                        <i class="fas fa-edit"></i> Edit
+                                        <i class="fas fa-edit"></i>
                                     </button>
                                     <button type="button" class="btn btn-sm btn-outline-danger btn-delete-schedule" 
                                             data-id="<?php echo $sched['id']; ?>">
@@ -137,7 +177,7 @@ $scheduleTypes = [
 
 <!-- Modal: Create / Edit Schedule -->
 <div class="modal fade" id="scheduleModal" tabindex="-1" aria-labelledby="scheduleModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 rounded-4 shadow">
             <form id="scheduleForm">
                 <input type="hidden" name="_csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
@@ -146,54 +186,100 @@ $scheduleTypes = [
 
                 <div class="modal-header border-0 pb-0">
                     <h5 class="modal-title fw-bold" id="scheduleModalLabel">Create Posting Schedule</h5>
-                    <button type="button" class="btn-close" data-mdb-dismiss="modal" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4">
-                    <div class="mb-3">
-                        <label for="schedName" class="form-label fw-bold small text-muted">Schedule Name</label>
-                        <input type="text" class="form-control rounded-3" id="schedName" name="name" 
-                               placeholder="e.g. Daily Morning Posts" required>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="schedType" class="form-label fw-bold small text-muted">Posting Frequency</label>
-                        <select class="form-select rounded-3" id="schedType" name="schedule_type" required>
-                            <?php foreach ($scheduleTypes as $typeKey => $typeVal): ?>
-                                <option value="<?php echo $typeKey; ?>"><?php echo htmlspecialchars($typeVal); ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-
-                    <div class="mb-3" id="customIntervalGroup" style="display: none;">
-                        <label for="schedInterval" class="form-label fw-bold small text-muted">Interval (in Minutes)</label>
-                        <input type="number" class="form-control rounded-3" id="schedInterval" name="interval_minutes" value="60" min="5" step="5">
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-bold small text-muted d-block">Target Platforms</label>
-                        <div class="row g-2">
-                            <?php foreach ($platformIcons as $pKey => $pMeta): ?>
-                                <div class="col-6">
-                                    <div class="form-check border rounded-3 p-2 px-3">
-                                        <input class="form-check-input platform-chk" type="checkbox" 
-                                               name="platforms[]" value="<?php echo $pKey; ?>" id="chk_<?php echo $pKey; ?>">
-                                        <label class="form-check-label cursor-pointer fw-semibold small" for="chk_<?php echo $pKey; ?>">
-                                            <i class="<?php echo $pMeta['icon']; ?> me-1" style="color: <?php echo $pMeta['color']; ?>;"></i>
-                                            <?php echo htmlspecialchars($pMeta['name']); ?>
-                                        </label>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="schedName" class="form-label fw-bold small text-muted">Schedule Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control rounded-3" id="schedName" name="name" 
+                                   placeholder="e.g. Daily Morning Posts" required>
                         </div>
-                    </div>
 
-                    <div class="form-check form-switch mt-3">
-                        <input class="form-check-input" type="checkbox" id="schedActive" name="is_active" value="1" checked>
-                        <label class="form-check-label fw-bold small" for="schedActive">Enable / Activate Schedule Immediately</label>
+                        <div class="col-md-6">
+                            <label for="schedType" class="form-label fw-bold small text-muted">Posting Frequency <span class="text-danger">*</span></label>
+                            <select class="form-select rounded-3" id="schedType" name="schedule_type" required>
+                                <?php foreach ($scheduleTypes as $typeKey => $typeVal): ?>
+                                    <option value="<?php echo $typeKey; ?>"><?php echo htmlspecialchars($typeVal); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
+                        <div class="col-md-12" id="customIntervalGroup" style="display: none;">
+                            <label for="schedInterval" class="form-label fw-bold small text-muted">Interval (in Minutes)</label>
+                            <input type="number" class="form-control rounded-3" id="schedInterval" name="interval_minutes" value="60" min="5" step="5">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="schedTemplate" class="form-label fw-bold small text-muted">Caption Template</label>
+                            <select class="form-select rounded-3" id="schedTemplate" name="template_id">
+                                <option value="">Default Promotion Template</option>
+                                <?php foreach ($templates as $tpl): ?>
+                                    <option value="<?php echo $tpl['id']; ?>"><?php echo htmlspecialchars($tpl['name']); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="schedCta" class="form-label fw-bold small text-muted">Call to Action (CTA)</label>
+                            <select class="form-select rounded-3" id="schedCta" name="cta">
+                                <option value="Shop Now 🛒">Shop Now 🛒</option>
+                                <option value="Buy Now 🛍️">Buy Now 🛍️</option>
+                                <option value="Order Today 📦">Order Today 📦</option>
+                                <option value="Limited Time Offer 🔥">Limited Time Offer 🔥</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-12">
+                            <label for="schedHashtags" class="form-label fw-bold small text-muted">Custom Hashtags</label>
+                            <input type="text" class="form-control rounded-3" id="schedHashtags" name="hashtags" 
+                                   placeholder="#SagarStarters #Sale #Shopping #Trending">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="schedFilterType" class="form-label fw-bold small text-muted">Product Scope</label>
+                            <select class="form-select rounded-3" id="schedFilterType" name="filter_type">
+                                <option value="all">All Products</option>
+                                <option value="category">Category-wise</option>
+                                <option value="brand">Brand-wise</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6" id="filterValueGroup" style="display: none;">
+                            <label for="schedFilterValue" class="form-label fw-bold small text-muted" id="filterValueLabel">Filter Value</label>
+                            <select class="form-select rounded-3" id="schedFilterValue" name="filter_value">
+                                <option value="">-- Select --</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold small text-muted d-block">Target Platforms</label>
+                            <div class="row g-2">
+                                <?php foreach ($platformIcons as $pKey => $pMeta): ?>
+                                    <div class="col-6 col-md-4">
+                                        <div class="form-check border rounded-3 p-2 px-3">
+                                            <input class="form-check-input platform-chk" type="checkbox" 
+                                                   name="platforms[]" value="<?php echo $pKey; ?>" id="chk_<?php echo $pKey; ?>">
+                                            <label class="form-check-label cursor-pointer fw-semibold small" for="chk_<?php echo $pKey; ?>">
+                                                <i class="<?php echo $pMeta['icon']; ?> me-1" style="color: <?php echo $pMeta['color']; ?>;"></i>
+                                                <?php echo htmlspecialchars($pMeta['name']); ?>
+                                            </label>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+
+                        <div class="col-md-12">
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" id="schedActive" name="is_active" value="1" checked>
+                                <label class="form-check-label fw-bold small" for="schedActive">Enable / Activate Schedule Immediately</label>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer border-0 pt-0">
-                    <button type="button" class="btn btn-light rounded-pill px-4" data-mdb-dismiss="modal" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary rounded-pill px-4 shadow-sm" id="btnSaveSchedule">Save Schedule</button>
                 </div>
             </form>
@@ -201,26 +287,46 @@ $scheduleTypes = [
     </div>
 </div>
 
+<style>
+.extra-small { font-size: 0.78rem; }
+.cursor-pointer { cursor: pointer; }
+</style>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const scheduleForm = document.getElementById('scheduleForm');
     const schedTypeSelect = document.getElementById('schedType');
     const customIntervalGroup = document.getElementById('customIntervalGroup');
+    const schedFilterType = document.getElementById('schedFilterType');
+    const filterValueGroup = document.getElementById('filterValueGroup');
+    const filterValueSelect = document.getElementById('schedFilterValue');
+    const filterValueLabel = document.getElementById('filterValueLabel');
     const modalEl = document.getElementById('scheduleModal');
 
-    function showScheduleModal() {
-        if (typeof mdb !== 'undefined' && mdb.Modal) {
-            const inst = mdb.Modal.getInstance(modalEl) || new mdb.Modal(modalEl);
-            inst.show();
-        } else if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-            const inst = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-            inst.show();
+    const categoriesData = <?php echo json_encode($categories); ?>;
+    const brandsData = <?php echo json_encode($brands); ?>;
+
+    function getModalInstance() {
+        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+            return bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+        } else if (typeof mdb !== 'undefined' && mdb.Modal) {
+            return mdb.Modal.getInstance(modalEl) || new mdb.Modal(modalEl);
         } else if (typeof $ !== 'undefined' && $.fn.modal) {
-            $(modalEl).modal('show');
+            return { show: () => $(modalEl).modal('show'), hide: () => $(modalEl).modal('hide') };
         }
+        return null;
     }
 
-    // Toggle custom interval input visibility
+    function showScheduleModal() {
+        const inst = getModalInstance();
+        if (inst) inst.show();
+    }
+
+    function hideScheduleModal() {
+        const inst = getModalInstance();
+        if (inst) inst.hide();
+    }
+
     function checkIntervalVisibility() {
         if (schedTypeSelect && schedTypeSelect.value === 'custom') {
             customIntervalGroup.style.display = 'block';
@@ -232,17 +338,48 @@ document.addEventListener('DOMContentLoaded', function() {
         schedTypeSelect.addEventListener('change', checkIntervalVisibility);
     }
 
+    function updateFilterValueOptions(selectedVal) {
+        filterValueSelect.innerHTML = '<option value="">-- Select --</option>';
+        const type = schedFilterType.value;
+
+        if (type === 'category') {
+            filterValueLabel.textContent = 'Select Category';
+            filterValueGroup.style.display = 'block';
+            categoriesData.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id || c.name;
+                opt.textContent = c.name;
+                if (selectedVal && String(opt.value) === String(selectedVal)) opt.selected = true;
+                filterValueSelect.appendChild(opt);
+            });
+        } else if (type === 'brand') {
+            filterValueLabel.textContent = 'Select Brand';
+            filterValueGroup.style.display = 'block';
+            brandsData.forEach(b => {
+                const opt = document.createElement('option');
+                opt.value = b;
+                opt.textContent = b;
+                if (selectedVal && String(opt.value) === String(selectedVal)) opt.selected = true;
+                filterValueSelect.appendChild(opt);
+            });
+        } else {
+            filterValueGroup.style.display = 'none';
+        }
+    }
+
+    if (schedFilterType) {
+        schedFilterType.addEventListener('change', () => updateFilterValueOptions());
+    }
+
     // Open Modal Create
     function openCreateModal() {
         if (scheduleForm) scheduleForm.reset();
-        const idField = document.getElementById('scheduleId');
-        if (idField) idField.value = '';
-        const titleField = document.getElementById('scheduleModalLabel');
-        if (titleField) titleField.textContent = 'Create Posting Schedule';
+        document.getElementById('scheduleId').value = '';
+        document.getElementById('scheduleModalLabel').textContent = 'Create Posting Schedule';
         document.querySelectorAll('.platform-chk').forEach(c => c.checked = true);
-        const activeField = document.getElementById('schedActive');
-        if (activeField) activeField.checked = true;
+        document.getElementById('schedActive').checked = true;
         checkIntervalVisibility();
+        updateFilterValueOptions();
         showScheduleModal();
     }
 
@@ -261,9 +398,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('schedName').value = data.name;
                 document.getElementById('schedType').value = data.schedule_type;
                 document.getElementById('schedInterval').value = data.interval_minutes || 60;
+                document.getElementById('schedTemplate').value = data.template_id || '';
+                document.getElementById('schedCta').value = data.cta || 'Shop Now 🛒';
+                document.getElementById('schedHashtags').value = data.hashtags || '';
+                document.getElementById('schedFilterType').value = data.filter_type || 'all';
                 document.getElementById('schedActive').checked = parseInt(data.is_active) === 1;
 
-                const pIds = JSON.parse(data.platform_ids || '[]');
+                updateFilterValueOptions(data.filter_value);
+
+                let pIds = [];
+                if (typeof data.platform_ids === 'string') {
+                    try { pIds = JSON.parse(data.platform_ids); } catch(e) { pIds = []; }
+                } else if (Array.isArray(data.platform_ids)) {
+                    pIds = data.platform_ids;
+                }
+
                 document.querySelectorAll('.platform-chk').forEach(chk => {
                     chk.checked = pIds.includes(chk.value);
                 });
@@ -281,6 +430,10 @@ document.addEventListener('DOMContentLoaded', function() {
     if (scheduleForm) {
         scheduleForm.addEventListener('submit', function(e) {
             e.preventDefault();
+            const btnSave = document.getElementById('btnSaveSchedule');
+            btnSave.disabled = true;
+            btnSave.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
+
             const formData = new FormData(this);
 
             fetch('ajax/ajax_schedule_actions.php', {
@@ -289,15 +442,65 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(res => res.json())
             .then(data => {
+                btnSave.disabled = false;
+                btnSave.innerHTML = 'Save Schedule';
                 if (data.success) {
                     window.location.reload();
                 } else {
                     alert('Failed to save schedule: ' + (data.error || 'Unknown error'));
                 }
             })
-            .catch(err => alert('Error saving schedule: ' + err.message));
+            .catch(err => {
+                btnSave.disabled = false;
+                btnSave.innerHTML = 'Save Schedule';
+                alert('Error saving schedule: ' + err.message);
+            });
         });
     }
+
+    // Run Now Button
+    document.querySelectorAll('.btn-run-now').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const schedId = this.dataset.id;
+            const originalHtml = this.innerHTML;
+            this.disabled = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+            const formData = new FormData();
+            formData.append('_csrf_token', '<?php echo $csrfToken; ?>');
+            formData.append('action', 'run_now');
+            formData.append('id', schedId);
+
+            fetch('ajax/ajax_schedule_actions.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                this.disabled = false;
+                this.innerHTML = originalHtml;
+                const pageAlert = document.getElementById('pageAlert');
+                if (data.success) {
+                    pageAlert.innerHTML = `<div class="alert alert-success alert-dismissible fade show rounded-3 shadow-sm" role="alert">
+                        <i class="fas fa-check-circle me-2"></i> ${data.message}
+                        <a href="queue.php" class="fw-bold ms-2 text-success text-decoration-underline">View Queue</a>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>`;
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    pageAlert.innerHTML = `<div class="alert alert-danger alert-dismissible fade show rounded-3 shadow-sm" role="alert">
+                        <i class="fas fa-exclamation-circle me-2"></i> ${data.error || 'Execution failed.'}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>`;
+                }
+            })
+            .catch(err => {
+                this.disabled = false;
+                this.innerHTML = originalHtml;
+                alert('Error executing schedule: ' + err.message);
+            });
+        });
+    });
 
     // Toggle Active Status
     document.querySelectorAll('.btn-toggle-status').forEach(btn => {

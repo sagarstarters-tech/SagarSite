@@ -31,12 +31,19 @@ try {
     $action = trim($_POST['action'] ?? '');
     $userId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
 
+require_once BASE_PATH . '/admin/social-media/services/ScheduleRunner.php';
+
     switch ($action) {
         case 'save':
             $id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
             $name = trim($_POST['name'] ?? '');
             $scheduleType = trim($_POST['schedule_type'] ?? 'every_1hr');
             $intervalMinutes = filter_input(INPUT_POST, 'interval_minutes', FILTER_VALIDATE_INT) ?: 60;
+            $templateId = filter_input(INPUT_POST, 'template_id', FILTER_VALIDATE_INT) ?: null;
+            $cta = trim($_POST['cta'] ?? '');
+            $hashtags = trim($_POST['hashtags'] ?? '');
+            $filterType = trim($_POST['filter_type'] ?? 'all');
+            $filterValue = trim($_POST['filter_value'] ?? '');
             $isActive = !empty($_POST['is_active']) ? 1 : 0;
             $rawPlatforms = $_POST['platforms'] ?? [];
 
@@ -57,24 +64,37 @@ try {
                 $platformsJson = json_encode([]);
             }
 
-
             if ($id) {
                 // Update
                 $stmt = $pdo->prepare("UPDATE sm_schedules 
-                    SET name = ?, schedule_type = ?, interval_minutes = ?, platform_ids = ?, is_active = ? 
+                    SET name = ?, schedule_type = ?, interval_minutes = ?, platform_ids = ?, 
+                        template_id = ?, cta = ?, hashtags = ?, filter_type = ?, filter_value = ?, is_active = ? 
                     WHERE id = ?");
-                $stmt->execute([$name, $scheduleType, $intervalMinutes, $platformsJson, $isActive, $id]);
+                $stmt->execute([$name, $scheduleType, $intervalMinutes, $platformsJson, $templateId, $cta, $hashtags, $filterType, $filterValue, $isActive, $id]);
                 $msg = "Schedule updated successfully!";
             } else {
                 // Insert
                 $stmt = $pdo->prepare("INSERT INTO sm_schedules 
-                    (name, schedule_type, interval_minutes, platform_ids, is_active, created_by) 
-                    VALUES (?, ?, ?, ?, ?, ?)");
-                $stmt->execute([$name, $scheduleType, $intervalMinutes, $platformsJson, $isActive, $userId]);
+                    (name, schedule_type, interval_minutes, platform_ids, template_id, cta, hashtags, filter_type, filter_value, is_active, created_by) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$name, $scheduleType, $intervalMinutes, $platformsJson, $templateId, $cta, $hashtags, $filterType, $filterValue, $isActive, $userId]);
                 $msg = "New schedule created successfully!";
             }
 
             echo json_encode(['success' => true, 'message' => $msg]);
+            break;
+
+        case 'run_now':
+            $id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
+            if (!$id) throw new Exception('Invalid schedule ID');
+
+            $runner = new \Admin\SocialMedia\Services\ScheduleRunner();
+            $queuedCount = $runner->executeSchedule($id);
+
+            echo json_encode([
+                'success' => true, 
+                'message' => "Schedule executed! Queued {$queuedCount} post(s) to the posting queue."
+            ]);
             break;
 
         case 'toggle_status':

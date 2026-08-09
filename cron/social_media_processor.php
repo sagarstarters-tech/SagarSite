@@ -6,6 +6,7 @@ require_once BASE_PATH . '/config/config.php';
 require_once BASE_PATH . '/includes/db_connect.php';
 require_once BASE_PATH . '/config/DbConnection.php';
 require_once BASE_PATH . '/admin/social-media/services/QueueProcessor.php';
+require_once BASE_PATH . '/admin/social-media/services/ScheduleRunner.php';
 
 // Support CLI and HTTP modes
 $isCli = (php_sapi_name() === 'cli');
@@ -34,6 +35,13 @@ function log_message($msg) {
 $start = microtime(true);
 log_message("Cron started.");
 
+// 1. Process Active Posting Schedules to generate pending queue items
+$scheduleRunner = new \Admin\SocialMedia\Services\ScheduleRunner();
+$schedSummary = $scheduleRunner->processActiveSchedules();
+log_message(sprintf("Schedule Runner: Checked: %d, Executed: %d, Queued: %d", 
+    $schedSummary['schedules_checked'], $schedSummary['schedules_run'], $schedSummary['posts_queued']));
+
+// 2. Process Queue items
 $processor = new \Admin\SocialMedia\Services\QueueProcessor();
 $results = $processor->processBatch(20);
 
