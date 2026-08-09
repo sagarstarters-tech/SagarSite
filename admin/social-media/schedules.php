@@ -186,7 +186,7 @@ $scheduleTypes = [
 
                 <div class="modal-header border-0 pb-0">
                     <h5 class="modal-title fw-bold" id="scheduleModalLabel">Create Posting Schedule</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close-modal" data-bs-dismiss="modal" data-mdb-dismiss="modal" data-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4">
                     <div class="row g-3">
@@ -279,7 +279,7 @@ $scheduleTypes = [
                     </div>
                 </div>
                 <div class="modal-footer border-0 pt-0">
-                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-light rounded-pill px-4 btn-close-modal" data-bs-dismiss="modal" data-mdb-dismiss="modal" data-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary rounded-pill px-4 shadow-sm" id="btnSaveSchedule">Save Schedule</button>
                 </div>
             </form>
@@ -319,13 +319,38 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function showScheduleModal() {
         const inst = getModalInstance();
-        if (inst) inst.show();
+        if (inst && typeof inst.show === 'function') inst.show();
+        else {
+            modalEl.classList.add('show');
+            modalEl.style.display = 'block';
+        }
     }
 
     function hideScheduleModal() {
-        const inst = getModalInstance();
-        if (inst) inst.hide();
+        if (typeof mdb !== 'undefined' && mdb.Modal) {
+            const inst = mdb.Modal.getInstance(modalEl);
+            if (inst && typeof inst.hide === 'function') inst.hide();
+        }
+        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+            const inst = bootstrap.Modal.getInstance(modalEl);
+            if (inst && typeof inst.hide === 'function') inst.hide();
+        }
+        if (typeof $ !== 'undefined' && $.fn.modal) {
+            $(modalEl).modal('hide');
+        }
+        // Direct DOM fallback
+        modalEl.classList.remove('show');
+        modalEl.style.display = 'none';
+        document.body.classList.remove('modal-open');
+        document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
     }
+
+    document.querySelectorAll('.btn-close-modal, [data-bs-dismiss="modal"], [data-mdb-dismiss="modal"], [data-dismiss="modal"]').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            hideScheduleModal();
+        });
+    });
 
     function checkIntervalVisibility() {
         if (schedTypeSelect && schedTypeSelect.value === 'custom') {
