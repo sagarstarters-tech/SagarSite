@@ -23,7 +23,7 @@ class PinterestAdapter implements PlatformAdapterInterface {
 
     public function getAuthUrl(string $redirectUri, string $state): string {
         $clientId = _env('PINTEREST_APP_ID') ?: _env('PINTEREST_CLIENT_ID');
-        $scopes = ['boards:read', 'pins:read', 'pins:write'];
+        $scopes = ['boards:read', 'boards:write', 'pins:read', 'pins:write', 'user_accounts:read'];
         $params = [
             'client_id' => $clientId,
             'redirect_uri' => $redirectUri,
@@ -137,13 +137,18 @@ class PinterestAdapter implements PlatformAdapterInterface {
         ];
     }
 
+    public function getUserProfile(string $accessToken): array {
+        if (!$accessToken) return [];
+        return $this->curlRequest('https://api.pinterest.com/v5/user_account', 'GET', [], [
+            'Authorization: Bearer ' . $accessToken
+        ]);
+    }
+
     public function validateConnection(array $account): bool {
         $accessToken = $account['access_token'] ?? '';
         if (!$accessToken) return false;
 
-        $res = $this->curlRequest('https://api.pinterest.com/v5/user_account', 'GET', [], [
-            'Authorization: Bearer ' . $accessToken
-        ]);
+        $res = $this->getUserProfile($accessToken);
         return !isset($res['code']);
     }
 
