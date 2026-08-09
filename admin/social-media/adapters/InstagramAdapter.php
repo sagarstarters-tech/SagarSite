@@ -126,11 +126,29 @@ class InstagramAdapter implements PlatformAdapterInterface {
         }
 
         $postId = $publishRes['id'] ?? null;
-        
+        $postUrl = '';
+
+        if ($postId) {
+            // Fetch exact permalink from Instagram Graph API
+            $permalinkRes = $this->curlRequest(self::BASE_URL . "/$postId", 'GET', [
+                'fields' => 'permalink,shortcode',
+                'access_token' => $accessToken
+            ]);
+            if (!empty($permalinkRes['permalink'])) {
+                $postUrl = $permalinkRes['permalink'];
+            } elseif (!empty($permalinkRes['shortcode'])) {
+                $postUrl = 'https://www.instagram.com/p/' . $permalinkRes['shortcode'] . '/';
+            }
+        }
+
+        if (!$postUrl && $postId) {
+            $postUrl = $this->getPostUrl((string)$postId);
+        }
+
         return [
             'success' => true,
             'post_id' => (string)$postId,
-            'post_url' => $this->getPostUrl((string)$postId),
+            'post_url' => $postUrl,
             'error' => null
         ];
     }
@@ -148,7 +166,34 @@ class InstagramAdapter implements PlatformAdapterInterface {
     }
 
     public function getPostUrl(string $platformPostId): string {
-        return $platformPostId ? "https://instagram.com/p/$platformPostId" : '';
+        if (!$platformPostId) return '';
+        if (strpos($platformPostId, 'http://') === 0 || strpos($platformPostId, 'https://') === 0) {
+            return $platformPostId;
+        }
+        $shortcode = $this->igIdToShortcode($platformPostId);
+        return "https://www.instagram.com/p/$shortcode/";
+    }
+
+    private function igIdToShortcode(string $id): string {
+        $id = explode('_', trim($id))[0];
+        if (!is_numeric($id)) return $id;
+        $alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+        $shortcode = '';
+        if (function_exists('gmp_init')) {
+            $gmp = gmp_init($id, 10);
+            while (gmp_cmp($gmp, 0) > 0) {
+                $rem = gmp_intval(gmp_mod($gmp, 64));
+                $shortcode = $alphabet[$rem] . $shortcode;
+                $gmp = gmp_div_q($gmp, 64);
+            }
+        } elseif (function_exists('bcdiv')) {
+            while (bccomp($id, '0') > 0) {
+                $rem = (int)bcmod($id, '64');
+                $shortcode = $alphabet[$rem] . $shortcode;
+                $id = bcdiv($id, '64', 0);
+            }
+        }
+        return !empty($shortcode) ? $shortcode : $id;
     }
 
     public function getPlatformLimits(): array {

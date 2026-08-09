@@ -127,7 +127,7 @@ class QueueProcessor {
             $pubRes = $adapter->publishPost($postData);
 
             if (!empty($pubRes['success'])) {
-                $platformPostId = (string)($pubRes['post_id'] ?? ('post_' . time() . '_' . $id));
+                $platformPostId = (string)(!empty($pubRes['post_url']) ? $pubRes['post_url'] : ($pubRes['post_id'] ?? ('post_' . time() . '_' . $id)));
                 $this->updateStatus($id, 'posted', null, $platformPostId);
                 
                 // Update analytics

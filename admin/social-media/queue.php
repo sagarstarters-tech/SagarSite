@@ -310,8 +310,29 @@ $statusBadges = [
                                                                  $postUrl = "https://www.linkedin.com/feed/update/{$pPostId}";
                                                                  break;
                                                              case 'instagram':
-                                                                 $postUrl = "https://www.instagram.com/p/{$pPostId}/";
-                                                                 break;
+                                                                if (is_numeric($pPostId) && (function_exists('gmp_init') || function_exists('bcdiv'))) {
+                                                                    $alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+                                                                    $sc = '';
+                                                                    $idVal = $pPostId;
+                                                                    if (function_exists('gmp_init')) {
+                                                                        $gmp = gmp_init($idVal, 10);
+                                                                        while (gmp_cmp($gmp, 0) > 0) {
+                                                                            $rem = gmp_intval(gmp_mod($gmp, 64));
+                                                                            $sc = $alphabet[$rem] . $sc;
+                                                                            $gmp = gmp_div_q($gmp, 64);
+                                                                        }
+                                                                    } elseif (function_exists('bcdiv')) {
+                                                                        while (bccomp($idVal, '0') > 0) {
+                                                                            $rem = (int)bcmod($idVal, '64');
+                                                                            $sc = $alphabet[$rem] . $sc;
+                                                                            $idVal = bcdiv($idVal, '64', 0);
+                                                                        }
+                                                                    }
+                                                                    $postUrl = "https://www.instagram.com/p/" . (!empty($sc) ? $sc : $pPostId) . "/";
+                                                                } else {
+                                                                    $postUrl = "https://www.instagram.com/p/{$pPostId}/";
+                                                                }
+                                                                break;
                                                              case 'twitter':
                                                              case 'x':
                                                                  $postUrl = "https://x.com/i/web/status/{$pPostId}";
