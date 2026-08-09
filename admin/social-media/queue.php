@@ -287,8 +287,8 @@ $statusBadges = [
                                             <?php echo $displayTime ? date('h:i A', strtotime($displayTime)) : ''; ?>
                                         </div>
                                     </td>
-                                    <td class="text-end">
-                                        <div class="d-flex justify-content-end align-items-center gap-1">
+                                     <td class="text-end" style="white-space: nowrap;">
+                                         <div class="d-flex justify-content-end align-items-center gap-1 flex-nowrap">
                                              <?php if (strtolower($item['status']) === 'posted'): 
                                                  $postUrl = '#';
                                                  $pPostId = trim($item['platform_post_id'] ?? '');
@@ -335,29 +335,35 @@ $statusBadges = [
 
                                                  if ($postUrl !== '#'):
                                              ?>
-                                                 <a href="<?php echo htmlspecialchars($postUrl); ?>" target="_blank" class="btn btn-sm btn-outline-primary px-2 py-1 shadow-sm" title="View Published Post">
-                                                     <i class="fas fa-external-link-alt me-1"></i> View Post
+                                                 <a href="<?php echo htmlspecialchars($postUrl); ?>" target="_blank" 
+                                                    class="btn btn-outline-primary rounded-pill shadow-sm" 
+                                                    style="font-size: 11px; padding: 3px 8px; white-space: nowrap;" 
+                                                    title="View Published Post">
+                                                     <i class="fas fa-external-link-alt me-1"></i>View Post
                                                  </a>
                                              <?php endif; endif; ?>
 
-                                            <button type="button" class="btn btn-sm btn-success px-2 py-1 btn-post-now text-white fw-bold shadow-sm" 
-                                                    data-id="<?php echo $item['id']; ?>" title="Post Immediately">
-                                                <i class="fas fa-bolt me-1"></i> Post Now
-                                            </button>
-                                            
-                                            <?php if (strtolower($item['status']) === 'failed'): ?>
-                                                <button type="button" class="btn btn-sm btn-warning px-2 py-1 btn-retry-item text-dark fw-bold shadow-sm" 
-                                                        data-id="<?php echo $item['id']; ?>" title="Retry Failed Post">
-                                                    <i class="fas fa-redo me-1"></i> Retry
-                                                </button>
-                                            <?php endif; ?>
+                                             <button type="button" class="btn btn-success rounded-pill btn-post-now text-white fw-bold shadow-sm" 
+                                                     style="font-size: 11px; padding: 3px 8px; white-space: nowrap;" 
+                                                     data-id="<?php echo $item['id']; ?>" title="Post Immediately">
+                                                 <i class="fas fa-bolt me-1"></i>Post Now
+                                             </button>
+                                             
+                                             <?php if (strtolower($item['status']) === 'failed'): ?>
+                                                 <button type="button" class="btn btn-warning rounded-pill btn-retry-item text-dark fw-bold shadow-sm" 
+                                                         style="font-size: 11px; padding: 3px 8px; white-space: nowrap;" 
+                                                         data-id="<?php echo $item['id']; ?>" title="Retry Failed Post">
+                                                     <i class="fas fa-redo me-1"></i>Retry
+                                                 </button>
+                                             <?php endif; ?>
 
-                                            <button type="button" class="btn btn-sm btn-danger px-2 py-1 btn-delete-item text-white shadow-sm" 
-                                                    data-id="<?php echo $item['id']; ?>" title="Delete Queue Item">
-                                                <i class="fas fa-trash-alt"></i>
-                                            </button>
-                                        </div>
-                                    </td>
+                                             <button type="button" class="btn btn-outline-danger rounded-circle btn-delete-item shadow-sm" 
+                                                     style="width: 26px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;" 
+                                                     data-id="<?php echo $item['id']; ?>" title="Delete Queue Item">
+                                                 <i class="fas fa-trash-alt" style="font-size: 10px;"></i>
+                                             </button>
+                                         </div>
+                                     </td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php endif; ?>
