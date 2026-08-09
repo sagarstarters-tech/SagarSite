@@ -75,13 +75,22 @@ try {
 
         case 'disconnect':
             $platform = trim($_POST['platform'] ?? '');
+            if (!empty($platform)) {
+                $stmt = $pdo->prepare("UPDATE sm_connected_accounts SET is_active = 0 WHERE LOWER(platform) = LOWER(?)");
+                $stmt->execute([$platform]);
+            }
             if ($account_id) {
+                $stmtFetch = $pdo->prepare("SELECT platform FROM sm_connected_accounts WHERE id = ?");
+                $stmtFetch->execute([$account_id]);
+                $plat = $stmtFetch->fetchColumn();
+                if ($plat) {
+                    $stmtAll = $pdo->prepare("UPDATE sm_connected_accounts SET is_active = 0 WHERE LOWER(platform) = LOWER(?)");
+                    $stmtAll->execute([$plat]);
+                }
                 $stmt = $pdo->prepare("UPDATE sm_connected_accounts SET is_active = 0 WHERE id = ?");
                 $stmt->execute([$account_id]);
-            } elseif (!empty($platform)) {
-                $stmt = $pdo->prepare("UPDATE sm_connected_accounts SET is_active = 0 WHERE platform = ?");
-                $stmt->execute([$platform]);
-            } else {
+            }
+            if (empty($platform) && !$account_id) {
                 throw new Exception('Invalid Account ID or Platform');
             }
             $response['success'] = true;
@@ -107,8 +116,12 @@ try {
             $encryptedToken = TokenEncryption::encrypt($bot_token);
             $userId = $_SESSION['user_id'] ?? 1;
 
+            // Deactivate any duplicate active telegram accounts
+            $deactStmt = $pdo->prepare("UPDATE sm_connected_accounts SET is_active = 0 WHERE LOWER(platform) = 'telegram'");
+            $deactStmt->execute();
+
             // Check if telegram record exists
-            $stmt = $pdo->prepare("SELECT id FROM sm_connected_accounts WHERE platform = 'telegram' AND account_id = ?");
+            $stmt = $pdo->prepare("SELECT id FROM sm_connected_accounts WHERE LOWER(platform) = 'telegram' AND account_id = ?");
             $stmt->execute([$channel_id]);
             $existing = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -136,7 +149,11 @@ try {
             $encryptedToken = TokenEncryption::encrypt($access_token);
             $userId = $_SESSION['user_id'] ?? 1;
 
-            $stmt = $pdo->prepare("SELECT id FROM sm_connected_accounts WHERE platform = 'facebook' AND page_id = ?");
+            // Deactivate any existing active facebook accounts first
+            $deactStmt = $pdo->prepare("UPDATE sm_connected_accounts SET is_active = 0 WHERE LOWER(platform) = 'facebook'");
+            $deactStmt->execute();
+
+            $stmt = $pdo->prepare("SELECT id FROM sm_connected_accounts WHERE LOWER(platform) = 'facebook' AND page_id = ?");
             $stmt->execute([$page_id]);
             $existing = $stmt->fetch(PDO::FETCH_ASSOC);
 

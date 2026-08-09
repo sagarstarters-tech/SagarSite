@@ -117,12 +117,22 @@ try {
         $fbName = $meRes['name'] ?? 'Facebook Account';
         $encryptedToken = TokenEncryption::encrypt($userToken);
 
-        $stmt = $pdo->prepare("INSERT INTO sm_connected_accounts (platform, account_name, account_id, page_id, access_token_encrypted, is_active, connected_by) 
-            VALUES ('facebook', ?, ?, ?, ?, 1, ?)
-            ON DUPLICATE KEY UPDATE account_name = VALUES(account_name), access_token_encrypted = VALUES(access_token_encrypted), is_active = 1");
-        $stmt->execute([$fbName, $fbId, $fbId, $encryptedToken, $userId]);
+        $pdo->exec("UPDATE sm_connected_accounts SET is_active = 0 WHERE LOWER(platform) = 'facebook'");
+        $chkStmt = $pdo->prepare("SELECT id FROM sm_connected_accounts WHERE LOWER(platform) = 'facebook' AND (page_id = ? OR account_id = ?)");
+        $chkStmt->execute([$fbId, $fbId]);
+        $existing = $chkStmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($existing) {
+            $stmt = $pdo->prepare("UPDATE sm_connected_accounts SET account_name = ?, access_token_encrypted = ?, is_active = 1, connected_by = ?, updated_at = NOW() WHERE id = ?");
+            $stmt->execute([$fbName, $encryptedToken, $userId, $existing['id']]);
+        } else {
+            $stmt = $pdo->prepare("INSERT INTO sm_connected_accounts (platform, account_name, account_id, page_id, access_token_encrypted, is_active, connected_by) 
+                VALUES ('facebook', ?, ?, ?, ?, 1, ?)");
+            $stmt->execute([$fbName, $fbId, $fbId, $encryptedToken, $userId]);
+        }
         $foundFacebook = true;
     } else {
+        $pdo->exec("UPDATE sm_connected_accounts SET is_active = 0 WHERE LOWER(platform) = 'facebook'");
         foreach ($pages as $page) {
             $pageId = $page['id'];
             $pageName = $page['name'];
@@ -130,10 +140,18 @@ try {
             $encryptedToken = TokenEncryption::encrypt($pageAccessToken);
 
             // Save Facebook Page
-            $stmt = $pdo->prepare("INSERT INTO sm_connected_accounts (platform, account_name, account_id, page_id, access_token_encrypted, is_active, connected_by) 
-                VALUES ('facebook', ?, ?, ?, ?, 1, ?)
-                ON DUPLICATE KEY UPDATE account_name = VALUES(account_name), access_token_encrypted = VALUES(access_token_encrypted), is_active = 1");
-            $stmt->execute([$pageName, $pageId, $pageId, $encryptedToken, $userId]);
+            $chkStmt = $pdo->prepare("SELECT id FROM sm_connected_accounts WHERE LOWER(platform) = 'facebook' AND (page_id = ? OR account_id = ?)");
+            $chkStmt->execute([$pageId, $pageId]);
+            $existing = $chkStmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($existing) {
+                $stmt = $pdo->prepare("UPDATE sm_connected_accounts SET account_name = ?, access_token_encrypted = ?, is_active = 1, connected_by = ?, updated_at = NOW() WHERE id = ?");
+                $stmt->execute([$pageName, $encryptedToken, $userId, $existing['id']]);
+            } else {
+                $stmt = $pdo->prepare("INSERT INTO sm_connected_accounts (platform, account_name, account_id, page_id, access_token_encrypted, is_active, connected_by) 
+                    VALUES ('facebook', ?, ?, ?, ?, 1, ?)");
+                $stmt->execute([$pageName, $pageId, $pageId, $encryptedToken, $userId]);
+            }
             $foundFacebook = true;
 
             // Check linked Instagram Business Account (try both fields)
@@ -158,10 +176,20 @@ try {
                 $foundInstagram = true;
                 $igId = $igAccount['id'];
                 $igHandle = !empty($igAccount['username']) ? '@' . $igAccount['username'] : (!empty($igAccount['name']) ? $igAccount['name'] : $pageName . ' (Instagram)');
-                $stmtIg = $pdo->prepare("INSERT INTO sm_connected_accounts (platform, account_name, account_id, page_id, access_token_encrypted, is_active, connected_by) 
-                    VALUES ('instagram', ?, ?, ?, ?, 1, ?)
-                    ON DUPLICATE KEY UPDATE account_name = VALUES(account_name), access_token_encrypted = VALUES(access_token_encrypted), is_active = 1");
-                $stmtIg->execute([$igHandle, $igId, $pageId, $encryptedToken, $userId]);
+                
+                $pdo->exec("UPDATE sm_connected_accounts SET is_active = 0 WHERE LOWER(platform) = 'instagram'");
+                $chkIg = $pdo->prepare("SELECT id FROM sm_connected_accounts WHERE LOWER(platform) = 'instagram' AND (account_id = ? OR page_id = ?)");
+                $chkIg->execute([$igId, $pageId]);
+                $existingIg = $chkIg->fetch(PDO::FETCH_ASSOC);
+
+                if ($existingIg) {
+                    $stmtIg = $pdo->prepare("UPDATE sm_connected_accounts SET account_name = ?, access_token_encrypted = ?, is_active = 1, connected_by = ?, updated_at = NOW() WHERE id = ?");
+                    $stmtIg->execute([$igHandle, $encryptedToken, $userId, $existingIg['id']]);
+                } else {
+                    $stmtIg = $pdo->prepare("INSERT INTO sm_connected_accounts (platform, account_name, account_id, page_id, access_token_encrypted, is_active, connected_by) 
+                        VALUES ('instagram', ?, ?, ?, ?, 1, ?)");
+                    $stmtIg->execute([$igHandle, $igId, $pageId, $encryptedToken, $userId]);
+                }
             }
         }
     }

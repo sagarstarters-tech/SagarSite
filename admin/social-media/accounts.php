@@ -32,15 +32,23 @@ try {
 
 // Direct Disconnect Handler
 if (isset($_GET['action']) && $_GET['action'] === 'disconnect') {
-    $discId = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
+    $discId = isset($_GET['id']) && is_numeric($_GET['id']) ? (int)$_GET['id'] : null;
     $discPlatform = trim($_GET['platform'] ?? '');
 
+    if (!empty($discPlatform)) {
+        $stmt = $pdo->prepare("UPDATE sm_connected_accounts SET is_active = 0 WHERE LOWER(platform) = LOWER(?)");
+        $stmt->execute([$discPlatform]);
+    }
     if ($discId) {
+        $stmtFetch = $pdo->prepare("SELECT platform FROM sm_connected_accounts WHERE id = ?");
+        $stmtFetch->execute([$discId]);
+        $plat = $stmtFetch->fetchColumn();
+        if ($plat) {
+            $stmt = $pdo->prepare("UPDATE sm_connected_accounts SET is_active = 0 WHERE LOWER(platform) = LOWER(?)");
+            $stmt->execute([$plat]);
+        }
         $stmt = $pdo->prepare("UPDATE sm_connected_accounts SET is_active = 0 WHERE id = ?");
         $stmt->execute([$discId]);
-    } elseif (!empty($discPlatform)) {
-        $stmt = $pdo->prepare("UPDATE sm_connected_accounts SET is_active = 0 WHERE platform = ?");
-        $stmt->execute([$discPlatform]);
     }
 
     set_flash('success', 'Account disconnected successfully.');
