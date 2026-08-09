@@ -67,13 +67,14 @@ class ScheduleRunner {
     }
 
     /**
-     * Executes a specific schedule immediately (e.g. via "Run Now" button or scheduler).
+     * Executes a schedule and queues products into sm_queue.
      *
      * @param int|array $scheduleOrId
+     * @param bool $allProducts If true, queues all matching products in scope staggered by interval
      * @return int Number of queued posts
      * @throws Exception
      */
-    public function executeSchedule($scheduleOrId): int {
+    public function executeSchedule($scheduleOrId, bool $allProducts = true): int {
         $db = DbConnection::getInstance();
 
         try {
@@ -124,11 +125,11 @@ class ScheduleRunner {
             throw new Exception("No active connected accounts found for the schedule's target platforms.");
         }
 
-        // 2. Fetch Eligible Product
-        $product = $this->getNextProductForSchedule($schedule, array_keys($accounts));
-        if (!$product) {
+        // 2. Fetch Matching Products for Schedule Scope
+        $products = $this->getProductsForSchedule($schedule, $allProducts);
+        if (empty($products)) {
             $this->updateScheduleNextRun($schedule);
-            throw new Exception("No eligible product found to post for this schedule.");
+            throw new Exception("No matching products found to post for this schedule.");
         }
 
         // 3. Resolve Template Body
@@ -147,73 +148,100 @@ class ScheduleRunner {
             $templateBody = "🔥 {product_name} 🔥\n\n💰 Price: ₹{price}\n🛒 Link: {product_url}\n\n{cta}\n\n{hashtags}";
         }
 
-        // 4. Image & Product URL
+        // 4. Calculate Stagger Interval
+        $intervalMinutes = (int)($schedule['interval_minutes'] ?? 60);
+        if ($intervalMinutes < 5) $intervalMinutes = 30;
+
+        $typeIntervals = [
+            'every_30min' => 30,
+            'every_1hr'   => 60,
+            'every_2hr'   => 120,
+            'every_6hr'   => 360,
+            'daily'       => 1440,
+            'weekly'      => 10080,
+            'monthly'     => 43200
+        ];
+        if (isset($typeIntervals[$schedule['schedule_type']])) {
+            $intervalMinutes = $typeIntervals[$schedule['schedule_type']];
+        }
+
         $siteUrl = defined('SITE_URL') ? rtrim(SITE_URL, '/') : '';
-        $rawImg = trim($product['image'] ?? '');
-        $imgUrl = '';
-        if (!empty($rawImg)) {
-            if (strpos($rawImg, 'http://') === 0 || strpos($rawImg, 'https://') === 0) {
-                $imgUrl = $rawImg;
-            } else {
-                $imgUrl = $siteUrl . '/uploads/media/images/' . ltrim($rawImg, '/');
-            }
-        }
-
-        $prodUrl = $siteUrl . '/product.php?id=' . $product['id'];
-        if (!empty($product['slug'])) {
-            $prodUrl = $siteUrl . '/product/' . $product['slug'];
-        }
-
-        // 5. Render & Insert into Queue
         $cta = trim($schedule['cta'] ?? 'Shop Now 🛒');
         $hashtags = trim($schedule['hashtags'] ?? '#SagarStarters #Shopping');
 
-        $renderedContent = $this->templateEngine->render($templateBody, $product, [
-            'hashtags' => $hashtags,
-            'cta' => $cta,
-            'cta_text' => $cta
-        ]);
-
         $queuedCount = 0;
-        $now = date('Y-m-d H:i:s');
+        $staggerIndex = 0;
 
         $stmtQueue = $db->prepare("INSERT INTO sm_queue 
             (product_id, platform, account_id, schedule_id, template_id, status, post_content, post_image_url, post_link, scheduled_at, max_retries) 
             VALUES (?, ?, ?, ?, ?, 'scheduled', ?, ?, ?, ?, 3)");
 
-        foreach ($accounts as $acc) {
-            // Skip if this product is already in active queue for this platform
-            $chkStmt = $db->prepare("SELECT COUNT(*) FROM sm_queue 
-                WHERE product_id = ? AND LOWER(platform) = ? AND status IN ('pending', 'scheduled', 'publishing')");
-            $chkStmt->execute([$product['id'], strtolower($acc['platform'])]);
-            if ($chkStmt->fetchColumn() > 0) {
-                continue;
+        foreach ($products as $product) {
+            $rawImg = trim($product['image'] ?? '');
+            $imgUrl = '';
+            if (!empty($rawImg)) {
+                if (strpos($rawImg, 'http://') === 0 || strpos($rawImg, 'https://') === 0) {
+                    $imgUrl = $rawImg;
+                } else {
+                    $imgUrl = $siteUrl . '/uploads/media/images/' . ltrim($rawImg, '/');
+                }
             }
 
-            $stmtQueue->execute([
-                $product['id'],
-                strtolower($acc['platform']),
-                $acc['id'],
-                $scheduleId,
-                $schedule['template_id'] ?: null,
-                $renderedContent,
-                $imgUrl,
-                $prodUrl,
-                $now
+            $prodUrl = $siteUrl . '/product.php?id=' . $product['id'];
+            if (!empty($product['slug'])) {
+                $prodUrl = $siteUrl . '/product/' . $product['slug'];
+            }
+
+            $renderedContent = $this->templateEngine->render($templateBody, $product, [
+                'hashtags' => $hashtags,
+                'cta' => $cta,
+                'cta_text' => $cta
             ]);
-            $queuedCount++;
+
+            $productInserted = false;
+
+            foreach ($accounts as $acc) {
+                // Skip if this product is already in active queue for this platform
+                $chkStmt = $db->prepare("SELECT COUNT(*) FROM sm_queue 
+                    WHERE product_id = ? AND LOWER(platform) = ? AND status IN ('pending', 'scheduled', 'publishing')");
+                $chkStmt->execute([$product['id'], strtolower($acc['platform'])]);
+                if ($chkStmt->fetchColumn() > 0) {
+                    continue;
+                }
+
+                $scheduledTime = time() + ($staggerIndex * $intervalMinutes * 60);
+                $scheduledAt = date('Y-m-d H:i:s', $scheduledTime);
+
+                $stmtQueue->execute([
+                    $product['id'],
+                    strtolower($acc['platform']),
+                    $acc['id'],
+                    $scheduleId,
+                    $schedule['template_id'] ?: null,
+                    $renderedContent,
+                    $imgUrl,
+                    $prodUrl,
+                    $scheduledAt
+                ]);
+                $queuedCount++;
+                $productInserted = true;
+            }
+
+            if ($productInserted) {
+                $staggerIndex++;
+            }
         }
 
-        // 6. Update Schedule execution timestamps
+        // 5. Update Schedule execution timestamps
         $this->updateScheduleNextRun($schedule);
 
         return $queuedCount;
     }
 
     /**
-     * Selects the next product for a schedule based on product filters and past posting activity.
+     * Fetches products matching schedule filters.
      */
-    private function getNextProductForSchedule(array $schedule, array $targetPlatforms): ?array {
+    private function getProductsForSchedule(array $schedule, bool $allProducts = true): array {
         $db = DbConnection::getInstance();
         $filterType = $schedule['filter_type'] ?? 'all';
         $filterVal = $schedule['filter_value'] ?? null;
@@ -239,20 +267,20 @@ class ScheduleRunner {
             }
         }
 
-        // Pick product that has been posted least recently (or never posted) for this schedule
+        $limitClause = $allProducts ? "" : "LIMIT 1";
+
         $sql = "SELECT p.* FROM products p 
             $where 
             ORDER BY (
                 SELECT COALESCE(MAX(q.id), 0) FROM sm_queue q WHERE q.product_id = p.id AND q.schedule_id = ?
             ) ASC, p.id ASC 
-            LIMIT 1";
+            $limitClause";
 
         $stmt = $db->prepare($sql);
         $execParams = array_merge($params, [(int)$schedule['id']]);
         $stmt->execute($execParams);
 
-        $product = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $product ?: null;
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     /**

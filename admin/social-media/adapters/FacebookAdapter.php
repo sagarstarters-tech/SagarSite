@@ -85,16 +85,27 @@ class FacebookAdapter implements PlatformAdapterInterface {
             return ['success' => false, 'post_id' => null, 'post_url' => null, 'error' => 'Missing page ID or access token'];
         }
 
-        $endpoint = $imageUrl ? "/$pageId/photos" : "/$pageId/feed";
-        $data = [
-            'access_token' => $accessToken,
-            'message' => $message
-        ];
+        $isValidImageUrl = !empty($imageUrl) 
+            && (strpos($imageUrl, 'http://') === 0 || strpos($imageUrl, 'https://') === 0) 
+            && strpos($imageUrl, 'localhost') === false 
+            && strpos($imageUrl, '127.0.0.1') === false;
 
-        if ($imageUrl) {
-            $data['url'] = $imageUrl;
-        } elseif ($link) {
-            $data['link'] = $link;
+        if ($isValidImageUrl) {
+            $endpoint = "/$pageId/photos";
+            $data = [
+                'access_token' => $accessToken,
+                'url'          => $imageUrl,
+                'caption'      => $message
+            ];
+        } else {
+            $endpoint = "/$pageId/feed";
+            $data = [
+                'access_token' => $accessToken,
+                'message'      => $message
+            ];
+            if ($link) {
+                $data['link'] = $link;
+            }
         }
 
         $res = $this->curlRequest(self::BASE_URL . $endpoint, 'POST', $data);
