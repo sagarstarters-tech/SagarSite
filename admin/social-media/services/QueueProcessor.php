@@ -85,13 +85,17 @@ class QueueProcessor {
             $rawImg = trim($queueItem['post_image_url'] ?? '');
             $siteUrl = rtrim(defined('SITE_URL') ? SITE_URL : '', '/');
             $fullImgUrl = '';
-            if (!empty($rawImg)) {
-                if (strpos($rawImg, 'http://') === 0 || strpos($rawImg, 'https://') === 0) {
-                    $fullImgUrl = $rawImg;
-                } elseif (strpos($rawImg, 'uploads/') === 0 || strpos($rawImg, 'assets/') === 0) {
-                    $fullImgUrl = $siteUrl . '/' . ltrim($rawImg, '/');
-                } else {
-                    $fullImgUrl = $siteUrl . '/uploads/media/images/' . ltrim($rawImg, '/');
+            if (function_exists('resolve_product_image_url')) {
+                $fullImgUrl = resolve_product_image_url($rawImg, null, (int)($queueItem['product_id'] ?? 0));
+            } else {
+                if (!empty($rawImg)) {
+                    if (strpos($rawImg, 'http://') === 0 || strpos($rawImg, 'https://') === 0) {
+                        $fullImgUrl = $rawImg;
+                    } elseif (strpos($rawImg, 'uploads/') === 0 || strpos($rawImg, 'assets/') === 0) {
+                        $fullImgUrl = $siteUrl . '/' . ltrim($rawImg, '/');
+                    } else {
+                        $fullImgUrl = $siteUrl . '/uploads/images/' . ltrim($rawImg, '/');
+                    }
                 }
             }
 

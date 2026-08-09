@@ -201,6 +201,10 @@ function runMigration() {
         echo "Error upgrading sm_schedules columns: " . $e->getMessage() . "<br>\n";
     }
 
+    try {
+        $db->exec("UPDATE sm_queue SET post_image_url = REPLACE(post_image_url, '/uploads/media/images/', '/uploads/images/') WHERE post_image_url LIKE '%/uploads/media/images/%'");
+    } catch (PDOException $e) {}
+
     // Insert Default Templates
     $templates = [
         [
