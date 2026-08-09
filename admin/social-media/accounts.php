@@ -318,7 +318,10 @@ $platformsConfig = [
                         <label class="form-label fw-bold">Pinterest Access Token <span class="text-danger">*</span></label>
                         <textarea name="access_token" class="form-control rounded-3" rows="3" 
                                   placeholder="e.g. pina_..." required></textarea>
-                        <div class="form-text">Generate an Access Token from Pinterest Developer Portal or OAuth flow.</div>
+                        <div class="form-text mt-1 text-primary">
+                            <i class="fas fa-info-circle me-1"></i> Ensure Token has these 5 Scopes enabled in Pinterest Developer Portal:
+                            <br><code>boards:read</code>, <code>boards:write</code>, <code>pins:read</code>, <code>pins:write</code>, <code>user_accounts:read</code>
+                        </div>
                     </div>
 
                     <div id="pinterestAlert"></div>
