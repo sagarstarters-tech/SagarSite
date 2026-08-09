@@ -43,7 +43,22 @@ unset($_env_file, $lines, $line, $key, $val);
 if (!function_exists('_env')) {
     function _env(string $key, $default = '') {
         $val = getenv($key);
-        return ($val !== false && $val !== '') ? $val : ($_ENV[$key] ?? $default);
+        if ($val !== false && $val !== '') return $val;
+        if (isset($_ENV[$key]) && $_ENV[$key] !== '') return $_ENV[$key];
+
+        if (class_exists('DbConnection')) {
+            try {
+                $pdo = \DbConnection::getInstance();
+                $stmt = $pdo->prepare("SELECT setting_value FROM sm_settings WHERE setting_key = ? LIMIT 1");
+                $stmt->execute([$key]);
+                $dbVal = $stmt->fetchColumn();
+                if ($dbVal !== false && $dbVal !== '' && $dbVal !== null) {
+                    return $dbVal;
+                }
+            } catch (\Throwable $e) {}
+        }
+
+        return $default;
     }
 }
 

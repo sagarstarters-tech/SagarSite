@@ -477,19 +477,37 @@ $platformsConfig = [
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-4 border-0 shadow">
             <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold text-danger" id="keysModalTitle">API Credentials Required</h5>
-                <button type="button" class="btn-close" data-mdb-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title fw-bold" id="keysModalTitle"><i class="fas fa-key text-warning me-2"></i>Configure API Credentials</h5>
+                <button type="button" class="btn-close" data-mdb-dismiss="modal" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-4">
-                <p>To connect <strong id="keysPlatformName">Platform</strong> using official API, you need to add your developer credentials to the <code>.env</code> file in your project root.</p>
-                <div class="bg-light p-3 rounded-3 font-monospace small mb-3 border">
-                    <span id="keysNeededText">KEY=value</span>
+            <form id="keysForm">
+                <div class="modal-body p-4">
+                    <input type="hidden" name="_csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
+                    <input type="hidden" name="action" value="save_app_keys">
+                    <input type="hidden" name="app_id_key" id="keysAppIdKey" value="">
+                    <input type="hidden" name="app_secret_key" id="keysAppSecretKey" value="">
+
+                    <p class="small text-muted mb-3">Enter developer credentials for <strong id="keysPlatformName">Platform</strong>. Saved keys enable 1-Click official OAuth login.</p>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" id="keysAppIdLabel">App ID / Client ID <span class="text-danger">*</span></label>
+                        <input type="text" name="app_id_val" id="keysAppIdVal" class="form-control rounded-3" required placeholder="e.g. 1599112">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" id="keysAppSecretLabel">App Secret Key <span class="text-danger">*</span></label>
+                        <input type="text" name="app_secret_val" id="keysAppSecretVal" class="form-control rounded-3" required placeholder="App Secret">
+                    </div>
+
+                    <div id="keysAlert"></div>
                 </div>
-                <p class="small text-muted mb-0">After editing your <code>.env</code> file, refresh this page to enable the Connect button.</p>
-            </div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-secondary rounded-pill" data-mdb-dismiss="modal">Got it</button>
-            </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light rounded-pill" data-mdb-dismiss="modal" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4" id="btnSaveAppKeys">
+                        <i class="fas fa-save me-1"></i> Save Credentials
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -503,15 +521,72 @@ $platformsConfig = [
 document.addEventListener('DOMContentLoaded', function() {
     const csrfToken = '<?php echo htmlspecialchars($csrfToken); ?>';
 
-    // Show Missing Keys Modal
+    // Show Missing Keys Modal & Setup Keys Form
     document.querySelectorAll('.btn-missing-keys').forEach(btn => {
         btn.addEventListener('click', function() {
-            document.getElementById('keysPlatformName').textContent = this.dataset.platform;
-            document.getElementById('keysNeededText').textContent = '# Add to .env:\n' + this.dataset.keys;
+            const platform = this.dataset.platform || '';
+            const keysNeeded = (this.dataset.keys || '').split('&').map(s => s.trim());
+            document.getElementById('keysPlatformName').textContent = platform;
+            
+            let idKey = 'PINTEREST_APP_ID';
+            let secretKey = 'PINTEREST_APP_SECRET';
+            if (keysNeeded.length >= 2) {
+                idKey = keysNeeded[0];
+                secretKey = keysNeeded[1];
+            } else if (platform.toLowerCase() === 'facebook') {
+                idKey = 'FB_APP_ID'; secretKey = 'FB_APP_SECRET';
+            } else if (platform.toLowerCase() === 'twitter') {
+                idKey = 'TWITTER_CLIENT_ID'; secretKey = 'TWITTER_CLIENT_SECRET';
+            } else if (platform.toLowerCase() === 'linkedin') {
+                idKey = 'LINKEDIN_CLIENT_ID'; secretKey = 'LINKEDIN_CLIENT_SECRET';
+            }
+
+            document.getElementById('keysAppIdKey').value = idKey;
+            document.getElementById('keysAppSecretKey').value = secretKey;
+            document.getElementById('keysAppIdLabel').textContent = idKey + ' *';
+            document.getElementById('keysAppSecretLabel').textContent = secretKey + ' *';
+
             const keysModal = new mdb.Modal(document.getElementById('keysModal'));
             keysModal.show();
         });
     });
+
+    // Save Keys Form AJAX
+    const keysForm = document.getElementById('keysForm');
+    if (keysForm) {
+        keysForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnSaveAppKeys');
+            const alertDiv = document.getElementById('keysAlert');
+            
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+            alertDiv.innerHTML = '';
+
+            const formData = new FormData(this);
+
+            fetch('ajax/ajax_account_actions.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save me-1"></i> Save Credentials';
+                if (data.success) {
+                    alertDiv.innerHTML = '<div class="alert alert-success mt-3"><i class="fas fa-check-circle me-1"></i> Credentials saved! Reloading...</div>';
+                    setTimeout(() => window.location.reload(), 1200);
+                } else {
+                    alertDiv.innerHTML = `<div class="alert alert-danger mt-3"><i class="fas fa-exclamation-triangle me-1"></i> ${data.error || 'Failed to save'}</div>`;
+                }
+            })
+            .catch(err => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save me-1"></i> Save Credentials';
+                alertDiv.innerHTML = `<div class="alert alert-danger mt-3"><i class="fas fa-exclamation-triangle me-1"></i> Network error: ${err.message}</div>`;
+            });
+        });
+    }
 
     // Save Telegram Form AJAX
     const telegramForm = document.getElementById('telegramForm');

@@ -291,6 +291,24 @@ try {
             $response['data'] = 'LinkedIn Access Token saved successfully!';
             break;
 
+        case 'save_app_keys':
+            $app_id_key = trim($_POST['app_id_key'] ?? '');
+            $app_secret_key = trim($_POST['app_secret_key'] ?? '');
+            $app_id_val = trim($_POST['app_id_val'] ?? '');
+            $app_secret_val = trim($_POST['app_secret_val'] ?? '');
+
+            if (empty($app_id_key) || empty($app_secret_key) || empty($app_id_val) || empty($app_secret_val)) {
+                throw new Exception('App ID and App Secret values are required');
+            }
+
+            $stmtSave = $pdo->prepare("INSERT INTO sm_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), updated_at = NOW()");
+            $stmtSave->execute([$app_id_key, $app_id_val]);
+            $stmtSave->execute([$app_secret_key, $app_secret_val]);
+
+            $response['success'] = true;
+            $response['data'] = 'API credentials saved successfully!';
+            break;
+
         default:
             throw new Exception('Invalid action');
     }
