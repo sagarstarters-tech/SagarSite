@@ -124,7 +124,7 @@ $platformsConfig = [
         'color' => '#E60023',
         'adapter' => new PinterestAdapter(),
         'callback' => $baseUrl . '/admin/social-media/oauth/pinterest_callback.php',
-        'has_keys' => !empty(_env('PINTEREST_APP_ID') ?: _env('PINTEREST_CLIENT_ID')) && !empty(_env('PINTEREST_APP_SECRET') ?: _env('PINTEREST_CLIENT_SECRET')),
+        'has_keys' => !empty(_env('PINTEREST_APP_ID', '1599112')) && !empty(_env('PINTEREST_APP_SECRET') ?: _env('PINTEREST_CLIENT_SECRET')),
         'keys_needed' => 'PINTEREST_APP_ID & PINTEREST_APP_SECRET'
     ]
 ];
