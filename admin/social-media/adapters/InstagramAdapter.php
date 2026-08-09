@@ -114,7 +114,26 @@ class InstagramAdapter implements PlatformAdapterInterface {
             return ['success' => false, 'post_id' => null, 'post_url' => null, 'error' => 'No creation ID returned'];
         }
 
-        // 2. Publish Container
+        // 2. Poll Media Container Status until FINISHED or max attempts reached
+        $status = 'IN_PROGRESS';
+        $attempts = 0;
+        $maxAttempts = 8;
+
+        while (($status === 'IN_PROGRESS' || empty($status)) && $attempts < $maxAttempts) {
+            sleep(2);
+            $attempts++;
+            $statusRes = $this->curlRequest(self::BASE_URL . "/$creationId", 'GET', [
+                'fields' => 'status_code,status',
+                'access_token' => $accessToken
+            ]);
+            $status = $statusRes['status_code'] ?? 'FINISHED';
+            if ($status === 'ERROR') {
+                $errorDetail = $statusRes['status'] ?? 'Instagram failed to download or process image URL';
+                return ['success' => false, 'post_id' => null, 'post_url' => null, 'error' => "Instagram Media Error: $errorDetail"];
+            }
+        }
+
+        // 3. Publish Container
         $publishRes = $this->curlRequest(self::BASE_URL . "/$igUserId/media_publish", 'POST', [
             'creation_id' => $creationId,
             'access_token' => $accessToken

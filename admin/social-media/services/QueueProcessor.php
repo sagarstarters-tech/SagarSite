@@ -98,6 +98,7 @@ class QueueProcessor {
             }
             
             if (empty($fullImgUrl) && !empty($rawImg)) {
+                $rawImg = str_replace('\\', '/', $rawImg);
                 if (strpos($rawImg, 'http://') === 0 || strpos($rawImg, 'https://') === 0) {
                     $fullImgUrl = $rawImg;
                 } else {
@@ -107,6 +108,20 @@ class QueueProcessor {
                     } else {
                         $fullImgUrl = $siteUrl . '/uploads/images/' . $cleanImg;
                     }
+                }
+            }
+
+            if (!empty($fullImgUrl)) {
+                $fullImgUrl = str_replace('\\', '/', $fullImgUrl);
+                // Encode spaces in URL path so Meta Graph API can download without HTTP 400
+                $urlParts = parse_url($fullImgUrl);
+                if (!empty($urlParts['scheme']) && !empty($urlParts['host']) && !empty($urlParts['path'])) {
+                    $encodedPath = implode('/', array_map('rawurlencode', explode('/', $urlParts['path'])));
+                    $port = !empty($urlParts['port']) ? ':' . $urlParts['port'] : '';
+                    $query = isset($urlParts['query']) ? '?' . $urlParts['query'] : '';
+                    $fullImgUrl = $urlParts['scheme'] . '://' . $urlParts['host'] . $port . $encodedPath . $query;
+                } else {
+                    $fullImgUrl = str_replace(' ', '%20', $fullImgUrl);
                 }
             }
 
