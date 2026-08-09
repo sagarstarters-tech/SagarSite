@@ -180,7 +180,7 @@ $platformsConfig = [
 
                     <div class="d-grid gap-2 mt-3">
                         <?php if ($isConnected): ?>
-                            <div class="d-flex gap-2 flex-wrap">
+                            <div class="d-flex gap-2 flex-wrap mb-1">
                                 <button class="btn btn-outline-primary btn-sm flex-fill rounded-pill btn-test-conn" 
                                         data-id="<?php echo $accInfo['id']; ?>">
                                     <i class="fas fa-vial me-1"></i> Test API
@@ -197,36 +197,40 @@ $platformsConfig = [
                                     <i class="fas fa-unlink me-1"></i> Disconnect
                                 </a>
                             </div>
+                            <?php if ($adapter->requiresOAuth()): ?>
+                                <button class="btn btn-sm btn-light border text-muted rounded-pill w-100 btn-missing-keys" 
+                                        data-keys="<?php echo htmlspecialchars($p['keys_needed']); ?>" 
+                                        data-platform="<?php echo htmlspecialchars($p['name']); ?>">
+                                    <i class="fas fa-cog me-1 text-warning"></i> Configure App Keys (App ID & Secret)
+                                </button>
+                            <?php endif; ?>
                         <?php else: ?>
+                            <?php if ($p['has_keys'] && $adapter->requiresOAuth()): ?>
+                                <a href="<?php echo htmlspecialchars($authUrl); ?>" 
+                                   class="btn text-white rounded-pill shadow-sm" 
+                                   style="background-color: <?php echo $p['color']; ?>;">
+                                    <i class="fas fa-plug me-2"></i> Connect <?php echo $p['name']; ?> (1-Click OAuth)
+                                </a>
+                            <?php endif; ?>
+
                             <?php if ($key === 'telegram'): ?>
                                 <button class="btn text-white rounded-pill shadow-sm" 
                                         style="background-color: <?php echo $p['color']; ?>;" 
                                         data-mdb-toggle="modal" data-mdb-target="#telegramModal" data-bs-toggle="modal" data-bs-target="#telegramModal">
-                                    <i class="fas fa-plug me-2"></i> Connect Telegram
+                                    <i class="fas fa-plug me-2"></i> Connect Telegram Bot Token
                                 </button>
-                            <?php elseif ($key === 'facebook'): ?>
-                                <button class="btn text-white rounded-pill shadow-sm" 
-                                        style="background-color: <?php echo $p['color']; ?>;" 
-                                        data-mdb-toggle="modal" data-mdb-target="#facebookModal" data-bs-toggle="modal" data-bs-target="#facebookModal">
-                                    <i class="fas fa-plug me-2"></i> Connect Facebook Page Token
+                            <?php elseif (in_array($key, ['facebook', 'pinterest', 'instagram', 'linkedin'])): ?>
+                                <button class="btn btn-outline-secondary rounded-pill shadow-sm" 
+                                        data-mdb-toggle="modal" data-mdb-target="#<?php echo $key; ?>Modal" data-bs-toggle="modal" data-bs-target="#<?php echo $key; ?>Modal">
+                                    <i class="fas fa-key me-2"></i> Enter <?php echo $p['name']; ?> Token Manually
                                 </button>
-                            <?php elseif ($key === 'pinterest'): ?>
-                                <button class="btn text-white rounded-pill shadow-sm" 
-                                        style="background-color: <?php echo $p['color']; ?>;" 
-                                        data-mdb-toggle="modal" data-mdb-target="#pinterestModal" data-bs-toggle="modal" data-bs-target="#pinterestModal">
-                                    <i class="fas fa-plug me-2"></i> Connect Pinterest Access Token
-                                </button>
-                            <?php elseif ($p['has_keys']): ?>
-                                <a href="<?php echo htmlspecialchars($authUrl); ?>" 
-                                   class="btn text-white rounded-pill shadow-sm" 
-                                   style="background-color: <?php echo $p['color']; ?>;">
-                                    <i class="fas fa-plug me-2"></i> Connect <?php echo $p['name']; ?>
-                                </a>
-                            <?php else: ?>
+                            <?php endif; ?>
+
+                            <?php if ($adapter->requiresOAuth()): ?>
                                 <button class="btn btn-light border text-muted rounded-pill shadow-sm btn-missing-keys" 
                                         data-keys="<?php echo htmlspecialchars($p['keys_needed']); ?>" 
                                         data-platform="<?php echo htmlspecialchars($p['name']); ?>">
-                                    <i class="fas fa-exclamation-triangle me-2 text-warning"></i> Configure Credentials
+                                    <i class="fas fa-cog me-2 text-warning"></i> Configure App Keys (App ID & Secret)
                                 </button>
                             <?php endif; ?>
                         <?php endif; ?>
