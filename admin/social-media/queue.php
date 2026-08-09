@@ -176,8 +176,9 @@ $statusBadges = [
                     <input type="text" name="search" id="queueSearchInput" class="form-control rounded-3" 
                            placeholder="Search product or content..." value="<?php echo htmlspecialchars($searchQuery); ?>" style="width: 220px;">
                     <button type="submit" class="btn btn-light border rounded-3" title="Search"><i class="fas fa-search"></i></button>
-                    <button type="button" class="btn btn-white border rounded-3 shadow-sm px-3" onclick="safelyRefreshQueuePage(true)" title="Refresh Queue (Auto-refreshes every 60s)">
+                    <button type="button" class="btn btn-white border rounded-3 shadow-sm px-3 d-flex align-items-center gap-1" onclick="safelyRefreshQueuePage(true)" title="Refresh Queue (Auto-refreshes every 30s)">
                         <i class="fas fa-sync-alt text-muted" id="queueRefreshIcon"></i>
+                        <span id="queueAutoRefreshTimer" class="small text-muted font-monospace ms-1" style="font-size: 11px;">30s</span>
                     </button>
                 </div>
             </form>
@@ -594,13 +595,21 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Helper to check if user is selecting checkboxes, typing in search, or viewing a modal
+    // Track user active typing time
+    let lastUserTypingTime = 0;
+    document.addEventListener('input', function(e) {
+        if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+            lastUserTypingTime = Date.now();
+        }
+    });
+
+    // Helper to check if user is selecting checkboxes, actively typing, or viewing a modal
     function isUserBusyWithQueue() {
         const checkedCount = document.querySelectorAll('.queue-chk:checked, #checkAllQueue:checked').length;
         if (checkedCount > 0) return true;
 
-        const activeElem = document.activeElement;
-        if (activeElem && (activeElem.tagName === 'INPUT' || activeElem.tagName === 'SELECT' || activeElem.tagName === 'TEXTAREA')) {
+        // Skip only if actively typing within last 5 seconds
+        if (Date.now() - lastUserTypingTime < 5000) {
             return true;
         }
 
@@ -617,7 +626,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         const icon = document.getElementById('queueRefreshIcon');
+        const timerElem = document.getElementById('queueAutoRefreshTimer');
         if (icon) icon.classList.add('fa-spin');
+        if (timerElem) timerElem.textContent = '...';
 
         fetch('ajax/ajax_process_queue.php')
             .then(res => res.json())
@@ -657,14 +668,31 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Initial async trigger after DOM load, then safe auto-refresh every 60 seconds (1 minute)
+    // Initial async trigger after DOM load
     setTimeout(function() {
         fetch('ajax/ajax_process_queue.php').catch(err => {});
     }, 500);
 
+    // Live 30-second countdown timer for auto-refresh
+    let autoRefreshCountdown = 30;
     setInterval(function() {
-        safelyRefreshQueuePage(false);
-    }, 60000);
+        const timerElem = document.getElementById('queueAutoRefreshTimer');
+
+        if (isUserBusyWithQueue()) {
+            autoRefreshCountdown = 30;
+            if (timerElem) timerElem.textContent = 'Paused';
+            return;
+        }
+
+        autoRefreshCountdown--;
+        if (autoRefreshCountdown <= 0) {
+            autoRefreshCountdown = 30;
+            if (timerElem) timerElem.textContent = '...';
+            safelyRefreshQueuePage(false);
+        } else {
+            if (timerElem) timerElem.textContent = autoRefreshCountdown + 's';
+        }
+    }, 1000);
 });
 </script>
 
