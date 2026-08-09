@@ -62,13 +62,13 @@ try {
     if ($existing) {
         $stmt = $pdo->prepare("
             UPDATE sm_connected_accounts 
-            SET account_id = ?, access_token = ?, refresh_token = ?, account_name = ?, is_active = 1, updated_at = NOW() 
+            SET account_id = ?, access_token_encrypted = ?, refresh_token_encrypted = ?, account_name = ?, is_active = 1, updated_at = NOW() 
             WHERE id = ?
         ");
         $stmt->execute([$accountId, $encryptedToken, $refreshToken, $accountName, $existing['id']]);
     } else {
         $stmt = $pdo->prepare("
-            INSERT INTO sm_connected_accounts (platform, account_id, access_token, refresh_token, account_name, is_active) 
+            INSERT INTO sm_connected_accounts (platform, account_id, access_token_encrypted, refresh_token_encrypted, account_name, is_active) 
             VALUES ('pinterest', ?, ?, ?, ?, 1)
         ");
         $stmt->execute([$accountId, $encryptedToken, $refreshToken, $accountName]);

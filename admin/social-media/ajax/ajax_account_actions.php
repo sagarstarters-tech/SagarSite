@@ -82,6 +82,19 @@ try {
                 }
                 $response['success'] = true;
                 $response['data'] = 'Instagram Account verified successfully! IG User ID: ' . ($acc['account_id'] ?? $acc['page_id']);
+            } elseif ($platform === 'pinterest') {
+                if (empty($acc['access_token_encrypted'])) {
+                    throw new Exception("Pinterest Access Token is missing.");
+                }
+                $decryptedToken = TokenEncryption::decrypt($acc['access_token_encrypted'] ?? '');
+                require_once BASE_PATH . '/admin/social-media/adapters/PinterestAdapter.php';
+                $pin = new PinterestAdapter();
+                $isValid = $pin->validateConnection(['access_token' => $decryptedToken]);
+                if (!$isValid) {
+                    throw new Exception('Pinterest Access Token is invalid or expired.');
+                }
+                $response['success'] = true;
+                $response['data'] = 'Pinterest Account verified successfully! Account: ' . ($acc['account_name'] ?? $acc['account_id']);
             } else {
                 // Generic test for OAuth platforms
                 $response['success'] = true;
