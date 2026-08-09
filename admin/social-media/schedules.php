@@ -134,6 +134,13 @@ $scheduleTypes = [
 
                                 <div class="border-top pt-2 mt-3">
                                     <div class="text-muted extra-small mb-1">
+                                        <i class="fas fa-calendar-alt text-info me-1"></i> <strong>Start Time:</strong> 
+                                        <?php 
+                                            $sDT = (!empty($sched['start_date']) ? $sched['start_date'] : date('Y-m-d')) . ' ' . (!empty($sched['start_time']) ? $sched['start_time'] : '00:00:00');
+                                            echo date('M d, Y h:i A', strtotime($sDT)); 
+                                        ?>
+                                    </div>
+                                    <div class="text-muted extra-small mb-1">
                                         <i class="fas fa-history text-secondary me-1"></i> <strong>Last Run:</strong> 
                                         <?php echo !empty($sched['last_run_at']) ? date('M d, Y h:i A', strtotime($sched['last_run_at'])) : 'Never'; ?>
                                     </div>
@@ -203,6 +210,16 @@ $scheduleTypes = [
                                     <option value="<?php echo $typeKey; ?>"><?php echo htmlspecialchars($typeVal); ?></option>
                                 <?php endforeach; ?>
                             </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="schedStartDate" class="form-label fw-bold small text-muted">Posting Start Date <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control rounded-3" id="schedStartDate" name="start_date" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="schedStartTime" class="form-label fw-bold small text-muted">Posting Start Time <span class="text-danger">*</span></label>
+                            <input type="time" class="form-control rounded-3" id="schedStartTime" name="start_time" required>
                         </div>
 
                         <div class="col-md-12" id="customIntervalGroup" style="display: none;">
@@ -403,6 +420,13 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('scheduleModalLabel').textContent = 'Create Posting Schedule';
         document.querySelectorAll('.platform-chk').forEach(c => c.checked = true);
         document.getElementById('schedActive').checked = true;
+
+        const nowObj = new Date();
+        const todayStr = nowObj.getFullYear() + '-' + String(nowObj.getMonth() + 1).padStart(2, '0') + '-' + String(nowObj.getDate()).padStart(2, '0');
+        const timeStr = String(nowObj.getHours()).padStart(2, '0') + ':' + String(nowObj.getMinutes()).padStart(2, '0');
+        document.getElementById('schedStartDate').value = todayStr;
+        document.getElementById('schedStartTime').value = timeStr;
+
         checkIntervalVisibility();
         updateFilterValueOptions();
         showScheduleModal();
@@ -428,6 +452,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('schedHashtags').value = data.hashtags || '';
                 document.getElementById('schedFilterType').value = data.filter_type || 'all';
                 document.getElementById('schedActive').checked = parseInt(data.is_active) === 1;
+
+                const nowObj = new Date();
+                const todayStr = nowObj.getFullYear() + '-' + String(nowObj.getMonth() + 1).padStart(2, '0') + '-' + String(nowObj.getDate()).padStart(2, '0');
+                const timeStr = String(nowObj.getHours()).padStart(2, '0') + ':' + String(nowObj.getMinutes()).padStart(2, '0');
+
+                document.getElementById('schedStartDate').value = data.start_date || todayStr;
+                document.getElementById('schedStartTime').value = data.start_time ? data.start_time.substring(0, 5) : timeStr;
 
                 updateFilterValueOptions(data.filter_value);
 

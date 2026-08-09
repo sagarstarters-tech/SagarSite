@@ -165,6 +165,17 @@ class ScheduleRunner {
             $intervalMinutes = $typeIntervals[$schedule['schedule_type']];
         }
 
+        // Resolve Base Start Time
+        $baseStartTimestamp = time();
+        if (!empty($schedule['start_date'])) {
+            $sDate = $schedule['start_date'];
+            $sTime = !empty($schedule['start_time']) ? $schedule['start_time'] : '00:00:00';
+            $parsedStart = strtotime("$sDate $sTime");
+            if ($parsedStart !== false) {
+                $baseStartTimestamp = $parsedStart;
+            }
+        }
+
         $siteUrl = defined('SITE_URL') ? rtrim(SITE_URL, '/') : '';
         $cta = trim($schedule['cta'] ?? 'Shop Now 🛒');
         $hashtags = trim($schedule['hashtags'] ?? '#SagarStarters #Shopping');
@@ -215,7 +226,7 @@ class ScheduleRunner {
                     continue;
                 }
 
-                $scheduledTime = time() + ($staggerIndex * $intervalMinutes * 60);
+                $scheduledTime = $baseStartTimestamp + ($staggerIndex * $intervalMinutes * 60);
                 $scheduledAt = date('Y-m-d H:i:s', $scheduledTime);
 
                 $stmtQueue->execute([

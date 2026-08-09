@@ -72,20 +72,27 @@ require_once BASE_PATH . '/admin/social-media/services/ScheduleRunner.php';
                 $platformsJson = json_encode([]);
             }
 
+            $startDate = trim($_POST['start_date'] ?? date('Y-m-d'));
+            $startTime = trim($_POST['start_time'] ?? date('H:i'));
+            if (strlen($startTime) === 5) $startTime .= ':00'; // Format HH:MM:SS
+
+            $nextRunAt = $startDate . ' ' . $startTime;
+
             if ($id) {
                 // Update
                 $stmt = $pdo->prepare("UPDATE sm_schedules 
                     SET name = ?, schedule_type = ?, interval_minutes = ?, platform_ids = ?, 
-                        template_id = ?, cta = ?, hashtags = ?, filter_type = ?, filter_value = ?, is_active = ? 
+                        template_id = ?, cta = ?, hashtags = ?, filter_type = ?, filter_value = ?, 
+                        start_date = ?, start_time = ?, next_run_at = ?, is_active = ? 
                     WHERE id = ?");
-                $stmt->execute([$name, $scheduleType, $intervalMinutes, $platformsJson, $templateId, $cta, $hashtags, $filterType, $filterValue, $isActive, $id]);
+                $stmt->execute([$name, $scheduleType, $intervalMinutes, $platformsJson, $templateId, $cta, $hashtags, $filterType, $filterValue, $startDate, $startTime, $nextRunAt, $isActive, $id]);
                 $msg = "Schedule updated successfully!";
             } else {
                 // Insert
                 $stmt = $pdo->prepare("INSERT INTO sm_schedules 
-                    (name, schedule_type, interval_minutes, platform_ids, template_id, cta, hashtags, filter_type, filter_value, is_active, created_by) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                $stmt->execute([$name, $scheduleType, $intervalMinutes, $platformsJson, $templateId, $cta, $hashtags, $filterType, $filterValue, $isActive, $userId]);
+                    (name, schedule_type, interval_minutes, platform_ids, template_id, cta, hashtags, filter_type, filter_value, start_date, start_time, next_run_at, is_active, created_by) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$name, $scheduleType, $intervalMinutes, $platformsJson, $templateId, $cta, $hashtags, $filterType, $filterValue, $startDate, $startTime, $nextRunAt, $isActive, $userId]);
                 $msg = "New schedule created successfully!";
             }
 
