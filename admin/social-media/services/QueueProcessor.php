@@ -133,10 +133,13 @@ class QueueProcessor {
                 'access_token' => $plainToken,
                 'bot_token' => $plainToken,
                 'channel_id' => $acc['page_id'] ?? $acc['account_id'] ?? '',
+                'board_id' => $acc['page_id'] ?? $acc['account_id'] ?? '',
                 'message' => $queueItem['post_content'] ?? '',
                 'caption' => $queueItem['post_content'] ?? '',
+                'title' => $queueItem['post_content'] ?? '',
                 'image_url' => $fullImgUrl,
-                'link' => $queueItem['post_link'] ?? ''
+                'link' => $queueItem['post_link'] ?? '',
+                'product_id' => $queueItem['product_id'] ?? 0
             ];
 
             $pubRes = $adapter->publishPost($postData);

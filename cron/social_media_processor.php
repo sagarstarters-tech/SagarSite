@@ -13,7 +13,7 @@ $isCli = (php_sapi_name() === 'cli');
 $pdo = DbConnection::getInstance();
 
 if (!$isCli) {
-    $secret = $_GET['secret'] ?? '';
+    $secret = $_GET['secret'] ?? $_GET['key'] ?? '';
     $stmt = $pdo->prepare("SELECT setting_value FROM sm_settings WHERE setting_key = 'cron_secret_key'");
     $stmt->execute();
     $dbSecret = $stmt->fetchColumn();

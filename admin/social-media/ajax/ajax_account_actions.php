@@ -198,6 +198,99 @@ try {
             $response['data'] = 'Facebook Page Access Token saved successfully!';
             break;
 
+        case 'save_pinterest':
+            $access_token = trim($_POST['access_token'] ?? '');
+            $board_id = trim($_POST['board_id'] ?? '');
+            $account_name = trim($_POST['account_name'] ?? 'Pinterest Account');
+
+            if (empty($access_token)) {
+                throw new Exception('Pinterest Access Token is required');
+            }
+
+            $encryptedToken = TokenEncryption::encrypt($access_token);
+            $userId = $_SESSION['user_id'] ?? 1;
+
+            $deactStmt = $pdo->prepare("UPDATE sm_connected_accounts SET is_active = 0 WHERE LOWER(platform) = 'pinterest'");
+            $deactStmt->execute();
+
+            $stmt = $pdo->prepare("SELECT id FROM sm_connected_accounts WHERE LOWER(platform) = 'pinterest' LIMIT 1");
+            $stmt->execute();
+            $existing = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($existing) {
+                $updateStmt = $pdo->prepare("UPDATE sm_connected_accounts SET account_name = ?, page_id = ?, access_token_encrypted = ?, is_active = 1, connected_by = ?, updated_at = NOW() WHERE id = ?");
+                $updateStmt->execute([$account_name, $board_id, $encryptedToken, $userId, $existing['id']]);
+            } else {
+                $insertStmt = $pdo->prepare("INSERT INTO sm_connected_accounts (platform, account_name, account_id, page_id, access_token_encrypted, is_active, connected_by) VALUES ('pinterest', ?, 'pinterest', ?, ?, 1, ?)");
+                $insertStmt->execute([$account_name, $board_id, $encryptedToken, $userId]);
+            }
+
+            $response['success'] = true;
+            $response['data'] = 'Pinterest Access Token saved successfully!';
+            break;
+
+        case 'save_instagram':
+            $ig_user_id = trim($_POST['ig_user_id'] ?? '');
+            $access_token = trim($_POST['access_token'] ?? '');
+            $account_name = trim($_POST['account_name'] ?? '@instagram');
+
+            if (empty($ig_user_id) || empty($access_token)) {
+                throw new Exception('Instagram Business Account ID and Access Token are required');
+            }
+
+            $encryptedToken = TokenEncryption::encrypt($access_token);
+            $userId = $_SESSION['user_id'] ?? 1;
+
+            $deactStmt = $pdo->prepare("UPDATE sm_connected_accounts SET is_active = 0 WHERE LOWER(platform) = 'instagram'");
+            $deactStmt->execute();
+
+            $stmt = $pdo->prepare("SELECT id FROM sm_connected_accounts WHERE LOWER(platform) = 'instagram' LIMIT 1");
+            $stmt->execute();
+            $existing = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($existing) {
+                $updateStmt = $pdo->prepare("UPDATE sm_connected_accounts SET account_name = ?, account_id = ?, page_id = ?, access_token_encrypted = ?, is_active = 1, connected_by = ?, updated_at = NOW() WHERE id = ?");
+                $updateStmt->execute([$account_name, $ig_user_id, $ig_user_id, $encryptedToken, $userId, $existing['id']]);
+            } else {
+                $insertStmt = $pdo->prepare("INSERT INTO sm_connected_accounts (platform, account_name, account_id, page_id, access_token_encrypted, is_active, connected_by) VALUES ('instagram', ?, ?, ?, ?, 1, ?)");
+                $insertStmt->execute([$account_name, $ig_user_id, $ig_user_id, $encryptedToken, $userId]);
+            }
+
+            $response['success'] = true;
+            $response['data'] = 'Instagram Access Token saved successfully!';
+            break;
+
+        case 'save_linkedin':
+            $person_urn = trim($_POST['person_urn'] ?? '');
+            $access_token = trim($_POST['access_token'] ?? '');
+            $account_name = trim($_POST['account_name'] ?? 'LinkedIn Account');
+
+            if (empty($access_token)) {
+                throw new Exception('LinkedIn Access Token is required');
+            }
+
+            $encryptedToken = TokenEncryption::encrypt($access_token);
+            $userId = $_SESSION['user_id'] ?? 1;
+
+            $deactStmt = $pdo->prepare("UPDATE sm_connected_accounts SET is_active = 0 WHERE LOWER(platform) = 'linkedin'");
+            $deactStmt->execute();
+
+            $stmt = $pdo->prepare("SELECT id FROM sm_connected_accounts WHERE LOWER(platform) = 'linkedin' LIMIT 1");
+            $stmt->execute();
+            $existing = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($existing) {
+                $updateStmt = $pdo->prepare("UPDATE sm_connected_accounts SET account_name = ?, account_id = ?, page_id = ?, access_token_encrypted = ?, is_active = 1, connected_by = ?, updated_at = NOW() WHERE id = ?");
+                $updateStmt->execute([$account_name, $person_urn, $person_urn, $encryptedToken, $userId, $existing['id']]);
+            } else {
+                $insertStmt = $pdo->prepare("INSERT INTO sm_connected_accounts (platform, account_name, account_id, page_id, access_token_encrypted, is_active, connected_by) VALUES ('linkedin', ?, ?, ?, ?, 1, ?)");
+                $insertStmt->execute([$account_name, $person_urn, $person_urn, $encryptedToken, $userId]);
+            }
+
+            $response['success'] = true;
+            $response['data'] = 'LinkedIn Access Token saved successfully!';
+            break;
+
         default:
             throw new Exception('Invalid action');
     }

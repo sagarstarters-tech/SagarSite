@@ -94,14 +94,50 @@ class PinterestAdapter implements PlatformAdapterInterface {
 
     public function publishPost(array $postData): array {
         $accessToken = $postData['access_token'] ?? '';
-        $boardId = $postData['board_id'] ?? '';
-        $title = $postData['title'] ?? '';
-        $description = $postData['message'] ?? '';
+        $boardId = trim((string)($postData['board_id'] ?? ''));
+        $title = $postData['title'] ?? ($postData['message'] ?? '');
+        $description = $postData['message'] ?? ($postData['caption'] ?? '');
         $imageUrl = $postData['image_url'] ?? '';
         $link = $postData['link'] ?? '';
 
-        if (!$accessToken || !$boardId || !$imageUrl) {
-            return ['success' => false, 'post_id' => null, 'post_url' => null, 'error' => 'Missing access token, board ID, or image URL'];
+        if (empty($imageUrl) && !empty($postData['product_id']) && function_exists('resolve_product_image_url')) {
+            $imageUrl = resolve_product_image_url('', null, (int)$postData['product_id']);
+        }
+        if (empty($imageUrl)) {
+            $siteUrl = defined('SITE_URL') ? rtrim(SITE_URL, '/') : '';
+            $imageUrl = $siteUrl . '/assets/images/logo.jpg';
+        }
+
+        if (!$accessToken || !$imageUrl) {
+            return ['success' => false, 'post_id' => null, 'post_url' => null, 'error' => 'Missing Pinterest access token or image URL'];
+        }
+
+        // Auto-resolve Pinterest Board ID if missing or non-numeric (e.g. username string)
+        if (empty($boardId) || !ctype_digit($boardId)) {
+            $boardsRes = $this->curlRequest('https://api.pinterest.com/v5/boards', 'GET', [], [
+                'Authorization: Bearer ' . $accessToken
+            ]);
+            
+            if (!empty($boardsRes['items']) && is_array($boardsRes['items'])) {
+                $boardId = (string)$boardsRes['items'][0]['id'];
+            } else {
+                // Auto-create a default board on Pinterest if no boards exist
+                $createBoardRes = $this->curlRequest('https://api.pinterest.com/v5/boards', 'POST', json_encode([
+                    'name' => "Sagar Starters Products",
+                    'description' => "Automated Product Pins"
+                ]), [
+                    'Authorization: Bearer ' . $accessToken,
+                    'Content-Type: application/json'
+                ]);
+                
+                if (!empty($createBoardRes['id'])) {
+                    $boardId = (string)$createBoardRes['id'];
+                }
+            }
+        }
+
+        if (empty($boardId)) {
+            return ['success' => false, 'post_id' => null, 'post_url' => null, 'error' => 'Could not resolve or create a Pinterest Board ID. Please create a Board on Pinterest.'];
         }
         
         $headers = [
@@ -115,8 +151,8 @@ class PinterestAdapter implements PlatformAdapterInterface {
                 'source_type' => 'image_url',
                 'url' => $imageUrl
             ],
-            'title' => substr($title, 0, 100),
-            'description' => substr($description, 0, 500),
+            'title' => mb_substr(trim(strip_tags((string)$title)), 0, 100),
+            'description' => mb_substr(trim(strip_tags((string)$description)), 0, 500),
             'link' => $link
         ];
         
@@ -124,8 +160,9 @@ class PinterestAdapter implements PlatformAdapterInterface {
         $res = $this->curlRequest($postUrl, 'POST', json_encode($data), $headers);
 
         if (isset($res['code']) && $res['code'] !== 0) {
+            $errMsg = $res['message'] ?? 'Failed to publish Pin to Pinterest';
             error_log('Pinterest Publish Error: ' . json_encode($res));
-            return ['success' => false, 'post_id' => null, 'post_url' => null, 'error' => $res['message'] ?? 'Failed to publish post'];
+            return ['success' => false, 'post_id' => null, 'post_url' => null, 'error' => $errMsg];
         }
 
         $postId = $res['id'] ?? null;

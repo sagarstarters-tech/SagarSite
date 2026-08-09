@@ -185,9 +185,9 @@ $platformsConfig = [
                                         data-id="<?php echo $accInfo['id']; ?>">
                                     <i class="fas fa-vial me-1"></i> Test API
                                 </button>
-                                <?php if ($key === 'facebook'): ?>
+                                <?php if (in_array($key, ['facebook', 'pinterest', 'instagram', 'linkedin'])): ?>
                                     <button class="btn btn-primary btn-sm flex-fill rounded-pill" 
-                                            data-mdb-toggle="modal" data-mdb-target="#facebookModal" data-bs-toggle="modal" data-bs-target="#facebookModal">
+                                            data-mdb-toggle="modal" data-mdb-target="#<?php echo $key; ?>Modal" data-bs-toggle="modal" data-bs-target="#<?php echo $key; ?>Modal">
                                         <i class="fas fa-key me-1"></i> Edit Token
                                     </button>
                                 <?php endif; ?>
@@ -209,6 +209,12 @@ $platformsConfig = [
                                         style="background-color: <?php echo $p['color']; ?>;" 
                                         data-mdb-toggle="modal" data-mdb-target="#facebookModal" data-bs-toggle="modal" data-bs-target="#facebookModal">
                                     <i class="fas fa-plug me-2"></i> Connect Facebook Page Token
+                                </button>
+                            <?php elseif ($key === 'pinterest'): ?>
+                                <button class="btn text-white rounded-pill shadow-sm" 
+                                        style="background-color: <?php echo $p['color']; ?>;" 
+                                        data-mdb-toggle="modal" data-mdb-target="#pinterestModal" data-bs-toggle="modal" data-bs-target="#pinterestModal">
+                                    <i class="fas fa-plug me-2"></i> Connect Pinterest Access Token
                                 </button>
                             <?php elseif ($p['has_keys']): ?>
                                 <a href="<?php echo htmlspecialchars($authUrl); ?>" 
@@ -273,6 +279,147 @@ $platformsConfig = [
                     <button type="button" class="btn btn-light rounded-pill" data-mdb-dismiss="modal" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary rounded-pill px-4" id="btnSaveFacebook">
                         <i class="fas fa-save me-1"></i> Save & Connect Facebook
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Pinterest Connection Modal -->
+<div class="modal fade" id="pinterestModal" tabindex="-1" aria-labelledby="pinterestModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="pinterestModalLabel">
+                    <i class="fab fa-pinterest text-danger me-2 fs-3"></i>Connect Pinterest Access Token
+                </h5>
+                <button type="button" class="btn-close" data-mdb-dismiss="modal" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="pinterestForm">
+                <div class="modal-body p-4">
+                    <input type="hidden" name="_csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
+                    <input type="hidden" name="action" value="save_pinterest">
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Pinterest Account Name <span class="text-danger">*</span></label>
+                        <input type="text" name="account_name" class="form-control rounded-3" 
+                               placeholder="e.g. @sagarstarters" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Board ID <span class="text-muted">(Optional - Auto-resolved if blank)</span></label>
+                        <input type="text" name="board_id" class="form-control rounded-3" 
+                               placeholder="e.g. 112233445566778899">
+                        <div class="form-text">If left empty, system will automatically select your first Board or auto-create "Sagar Starters Products".</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Pinterest Access Token <span class="text-danger">*</span></label>
+                        <textarea name="access_token" class="form-control rounded-3" rows="3" 
+                                  placeholder="e.g. pina_..." required></textarea>
+                        <div class="form-text">Generate an Access Token from Pinterest Developer Portal or OAuth flow.</div>
+                    </div>
+
+                    <div id="pinterestAlert"></div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light rounded-pill" data-mdb-dismiss="modal" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger rounded-pill px-4" id="btnSavePinterest">
+                        <i class="fas fa-save me-1"></i> Save & Connect Pinterest
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Instagram Connection Modal -->
+<div class="modal fade" id="instagramModal" tabindex="-1" aria-labelledby="instagramModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="instagramModalLabel">
+                    <i class="fab fa-instagram text-danger me-2 fs-3"></i>Connect Instagram Access Token
+                </h5>
+                <button type="button" class="btn-close" data-mdb-dismiss="modal" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="instagramForm">
+                <div class="modal-body p-4">
+                    <input type="hidden" name="_csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
+                    <input type="hidden" name="action" value="save_instagram">
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Instagram Handle / Name <span class="text-danger">*</span></label>
+                        <input type="text" name="account_name" class="form-control rounded-3" 
+                               placeholder="e.g. @sagarstarter" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Instagram Business Account ID <span class="text-danger">*</span></label>
+                        <input type="text" name="ig_user_id" class="form-control rounded-3" 
+                               placeholder="e.g. 17841400000000000" required>
+                        <div class="form-text">Find your Instagram Business Account ID in Meta Graph API Explorer or Facebook Page Settings.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Instagram Access Token <span class="text-danger">*</span></label>
+                        <textarea name="access_token" class="form-control rounded-3" rows="3" 
+                                  placeholder="e.g. EAAB..." required></textarea>
+                    </div>
+
+                    <div id="instagramAlert"></div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light rounded-pill" data-mdb-dismiss="modal" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger rounded-pill px-4" id="btnSaveInstagram">
+                        <i class="fas fa-save me-1"></i> Save & Connect Instagram
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- LinkedIn Connection Modal -->
+<div class="modal fade" id="linkedinModal" tabindex="-1" aria-labelledby="linkedinModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="linkedinModalLabel">
+                    <i class="fab fa-linkedin text-primary me-2 fs-3"></i>Connect LinkedIn Access Token
+                </h5>
+                <button type="button" class="btn-close" data-mdb-dismiss="modal" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="linkedinForm">
+                <div class="modal-body p-4">
+                    <input type="hidden" name="_csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
+                    <input type="hidden" name="action" value="save_linkedin">
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">LinkedIn Account Name <span class="text-danger">*</span></label>
+                        <input type="text" name="account_name" class="form-control rounded-3" 
+                               placeholder="e.g. SAGAR Starter's" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Person / Organization URN <span class="text-muted">(Optional)</span></label>
+                        <input type="text" name="person_urn" class="form-control rounded-3" 
+                               placeholder="e.g. urn:li:person:abc12345">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">LinkedIn Access Token <span class="text-danger">*</span></label>
+                        <textarea name="access_token" class="form-control rounded-3" rows="3" 
+                                  placeholder="e.g. AQX..." required></textarea>
+                    </div>
+
+                    <div id="linkedinAlert"></div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light rounded-pill" data-mdb-dismiss="modal" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4" id="btnSaveLinkedin">
+                        <i class="fas fa-save me-1"></i> Save & Connect LinkedIn
                     </button>
                 </div>
             </form>
@@ -434,6 +581,120 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(err => {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-save me-1"></i> Save & Connect Facebook';
+                alertDiv.innerHTML = `<div class="alert alert-danger mt-3"><i class="fas fa-exclamation-triangle me-1"></i> Network error: ${err.message}</div>`;
+            });
+        });
+    }
+
+    // Save Pinterest Form AJAX
+    const pinterestForm = document.getElementById('pinterestForm');
+    if (pinterestForm) {
+        pinterestForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnSavePinterest');
+            const alertDiv = document.getElementById('pinterestAlert');
+            
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Connecting...';
+            alertDiv.innerHTML = '';
+
+            const formData = new FormData(this);
+
+            fetch('ajax/ajax_account_actions.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save me-1"></i> Save & Connect Pinterest';
+                
+                if (data.success) {
+                    alertDiv.innerHTML = '<div class="alert alert-success mt-3"><i class="fas fa-check-circle me-1"></i> Pinterest Access Token saved! Reloading...</div>';
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    alertDiv.innerHTML = `<div class="alert alert-danger mt-3"><i class="fas fa-exclamation-triangle me-1"></i> ${data.error || 'Connection failed'}</div>`;
+                }
+            })
+            .catch(err => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save me-1"></i> Save & Connect Pinterest';
+                alertDiv.innerHTML = `<div class="alert alert-danger mt-3"><i class="fas fa-exclamation-triangle me-1"></i> Network error: ${err.message}</div>`;
+            });
+        });
+    }
+
+    // Save Instagram Form AJAX
+    const instagramForm = document.getElementById('instagramForm');
+    if (instagramForm) {
+        instagramForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnSaveInstagram');
+            const alertDiv = document.getElementById('instagramAlert');
+            
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Connecting...';
+            alertDiv.innerHTML = '';
+
+            const formData = new FormData(this);
+
+            fetch('ajax/ajax_account_actions.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save me-1"></i> Save & Connect Instagram';
+                
+                if (data.success) {
+                    alertDiv.innerHTML = '<div class="alert alert-success mt-3"><i class="fas fa-check-circle me-1"></i> Instagram Access Token saved! Reloading...</div>';
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    alertDiv.innerHTML = `<div class="alert alert-danger mt-3"><i class="fas fa-exclamation-triangle me-1"></i> ${data.error || 'Connection failed'}</div>`;
+                }
+            })
+            .catch(err => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save me-1"></i> Save & Connect Instagram';
+                alertDiv.innerHTML = `<div class="alert alert-danger mt-3"><i class="fas fa-exclamation-triangle me-1"></i> Network error: ${err.message}</div>`;
+            });
+        });
+    }
+
+    // Save LinkedIn Form AJAX
+    const linkedinForm = document.getElementById('linkedinForm');
+    if (linkedinForm) {
+        linkedinForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnSaveLinkedin');
+            const alertDiv = document.getElementById('linkedinAlert');
+            
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Connecting...';
+            alertDiv.innerHTML = '';
+
+            const formData = new FormData(this);
+
+            fetch('ajax/ajax_account_actions.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save me-1"></i> Save & Connect LinkedIn';
+                
+                if (data.success) {
+                    alertDiv.innerHTML = '<div class="alert alert-success mt-3"><i class="fas fa-check-circle me-1"></i> LinkedIn Access Token saved! Reloading...</div>';
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    alertDiv.innerHTML = `<div class="alert alert-danger mt-3"><i class="fas fa-exclamation-triangle me-1"></i> ${data.error || 'Connection failed'}</div>`;
+                }
+            })
+            .catch(err => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save me-1"></i> Save & Connect LinkedIn';
                 alertDiv.innerHTML = `<div class="alert alert-danger mt-3"><i class="fas fa-exclamation-triangle me-1"></i> Network error: ${err.message}</div>`;
             });
         });

@@ -12,6 +12,13 @@ try {
     runMigration();
     ob_end_clean();
 }
+
+$cronSecretKey = '96e9f6fa819a595ed5f24183a948aa5b';
+try {
+    $stmtCronKey = $pdo->query("SELECT setting_value FROM sm_settings WHERE setting_key = 'cron_secret_key' LIMIT 1");
+    $dbCronKey = $stmtCronKey->fetchColumn();
+    if (!empty($dbCronKey)) $cronSecretKey = $dbCronKey;
+} catch (\Throwable $e) {}
 ?>
 <link href="<?php echo SITE_URL; ?>/admin/social-media/assets/social-media.css" rel="stylesheet">
 <div class="container-fluid py-4">
@@ -51,8 +58,32 @@ try {
                                 <p class="text-muted">Settings to prevent spamming platforms with identical posts.</p>
                             </div>
                             <div class="tab-pane fade" id="queue" role="tabpanel">
-                                <h4 class="mb-4">Queue & Processing</h4>
-                                <p class="text-muted">Cron and retry settings.</p>
+                                <h4 class="mb-3">Queue & Background Processing</h4>
+                                <p class="text-muted small mb-4">Post queue is automatically processed in the background whenever an admin or user is active. For 24/7 standalone posting without active users, configure a Hostinger Cron Job below.</p>
+                                
+                                <div class="card border-0 bg-light p-4 rounded-4 shadow-sm mb-4">
+                                    <div class="d-flex align-items-center gap-2 mb-3">
+                                        <i class="fas fa-clock text-warning fs-4"></i>
+                                        <h6 class="fw-bold mb-0">Hostinger Cron Job Setup Guide</h6>
+                                    </div>
+                                    <p class="small text-muted mb-3">Copy either command into Hostinger cPanel -> Cron Jobs (Schedule: Every 5 minutes):</p>
+                                    <div class="row g-3">
+                                        <div class="col-md-12">
+                                            <label class="form-label small fw-bold mb-1">Option 1: PHP CLI Command (Recommended)</label>
+                                            <div class="input-group input-group-sm">
+                                                <input type="text" class="form-control font-monospace bg-white" readonly id="cronCmdCliSettings" value="/usr/bin/php /home/u902894566/domains/sagarstarters.com/public_html/cron/social_media_processor.php">
+                                                <button class="btn btn-outline-secondary" type="button" onclick="navigator.clipboard.writeText(document.getElementById('cronCmdCliSettings').value); alert('CLI Command Copied!');"><i class="fas fa-copy me-1"></i>Copy</button>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <label class="form-label small fw-bold mb-1">Option 2: URL / cURL Cron Command</label>
+                                            <div class="input-group input-group-sm">
+                                                <input type="text" class="form-control font-monospace bg-white" readonly id="cronUrlHttpSettings" value="curl -s -L &quot;<?php echo SITE_URL; ?>/cron/social_media_processor.php?secret=<?php echo htmlspecialchars($cronSecretKey); ?>&quot;">
+                                                <button class="btn btn-outline-secondary" type="button" onclick="navigator.clipboard.writeText(document.getElementById('cronUrlHttpSettings').value); alert('URL Cron Command Copied!');"><i class="fas fa-copy me-1"></i>Copy</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             <div class="tab-pane fade" id="danger" role="tabpanel">
                                 <h4 class="mb-4 text-danger">Danger Zone</h4>

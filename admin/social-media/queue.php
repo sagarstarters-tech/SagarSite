@@ -15,6 +15,13 @@ try {
 
 $csrfToken = csrf_token();
 
+$cronSecretKey = '96e9f6fa819a595ed5f24183a948aa5b';
+try {
+    $stmtCronKey = $pdo->query("SELECT setting_value FROM sm_settings WHERE setting_key = 'cron_secret_key' LIMIT 1");
+    $dbCronKey = $stmtCronKey->fetchColumn();
+    if (!empty($dbCronKey)) $cronSecretKey = $dbCronKey;
+} catch (\Throwable $e) {}
+
 // Fast GET Page Load: Fetch Queue Status Counters without blocking network API calls
 $statusCounts = [
     'all' => 0,
@@ -104,6 +111,42 @@ $statusBadges = [
             <a href="bulk-schedule.php" class="btn btn-primary rounded-pill shadow-sm">
                 <i class="fas fa-plus me-1"></i> Bulk Schedule
             </a>
+        </div>
+    </div>
+    
+    <!-- Auto Background Processing Banner & Hostinger Cron Setup Guide -->
+    <div class="alert alert-success border-0 shadow-sm rounded-4 mb-4 p-3">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <span class="spinner-grow spinner-grow-sm text-success" role="status"></span>
+                <strong class="text-success">Auto Background Posting Active:</strong>
+                <span class="small text-dark">Posts are automatically processed in the background while navigating any admin page or store page.</span>
+            </div>
+            <button class="btn btn-sm btn-outline-success rounded-pill px-3" type="button" data-mdb-toggle="collapse" data-bs-toggle="collapse" data-mdb-target="#hostingerCronInfo" data-bs-target="#hostingerCronInfo" aria-expanded="false">
+                <i class="fas fa-clock me-1"></i> Hostinger Cron Guide
+            </button>
+        </div>
+        <div class="collapse mt-3" id="hostingerCronInfo">
+            <div class="card card-body bg-white border-0 rounded-3 shadow-sm">
+                <h6 class="fw-bold mb-2"><i class="fas fa-server text-primary me-2"></i>Hostinger Server Cron Job (Optional - 24/7 posting even if 0 visitors online)</h6>
+                <p class="small text-muted mb-3">Add this command in Hostinger cPanel -> Cron Jobs (Schedule: Every 5 minutes):</p>
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold mb-1">Option 1: PHP CLI Command (Recommended)</label>
+                        <div class="input-group input-group-sm">
+                            <input type="text" class="form-control font-monospace bg-light" readonly id="cronCmdCliSocial" value="/usr/bin/php /home/u902894566/domains/sagarstarters.com/public_html/cron/social_media_processor.php">
+                            <button class="btn btn-outline-secondary" type="button" onclick="navigator.clipboard.writeText(document.getElementById('cronCmdCliSocial').value); alert('CLI Command Copied!');"><i class="fas fa-copy"></i></button>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold mb-1">Option 2: URL / cURL Cron Command</label>
+                        <div class="input-group input-group-sm">
+                            <input type="text" class="form-control font-monospace bg-light" readonly id="cronUrlHttpSocial" value="curl -s -L &quot;<?php echo SITE_URL; ?>/cron/social_media_processor.php?secret=<?php echo htmlspecialchars($cronSecretKey); ?>&quot;">
+                            <button class="btn btn-outline-secondary" type="button" onclick="navigator.clipboard.writeText(document.getElementById('cronUrlHttpSocial').value); alert('URL Cron Command Copied!');"><i class="fas fa-copy"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -243,7 +286,7 @@ $statusBadges = [
                                             <img src="<?php echo htmlspecialchars($imgSrc); ?>" 
                                                  alt="Thumb" class="rounded border object-fit-cover" 
                                                  style="width: 45px; height: 45px;"
-                                                 onerror="this.onerror=null; this.src='<?php echo SITE_URL; ?>/assets/images/logo.jpg';">
+                                                 onerror="this.onerror=null; this.src='<?php echo defined('ASSETS_URL') ? ASSETS_URL : SITE_URL . '/assets'; ?>/images/logo.jpg';">
                                             <div>
                                                 <div class="fw-bold small text-truncate" style="max-width: 180px;">
                                                     <?php echo htmlspecialchars($prodName); ?>
@@ -289,7 +332,7 @@ $statusBadges = [
                                         </div>
                                     </td>
                                      <td class="text-end" style="white-space: nowrap;">
-                                         <div class="d-flex justify-content-end align-items-center gap-1 flex-nowrap">
+                                         <div class="d-flex justify-content-end align-items-center gap-2 flex-nowrap">
                                              <?php if (strtolower($item['status']) === 'posted'): 
                                                  $postUrl = '#';
                                                  $pPostId = trim($item['platform_post_id'] ?? '');
@@ -353,36 +396,38 @@ $statusBadges = [
                                                      $postUrl = 'https://www.facebook.com';
                                                  } else if ($pKey === 'linkedin') {
                                                      $postUrl = 'https://www.linkedin.com';
+                                                 } else if ($pKey === 'instagram') {
+                                                     $postUrl = 'https://www.instagram.com';
                                                  }
 
                                                  if ($postUrl !== '#'):
                                              ?>
                                                  <a href="<?php echo htmlspecialchars($postUrl); ?>" target="_blank" 
-                                                    class="btn btn-outline-primary rounded-pill shadow-sm" 
-                                                    style="font-size: 11px; padding: 3px 8px; white-space: nowrap;" 
+                                                    class="btn btn-sm btn-primary rounded-pill shadow-sm d-inline-flex align-items-center gap-1 text-white fw-semibold btn-view-post" 
+                                                    style="font-size: 11px; padding: 4px 10px; white-space: nowrap; text-transform: none; text-decoration: none;" 
                                                     title="View Published Post">
-                                                     <i class="fas fa-external-link-alt me-1"></i>View Post
+                                                     <i class="fas fa-external-link-alt"></i> View Post
                                                  </a>
                                              <?php endif; endif; ?>
 
-                                             <button type="button" class="btn btn-success rounded-pill btn-post-now text-white fw-bold shadow-sm" 
-                                                     style="font-size: 11px; padding: 3px 8px; white-space: nowrap;" 
+                                             <button type="button" class="btn btn-sm btn-success rounded-pill btn-post-now text-white fw-bold shadow-sm d-inline-flex align-items-center gap-1" 
+                                                     style="font-size: 11px; padding: 4px 10px; white-space: nowrap; text-transform: none;" 
                                                      data-id="<?php echo $item['id']; ?>" title="Post Immediately">
-                                                 <i class="fas fa-bolt me-1"></i>Post Now
+                                                 <i class="fas fa-bolt"></i> Post Now
                                              </button>
                                              
                                              <?php if (strtolower($item['status']) === 'failed'): ?>
-                                                 <button type="button" class="btn btn-warning rounded-pill btn-retry-item text-dark fw-bold shadow-sm" 
-                                                         style="font-size: 11px; padding: 3px 8px; white-space: nowrap;" 
+                                                 <button type="button" class="btn btn-sm btn-warning rounded-pill btn-retry-item text-dark fw-bold shadow-sm d-inline-flex align-items-center gap-1" 
+                                                         style="font-size: 11px; padding: 4px 10px; white-space: nowrap; text-transform: none;" 
                                                          data-id="<?php echo $item['id']; ?>" title="Retry Failed Post">
-                                                     <i class="fas fa-redo me-1"></i>Retry
+                                                     <i class="fas fa-redo"></i> Retry
                                                  </button>
                                              <?php endif; ?>
 
-                                             <button type="button" class="btn btn-outline-danger rounded-circle btn-delete-item shadow-sm" 
-                                                     style="width: 26px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;" 
+                                             <button type="button" class="btn btn-sm btn-danger rounded-circle btn-delete-item shadow-sm d-inline-flex align-items-center justify-content-center" 
+                                                     style="width: 30px; height: 30px; padding: 0; min-width: 30px; flex-shrink: 0;" 
                                                      data-id="<?php echo $item['id']; ?>" title="Delete Queue Item">
-                                                 <i class="fas fa-trash-alt" style="font-size: 10px;"></i>
+                                                 <i class="fas fa-trash" style="font-size: 12px; color: #ffffff !important;"></i>
                                              </button>
                                          </div>
                                      </td>
@@ -398,6 +443,49 @@ $statusBadges = [
 
 <style>
 .extra-small { font-size: 0.75rem; }
+.btn-delete-item {
+    background-color: #dc3545 !important;
+    border-color: #dc3545 !important;
+    color: #ffffff !important;
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
+    border-radius: 50% !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    box-shadow: 0 2px 5px rgba(220, 53, 69, 0.3) !important;
+}
+.btn-delete-item i {
+    font-size: 12px !important;
+    color: #ffffff !important;
+    display: inline-block !important;
+}
+.btn-delete-item:hover {
+    background-color: #bb2d3b !important;
+    border-color: #b02a37 !important;
+    transform: scale(1.05);
+}
+.btn-view-post {
+    background-color: #0d6efd !important;
+    border-color: #0d6efd !important;
+    color: #ffffff !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    padding: 4px 10px !important;
+    border-radius: 50rem !important;
+    text-transform: none !important;
+    text-decoration: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    box-shadow: 0 2px 5px rgba(13, 110, 253, 0.25) !important;
+}
+.btn-view-post:hover {
+    background-color: #0b5ed7 !important;
+    color: #ffffff !important;
+}
 .queue-tabs-wrapper {
     border-bottom: 2px solid #e9ecef;
 }
