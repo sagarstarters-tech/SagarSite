@@ -66,6 +66,22 @@ try {
                 }
                 $response['success'] = true;
                 $response['data'] = 'Facebook Page Token verified successfully! Page ID: ' . $acc['page_id'];
+            } elseif ($platform === 'instagram') {
+                if (empty($acc['access_token_encrypted']) || (empty($acc['account_id']) && empty($acc['page_id']))) {
+                    throw new Exception("Instagram Account ID or Access Token is missing.");
+                }
+                $decryptedToken = TokenEncryption::decrypt($acc['access_token_encrypted'] ?? '');
+                require_once BASE_PATH . '/admin/social-media/adapters/InstagramAdapter.php';
+                $ig = new InstagramAdapter();
+                $isValid = $ig->validateConnection([
+                    'ig_user_id' => $acc['account_id'] ?? $acc['page_id'] ?? '',
+                    'access_token' => $decryptedToken
+                ]);
+                if (!$isValid) {
+                    throw new Exception('Instagram Access Token or Account ID is invalid or expired.');
+                }
+                $response['success'] = true;
+                $response['data'] = 'Instagram Account verified successfully! IG User ID: ' . ($acc['account_id'] ?? $acc['page_id']);
             } else {
                 // Generic test for OAuth platforms
                 $response['success'] = true;

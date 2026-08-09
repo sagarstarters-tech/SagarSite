@@ -83,23 +83,35 @@ class QueueProcessor {
             $adapter = $this->getAdapterForPlatform($platform);
 
             $rawImg = trim($queueItem['post_image_url'] ?? '');
+            
+            // Fallback: If post_image_url is empty but product_id is set, fetch product's image from products table
+            if (empty($rawImg) && !empty($queueItem['product_id'])) {
+                $stmtProdImg = $db->prepare("SELECT image FROM products WHERE id = ?");
+                $stmtProdImg->execute([(int)$queueItem['product_id']]);
+                $rawImg = trim((string)$stmtProdImg->fetchColumn());
+            }
+
             $siteUrl = rtrim(defined('SITE_URL') ? SITE_URL : '', '/');
             $fullImgUrl = '';
             if (function_exists('resolve_product_image_url')) {
                 $fullImgUrl = resolve_product_image_url($rawImg, null, (int)($queueItem['product_id'] ?? 0));
-            } else {
-                if (!empty($rawImg)) {
-                    if (strpos($rawImg, 'http://') === 0 || strpos($rawImg, 'https://') === 0) {
-                        $fullImgUrl = $rawImg;
-                    } elseif (strpos($rawImg, 'uploads/') === 0 || strpos($rawImg, 'assets/') === 0) {
-                        $fullImgUrl = $siteUrl . '/' . ltrim($rawImg, '/');
+            }
+            
+            if (empty($fullImgUrl) && !empty($rawImg)) {
+                if (strpos($rawImg, 'http://') === 0 || strpos($rawImg, 'https://') === 0) {
+                    $fullImgUrl = $rawImg;
+                } else {
+                    $cleanImg = ltrim($rawImg, '/');
+                    if (strpos($cleanImg, 'uploads/') === 0 || strpos($cleanImg, 'assets/') === 0) {
+                        $fullImgUrl = $siteUrl . '/' . $cleanImg;
                     } else {
-                        $fullImgUrl = $siteUrl . '/uploads/images/' . ltrim($rawImg, '/');
+                        $fullImgUrl = $siteUrl . '/uploads/images/' . $cleanImg;
                     }
                 }
             }
 
             $postData = [
+                'ig_user_id' => $acc['account_id'] ?? $acc['page_id'] ?? '',
                 'page_id' => $acc['page_id'] ?? $acc['account_id'] ?? '',
                 'account_id' => $acc['account_id'] ?? '',
                 'person_urn' => $acc['account_id'] ?? '',
@@ -107,6 +119,7 @@ class QueueProcessor {
                 'bot_token' => $plainToken,
                 'channel_id' => $acc['page_id'] ?? $acc['account_id'] ?? '',
                 'message' => $queueItem['post_content'] ?? '',
+                'caption' => $queueItem['post_content'] ?? '',
                 'image_url' => $fullImgUrl,
                 'link' => $queueItem['post_link'] ?? ''
             ];

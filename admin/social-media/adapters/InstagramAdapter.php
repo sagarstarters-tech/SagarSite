@@ -88,7 +88,7 @@ class InstagramAdapter implements PlatformAdapterInterface {
     }
 
     public function publishPost(array $postData): array {
-        $igUserId = $postData['ig_user_id'] ?? '';
+        $igUserId = $postData['ig_user_id'] ?? $postData['account_id'] ?? $postData['page_id'] ?? '';
         $accessToken = $postData['access_token'] ?? '';
         $caption = $postData['caption'] ?? ($postData['message'] ?? '');
         $imageUrl = $postData['image_url'] ?? '';
@@ -136,7 +136,7 @@ class InstagramAdapter implements PlatformAdapterInterface {
     }
 
     public function validateConnection(array $account): bool {
-        $igUserId = $account['ig_user_id'] ?? '';
+        $igUserId = $account['ig_user_id'] ?? $account['account_id'] ?? $account['page_id'] ?? '';
         $accessToken = $account['access_token'] ?? '';
         if (!$igUserId || !$accessToken) return false;
 
