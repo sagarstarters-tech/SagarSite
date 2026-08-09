@@ -203,19 +203,42 @@ if (!function_exists('resolve_product_image_url')) {
             $img = '';
         }
         
-        // If main image is empty, scan ALL gallery images for product_id until a valid image entry is found
-        if (empty($img) && $conn !== null && !empty($product_id)) {
+        $pName = '';
+
+        // If main image is empty, try loading image & name from products table or product_images gallery table
+        if (!empty($product_id)) {
             $p_id = intval($product_id);
-            $gal_q = $conn->query("SELECT image FROM product_images WHERE product_id = $p_id ORDER BY position ASC, id ASC");
-            if ($gal_q && $gal_q->num_rows > 0) {
-                while ($g_row = $gal_q->fetch_assoc()) {
-                    $g_img = trim($g_row['image'] ?? '');
-                    if (!empty($g_img) && !in_array(strtolower(basename($g_img)), $dummies)) {
-                        $img = $g_img;
-                        break; // Found first real photo in gallery!
+            try {
+                if (file_exists($base_path . '/config/DbConnection.php')) {
+                    require_once $base_path . '/config/DbConnection.php';
+                    $pdoInst = \DbConnection::getInstance();
+                    
+                    $stmtP = $pdoInst->prepare("SELECT image, name FROM products WHERE id = ?");
+                    $stmtP->execute([$p_id]);
+                    $pRow = $stmtP->fetch(\PDO::FETCH_ASSOC);
+                    if ($pRow) {
+                        $pName = strtolower($pRow['name'] ?? '');
+                        if (empty($img)) {
+                            $pImg = trim($pRow['image'] ?? '');
+                            if (!empty($pImg) && !in_array(strtolower(basename($pImg)), $dummies)) {
+                                $img = $pImg;
+                            }
+                        }
+                    }
+
+                    if (empty($img)) {
+                        $stmtG = $pdoInst->prepare("SELECT image FROM product_images WHERE product_id = ? ORDER BY position ASC, id ASC");
+                        $stmtG->execute([$p_id]);
+                        while ($gRow = $stmtG->fetch(\PDO::FETCH_ASSOC)) {
+                            $gImg = trim($gRow['image'] ?? '');
+                            if (!empty($gImg) && !in_array(strtolower(basename($gImg)), $dummies)) {
+                                $img = $gImg;
+                                break;
+                            }
+                        }
                     }
                 }
-            }
+            } catch (\Throwable $e) {}
         }
         
         if (!empty($img)) {
@@ -224,14 +247,12 @@ if (!function_exists('resolve_product_image_url')) {
                 return $img;
             }
             
-            // Clean leading slashes
-            $clean = ltrim($img, '/');
+            // Clean leading slashes and backslashes
+            $clean = ltrim(str_replace('\\', '/', $img), '/');
             
-            // 2. Already stored as full relative path from root (e.g. "uploads/images/testimonials/tst_xxx.jpg")
-            if (strpos($clean, 'uploads/') === 0) {
-                if (file_exists($base_path . '/' . $clean)) {
-                    return $site_url . '/' . $clean;
-                }
+            // 2. Already stored as full relative path from root
+            if (strpos($clean, 'uploads/') === 0 && file_exists($base_path . '/' . $clean)) {
+                return $site_url . '/' . $clean;
             }
 
             // Strip directory prefixes to get bare filename
@@ -244,17 +265,17 @@ if (!function_exists('resolve_product_image_url')) {
                 $bare = substr($bare, 8);
             }
 
-            // Check in /uploads/images/ (new deploy-safe location — priority)
+            // Check in /uploads/images/
             if (file_exists($base_path . '/uploads/images/' . $bare)) {
                 return $site_url . '/uploads/images/' . $bare;
             }
 
-            // Check in /uploads/ (legacy fallback)
+            // Check in /uploads/
             if (file_exists($base_path . '/uploads/' . $bare)) {
                 return $site_url . '/uploads/' . $bare;
             }
             
-            // Check in /assets/images/ (git-tracked images)
+            // Check in /assets/images/
             if (file_exists($base_path . '/assets/images/' . $bare)) {
                 return $assets_url . '/images/' . $bare;
             }
@@ -275,36 +296,47 @@ if (!function_exists('resolve_product_image_url')) {
                     return $site_url . '/uploads/' . basename($upload_matches[0]);
                 }
             }
+
+            // If string is non-empty, construct direct web URL so browser can load it
+            if (strpos($clean, 'uploads/') === 0) {
+                return $site_url . '/' . $clean;
+            }
+            return $site_url . '/uploads/images/' . $bare;
         }
         
         // Smart Keyword Auto-Matcher for Product Images
-        if ($conn !== null && !empty($product_id)) {
-            $p_id = intval($product_id);
-            $name_q = $conn->query("SELECT name FROM products WHERE id=$p_id");
-            if ($name_q && $n_row = $name_q->fetch_assoc()) {
-                $p_name = strtolower($n_row['name']);
-                if (strpos($p_name, 'star delta') !== false && file_exists($base_path . '/assets/images/AhaConvert_star delta pi.webp')) {
-                    return $assets_url . '/images/AhaConvert_star delta pi.webp';
-                }
-                if (strpos($p_name, 'submersible') !== false && file_exists($base_path . '/assets/images/AhaConvert_sub set.webp')) {
-                    return $assets_url . '/images/AhaConvert_sub set.webp';
-                }
-                if (strpos($p_name, 'stabilizer') !== false || strpos($p_name, 'voltage') !== false) {
-                    if (file_exists($base_path . '/assets/images/AhaConvert_stabilizer pi.webp')) {
-                        return $assets_url . '/images/AhaConvert_stabilizer pi.webp';
-                    }
-                }
-                if (strpos($p_name, 'switch') !== false && file_exists($base_path . '/assets/images/AhaConvert_sg.webp')) {
-                    return $assets_url . '/images/AhaConvert_sg.webp';
-                }
-                if (strpos($p_name, 'float') !== false && file_exists($base_path . '/assets/images/float-1.webp')) {
-                    return $assets_url . '/images/float-1.webp';
-                }
-                if (strpos($p_name, 'digital') !== false || strpos($p_name, 'meter') !== false) {
-                    if (file_exists($base_path . '/assets/images/AhaConvert_single hp dgt.webp')) {
-                        return $assets_url . '/images/AhaConvert_single hp dgt.webp';
-                    }
-                }
+        if (!empty($pName)) {
+            if ((strpos($pName, 'push button') !== false || strpos($pName, 'button') !== false || strpos($pName, 'vastav') !== false)) {
+                if (file_exists($base_path . '/uploads/images/AhaConvert_sg.webp')) return $site_url . '/uploads/images/AhaConvert_sg.webp';
+                if (file_exists($base_path . '/assets/images/AhaConvert_sg.webp')) return $assets_url . '/images/AhaConvert_sg.webp';
+            }
+            if ((strpos($pName, 'breaker') !== false || strpos($pName, 'circuit') !== false || strpos($pName, 'teknic') !== false || strpos($pName, 'pole') !== false)) {
+                if (file_exists($base_path . '/uploads/images/AhaConvert_sps.webp')) return $site_url . '/uploads/images/AhaConvert_sps.webp';
+                if (file_exists($base_path . '/uploads/images/AhaConvert_sg.webp')) return $site_url . '/uploads/images/AhaConvert_sg.webp';
+            }
+            if (strpos($pName, 'star delta') !== false) {
+                if (file_exists($base_path . '/uploads/images/AhaConvert_star delta pi.webp')) return $site_url . '/uploads/images/AhaConvert_star delta pi.webp';
+                if (file_exists($base_path . '/assets/images/AhaConvert_star delta pi.webp')) return $assets_url . '/images/AhaConvert_star delta pi.webp';
+            }
+            if (strpos($pName, 'submersible') !== false || strpos($pName, 'apollo') !== false) {
+                if (file_exists($base_path . '/uploads/images/AhaConvert_1hp appolo pi.webp')) return $site_url . '/uploads/images/AhaConvert_1hp appolo pi.webp';
+                if (file_exists($base_path . '/assets/images/AhaConvert_sub set.webp')) return $assets_url . '/images/AhaConvert_sub set.webp';
+            }
+            if (strpos($pName, 'stabilizer') !== false || strpos($pName, 'voltage') !== false) {
+                if (file_exists($base_path . '/uploads/images/AhaConvert_stabilizer pi.webp')) return $site_url . '/uploads/images/AhaConvert_stabilizer pi.webp';
+                if (file_exists($base_path . '/assets/images/AhaConvert_stabilizer pi.webp')) return $assets_url . '/images/AhaConvert_stabilizer pi.webp';
+            }
+            if (strpos($pName, 'switch') !== false) {
+                if (file_exists($base_path . '/uploads/images/AhaConvert_sg.webp')) return $site_url . '/uploads/images/AhaConvert_sg.webp';
+                if (file_exists($base_path . '/assets/images/AhaConvert_sg.webp')) return $assets_url . '/images/AhaConvert_sg.webp';
+            }
+            if (strpos($pName, 'float') !== false) {
+                if (file_exists($base_path . '/uploads/images/AhaConvert_float pi.webp')) return $site_url . '/uploads/images/AhaConvert_float pi.webp';
+                if (file_exists($base_path . '/assets/images/float-1.webp')) return $assets_url . '/images/float-1.webp';
+            }
+            if (strpos($pName, 'digital') !== false || strpos($pName, 'meter') !== false) {
+                if (file_exists($base_path . '/uploads/images/AhaConvert_single hp dgt.webp')) return $site_url . '/uploads/images/AhaConvert_single hp dgt.webp';
+                if (file_exists($base_path . '/assets/images/AhaConvert_single hp dgt.webp')) return $assets_url . '/images/AhaConvert_single hp dgt.webp';
             }
         }
         

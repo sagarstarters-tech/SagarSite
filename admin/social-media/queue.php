@@ -219,7 +219,7 @@ $statusBadges = [
                                 $rawPath = str_replace('/uploads/media/images/', '/uploads/images/', $rawPath);
                                 
                                 if (function_exists('resolve_product_image_url')) {
-                                    $imgSrc = resolve_product_image_url($rawPath, null, (int)$item['product_id']);
+                                    $imgSrc = resolve_product_image_url($rawPath, $conn ?? null, (int)$item['product_id']);
                                 } else {
                                     if (empty($rawPath)) {
                                         $imgSrc = SITE_URL . '/assets/images/logo.jpg';
