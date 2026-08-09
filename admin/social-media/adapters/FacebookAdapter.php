@@ -79,7 +79,6 @@ class FacebookAdapter implements PlatformAdapterInterface {
         $accessToken = $postData['access_token'] ?? '';
         $message = $postData['message'] ?? '';
         $imageUrl = $postData['image_url'] ?? '';
-        $link = $postData['link'] ?? '';
 
         if (!$pageId || !$accessToken) {
             return ['success' => false, 'post_id' => null, 'post_url' => null, 'error' => 'Missing page ID or access token'];
@@ -90,25 +89,37 @@ class FacebookAdapter implements PlatformAdapterInterface {
             && strpos($imageUrl, 'localhost') === false 
             && strpos($imageUrl, '127.0.0.1') === false;
 
+        $res = null;
+
+        // 1. If valid image URL, attempt posting to /photos
         if ($isValidImageUrl) {
-            $endpoint = "/$pageId/photos";
-            $data = [
+            $res = $this->curlRequest(self::BASE_URL . "/$pageId/photos", 'POST', [
                 'access_token' => $accessToken,
                 'url'          => $imageUrl,
                 'caption'      => $message
-            ];
-        } else {
-            $endpoint = "/$pageId/feed";
-            $data = [
-                'access_token' => $accessToken,
-                'message'      => $message
-            ];
-            if ($link) {
-                $data['link'] = $link;
-            }
+            ]);
         }
 
-        $res = $this->curlRequest(self::BASE_URL . $endpoint, 'POST', $data);
+        // 2. If no image or if /photos endpoint returned error (e.g. Invalid parameter), fallback to /feed endpoint
+        if (!$isValidImageUrl || isset($res['error'])) {
+            $photoError = isset($res['error']) ? (is_array($res['error']) ? ($res['error']['message'] ?? '') : '') : '';
+            
+            $feedRes = $this->curlRequest(self::BASE_URL . "/$pageId/feed", 'POST', [
+                'access_token' => $accessToken,
+                'message'      => $message
+            ]);
+
+            if (!isset($feedRes['error'])) {
+                $res = $feedRes;
+            } elseif (!$isValidImageUrl) {
+                $res = $feedRes;
+            } else {
+                // Return clear error if both endpoints failed
+                $feedError = is_array($feedRes['error']) ? ($feedRes['error']['message'] ?? 'Unknown error') : 'Unknown error';
+                $errorDetails = !empty($photoError) ? "Photo error: {$photoError} | Feed error: {$feedError}" : $feedError;
+                return ['success' => false, 'post_id' => null, 'post_url' => null, 'error' => $errorDetails];
+            }
+        }
 
         if (isset($res['error'])) {
             $errorMsg = is_array($res['error']) ? ($res['error']['message'] ?? 'Unknown error') : 'Unknown error';
