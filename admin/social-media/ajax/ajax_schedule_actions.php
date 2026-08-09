@@ -10,8 +10,16 @@ require_once BASE_PATH . '/admin/core/AuthMiddleware.php';
 require_once BASE_PATH . '/admin/helpers/csrf.php';
 require_once BASE_PATH . '/config/DbConnection.php';
 
-AuthMiddleware::check($conn);
 $pdo = DbConnection::getInstance();
+
+try {
+    $pdo->query("SELECT last_run_at FROM sm_schedules LIMIT 1");
+} catch (PDOException $e) {
+    require_once dirname(__DIR__) . '/migrations/001_create_social_media_tables.php';
+    ob_start();
+    runMigration();
+    ob_end_clean();
+}
 
 // Clean buffer and send JSON header after all includes
 if (ob_get_length()) ob_clean();

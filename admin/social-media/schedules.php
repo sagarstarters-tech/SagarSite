@@ -5,7 +5,7 @@ include_once __DIR__ . '/../admin_header.php';
 
 $pdo = DbConnection::getInstance();
 try {
-    $pdo->query("SELECT 1 FROM sm_schedules LIMIT 1");
+    $pdo->query("SELECT last_run_at FROM sm_schedules LIMIT 1");
 } catch (PDOException $e) {
     require_once __DIR__ . '/migrations/001_create_social_media_tables.php';
     ob_start();

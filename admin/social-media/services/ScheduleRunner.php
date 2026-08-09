@@ -34,6 +34,15 @@ class ScheduleRunner {
         $db = DbConnection::getInstance();
         $now = date('Y-m-d H:i:s');
 
+        try {
+            $db->query("SELECT last_run_at FROM sm_schedules LIMIT 1");
+        } catch (\PDOException $e) {
+            require_once dirname(__DIR__) . '/migrations/001_create_social_media_tables.php';
+            ob_start();
+            runMigration();
+            ob_end_clean();
+        }
+
         $stmt = $db->query("SELECT * FROM sm_schedules WHERE is_active = 1 AND (next_run_at IS NULL OR next_run_at <= '$now') ORDER BY id ASC");
         $schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -66,6 +75,15 @@ class ScheduleRunner {
      */
     public function executeSchedule($scheduleOrId): int {
         $db = DbConnection::getInstance();
+
+        try {
+            $db->query("SELECT last_run_at FROM sm_schedules LIMIT 1");
+        } catch (\PDOException $e) {
+            require_once dirname(__DIR__) . '/migrations/001_create_social_media_tables.php';
+            ob_start();
+            runMigration();
+            ob_end_clean();
+        }
 
         if (is_numeric($scheduleOrId)) {
             $stmt = $db->prepare("SELECT * FROM sm_schedules WHERE id = ?");
