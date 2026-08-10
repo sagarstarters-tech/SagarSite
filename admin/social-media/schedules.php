@@ -219,8 +219,8 @@ $scheduleTypes = [
                             <select class="form-select rounded-3" id="schedStartMode" name="start_mode" required>
                                 <option value="once_day">Once a day</option>
                                 <option value="once_daily">Once a Daily</option>
-                                <option value="once_weekly">Once a weeky</option>
-                                <option value="once_monthly">Once a monthly</option>
+                                <option value="once_weekly">Once a Weekly</option>
+                                <option value="once_monthly">Once a Monthly</option>
                                 <option value="custom">Custom Posting</option>
                             </select>
                             <div class="mt-2" id="customStartDateGroup" style="display: none;">
