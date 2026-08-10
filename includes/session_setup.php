@@ -187,15 +187,38 @@ if (!function_exists('resolve_image_url')) {
     }
 }
 
+if (!function_exists('encode_url_path')) {
+    function encode_url_path($url) {
+        if (empty($url)) return $url;
+        $parsed = parse_url($url);
+        if (isset($parsed['scheme']) && isset($parsed['host'])) {
+            $scheme = $parsed['scheme'];
+            $host = $parsed['host'];
+            $port = isset($parsed['port']) ? ':' . $parsed['port'] : '';
+            $path = isset($parsed['path']) ? $parsed['path'] : '';
+            $query = isset($parsed['query']) ? '?' . $parsed['query'] : '';
+            
+            $pathSegments = explode('/', $path);
+            $encodedSegments = array_map('rawurlencode', $pathSegments);
+            $encodedPath = implode('/', $encodedSegments);
+            
+            return $scheme . '://' . $host . $port . $encodedPath . $query;
+        }
+        $pathSegments = explode('/', $url);
+        $encodedSegments = array_map('rawurlencode', $pathSegments);
+        return implode('/', $encodedSegments);
+    }
+}
+
 // Global Product Image Resolver
 if (!function_exists('resolve_product_image_url')) {
-    function resolve_product_image_url($image_path, $conn = null, $product_id = null) {
+    function resolve_product_image_url($image_path, $conn = null, $product_id = null, $product_name = '') {
         $img = trim((string)$image_path);
         
         $site_url = defined('SITE_URL') ? rtrim(SITE_URL, '/') : '';
         $assets_url = defined('ASSETS_URL') ? rtrim(ASSETS_URL, '/') : ($site_url . '/assets');
         $base_path = defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__);
-        $placeholder_url = $assets_url . '/images/logo.jpg';
+        $placeholder_url = $assets_url . '/images/AhaConvert_3ph.webp';
         
         // Filter out dummy/empty/invalid image strings
         $dummies = ['placeholder.svg', 'placeholder.png', 'no-image.png', 'no-image.jpg', 'null', 'undefined'];
@@ -212,11 +235,11 @@ if (!function_exists('resolve_product_image_url')) {
                 $img = ltrim((string)$imgPath, '/');
             } else {
                 // External image URL (different domain) - return directly
-                return $img;
+                return encode_url_path($img);
             }
         }
         
-        $pName = '';
+        $pName = strtolower(trim((string)$product_name));
 
         // Load name & alternative image from database if product_id is provided
         if (!empty($product_id)) {
@@ -229,7 +252,9 @@ if (!function_exists('resolve_product_image_url')) {
             if ($conn !== null && $conn instanceof \mysqli) {
                 $nq = $conn->query("SELECT image, name FROM products WHERE id = $p_id");
                 if ($nq && $nRow = $nq->fetch_assoc()) {
-                    $pName = strtolower($nRow['name'] ?? '');
+                    if (empty($pName)) {
+                        $pName = strtolower($nRow['name'] ?? '');
+                    }
                     if (empty($img)) {
                         $pImg = trim($nRow['image'] ?? '');
                         if (!empty($pImg) && !in_array(strtolower(basename($pImg)), $dummies)) {
@@ -295,7 +320,7 @@ if (!function_exists('resolve_product_image_url')) {
             
             // Direct relative path check from root
             if (file_exists($base_path . '/' . $clean)) {
-                return $site_url . '/' . $clean;
+                return encode_url_path($site_url . '/' . $clean);
             }
 
             // Strip directory prefixes to get bare filename
@@ -303,17 +328,17 @@ if (!function_exists('resolve_product_image_url')) {
 
             // Check in /assets/images/ (git-tracked priority)
             if (file_exists($base_path . '/assets/images/' . $bare)) {
-                return $assets_url . '/images/' . $bare;
+                return encode_url_path($assets_url . '/images/' . $bare);
             }
 
             // Check in /uploads/images/
             if (file_exists($base_path . '/uploads/images/' . $bare)) {
-                return $site_url . '/uploads/images/' . $bare;
+                return encode_url_path($site_url . '/uploads/images/' . $bare);
             }
 
             // Check in /uploads/
             if (file_exists($base_path . '/uploads/' . $bare)) {
-                return $site_url . '/uploads/' . $bare;
+                return encode_url_path($site_url . '/uploads/' . $bare);
             }
             
             // Auto-heal extension mismatch (e.g. db says .jpg, file is .webp)
@@ -321,62 +346,73 @@ if (!function_exists('resolve_product_image_url')) {
             if (!empty($name_no_ext)) {
                 $matches = glob($base_path . '/assets/images/' . $name_no_ext . '.*');
                 if (!empty($matches)) {
-                    return $assets_url . '/images/' . basename($matches[0]);
+                    return encode_url_path($assets_url . '/images/' . basename($matches[0]));
                 }
                 $upload_img_matches = glob($base_path . '/uploads/images/' . $name_no_ext . '.*');
                 if (!empty($upload_img_matches)) {
-                    return $site_url . '/uploads/images/' . basename($upload_img_matches[0]);
+                    return encode_url_path($site_url . '/uploads/images/' . basename($upload_img_matches[0]));
                 }
                 $upload_matches = glob($base_path . '/uploads/' . $name_no_ext . '.*');
                 if (!empty($upload_matches)) {
-                    return $site_url . '/uploads/' . basename($upload_matches[0]);
+                    return encode_url_path($site_url . '/uploads/' . basename($upload_matches[0]));
                 }
             }
         }
         
         // Smart Keyword Auto-Matcher for Product Images (Guaranteed Web Fallbacks when disk file is missing)
         if (!empty($pName)) {
-            if (strpos($pName, 'push button') !== false || strpos($pName, 'button') !== false || strpos($pName, 'vastav') !== false || strpos($pName, 'gf-01') !== false) {
-                return $assets_url . '/images/AhaConvert_sg.webp';
+            if (strpos($pName, 'coil') !== false) {
+                return encode_url_path($assets_url . '/images/AhaConvert_coil pi.webp');
             }
-            if (strpos($pName, 'breaker') !== false || strpos($pName, 'circuit') !== false || strpos($pName, 'teknic') !== false || strpos($pName, 'pole') !== false || strpos($pName, '20a') !== false || strpos($pName, '16a') !== false || strpos($pName, '250vac') !== false || strpos($pName, 'mcb') !== false) {
-                return $assets_url . '/images/AhaConvert_sps.webp';
+            if (strpos($pName, 'contactor') !== false || strpos($pName, 'bno') !== false) {
+                return encode_url_path($assets_url . '/images/AhaConvert_bno pi.webp');
+            }
+            if (strpos($pName, 'float') !== false || strpos($pName, 'water level') !== false || strpos($pName, 'level controller') !== false) {
+                return encode_url_path($assets_url . '/images/AhaConvert_float pi.webp');
+            }
+            if (strpos($pName, 'software') !== false || strpos($pName, 'inventory') !== false || strpos($pName, 'stock') !== false || strpos($pName, 'billing') !== false) {
+                return encode_url_path($assets_url . '/images/AhaConvert_invantiry.webp');
             }
             if (strpos($pName, 'star delta') !== false || strpos($pName, 'delta') !== false) {
-                return $assets_url . '/images/AhaConvert_star delta pi.webp';
-            }
-            if (strpos($pName, 'submersible') !== false || strpos($pName, 'apollo') !== false || strpos($pName, 'appolo') !== false || strpos($pName, 'pump') !== false) {
-                return $assets_url . '/images/AhaConvert_1hp appolo pi.webp';
+                return encode_url_path($assets_url . '/images/AhaConvert_star delta pi.webp');
             }
             if (strpos($pName, 'oil') !== false || strpos($pName, 'oil field') !== false) {
-                return $assets_url . '/images/AhaConvert_1hp oil pi.webp';
+                return encode_url_path($assets_url . '/images/AhaConvert_1hp oil pi.webp');
+            }
+            if (strpos($pName, 'submersible') !== false || strpos($pName, 'apollo') !== false || strpos($pName, 'appolo') !== false || strpos($pName, 'pump') !== false) {
+                return encode_url_path($assets_url . '/images/AhaConvert_1hp appolo pi.webp');
+            }
+            if (strpos($pName, 'digital') !== false || strpos($pName, 'dgt') !== false) {
+                return encode_url_path($assets_url . '/images/single hp dgt.webp');
+            }
+            if (strpos($pName, 'meter') !== false || strpos($pName, 'analog') !== false) {
+                return encode_url_path($assets_url . '/images/meter gi.webp');
+            }
+            if (strpos($pName, 'bakelite') !== false || strpos($pName, 'connector') !== false || strpos($pName, 'pvt') !== false) {
+                return encode_url_path($assets_url . '/images/AhaConvert_pvt pi.webp');
+            }
+            if (strpos($pName, 'motor protection') !== false || strpos($pName, 'mpd') !== false) {
+                return encode_url_path($assets_url . '/images/AhaConvert_mpd pi.webp');
+            }
+            if (strpos($pName, 'push button') !== false || strpos($pName, 'button') !== false || strpos($pName, 'vastav') !== false || strpos($pName, 'gf-01') !== false || strpos($pName, 'sg') !== false) {
+                return encode_url_path($assets_url . '/images/AhaConvert_sg.webp');
+            }
+            if (strpos($pName, 'breaker') !== false || strpos($pName, 'circuit') !== false || strpos($pName, 'teknic') !== false || strpos($pName, 'pole') !== false || strpos($pName, 'mcb') !== false || strpos($pName, 'sps') !== false) {
+                return encode_url_path($assets_url . '/images/AhaConvert_sps.webp');
             }
             if (strpos($pName, 'stabilizer') !== false || strpos($pName, 'voltage') !== false) {
-                return $assets_url . '/images/AhaConvert_stabilizer pi.webp';
+                return encode_url_path($assets_url . '/images/AhaConvert_stabilizer pi.webp');
             }
-            if (strpos($pName, 'switch') !== false || strpos($pName, 'contactor') !== false || strpos($pName, 'bno') !== false) {
-                return $assets_url . '/images/AhaConvert_bno pi.webp';
-            }
-            if (strpos($pName, 'float') !== false) {
-                return $assets_url . '/images/float-1.webp';
-            }
-            if (strpos($pName, 'digital') !== false || strpos($pName, 'meter') !== false || strpos($pName, 'dgt') !== false) {
-                return $assets_url . '/images/AhaConvert_single hp dgt.webp';
+            if (strpos($pName, 'automatic') !== false || strpos($pName, 'starter') !== false || strpos($pName, 'phase') !== false || strpos($pName, '3ph') !== false || strpos($pName, 'hp') !== false) {
+                if (strpos($pName, 'semi') !== false) {
+                    return encode_url_path($assets_url . '/images/3 ph inner semi.webp');
+                }
+                return encode_url_path($assets_url . '/images/3 ph inner auto.webp');
             }
         }
         
-        // Final Fallback: if string was provided but not found on disk, attempt direct path or placeholder
-        if (!empty($img)) {
-            $clean = ltrim(str_replace('\\', '/', $img), '/');
-            if (strpos($clean, 'uploads/') === 0) {
-                return $site_url . '/' . $clean;
-            }
-            $bare = basename($clean);
-            return $site_url . '/uploads/images/' . $bare;
-        }
-
-        // Default safe fallback (Sagar Starters Logo) if file missing
-        return $placeholder_url;
+        // Default safe fallback if file missing or image not specified
+        return encode_url_path($placeholder_url);
     }
 }
 

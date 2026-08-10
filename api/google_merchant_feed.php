@@ -54,7 +54,19 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
           $product_url = !empty($product['slug']) ? $site_url . '/product.php?slug=' . urlencode($product['slug']) : $site_url . '/product.php?id=' . $prod_id;
           
           // Image URL
-          $image_url = resolve_product_image_url($product['image'] ?? '', $conn, $prod_id);
+          $image_url = resolve_product_image_url($product['image'] ?? '', $conn, $prod_id, $title);
+          
+          // Additional Gallery Images
+          $additional_images = [];
+          $gq = $conn->query("SELECT image FROM product_images WHERE product_id = {$prod_id} ORDER BY position ASC, id ASC LIMIT 10");
+          if ($gq) {
+              while ($gRow = $gq->fetch_assoc()) {
+                  $add_img = resolve_product_image_url($gRow['image'] ?? '', $conn, $prod_id, $title);
+                  if (!empty($add_img) && $add_img !== $image_url && !in_array($add_img, $additional_images)) {
+                      $additional_images[] = $add_img;
+                  }
+              }
+          }
 
           // Price calculation
           $effective_price = (!empty($product['sale_price']) && $product['sale_price'] > 0) ? $product['sale_price'] : $product['price'];
@@ -79,6 +91,9 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
           <g:description><![CDATA[<?php echo $desc; ?>]]></g:description>
           <g:link><?php echo htmlspecialchars($product_url); ?></g:link>
           <g:image_link><?php echo htmlspecialchars($image_url); ?></g:image_link>
+          <?php foreach ($additional_images as $add_img_link): ?>
+            <g:additional_image_link><?php echo htmlspecialchars($add_img_link); ?></g:additional_image_link>
+          <?php endforeach; ?>
           <g:condition><?php echo htmlspecialchars($condition); ?></g:condition>
           <g:availability><?php echo htmlspecialchars($availability); ?></g:availability>
           <g:price><?php echo htmlspecialchars($price_formatted); ?></g:price>
