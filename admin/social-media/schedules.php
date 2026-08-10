@@ -215,8 +215,18 @@ $scheduleTypes = [
                         </div>
 
                         <div class="col-md-6">
-                            <label for="schedStartDate" class="form-label fw-bold small text-muted">Posting Start Date <span class="text-danger">*</span></label>
-                            <input type="date" class="form-control rounded-3" id="schedStartDate" name="start_date" required>
+                            <label for="schedStartMode" class="form-label fw-bold small text-muted">Posting Start <span class="text-danger">*</span></label>
+                            <select class="form-select rounded-3" id="schedStartMode" name="start_mode" required>
+                                <option value="once_day">Once a day</option>
+                                <option value="once_daily">Once a Daily</option>
+                                <option value="once_weekly">Once a weeky</option>
+                                <option value="once_monthly">Once a monthly</option>
+                                <option value="custom">Custom Posting</option>
+                            </select>
+                            <div class="mt-2" id="customStartDateGroup" style="display: none;">
+                                <label for="schedStartDate" class="form-label extra-small text-muted mb-1">Select Custom Date <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control rounded-3" id="schedStartDate" name="start_date">
+                            </div>
                         </div>
 
                         <div class="col-md-6">
@@ -382,6 +392,29 @@ document.addEventListener('DOMContentLoaded', function() {
         schedTypeSelect.addEventListener('change', checkIntervalVisibility);
     }
 
+    const schedStartMode = document.getElementById('schedStartMode');
+    const customStartDateGroup = document.getElementById('customStartDateGroup');
+    const schedStartDate = document.getElementById('schedStartDate');
+
+    function checkStartModeVisibility() {
+        const nowObj = new Date();
+        const todayStr = nowObj.getFullYear() + '-' + String(nowObj.getMonth() + 1).padStart(2, '0') + '-' + String(nowObj.getDate()).padStart(2, '0');
+        if (schedStartMode && schedStartMode.value === 'custom') {
+            if (customStartDateGroup) customStartDateGroup.style.display = 'block';
+            if (schedStartDate) {
+                if (!schedStartDate.value) schedStartDate.value = todayStr;
+            }
+        } else {
+            if (customStartDateGroup) customStartDateGroup.style.display = 'none';
+            if (schedStartDate) {
+                schedStartDate.value = todayStr;
+            }
+        }
+    }
+    if (schedStartMode) {
+        schedStartMode.addEventListener('change', checkStartModeVisibility);
+    }
+
     function updateFilterValueOptions(selectedVal) {
         filterValueSelect.innerHTML = '<option value="">-- Select --</option>';
         const type = schedFilterType.value;
@@ -426,9 +459,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const nowObj = new Date();
         const todayStr = nowObj.getFullYear() + '-' + String(nowObj.getMonth() + 1).padStart(2, '0') + '-' + String(nowObj.getDate()).padStart(2, '0');
         const timeStr = String(nowObj.getHours()).padStart(2, '0') + ':' + String(nowObj.getMinutes()).padStart(2, '0');
-        document.getElementById('schedStartDate').value = todayStr;
+        
+        if (schedStartMode) schedStartMode.value = 'once_day';
+        if (schedStartDate) schedStartDate.value = todayStr;
         document.getElementById('schedStartTime').value = timeStr;
 
+        checkStartModeVisibility();
         checkIntervalVisibility();
         updateFilterValueOptions();
         showScheduleModal();
@@ -459,9 +495,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 const todayStr = nowObj.getFullYear() + '-' + String(nowObj.getMonth() + 1).padStart(2, '0') + '-' + String(nowObj.getDate()).padStart(2, '0');
                 const timeStr = String(nowObj.getHours()).padStart(2, '0') + ':' + String(nowObj.getMinutes()).padStart(2, '0');
 
-                document.getElementById('schedStartDate').value = data.start_date || todayStr;
+                const sMode = data.start_mode || (data.start_date && data.start_date !== todayStr ? 'custom' : 'once_day');
+                if (schedStartMode) schedStartMode.value = sMode;
+                if (schedStartDate) schedStartDate.value = data.start_date || todayStr;
                 document.getElementById('schedStartTime').value = data.start_time ? data.start_time.substring(0, 5) : timeStr;
 
+                checkStartModeVisibility();
                 updateFilterValueOptions(data.filter_value);
 
                 let pIds = [];

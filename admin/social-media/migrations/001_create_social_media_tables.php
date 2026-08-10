@@ -186,6 +186,7 @@ function runMigration() {
         'hashtags'     => "TEXT NULL",
         'filter_type'  => "VARCHAR(50) DEFAULT 'all'",
         'filter_value' => "TEXT NULL",
+        'start_mode'   => "VARCHAR(50) DEFAULT 'once_day'",
         'start_date'   => "DATE NULL",
         'start_time'   => "TIME NULL",
         'last_run_at'  => "DATETIME NULL",

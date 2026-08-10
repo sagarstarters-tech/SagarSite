@@ -72,7 +72,19 @@ require_once BASE_PATH . '/admin/social-media/services/ScheduleRunner.php';
                 $platformsJson = json_encode([]);
             }
 
-            $startDate = trim($_POST['start_date'] ?? date('Y-m-d'));
+            $startMode = trim($_POST['start_mode'] ?? 'once_day');
+            $validStartModes = ['once_day', 'once_daily', 'once_weekly', 'once_monthly', 'custom'];
+            if (!in_array($startMode, $validStartModes, true)) {
+                $startMode = 'once_day';
+            }
+
+            $rawStartDate = trim($_POST['start_date'] ?? '');
+            if ($startMode === 'custom' && !empty($rawStartDate)) {
+                $startDate = $rawStartDate;
+            } else {
+                $startDate = !empty($rawStartDate) ? $rawStartDate : date('Y-m-d');
+            }
+
             $startTime = trim($_POST['start_time'] ?? date('H:i'));
             if (strlen($startTime) === 5) $startTime .= ':00'; // Format HH:MM:SS
 
@@ -84,16 +96,16 @@ require_once BASE_PATH . '/admin/social-media/services/ScheduleRunner.php';
                     $stmt = $pdo->prepare("UPDATE sm_schedules 
                         SET name = ?, schedule_type = ?, interval_minutes = ?, platform_ids = ?, 
                             template_id = ?, cta = ?, hashtags = ?, filter_type = ?, filter_value = ?, 
-                            start_date = ?, start_time = ?, next_run_at = ?, is_active = ? 
+                            start_mode = ?, start_date = ?, start_time = ?, next_run_at = ?, is_active = ? 
                         WHERE id = ?");
-                    $stmt->execute([$name, $scheduleType, $intervalMinutes, $platformsJson, $templateId, $cta, $hashtags, $filterType, $filterValue, $startDate, $startTime, $nextRunAt, $isActive, $id]);
+                    $stmt->execute([$name, $scheduleType, $intervalMinutes, $platformsJson, $templateId, $cta, $hashtags, $filterType, $filterValue, $startMode, $startDate, $startTime, $nextRunAt, $isActive, $id]);
                     $msg = "Schedule updated successfully!";
                 } else {
                     // Insert
                     $stmt = $pdo->prepare("INSERT INTO sm_schedules 
-                        (name, schedule_type, interval_minutes, platform_ids, template_id, cta, hashtags, filter_type, filter_value, start_date, start_time, next_run_at, is_active, created_by) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                    $stmt->execute([$name, $scheduleType, $intervalMinutes, $platformsJson, $templateId, $cta, $hashtags, $filterType, $filterValue, $startDate, $startTime, $nextRunAt, $isActive, $userId]);
+                        (name, schedule_type, interval_minutes, platform_ids, template_id, cta, hashtags, filter_type, filter_value, start_mode, start_date, start_time, next_run_at, is_active, created_by) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                    $stmt->execute([$name, $scheduleType, $intervalMinutes, $platformsJson, $templateId, $cta, $hashtags, $filterType, $filterValue, $startMode, $startDate, $startTime, $nextRunAt, $isActive, $userId]);
                     $msg = "New schedule created successfully!";
                 }
             } catch (PDOException $e) {
@@ -107,15 +119,15 @@ require_once BASE_PATH . '/admin/social-media/services/ScheduleRunner.php';
                     $stmt = $pdo->prepare("UPDATE sm_schedules 
                         SET name = ?, schedule_type = ?, interval_minutes = ?, platform_ids = ?, 
                             template_id = ?, cta = ?, hashtags = ?, filter_type = ?, filter_value = ?, 
-                            start_date = ?, start_time = ?, next_run_at = ?, is_active = ? 
+                            start_mode = ?, start_date = ?, start_time = ?, next_run_at = ?, is_active = ? 
                         WHERE id = ?");
-                    $stmt->execute([$name, $scheduleType, $intervalMinutes, $platformsJson, $templateId, $cta, $hashtags, $filterType, $filterValue, $startDate, $startTime, $nextRunAt, $isActive, $id]);
+                    $stmt->execute([$name, $scheduleType, $intervalMinutes, $platformsJson, $templateId, $cta, $hashtags, $filterType, $filterValue, $startMode, $startDate, $startTime, $nextRunAt, $isActive, $id]);
                     $msg = "Schedule updated successfully!";
                 } else {
                     $stmt = $pdo->prepare("INSERT INTO sm_schedules 
-                        (name, schedule_type, interval_minutes, platform_ids, template_id, cta, hashtags, filter_type, filter_value, start_date, start_time, next_run_at, is_active, created_by) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                    $stmt->execute([$name, $scheduleType, $intervalMinutes, $platformsJson, $templateId, $cta, $hashtags, $filterType, $filterValue, $startDate, $startTime, $nextRunAt, $isActive, $userId]);
+                        (name, schedule_type, interval_minutes, platform_ids, template_id, cta, hashtags, filter_type, filter_value, start_mode, start_date, start_time, next_run_at, is_active, created_by) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                    $stmt->execute([$name, $scheduleType, $intervalMinutes, $platformsJson, $templateId, $cta, $hashtags, $filterType, $filterValue, $startMode, $startDate, $startTime, $nextRunAt, $isActive, $userId]);
                     $msg = "New schedule created successfully!";
                 }
             }
