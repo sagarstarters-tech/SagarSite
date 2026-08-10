@@ -150,9 +150,11 @@ class ScheduleRunner {
 
         // 4. Calculate Stagger Interval
         $intervalMinutes = (int)($schedule['interval_minutes'] ?? 60);
-        if ($intervalMinutes < 5) $intervalMinutes = 30;
+        if ($intervalMinutes < 1) $intervalMinutes = 5;
 
         $typeIntervals = [
+            'every_5min'  => 5,
+            'every_15min' => 15,
             'every_30min' => 30,
             'every_1hr'   => 60,
             'every_2hr'   => 120,

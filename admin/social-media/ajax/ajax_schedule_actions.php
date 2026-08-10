@@ -60,7 +60,7 @@ require_once BASE_PATH . '/admin/social-media/services/ScheduleRunner.php';
             }
 
             // Validate schedule_type against allowed ENUM values
-            $validTypes = ['every_30min','every_1hr','every_2hr','every_6hr','daily','weekly','monthly','custom'];
+            $validTypes = ['every_5min','every_15min','every_30min','every_1hr','every_2hr','every_6hr','daily','weekly','monthly','custom'];
             if (!in_array($scheduleType, $validTypes, true)) {
                 $scheduleType = 'every_1hr'; // Safe fallback
             }

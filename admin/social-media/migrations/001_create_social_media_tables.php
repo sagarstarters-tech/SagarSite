@@ -34,7 +34,7 @@ function runMigration() {
             id INT AUTO_INCREMENT PRIMARY KEY,
             name VARCHAR(255) NOT NULL,
             platform_ids JSON,
-            schedule_type ENUM('every_30min','every_1hr','every_2hr','every_6hr','daily','weekly','monthly','custom') NOT NULL,
+            schedule_type ENUM('every_5min','every_15min','every_30min','every_1hr','every_2hr','every_6hr','daily','weekly','monthly','custom') NOT NULL,
             interval_minutes INT DEFAULT 60,
             custom_cron VARCHAR(100) NULL,
             days_of_week JSON NULL,
@@ -199,6 +199,7 @@ function runMigration() {
                 echo "Added column {$colName} to sm_schedules.<br>\n";
             }
         }
+        $db->exec("ALTER TABLE sm_schedules MODIFY COLUMN schedule_type ENUM('every_5min','every_15min','every_30min','every_1hr','every_2hr','every_6hr','daily','weekly','monthly','custom') NOT NULL");
     } catch (PDOException $e) {
         echo "Error upgrading sm_schedules columns: " . $e->getMessage() . "<br>\n";
     }

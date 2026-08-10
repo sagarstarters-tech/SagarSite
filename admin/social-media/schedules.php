@@ -50,6 +50,8 @@ $platformIcons = [
 ];
 
 $scheduleTypes = [
+    'every_5min' => 'Every 5 Minutes',
+    'every_15min' => 'Every 15 Minutes',
     'every_30min' => 'Every 30 Minutes',
     'every_1hr' => 'Every 1 Hour',
     'every_2hr' => 'Every 2 Hours',

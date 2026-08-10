@@ -22,6 +22,10 @@ class ScheduleResolver {
         $type = $schedule['schedule_type'] ?? '';
         
         switch ($type) {
+            case 'every_5min':
+                return $now->modify('+5 minutes');
+            case 'every_15min':
+                return $now->modify('+15 minutes');
             case 'every_30min':
                 return $now->modify('+30 minutes');
             case 'every_1hr':
