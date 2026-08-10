@@ -72,10 +72,11 @@ require_once BASE_PATH . '/admin/social-media/services/ScheduleRunner.php';
                 $platformsJson = json_encode([]);
             }
 
-            $startMode = trim($_POST['start_mode'] ?? 'once_day');
-            $validStartModes = ['once_day', 'once_daily', 'once_weekly', 'once_monthly', 'custom'];
+            $startMode = trim($_POST['start_mode'] ?? 'once_daily');
+            if ($startMode === 'once_day') $startMode = 'once_daily';
+            $validStartModes = ['once_daily', 'once_weekly', 'once_monthly', 'custom'];
             if (!in_array($startMode, $validStartModes, true)) {
-                $startMode = 'once_day';
+                $startMode = 'once_daily';
             }
 
             $rawStartDate = trim($_POST['start_date'] ?? '');

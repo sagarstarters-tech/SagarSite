@@ -217,7 +217,6 @@ $scheduleTypes = [
                         <div class="col-md-6">
                             <label for="schedStartMode" class="form-label fw-bold small text-muted">Posting Start <span class="text-danger">*</span></label>
                             <select class="form-select rounded-3" id="schedStartMode" name="start_mode" required>
-                                <option value="once_day">Once a day</option>
                                 <option value="once_daily">Once a Daily</option>
                                 <option value="once_weekly">Once a Weekly</option>
                                 <option value="once_monthly">Once a Monthly</option>
@@ -460,7 +459,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const todayStr = nowObj.getFullYear() + '-' + String(nowObj.getMonth() + 1).padStart(2, '0') + '-' + String(nowObj.getDate()).padStart(2, '0');
         const timeStr = String(nowObj.getHours()).padStart(2, '0') + ':' + String(nowObj.getMinutes()).padStart(2, '0');
         
-        if (schedStartMode) schedStartMode.value = 'once_day';
+        if (schedStartMode) schedStartMode.value = 'once_daily';
         if (schedStartDate) schedStartDate.value = todayStr;
         document.getElementById('schedStartTime').value = timeStr;
 
@@ -495,7 +494,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const todayStr = nowObj.getFullYear() + '-' + String(nowObj.getMonth() + 1).padStart(2, '0') + '-' + String(nowObj.getDate()).padStart(2, '0');
                 const timeStr = String(nowObj.getHours()).padStart(2, '0') + ':' + String(nowObj.getMinutes()).padStart(2, '0');
 
-                const sMode = data.start_mode || (data.start_date && data.start_date !== todayStr ? 'custom' : 'once_day');
+                let sMode = data.start_mode;
+                if (!sMode || sMode === 'once_day') sMode = (data.start_date && data.start_date !== todayStr ? 'custom' : 'once_daily');
                 if (schedStartMode) schedStartMode.value = sMode;
                 if (schedStartDate) schedStartDate.value = data.start_date || todayStr;
                 document.getElementById('schedStartTime').value = data.start_time ? data.start_time.substring(0, 5) : timeStr;
