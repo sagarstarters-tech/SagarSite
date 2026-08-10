@@ -22,6 +22,13 @@ if ($gmc_enabled !== '1') {
     exit;
 }
 
+// Helper to append cache buster for instant Googlebot-Image re-fetch
+function format_gmc_image_url($url) {
+    if (empty($url)) return $url;
+    $sep = (strpos($url, '?') !== false) ? '&' : '?';
+    return $url . $sep . 'gmc_v=2';
+}
+
 // Fetch all active products
 $sql = "SELECT p.*, c.name as category_name 
         FROM products p 
@@ -53,8 +60,9 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
           // Product URL
           $product_url = !empty($product['slug']) ? $site_url . '/product.php?slug=' . urlencode($product['slug']) : $site_url . '/product.php?id=' . $prod_id;
           
-          // Image URL
-          $image_url = resolve_product_image_url($product['image'] ?? '', $conn, $prod_id, $title);
+          // Image URL with cache buster
+          $raw_image_url = resolve_product_image_url($product['image'] ?? '', $conn, $prod_id, $title);
+          $image_url     = format_gmc_image_url($raw_image_url);
           
           // Additional Gallery Images
           $additional_images = [];
@@ -62,8 +70,11 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
           if ($gq) {
               while ($gRow = $gq->fetch_assoc()) {
                   $add_img = resolve_product_image_url($gRow['image'] ?? '', $conn, $prod_id, $title);
-                  if (!empty($add_img) && $add_img !== $image_url && !in_array($add_img, $additional_images)) {
-                      $additional_images[] = $add_img;
+                  if (!empty($add_img) && $add_img !== $raw_image_url) {
+                      $formatted_add = format_gmc_image_url($add_img);
+                      if (!in_array($formatted_add, $additional_images)) {
+                          $additional_images[] = $formatted_add;
+                      }
                   }
               }
           }
