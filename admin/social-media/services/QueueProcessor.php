@@ -222,7 +222,9 @@ class QueueProcessor {
         $sql = "UPDATE sm_queue SET status = ?";
         $params = [$status];
         
-        if ($error !== null) {
+        if ($status === 'posted') {
+            $sql .= ", last_error = NULL";
+        } elseif ($error !== null) {
             $sql .= ", last_error = ?";
             $params[] = $error;
         }

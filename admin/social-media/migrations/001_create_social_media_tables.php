@@ -207,6 +207,7 @@ function runMigration() {
 
     try {
         $db->exec("UPDATE sm_queue SET post_image_url = REPLACE(post_image_url, '/uploads/media/images/', '/uploads/images/') WHERE post_image_url LIKE '%/uploads/media/images/%'");
+        $db->exec("UPDATE sm_queue SET last_error = NULL WHERE status = 'posted'");
     } catch (PDOException $e) {}
 
     // Insert Default Templates

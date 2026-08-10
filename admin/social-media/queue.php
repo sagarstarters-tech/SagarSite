@@ -313,7 +313,7 @@ $statusBadges = [
                                         <span class="badge <?php echo $stMeta['bg']; ?> rounded-pill px-3 py-2" title="<?php echo htmlspecialchars($item['last_error'] ?? ''); ?>">
                                             <?php echo $stMeta['label']; ?>
                                         </span>
-                                        <?php if (!empty($item['last_error'])): ?>
+                                        <?php if (!empty($item['last_error']) && strtolower($item['status']) !== 'posted'): ?>
                                             <div class="text-danger mt-1" style="font-size: 11px; max-width: 160px; line-height: 1.2;" title="<?php echo htmlspecialchars($item['last_error']); ?>">
                                                 <i class="fas fa-exclamation-triangle me-1"></i><?php echo htmlspecialchars($item['last_error']); ?>
                                             </div>
