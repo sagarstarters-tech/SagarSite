@@ -37,13 +37,38 @@ class QueueProcessor {
         
         $queueItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
         $results = [];
+        $pausedPlatforms = [];
+        $processedCount = 0;
         
         foreach ($queueItems as $item) {
+            $platform = strtolower(trim($item['platform']));
+            
+            // Skip if this platform hit Meta rate limit in current batch run
+            if (isset($pausedPlatforms[$platform])) {
+                continue;
+            }
+
+            // Throttle: wait 3 seconds between posts to avoid rate limit spikes
+            if ($processedCount > 0) {
+                sleep(3);
+            }
+
+            $success = $this->processPost($item, $isRateLimit);
+            $processedCount++;
+
             $results[] = [
                 'id' => $item['id'],
                 'platform' => $item['platform'],
-                'success' => $this->processPost($item)
+                'success' => $success,
+                'is_rate_limit' => $isRateLimit
             ];
+
+            if ($isRateLimit) {
+                $pausedPlatforms[$platform] = true;
+                // Log platform pause
+                $logStmt = $db->prepare("INSERT INTO sm_logs (level, message, queue_id, platform) VALUES ('warning', ?, ?, ?)");
+                $logStmt->execute(["Rate limit hit on {$item['platform']}. Pausing further posts for this platform in current batch run.", $item['id'], $item['platform']]);
+            }
         }
         
         return $results;
@@ -53,9 +78,11 @@ class QueueProcessor {
      * Processes a single post using its platform adapter.
      *
      * @param array $queueItem
+     * @param bool|null $outIsRateLimit Optional output reference parameter for rate limit status
      * @return bool
      */
-    public function processPost(array $queueItem): bool {
+    public function processPost(array $queueItem, ?bool &$outIsRateLimit = false): bool {
+        $outIsRateLimit = false;
         $db = DbConnection::getInstance();
         $id = (int)$queueItem['id'];
         
@@ -143,6 +170,7 @@ class QueueProcessor {
             ];
 
             $pubRes = $adapter->publishPost($postData);
+            $outIsRateLimit = !empty($pubRes['is_rate_limit']) || $this->isRateLimitError($pubRes['error'] ?? '');
 
             if (!empty($pubRes['success'])) {
                 $platformPostId = (string)(!empty($pubRes['post_url']) ? $pubRes['post_url'] : ($pubRes['post_id'] ?? ('post_' . time() . '_' . $id)));
@@ -157,17 +185,19 @@ class QueueProcessor {
             } else {
                 $errorMsg = $pubRes['error'] ?? 'Platform adapter reported failure';
                 $this->updateStatus($id, 'failed', $errorMsg);
-                $this->retryPost($id);
+                $this->retryPost($id, $outIsRateLimit);
                 return false;
             }
             
         } catch (\Throwable $e) {
-            $this->updateStatus($id, 'failed', $e->getMessage());
-            $this->retryPost($id);
+            $errorMsg = $e->getMessage();
+            $outIsRateLimit = $this->isRateLimitError($errorMsg);
+            $this->updateStatus($id, 'failed', $errorMsg);
+            $this->retryPost($id, $outIsRateLimit);
             
             // Log error
             $logStmt = $db->prepare("INSERT INTO sm_logs (level, message, queue_id, platform) VALUES ('error', ?, ?, ?)");
-            $logStmt->execute([$e->getMessage(), $id, $queueItem['platform']]);
+            $logStmt->execute([$errorMsg, $id, $queueItem['platform']]);
             
             return false;
         }
@@ -177,9 +207,10 @@ class QueueProcessor {
      * Retries a failed post with exponential backoff.
      *
      * @param int $queueId
+     * @param bool $isRateLimit
      * @return bool
      */
-    public function retryPost(int $queueId): bool {
+    public function retryPost(int $queueId, bool $isRateLimit = false): bool {
         $db = DbConnection::getInstance();
         $stmt = $db->prepare("SELECT * FROM sm_queue WHERE id = ?");
         $stmt->execute([$queueId]);
@@ -191,12 +222,12 @@ class QueueProcessor {
         $maxRetries = (int)$item['max_retries'];
         
         if ($retries > $maxRetries) {
-            $this->updateStatus($queueId, 'failed', "Max retries exceeded");
+            $this->updateStatus($queueId, 'failed', "Max retries exceeded: " . ($item['last_error'] ?? ''));
             return false;
         }
         
-        // Exponential backoff: 5min, 15min, 1hr, 6hr
-        $delays = [5, 15, 60, 360];
+        // Exponential backoff: 30min, 60min, 120min, 240min if rate limited; otherwise 5min, 15min, 60min, 360min
+        $delays = $isRateLimit ? [30, 60, 120, 240] : [5, 15, 60, 360];
         $delayMinutes = $delays[min($retries - 1, count($delays) - 1)];
         $nextAttempt = date('Y-m-d H:i:s', strtotime("+$delayMinutes minutes"));
         
@@ -204,6 +235,26 @@ class QueueProcessor {
         $updateStmt->execute([$retries, $nextAttempt, $queueId]);
         
         return true;
+    }
+
+    public function isRateLimitError(?string $error): bool {
+        if (empty($error)) return false;
+        $errLower = strtolower($error);
+        $phrases = [
+            'limit how often',
+            'too many actions',
+            'action block',
+            'rate limit',
+            'please try again later',
+            'protect the community from spam',
+            'request limit reached'
+        ];
+        foreach ($phrases as $phrase) {
+            if (strpos($errLower, $phrase) !== false) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

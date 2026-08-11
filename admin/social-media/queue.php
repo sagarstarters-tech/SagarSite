@@ -96,6 +96,7 @@ $statusBadges = [
     'scheduled' => ['bg' => 'bg-primary text-white border border-primary fw-bold', 'label' => 'Scheduled'],
     'publishing' => ['bg' => 'bg-info text-white border border-info fw-bold', 'label' => 'Publishing'],
     'posted' => ['bg' => 'bg-success text-white border border-success fw-bold', 'label' => 'Posted'],
+    'retry' => ['bg' => 'bg-warning text-dark border border-warning fw-bold', 'label' => 'Retry Scheduled'],
     'failed' => ['bg' => 'bg-danger text-white border border-danger fw-bold', 'label' => 'Failed']
 ];
 ?>
@@ -114,6 +115,17 @@ $statusBadges = [
         </div>
     </div>
     
+    <!-- Meta Rate Limit Protection Notice -->
+    <div class="alert alert-info border-0 shadow-sm rounded-4 mb-4 p-3">
+        <div class="d-flex align-items-center gap-2">
+            <i class="fas fa-shield-alt text-info fs-5"></i>
+            <div>
+                <strong class="text-dark">Meta Rate Limit Protection:</strong>
+                <span class="small text-muted d-block">If Facebook or Instagram shows <em>"We limit how often you can post"</em> or <em>"User is performing too many actions"</em>, Meta has applied a temporary anti-spam limit. The system automatically throttles posting and reschedules retries with exponential backoff so your account remains safe.</span>
+            </div>
+        </div>
+    </div>
+
     <!-- Auto Background Processing Banner & Hostinger Cron Setup Guide -->
     <div class="alert alert-success border-0 shadow-sm rounded-4 mb-4 p-3">
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
@@ -416,7 +428,7 @@ $statusBadges = [
                                                  <i class="fas fa-bolt"></i> Post Now
                                              </button>
                                              
-                                             <?php if (strtolower($item['status']) === 'failed'): ?>
+                                             <?php if (in_array(strtolower($item['status']), ['failed', 'retry'])): ?>
                                                  <button type="button" class="btn btn-sm btn-warning rounded-pill btn-retry-item text-dark fw-bold shadow-sm d-inline-flex align-items-center gap-1" 
                                                          style="font-size: 11px; padding: 4px 10px; white-space: nowrap; text-transform: none;" 
                                                          data-id="<?php echo $item['id']; ?>" title="Retry Failed Post">

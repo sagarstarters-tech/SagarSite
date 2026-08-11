@@ -218,6 +218,7 @@ class ScheduleRunner {
             ]);
 
             $productInserted = false;
+            $platformIndex = 0;
 
             foreach ($accounts as $acc) {
                 // Skip if this product is already in active queue for this platform
@@ -228,7 +229,9 @@ class ScheduleRunner {
                     continue;
                 }
 
-                $scheduledTime = $baseStartTimestamp + ($staggerIndex * $intervalMinutes * 60);
+                // Stagger platforms by 2 minutes to prevent Meta API rate limits across platforms
+                $platformStaggerSeconds = $platformIndex * 120;
+                $scheduledTime = $baseStartTimestamp + ($staggerIndex * $intervalMinutes * 60) + $platformStaggerSeconds;
                 $scheduledAt = date('Y-m-d H:i:s', $scheduledTime);
 
                 $stmtQueue->execute([
@@ -244,6 +247,7 @@ class ScheduleRunner {
                 ]);
                 $queuedCount++;
                 $productInserted = true;
+                $platformIndex++;
             }
 
             if ($productInserted) {

@@ -103,6 +103,14 @@ class FacebookAdapter implements PlatformAdapterInterface {
         // 2. If no image or if /photos endpoint returned error (e.g. Invalid parameter), fallback to /feed endpoint
         if (!$isValidImageUrl || isset($res['error'])) {
             $photoError = isset($res['error']) ? (is_array($res['error']) ? ($res['error']['message'] ?? '') : '') : '';
+            $photoErrCode = isset($res['error']) && is_array($res['error']) ? ($res['error']['code'] ?? 0) : 0;
+            
+            // Check if photo error is a rate limit / spam protection / action block error
+            $isRateLimit = $this->isRateLimitError($photoError, $photoErrCode);
+            if ($isRateLimit) {
+                error_log('Facebook Publish Rate Limit Error: ' . json_encode($res['error']));
+                return ['success' => false, 'post_id' => null, 'post_url' => null, 'error' => $photoError, 'is_rate_limit' => true];
+            }
             
             $feedRes = $this->curlRequest(self::BASE_URL . "/$pageId/feed", 'POST', [
                 'access_token' => $accessToken,
@@ -116,15 +124,19 @@ class FacebookAdapter implements PlatformAdapterInterface {
             } else {
                 // Return clear error if both endpoints failed
                 $feedError = is_array($feedRes['error']) ? ($feedRes['error']['message'] ?? 'Unknown error') : 'Unknown error';
+                $feedErrCode = is_array($feedRes['error']) ? ($feedRes['error']['code'] ?? 0) : 0;
+                $isFeedRateLimit = $this->isRateLimitError($feedError, $feedErrCode);
                 $errorDetails = !empty($photoError) ? "Photo error: {$photoError} | Feed error: {$feedError}" : $feedError;
-                return ['success' => false, 'post_id' => null, 'post_url' => null, 'error' => $errorDetails];
+                return ['success' => false, 'post_id' => null, 'post_url' => null, 'error' => $errorDetails, 'is_rate_limit' => $isFeedRateLimit];
             }
         }
 
         if (isset($res['error'])) {
             $errorMsg = is_array($res['error']) ? ($res['error']['message'] ?? 'Unknown error') : 'Unknown error';
+            $errCode = is_array($res['error']) ? ($res['error']['code'] ?? 0) : 0;
+            $isRateLimit = $this->isRateLimitError($errorMsg, $errCode);
             error_log('Facebook Publish Error: ' . json_encode($res['error']));
-            return ['success' => false, 'post_id' => null, 'post_url' => null, 'error' => $errorMsg];
+            return ['success' => false, 'post_id' => null, 'post_url' => null, 'error' => $errorMsg, 'is_rate_limit' => $isRateLimit];
         }
 
         $postId = $res['id'] ?? ($res['post_id'] ?? null);
@@ -195,5 +207,28 @@ class FacebookAdapter implements PlatformAdapterInterface {
 
         $decoded = json_decode($response, true);
         return is_array($decoded) ? $decoded : ['error' => ['message' => 'Invalid or empty JSON response']];
+    }
+
+    public function isRateLimitError(string $msg, int $code = 0): bool {
+        $msgLower = strtolower($msg);
+        $rateLimitPhrases = [
+            'limit how often',
+            'too many actions',
+            'action block',
+            'rate limit',
+            'please try again later',
+            'protect the community from spam',
+            'user is performing too many actions',
+            'request limit reached'
+        ];
+        foreach ($rateLimitPhrases as $phrase) {
+            if (strpos($msgLower, $phrase) !== false) {
+                return true;
+            }
+        }
+        if (in_array($code, [4, 17, 32, 368], true)) {
+            return true;
+        }
+        return false;
     }
 }

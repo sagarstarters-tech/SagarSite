@@ -118,12 +118,15 @@ try {
                 $pdo->query("UPDATE sm_queue SET status = 'scheduled', retry_count = 0, last_error = NULL, scheduled_at = NOW() WHERE id IN ($idList)");
                 $response['message'] = 'Selected failed items queued for retry.';
             } elseif ($action === 'bulk_post_now') {
-                // Post each selected item immediately
+                // Post each selected item immediately with throttling
                 require_once BASE_PATH . '/admin/social-media/services/QueueProcessor.php';
                 $processor = new \Admin\SocialMedia\Services\QueueProcessor();
                 $okCount = 0;
                 $failCount = 0;
-                foreach ($cleanIds as $itemId) {
+                foreach ($cleanIds as $idx => $itemId) {
+                    if ($idx > 0) {
+                        sleep(3);
+                    }
                     $stmtItem = $pdo->prepare("SELECT * FROM sm_queue WHERE id = ?");
                     $stmtItem->execute([$itemId]);
                     $item = $stmtItem->fetch(PDO::FETCH_ASSOC);

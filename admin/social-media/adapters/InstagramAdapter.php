@@ -105,8 +105,11 @@ class InstagramAdapter implements PlatformAdapterInterface {
         ]);
 
         if (isset($containerRes['error'])) {
+            $errMsg = $containerRes['error']['message'] ?? 'Failed to create media container';
+            $errCode = $containerRes['error']['code'] ?? 0;
+            $isRateLimit = $this->isRateLimitError($errMsg, $errCode);
             error_log('Instagram Media Container Error: ' . json_encode($containerRes['error']));
-            return ['success' => false, 'post_id' => null, 'post_url' => null, 'error' => $containerRes['error']['message'] ?? 'Failed to create media container'];
+            return ['success' => false, 'post_id' => null, 'post_url' => null, 'error' => $errMsg, 'is_rate_limit' => $isRateLimit];
         }
 
         $creationId = $containerRes['id'] ?? null;
@@ -117,15 +120,23 @@ class InstagramAdapter implements PlatformAdapterInterface {
         // 2. Poll Media Container Status until FINISHED or max attempts reached
         $status = 'IN_PROGRESS';
         $attempts = 0;
-        $maxAttempts = 8;
+        $maxAttempts = 10;
 
         while (($status === 'IN_PROGRESS' || empty($status)) && $attempts < $maxAttempts) {
-            sleep(2);
+            sleep(3);
             $attempts++;
             $statusRes = $this->curlRequest(self::BASE_URL . "/$creationId", 'GET', [
                 'fields' => 'status_code,status',
                 'access_token' => $accessToken
             ]);
+
+            if (isset($statusRes['error'])) {
+                $errMsg = $statusRes['error']['message'] ?? 'Error checking media container status';
+                $errCode = $statusRes['error']['code'] ?? 0;
+                $isRateLimit = $this->isRateLimitError($errMsg, $errCode);
+                return ['success' => false, 'post_id' => null, 'post_url' => null, 'error' => "Instagram Media Error: $errMsg", 'is_rate_limit' => $isRateLimit];
+            }
+
             $status = $statusRes['status_code'] ?? 'FINISHED';
             if ($status === 'ERROR') {
                 $errorDetail = $statusRes['status'] ?? 'Instagram failed to download or process image URL';
@@ -140,8 +151,11 @@ class InstagramAdapter implements PlatformAdapterInterface {
         ]);
 
         if (isset($publishRes['error'])) {
+            $errMsg = $publishRes['error']['message'] ?? 'Failed to publish media';
+            $errCode = $publishRes['error']['code'] ?? 0;
+            $isRateLimit = $this->isRateLimitError($errMsg, $errCode);
             error_log('Instagram Media Publish Error: ' . json_encode($publishRes['error']));
-            return ['success' => false, 'post_id' => null, 'post_url' => null, 'error' => $publishRes['error']['message'] ?? 'Failed to publish media'];
+            return ['success' => false, 'post_id' => null, 'post_url' => null, 'error' => $errMsg, 'is_rate_limit' => $isRateLimit];
         }
 
         $postId = $publishRes['id'] ?? null;
@@ -255,5 +269,28 @@ class InstagramAdapter implements PlatformAdapterInterface {
 
         $decoded = json_decode($response, true);
         return is_array($decoded) ? $decoded : ['error' => ['message' => 'Invalid or empty JSON response']];
+    }
+
+    public function isRateLimitError(string $msg, int $code = 0): bool {
+        $msgLower = strtolower($msg);
+        $rateLimitPhrases = [
+            'limit how often',
+            'too many actions',
+            'action block',
+            'rate limit',
+            'please try again later',
+            'protect the community from spam',
+            'user is performing too many actions',
+            'request limit reached'
+        ];
+        foreach ($rateLimitPhrases as $phrase) {
+            if (strpos($msgLower, $phrase) !== false) {
+                return true;
+            }
+        }
+        if (in_array($code, [4, 17, 32, 368], true)) {
+            return true;
+        }
+        return false;
     }
 }
