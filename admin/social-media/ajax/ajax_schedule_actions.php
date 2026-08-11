@@ -46,7 +46,25 @@ require_once BASE_PATH . '/admin/social-media/services/ScheduleRunner.php';
             $id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
             $name = trim($_POST['name'] ?? '');
             $scheduleType = trim($_POST['schedule_type'] ?? 'every_1hr');
-            $intervalMinutes = filter_input(INPUT_POST, 'interval_minutes', FILTER_VALIDATE_INT) ?: 60;
+
+            // Map schedule_type to interval_minutes
+            $typeIntervals = [
+                'every_5min'  => 5,
+                'every_15min' => 15,
+                'every_30min' => 30,
+                'every_1hr'   => 60,
+                'every_2hr'   => 120,
+                'every_6hr'   => 360,
+                'daily'       => 1440,
+                'weekly'      => 10080,
+                'monthly'     => 43200
+            ];
+            if (isset($typeIntervals[$scheduleType])) {
+                $intervalMinutes = $typeIntervals[$scheduleType];
+            } else {
+                $intervalMinutes = filter_input(INPUT_POST, 'interval_minutes', FILTER_VALIDATE_INT) ?: 60;
+            }
+
             $templateId = filter_input(INPUT_POST, 'template_id', FILTER_VALIDATE_INT) ?: null;
             $cta = trim($_POST['cta'] ?? '');
             $hashtags = trim($_POST['hashtags'] ?? '');

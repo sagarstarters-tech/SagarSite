@@ -217,9 +217,6 @@ class ScheduleRunner {
                 'cta_text' => $cta
             ]);
 
-            $productInserted = false;
-            $platformIndex = 0;
-
             foreach ($accounts as $acc) {
                 // Skip if this product is already in active queue for this platform
                 $chkStmt = $db->prepare("SELECT COUNT(*) FROM sm_queue 
@@ -229,9 +226,7 @@ class ScheduleRunner {
                     continue;
                 }
 
-                // Stagger platforms by 2 minutes to prevent Meta API rate limits across platforms
-                $platformStaggerSeconds = $platformIndex * 120;
-                $scheduledTime = $baseStartTimestamp + ($staggerIndex * $intervalMinutes * 60) + $platformStaggerSeconds;
+                $scheduledTime = $baseStartTimestamp + ($staggerIndex * $intervalMinutes * 60);
                 $scheduledAt = date('Y-m-d H:i:s', $scheduledTime);
 
                 $stmtQueue->execute([
@@ -246,11 +241,6 @@ class ScheduleRunner {
                     $scheduledAt
                 ]);
                 $queuedCount++;
-                $productInserted = true;
-                $platformIndex++;
-            }
-
-            if ($productInserted) {
                 $staggerIndex++;
             }
         }
