@@ -39,26 +39,21 @@ try {
     $intervalMinutes = filter_input(INPUT_POST, 'interval_minutes', FILTER_VALIDATE_INT) ?: 15;
     if ($intervalMinutes < 1) $intervalMinutes = 5;
 
-    // Parse platforms — handle both JSON string (from JS) and PHP array (from form checkboxes)
-    // JS sends: formData.append('platforms', JSON.stringify([...])) AND checkboxes also send platforms[]
-    // We prioritize JSON string if present, fallback to array
+    // Parse platforms — prioritize explicit selected array, fallback to JSON
     $platforms = [];
-    $rawPlatformJson = null;
-    // Check for JSON-encoded platforms key (set by JS)
-    if (!empty($_POST['platforms']) && is_string($_POST['platforms'])) {
-        $decoded = json_decode($_POST['platforms'], true);
-        if (is_array($decoded) && !empty($decoded)) {
-            $rawPlatformJson = $decoded;
+    if (!empty($_POST['platforms'])) {
+        if (is_array($_POST['platforms'])) {
+            $platforms = $_POST['platforms'];
+        } elseif (is_string($_POST['platforms'])) {
+            $decoded = json_decode($_POST['platforms'], true);
+            if (is_array($decoded) && !empty($decoded)) {
+                $platforms = $decoded;
+            } else {
+                $platforms = [$_POST['platforms']];
+            }
         }
     }
-    // Also check platforms[] array from form (checkboxes)
-    $rawPlatformsArray = [];
-    if (isset($_POST['platforms']) && is_array($_POST['platforms'])) {
-        $rawPlatformsArray = $_POST['platforms'];
-    }
-    // Merge: JSON takes priority, fallback to checkbox array
-    $merged = array_unique(array_merge($rawPlatformJson ?? [], $rawPlatformsArray));
-    $platforms = array_values(array_filter(array_map(fn($p) => strtolower(trim($p)), $merged)));
+    $platforms = array_values(array_unique(array_filter(array_map(fn($p) => strtolower(trim($p)), $platforms))));
 
     if (empty($platforms)) {
         throw new Exception('Please select at least one social media platform.');

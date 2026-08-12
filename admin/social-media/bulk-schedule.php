@@ -352,12 +352,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const formData = new FormData(this);
 
-        // Remove old checkbox-submitted platforms[] from FormData to avoid duplicates
-        // Then add the clean JSON-encoded platforms array
+        // Ensure platforms array contains ONLY currently checked checkboxes
         formData.delete('platforms');
         formData.delete('platforms[]');
-        const selectedPlatformValues = Array.from(checkedPlatforms).map(c => c.value);
-        formData.append('platforms', JSON.stringify(selectedPlatformValues));
+        checkedPlatforms.forEach(c => {
+            formData.append('platforms[]', c.value);
+        });
 
         // Gather filter_value based on selected filter type
         const filterType = document.querySelector('input[name="filter_type"]:checked').value;
