@@ -89,7 +89,7 @@ try {
                 $errRow = $stmtErr->fetch(PDO::FETCH_ASSOC);
                 $errMsg = $errRow['last_error'] ?? 'Publishing failed';
                 if (!empty($isRateLimit) || $processor->isRateLimitError($errMsg)) {
-                    throw new Exception("Meta Anti-Spam Limit Active: Facebook has applied a temporary anti-spam limit. Please wait 15-30 minutes for Meta cool-down before clicking 'Post Now' again.");
+                    throw new Exception("Meta Action Block Active: Facebook has temporarily restricted API posting on this Page (Meta blocks usually last 24 hours).\n\n💡 QUICK UNBLOCK TIP: Open facebook.com in your browser, go to your Page 'Sagar starter\'s', and publish 1 post manually to clear Facebook\'s security check.");
                 }
                 throw new Exception("Failed to publish to " . ucfirst($item['platform']) . ": " . $errMsg);
             }

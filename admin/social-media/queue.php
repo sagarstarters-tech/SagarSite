@@ -121,7 +121,7 @@ $statusBadges = [
             <i class="fas fa-shield-alt text-info fs-5"></i>
             <div>
                 <strong class="text-dark">Meta Rate Limit Protection:</strong>
-                <span class="small text-muted d-block">If Facebook or Instagram shows <em>"We limit how often you can post"</em> or <em>"User is performing too many actions"</em>, Meta has applied a temporary anti-spam limit. The system automatically throttles posting and reschedules retries with exponential backoff so your account remains safe.</span>
+                <span class="small text-muted d-block">If Facebook or Instagram shows <em>"We limit how often you can post"</em> or <em>"User is performing too many actions"</em>, Meta has applied a temporary anti-spam block (usually 24 hours). 💡 <strong>Quick Unblock Tip:</strong> Open <a href="https://facebook.com" target="_blank" class="text-primary fw-bold">facebook.com</a> in your browser, go to your Page <em>"Sagar starter's"</em>, and publish 1 post manually to clear Facebook's security flag immediately.</span>
             </div>
         </div>
     </div>
