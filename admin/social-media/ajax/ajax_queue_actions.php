@@ -77,7 +77,8 @@ try {
             $item = $stmtItem->fetch(PDO::FETCH_ASSOC);
             if (!$item) throw new Exception('Queue item not found');
 
-            $success = $processor->processPost($item);
+            $isRateLimit = false;
+            $success = $processor->processPost($item, $isRateLimit);
 
             if ($success) {
                 $response['success'] = true;
@@ -87,6 +88,9 @@ try {
                 $stmtErr->execute([$id]);
                 $errRow = $stmtErr->fetch(PDO::FETCH_ASSOC);
                 $errMsg = $errRow['last_error'] ?? 'Publishing failed';
+                if (!empty($isRateLimit) || $processor->isRateLimitError($errMsg)) {
+                    throw new Exception("Meta Anti-Spam Limit Active: Facebook has applied a temporary anti-spam limit. Please wait 15-30 minutes for Meta cool-down before clicking 'Post Now' again.");
+                }
                 throw new Exception("Failed to publish to " . ucfirst($item['platform']) . ": " . $errMsg);
             }
             break;
