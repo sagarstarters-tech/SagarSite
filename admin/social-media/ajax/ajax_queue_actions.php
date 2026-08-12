@@ -60,7 +60,7 @@ try {
         case 'retry':
             $id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
             if (!$id) throw new Exception('Invalid ID');
-            $stmt = $pdo->prepare("UPDATE sm_queue SET status = 'scheduled', retry_count = 0 WHERE id = ?");
+            $stmt = $pdo->prepare("UPDATE sm_queue SET status = 'scheduled', retry_count = 0, last_error = NULL, scheduled_at = NOW() WHERE id = ?");
             $stmt->execute([$id]);
             $response['success'] = true;
             break;

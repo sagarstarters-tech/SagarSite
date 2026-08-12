@@ -27,7 +27,7 @@ if ((time() - $lastRun) < 45) {
 // 2. Check if any schedules or queue items are actually due before heavy lifting
 try {
     $dueSchedules = (int)$pdo->query("SELECT COUNT(*) FROM sm_schedules WHERE is_active = 1 AND (next_run_at IS NULL OR next_run_at <= '$now')")->fetchColumn();
-    $dueQueue = (int)$pdo->query("SELECT COUNT(*) FROM sm_queue WHERE (status IN ('scheduled', 'pending', 'retry') OR (status = 'publishing' AND (updated_at <= NOW() - INTERVAL 2 MINUTE OR updated_at IS NULL))) AND (scheduled_at <= '$now' OR scheduled_at IS NULL)")->fetchColumn();
+    $dueQueue = (int)$pdo->query("SELECT COUNT(*) FROM sm_queue WHERE (status IN ('scheduled', 'retry') OR (status = 'publishing' AND (updated_at <= NOW() - INTERVAL 2 MINUTE OR updated_at IS NULL))) AND (scheduled_at <= '$now' OR scheduled_at IS NULL)")->fetchColumn();
 
     if ($dueSchedules === 0 && $dueQueue === 0) {
         @file_put_contents($lockFile, (string)time());

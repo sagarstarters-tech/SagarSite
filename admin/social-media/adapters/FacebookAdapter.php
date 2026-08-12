@@ -96,7 +96,8 @@ class FacebookAdapter implements PlatformAdapterInterface {
             $res = $this->curlRequest(self::BASE_URL . "/$pageId/photos", 'POST', [
                 'access_token' => $accessToken,
                 'url'          => $imageUrl,
-                'caption'      => $message
+                'caption'      => $message,
+                'published'    => 'true'
             ]);
         }
 

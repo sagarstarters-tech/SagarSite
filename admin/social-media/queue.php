@@ -74,7 +74,7 @@ $sql = "SELECT q.*, p.name as product_name, p.image, a.account_name
         LEFT JOIN products p ON q.product_id = p.id 
         LEFT JOIN sm_connected_accounts a ON q.account_id = a.id 
         {$whereSql} 
-        ORDER BY q.scheduled_at ASC, q.id DESC 
+        ORDER BY q.scheduled_at ASC, q.id ASC 
         LIMIT 150";
 
 $stmtQueue = $pdo->prepare($sql);
