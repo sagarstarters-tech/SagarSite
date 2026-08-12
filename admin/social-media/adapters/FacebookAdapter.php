@@ -84,6 +84,15 @@ class FacebookAdapter implements PlatformAdapterInterface {
             return ['success' => false, 'post_id' => null, 'post_url' => null, 'error' => 'Missing page ID or access token'];
         }
 
+        // Try resolving page-specific access token if available
+        $pageTokRes = $this->curlRequest(self::BASE_URL . "/$pageId", 'GET', [
+            'fields' => 'access_token',
+            'access_token' => $accessToken
+        ]);
+        if (!empty($pageTokRes['access_token'])) {
+            $accessToken = $pageTokRes['access_token'];
+        }
+
         $isValidImageUrl = !empty($imageUrl) 
             && (strpos($imageUrl, 'http://') === 0 || strpos($imageUrl, 'https://') === 0) 
             && strpos($imageUrl, 'localhost') === false 
@@ -191,7 +200,7 @@ class FacebookAdapter implements PlatformAdapterInterface {
         
         if ($method === 'POST') {
             curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, is_array($data) ? http_build_query($data) : $data);
         }
 
         if (!empty($headers)) {
