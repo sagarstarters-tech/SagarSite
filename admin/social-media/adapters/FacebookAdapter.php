@@ -26,7 +26,17 @@ class FacebookAdapter implements PlatformAdapterInterface {
 
     public function getAuthUrl(string $redirectUri, string $state): string {
         $appId = _env('FB_APP_ID') ?: _env('FACEBOOK_APP_ID');
-        $scopes = ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts', 'publish_video', 'instagram_basic', 'instagram_content_publish'];
+        $scopes = [
+            'pages_show_list', 
+            'pages_read_engagement', 
+            'pages_manage_posts', 
+            'pages_manage_metadata',
+            'business_management',
+            'instagram_basic', 
+            'instagram_content_publish',
+            'instagram_manage_insights',
+            'public_profile'
+        ];
         $url = "https://www.facebook.com/" . self::API_VERSION . "/dialog/oauth?";
         $params = [
             'client_id' => $appId,
@@ -34,7 +44,7 @@ class FacebookAdapter implements PlatformAdapterInterface {
             'state' => $state,
             'scope' => implode(',', $scopes),
             'response_type' => 'code',
-            'auth_type' => 'rerequest'
+            'auth_type' => 'reauthenticate,rerequest'
         ];
         return $url . http_build_query($params);
     }
