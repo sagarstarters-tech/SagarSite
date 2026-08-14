@@ -23,6 +23,14 @@ $schedules = $stmtSchedules->fetchAll(PDO::FETCH_ASSOC);
 $stmtTemplates = $pdo->query("SELECT id, name, is_default FROM sm_templates WHERE is_active = 1 ORDER BY is_default DESC, name ASC");
 $templates = $stmtTemplates->fetchAll(PDO::FETCH_ASSOC);
 
+// Fetch Connected Accounts
+$stmtAccounts = $pdo->query("SELECT * FROM sm_connected_accounts WHERE is_active = 1 AND access_token_encrypted IS NOT NULL AND access_token_encrypted != ''");
+$activeAccounts = $stmtAccounts->fetchAll(PDO::FETCH_ASSOC);
+$connectedMap = [];
+foreach ($activeAccounts as $acc) {
+    $connectedMap[strtolower($acc['platform'])] = $acc;
+}
+
 // Fetch Categories
 $categories = [];
 try {
@@ -281,16 +289,38 @@ $scheduleTypes = [
                         </div>
 
                         <div class="col-md-12">
-                            <label class="form-label fw-bold small text-muted d-block">Target Platforms</label>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label fw-bold small text-muted m-0">Target Platforms <span class="text-danger">*</span></label>
+                                <a href="accounts.php" class="extra-small text-decoration-none"><i class="fas fa-plug me-1"></i>Manage Accounts</a>
+                            </div>
+                            <?php if (empty($connectedMap)): ?>
+                                <div class="alert alert-warning py-2 px-3 small rounded-3 mb-2">
+                                    <i class="fas fa-exclamation-triangle me-1"></i> No social media accounts connected yet. <a href="accounts.php" class="alert-link fw-bold">Connect Accounts</a> to enable posting.
+                                </div>
+                            <?php endif; ?>
                             <div class="row g-2">
-                                <?php foreach ($platformIcons as $pKey => $pMeta): ?>
+                                <?php foreach ($platformIcons as $pKey => $pMeta): 
+                                    $isConnected = isset($connectedMap[$pKey]);
+                                    $accInfo = $isConnected ? $connectedMap[$pKey] : null;
+                                ?>
                                     <div class="col-6 col-md-4">
-                                        <div class="form-check border rounded-3 p-2 px-3">
+                                        <div class="form-check border rounded-3 p-2 px-3 h-100 <?php echo $isConnected ? 'bg-white shadow-sm' : 'bg-light opacity-75'; ?>">
                                             <input class="form-check-input platform-chk" type="checkbox" 
-                                                   name="platforms[]" value="<?php echo $pKey; ?>" id="chk_<?php echo $pKey; ?>">
-                                            <label class="form-check-label cursor-pointer fw-semibold small" for="chk_<?php echo $pKey; ?>">
+                                                   name="platforms[]" value="<?php echo $pKey; ?>" id="chk_<?php echo $pKey; ?>"
+                                                   data-connected="<?php echo $isConnected ? '1' : '0'; ?>"
+                                                   <?php echo $isConnected ? '' : 'disabled'; ?>>
+                                            <label class="form-check-label fw-semibold small <?php echo $isConnected ? 'cursor-pointer' : 'text-muted'; ?>" for="chk_<?php echo $pKey; ?>">
                                                 <i class="<?php echo $pMeta['icon']; ?> me-1" style="color: <?php echo $pMeta['color']; ?>;"></i>
                                                 <?php echo htmlspecialchars($pMeta['name']); ?>
+                                                <?php if ($isConnected): ?>
+                                                    <span class="d-block extra-small text-success fw-normal mt-1 text-truncate" title="<?php echo htmlspecialchars($accInfo['account_name'] ?? 'Connected'); ?>">
+                                                        <i class="fas fa-check-circle me-1"></i><?php echo htmlspecialchars($accInfo['account_name'] ?? 'Connected'); ?>
+                                                    </span>
+                                                <?php else: ?>
+                                                    <span class="d-block extra-small text-muted fw-normal mt-1">
+                                                        <i class="fas fa-times-circle me-1"></i>Not Connected
+                                                    </span>
+                                                <?php endif; ?>
                                             </label>
                                         </div>
                                     </div>
@@ -452,7 +482,16 @@ document.addEventListener('DOMContentLoaded', function() {
         if (scheduleForm) scheduleForm.reset();
         document.getElementById('scheduleId').value = '';
         document.getElementById('scheduleModalLabel').textContent = 'Create Posting Schedule';
-        document.querySelectorAll('.platform-chk').forEach(c => c.checked = true);
+        
+        document.querySelectorAll('.platform-chk').forEach(c => {
+            if (c.dataset.connected === '1') {
+                c.disabled = false;
+                c.checked = true;
+            } else {
+                c.disabled = true;
+                c.checked = false;
+            }
+        });
         document.getElementById('schedActive').checked = true;
 
         const nowObj = new Date();
@@ -511,7 +550,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 document.querySelectorAll('.platform-chk').forEach(chk => {
-                    chk.checked = pIds.includes(chk.value);
+                    if (chk.dataset.connected === '1') {
+                        chk.disabled = false;
+                        chk.checked = pIds.includes(chk.value);
+                    } else {
+                        chk.disabled = true;
+                        chk.checked = false;
+                    }
                 });
 
                 document.getElementById('scheduleModalLabel').textContent = 'Edit Schedule';
@@ -527,6 +572,13 @@ document.addEventListener('DOMContentLoaded', function() {
     if (scheduleForm) {
         scheduleForm.addEventListener('submit', function(e) {
             e.preventDefault();
+
+            const checkedPlatforms = Array.from(document.querySelectorAll('.platform-chk:checked'));
+            if (checkedPlatforms.length === 0) {
+                alert('Please select at least 1 connected social media platform for automated posting.');
+                return;
+            }
+
             const btnSave = document.getElementById('btnSaveSchedule');
             btnSave.disabled = true;
             btnSave.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
