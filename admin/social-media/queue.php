@@ -697,52 +697,41 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Track user active typing time
     let lastUserTypingTime = 0;
-    document.addEventListener('input', function(e) {
-        if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
-            lastUserTypingTime = Date.now();
-        }
-    });
+    let isRefreshing = false;
+    let autoRefreshCountdown = 30;
 
-    // Helper to check if user is selecting checkboxes, actively typing, or viewing a modal
+    // Helper to check if user is selecting checkboxes or viewing a modal
     function isUserBusyWithQueue() {
         const checkedCount = document.querySelectorAll('.queue-chk:checked, #checkAllQueue:checked').length;
         if (checkedCount > 0) return true;
-
-        // Skip only if actively typing within last 5 seconds
-        if (Date.now() - lastUserTypingTime < 5000) {
-            return true;
-        }
-
         if (document.querySelector('.modal.show')) return true;
-
         return false;
     }
 
     // Global safe refresh function (Manual click forces refresh; auto timer skips if user is busy)
     window.safelyRefreshQueuePage = function(forceManual = false) {
+        if (isRefreshing) return;
+
         if (!forceManual && isUserBusyWithQueue()) {
-            console.log('[Queue] Skipping auto-refresh: User is typing or selecting items.');
+            console.log('[Queue] Skipping auto-refresh: User has selected items or open modal.');
             return;
         }
 
+        isRefreshing = true;
         const icon = document.getElementById('queueRefreshIcon');
         const timerElem = document.getElementById('queueAutoRefreshTimer');
         if (icon) icon.classList.add('fa-spin');
         if (timerElem) timerElem.textContent = '...';
 
-        fetch('ajax/ajax_process_queue.php')
-            .then(res => res.json())
-            .then(data => {
-                setTimeout(() => {
-                    window.location.reload();
-                }, 300);
-            })
-            .catch(err => {
-                console.error('[Queue] Refresh ping error:', err);
-                setTimeout(() => {
-                    window.location.reload();
-                }, 300);
-            });
+        // Trigger queue processor in background asynchronously
+        try {
+            fetch('ajax/ajax_process_queue.php', { method: 'POST' }).catch(() => {});
+        } catch(e) {}
+
+        // Reload page
+        setTimeout(() => {
+            window.location.reload();
+        }, 500);
     };
 
     // Reset Stuck Publishing Button
@@ -771,11 +760,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initial async trigger after DOM load
     setTimeout(function() {
         fetch('ajax/ajax_process_queue.php').catch(err => {});
-    }, 500);
+    }, 1000);
 
     // Live 30-second countdown timer for auto-refresh
-    let autoRefreshCountdown = 30;
     setInterval(function() {
+        if (isRefreshing) return;
+
         const timerElem = document.getElementById('queueAutoRefreshTimer');
 
         if (isUserBusyWithQueue()) {
