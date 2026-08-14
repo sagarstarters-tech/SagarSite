@@ -126,19 +126,19 @@ $statusBadges = [
         </div>
     </div>
 
-    <!-- Manual & Controlled Processing Banner & Hostinger Cron Setup Guide -->
-    <div class="alert alert-light border shadow-sm rounded-4 mb-4 p-3">
+    <!-- Automated Background Processing Banner (with Anti-Backlog Guard) -->
+    <div class="alert alert-success border-0 shadow-sm rounded-4 mb-4 p-3">
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
             <div class="d-flex align-items-center gap-2">
-                <i class="fas fa-hand-paper text-primary fs-5"></i>
-                <strong class="text-dark">Manual & Safe Posting Mode Active:</strong>
-                <span class="small text-muted">Posts are published ONLY when you click "Post Now" or via configured Hostinger Cron Job. No unexpected auto-posts.</span>
+                <span class="spinner-grow spinner-grow-sm text-success" role="status"></span>
+                <strong class="text-success">Auto Background Posting Active:</strong>
+                <span class="small text-dark">Freshly scheduled & on-time posts publish automatically in the background. 🛡️ <em>Anti-Backlog Guard</em> blocks old expired posts (>30m) from mass auto-firing.</span>
             </div>
             <div class="d-flex align-items-center gap-2">
                 <button class="btn btn-sm btn-primary rounded-pill px-3 fw-bold" id="btnManualProcessQueue" type="button">
                     <i class="fas fa-paper-plane me-1"></i> Process Due Posts Now
                 </button>
-                <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" type="button" data-mdb-toggle="collapse" data-bs-toggle="collapse" data-mdb-target="#hostingerCronInfo" data-bs-target="#hostingerCronInfo" aria-expanded="false">
+                <button class="btn btn-sm btn-outline-success rounded-pill px-3" type="button" data-mdb-toggle="collapse" data-bs-toggle="collapse" data-mdb-target="#hostingerCronInfo" data-bs-target="#hostingerCronInfo" aria-expanded="false">
                     <i class="fas fa-clock me-1"></i> Hostinger Cron Guide
                 </button>
             </div>
@@ -728,10 +728,15 @@ document.addEventListener('DOMContentLoaded', function() {
         if (icon) icon.classList.add('fa-spin');
         if (timerElem) timerElem.textContent = '...';
 
+        // Trigger queue processor in background asynchronously
+        try {
+            fetch('ajax/ajax_process_queue.php', { method: 'POST' }).catch(() => {});
+        } catch(e) {}
+
         // Reload page
         setTimeout(() => {
             window.location.reload();
-        }, 300);
+        }, 500);
     };
 
     // Manual Process Queue Button

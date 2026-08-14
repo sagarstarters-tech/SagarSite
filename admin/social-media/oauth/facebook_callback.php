@@ -247,6 +247,11 @@ try {
                 }
             }
         }
+        
+        // Anti-Backlog Guard: Expire any old pending/retry posts from before reconnection
+        $staleThreshold = date('Y-m-d H:i:s', strtotime('-15 minutes'));
+        $pdo->prepare("UPDATE sm_queue SET status = 'failed', last_error = 'Auto-post skipped: Created prior to account reconnection. Click Post Now to publish manually.' WHERE status IN ('scheduled', 'retry') AND scheduled_at IS NOT NULL AND scheduled_at < ?")
+            ->execute([$staleThreshold]);
     }
 
     if ($foundInstagram) {

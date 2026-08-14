@@ -22,11 +22,33 @@ class QueueProcessor {
      * @param int $batchSize
      * @return array
      */
-    public function processBatch(int $batchSize = 10): array {
+    /**
+     * Processes a batch of pending/scheduled posts where scheduled_at <= NOW().
+     * Automatically filters and expires old stale backlog posts (>30m ago) so they never auto-fire unexpectedly.
+     *
+     * @param int $batchSize
+     * @param bool $allowStale
+     * @return array
+     */
+    public function processBatch(int $batchSize = 10, bool $allowStale = false): array {
         $db = DbConnection::getInstance();
         $now = date('Y-m-d H:i:s');
         $isCli = (php_sapi_name() === 'cli');
         
+        // 1. Anti-Backlog Guard: Expire old stale backlog posts (>30 mins in the past)
+        // Prevents past failed/pending items from dumping onto social media automatically
+        if (!$allowStale) {
+            $staleThreshold = date('Y-m-d H:i:s', strtotime('-30 minutes'));
+            $db->prepare("UPDATE sm_queue 
+                SET status = 'failed', 
+                    last_error = 'Auto-post skipped: Scheduled time expired (>30m ago). Click Post Now to publish manually.' 
+                WHERE status IN ('scheduled', 'retry') 
+                AND scheduled_at IS NOT NULL 
+                AND scheduled_at < ?")
+               ->execute([$staleThreshold]);
+        }
+        
+        // 2. Fetch only real-time timely due posts
         $stmt = $db->prepare("SELECT * FROM sm_queue 
             WHERE (status IN ('scheduled', 'retry') OR (status = 'publishing' AND (updated_at <= NOW() - INTERVAL 2 MINUTE OR updated_at IS NULL))) 
             AND (scheduled_at <= ? OR scheduled_at IS NULL) 

@@ -277,6 +277,11 @@ try {
                 $insertStmt->execute([$finalPageName, $page_id, $page_id, $encryptedToken, $userId]);
             }
 
+            // Anti-Backlog Guard: Expire any old pending/retry posts from before token update
+            $staleThreshold = date('Y-m-d H:i:s', strtotime('-15 minutes'));
+            $pdo->prepare("UPDATE sm_queue SET status = 'failed', last_error = 'Auto-post skipped: Created prior to account reconnection. Click Post Now to publish manually.' WHERE status IN ('scheduled', 'retry') AND scheduled_at IS NOT NULL AND scheduled_at < ?")
+                ->execute([$staleThreshold]);
+
             $response['success'] = true;
             $response['data'] = "Facebook Page '{$finalPageName}' connected successfully!";
             break;
@@ -367,6 +372,11 @@ try {
                 $inIg = $pdo->prepare("INSERT INTO sm_connected_accounts (platform, account_name, account_id, page_id, access_token_encrypted, is_active, connected_by) VALUES ('instagram', ?, ?, ?, ?, 1, ?)");
                 $inIg->execute([$igHandle, $igId, $pageId, $encryptedToken, $userId]);
             }
+
+            // Anti-Backlog Guard: Expire any old pending/retry posts from before token update
+            $staleThreshold = date('Y-m-d H:i:s', strtotime('-15 minutes'));
+            $pdo->prepare("UPDATE sm_queue SET status = 'failed', last_error = 'Auto-post skipped: Created prior to account reconnection. Click Post Now to publish manually.' WHERE status IN ('scheduled', 'retry') AND scheduled_at IS NOT NULL AND scheduled_at < ?")
+                ->execute([$staleThreshold]);
 
             $response['success'] = true;
             $response['data'] = "Instagram Account '{$igHandle}' (ID: {$igId}) connected successfully from Facebook Page!";

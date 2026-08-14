@@ -322,6 +322,24 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
+<script>
+(function() {
+    // Gentle Admin Background Queue Processor (Protected by Anti-Backlog Guard)
+    function triggerAdminSocialQueue() {
+        if (navigator.onLine) {
+            fetch('<?php echo defined("ADMIN_BASE_URL") ? ADMIN_BASE_URL : SITE_URL . "/admin"; ?>/social-media/ajax/ajax_process_queue.php', {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            }).catch(function(err) {});
+        }
+    }
+    // Check 3 seconds after page load on admin pages
+    setTimeout(triggerAdminSocialQueue, 3000);
+    // Periodic check every 60 seconds while admin tab is open
+    setInterval(triggerAdminSocialQueue, 60000);
+})();
+</script>
+
 <!-- MDB JS -->
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.js"></script>
 </body>
