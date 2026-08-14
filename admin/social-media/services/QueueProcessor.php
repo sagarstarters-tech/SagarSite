@@ -185,7 +185,9 @@ class QueueProcessor {
             } else {
                 $errorMsg = $pubRes['error'] ?? 'Platform adapter reported failure';
                 $this->updateStatus($id, 'failed', $errorMsg);
-                $this->retryPost($id, $outIsRateLimit);
+                if (!$this->isAuthTokenError($errorMsg)) {
+                    $this->retryPost($id, $outIsRateLimit);
+                }
                 return false;
             }
             
@@ -193,7 +195,9 @@ class QueueProcessor {
             $errorMsg = $e->getMessage();
             $outIsRateLimit = $this->isRateLimitError($errorMsg);
             $this->updateStatus($id, 'failed', $errorMsg);
-            $this->retryPost($id, $outIsRateLimit);
+            if (!$this->isAuthTokenError($errorMsg)) {
+                $this->retryPost($id, $outIsRateLimit);
+            }
             
             // Log error
             $logStmt = $db->prepare("INSERT INTO sm_logs (level, message, queue_id, platform) VALUES ('error', ?, ?, ?)");
@@ -235,6 +239,29 @@ class QueueProcessor {
         $updateStmt->execute([$retries, $nextAttempt, $queueId]);
         
         return true;
+    }
+
+    public function isAuthTokenError(?string $error): bool {
+        if (empty($error)) return false;
+        $errLower = strtolower($error);
+        $authPhrases = [
+            'error validating access token',
+            'session has expired',
+            'invalid access token',
+            'the access token could not be decrypted',
+            'token is expired',
+            'invalid oauth access token',
+            'user has not authorized application',
+            'missing or invalid api access token',
+            'no active connected account found',
+            'session has been invalidated'
+        ];
+        foreach ($authPhrases as $phrase) {
+            if (strpos($errLower, $phrase) !== false) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public function isRateLimitError(?string $error): bool {
