@@ -315,13 +315,81 @@ try {
         case 'save_instagram':
             $ig_user_id = trim($_POST['ig_user_id'] ?? '');
             $access_token = trim($_POST['access_token'] ?? '');
-            $account_name = trim($_POST['account_name'] ?? '@instagram');
+            $account_name = trim($_POST['account_name'] ?? '');
 
-            if (empty($ig_user_id) || empty($access_token)) {
-                throw new Exception('Instagram Business Account ID and Access Token are required');
+            if (empty($access_token)) {
+                throw new Exception('Instagram Access Token is required');
             }
 
-            $encryptedToken = TokenEncryption::encrypt($access_token);
+            $finalIgId = $ig_user_id;
+            $finalHandle = $account_name;
+            $finalToken = $access_token;
+            $res = null;
+
+            if (!empty($finalIgId)) {
+                $chkUrl = "https://graph.facebook.com/v21.0/{$finalIgId}?" . http_build_query([
+                    'fields' => 'id,username,name',
+                    'access_token' => $access_token
+                ]);
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, $chkUrl);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+                $resStr = curl_exec($ch);
+                curl_close($ch);
+                $res = json_decode($resStr ?: '', true);
+
+                if (!empty($res['username'])) {
+                    $finalHandle = '@' . $res['username'];
+                }
+            }
+
+            // If verification failed or ig_user_id was empty, inspect /me/accounts for instagram_business_account
+            if (empty($finalIgId) || isset($res['error'])) {
+                $meAccountsUrl = "https://graph.facebook.com/v21.0/me/accounts?" . http_build_query([
+                    'fields' => 'name,id,access_token,instagram_business_account{id,username,name}',
+                    'access_token' => $access_token
+                ]);
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, $meAccountsUrl);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+                $meAccountsRes = json_decode(curl_exec($ch) ?: '', true);
+                curl_close($ch);
+
+                $foundIg = null;
+                $foundPageToken = $access_token;
+                if (!empty($meAccountsRes['data'])) {
+                    foreach ($meAccountsRes['data'] as $p) {
+                        if (!empty($p['instagram_business_account']['id'])) {
+                            $foundIg = $p['instagram_business_account'];
+                            $foundPageToken = $p['access_token'] ?? $access_token;
+                            break;
+                        }
+                    }
+                }
+
+                if ($foundIg) {
+                    $finalIgId = $foundIg['id'];
+                    $finalHandle = !empty($foundIg['username']) ? '@' . $foundIg['username'] : ($foundIg['name'] ?? '@instagram');
+                    $finalToken = $foundPageToken;
+                } else {
+                    if (empty($finalIgId)) {
+                        throw new Exception("⚠️ No Instagram Business Account found linked to your Facebook Page.\n\n👉 Fix karne ke liye:\n1. Instagram app me account ko 'Professional / Business Account' me switch karein.\n2. Facebook Page Settings ➔ Linked Accounts ➔ Instagram connect karein.");
+                    }
+                }
+            }
+
+            if (empty($finalIgId)) {
+                throw new Exception('Instagram Business Account ID is required');
+            }
+            if (empty($finalHandle)) {
+                $finalHandle = '@instagram';
+            }
+
+            $encryptedToken = TokenEncryption::encrypt($finalToken);
             $userId = $_SESSION['user_id'] ?? 1;
 
             $deactStmt = $pdo->prepare("UPDATE sm_connected_accounts SET is_active = 0 WHERE LOWER(platform) = 'instagram'");
@@ -333,14 +401,14 @@ try {
 
             if ($existing) {
                 $updateStmt = $pdo->prepare("UPDATE sm_connected_accounts SET account_name = ?, account_id = ?, page_id = ?, access_token_encrypted = ?, is_active = 1, connected_by = ?, updated_at = NOW() WHERE id = ?");
-                $updateStmt->execute([$account_name, $ig_user_id, $ig_user_id, $encryptedToken, $userId, $existing['id']]);
+                $updateStmt->execute([$finalHandle, $finalIgId, $finalIgId, $encryptedToken, $userId, $existing['id']]);
             } else {
                 $insertStmt = $pdo->prepare("INSERT INTO sm_connected_accounts (platform, account_name, account_id, page_id, access_token_encrypted, is_active, connected_by) VALUES ('instagram', ?, ?, ?, ?, 1, ?)");
-                $insertStmt->execute([$account_name, $ig_user_id, $ig_user_id, $encryptedToken, $userId]);
+                $insertStmt->execute([$finalHandle, $finalIgId, $finalIgId, $encryptedToken, $userId]);
             }
 
             $response['success'] = true;
-            $response['data'] = 'Instagram Access Token saved successfully!';
+            $response['data'] = "Instagram Account '{$finalHandle}' connected successfully!";
             break;
 
         case 'save_linkedin':
