@@ -169,13 +169,96 @@ try {
         case 'save_facebook':
             $page_id = trim($_POST['page_id'] ?? '');
             $access_token = trim($_POST['access_token'] ?? '');
-            $account_name = trim($_POST['account_name'] ?? 'Facebook Page');
+            $account_name = trim($_POST['account_name'] ?? '');
 
             if (empty($page_id) || empty($access_token)) {
                 throw new Exception('Facebook Page ID and Page Access Token are required');
             }
 
-            $encryptedToken = TokenEncryption::encrypt($access_token);
+            // Verify with Meta Graph API
+            $apiUrl = "https://graph.facebook.com/v21.0/{$page_id}?" . http_build_query([
+                'fields' => 'name,id,access_token',
+                'access_token' => $access_token
+            ]);
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $apiUrl);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            $pageResStr = curl_exec($ch);
+            curl_close($ch);
+
+            $pageRes = json_decode($pageResStr ?: '', true);
+
+            $finalToken = $access_token;
+            $finalPageName = $account_name;
+
+            if (!empty($pageRes['access_token'])) {
+                // Resolved page-specific token
+                $finalToken = $pageRes['access_token'];
+                if (!empty($pageRes['name'])) {
+                    $finalPageName = $pageRes['name'];
+                }
+            } elseif (!empty($pageRes['name']) && empty($pageRes['error'])) {
+                // Token worked for reading page
+                $finalPageName = $pageRes['name'];
+            } else {
+                // Check /me/accounts in case user provided a User Token
+                $meAccountsUrl = "https://graph.facebook.com/v21.0/me/accounts?" . http_build_query([
+                    'fields' => 'name,id,access_token',
+                    'access_token' => $access_token
+                ]);
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, $meAccountsUrl);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+                $meResStr = curl_exec($ch);
+                curl_close($ch);
+                $meAccountsRes = json_decode($meResStr ?: '', true);
+
+                $matchedPage = null;
+                if (!empty($meAccountsRes['data'])) {
+                    foreach ($meAccountsRes['data'] as $p) {
+                        if ((string)$p['id'] === (string)$page_id) {
+                            $matchedPage = $p;
+                            break;
+                        }
+                    }
+                    if (!$matchedPage && count($meAccountsRes['data']) === 1) {
+                        $matchedPage = $meAccountsRes['data'][0];
+                        $page_id = $matchedPage['id'];
+                    }
+                }
+
+                if ($matchedPage) {
+                    $finalToken = $matchedPage['access_token'] ?? $access_token;
+                    $finalPageName = $matchedPage['name'] ?? $account_name;
+                } else {
+                    // Check /me to see if they provided a personal user token
+                    $meUrl = "https://graph.facebook.com/v21.0/me?fields=name,id&access_token=" . urlencode($access_token);
+                    $ch = curl_init();
+                    curl_setopt($ch, CURLOPT_URL, $meUrl);
+                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                    curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+                    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+                    $userRes = json_decode(curl_exec($ch) ?: '', true);
+                    curl_close($ch);
+
+                    if (!empty($userRes['name']) && empty($meAccountsRes['data'])) {
+                        throw new Exception("⚠️ Meta Error: Aapne User Profile ({$userRes['name']}) ka Token daala hai. Meta personal profile par posting allow nahi karta.\n\n👉 Fix karne ke liye: Graph API Explorer me 'User or Page' dropdown se apna 'Facebook Page' select karein aur 'pages_manage_posts' & 'pages_read_engagement' permissions ke sath Page Access Token generate karein.");
+                    }
+
+                    $errDetail = $pageRes['error']['message'] ?? ($meAccountsRes['error']['message'] ?? 'Invalid Page ID or Access Token');
+                    throw new Exception("Meta API Error: {$errDetail}. Please verify the Facebook Page ID and ensure the token has 'pages_manage_posts' permission.");
+                }
+            }
+
+            if (empty($finalPageName)) {
+                $finalPageName = 'Facebook Page';
+            }
+
+            $encryptedToken = TokenEncryption::encrypt($finalToken);
             $userId = $_SESSION['user_id'] ?? 1;
 
             // Deactivate any existing active facebook accounts first
@@ -188,14 +271,14 @@ try {
 
             if ($existing) {
                 $updateStmt = $pdo->prepare("UPDATE sm_connected_accounts SET account_name = ?, access_token_encrypted = ?, is_active = 1, connected_by = ?, updated_at = NOW() WHERE id = ?");
-                $updateStmt->execute([$account_name, $encryptedToken, $userId, $existing['id']]);
+                $updateStmt->execute([$finalPageName, $encryptedToken, $userId, $existing['id']]);
             } else {
                 $insertStmt = $pdo->prepare("INSERT INTO sm_connected_accounts (platform, account_name, account_id, page_id, access_token_encrypted, is_active, connected_by) VALUES ('facebook', ?, ?, ?, ?, 1, ?)");
-                $insertStmt->execute([$account_name, $page_id, $page_id, $encryptedToken, $userId]);
+                $insertStmt->execute([$finalPageName, $page_id, $page_id, $encryptedToken, $userId]);
             }
 
             $response['success'] = true;
-            $response['data'] = 'Facebook Page Access Token saved successfully!';
+            $response['data'] = "Facebook Page '{$finalPageName}' connected successfully!";
             break;
 
         case 'save_pinterest':

@@ -33,7 +33,8 @@ class FacebookAdapter implements PlatformAdapterInterface {
             'redirect_uri' => $redirectUri,
             'state' => $state,
             'scope' => implode(',', $scopes),
-            'response_type' => 'code'
+            'response_type' => 'code',
+            'auth_type' => 'rerequest'
         ];
         return $url . http_build_query($params);
     }

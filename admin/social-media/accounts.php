@@ -274,7 +274,10 @@ $platformsConfig = [
                         <label class="form-label fw-bold">Page Access Token <span class="text-danger">*</span></label>
                         <textarea name="access_token" class="form-control rounded-3" rows="3" 
                                   placeholder="e.g. EAAB..." required></textarea>
-                        <div class="form-text">Generate a Page Access Token from Meta Graph API Explorer or Facebook Developer App.</div>
+                        <div class="form-text mt-1 text-primary">
+                            <i class="fas fa-info-circle me-1"></i> <strong>Important:</strong> Graph API Explorer me <strong>User or Page</strong> dropdown se apna <strong>Facebook Page</strong> select karke token generate karein (User Token se post nahi hoga).
+                            <br><span class="text-muted">Required Scopes: <code>pages_manage_posts</code>, <code>pages_read_engagement</code>, <code>pages_show_list</code></span>
+                        </div>
                     </div>
 
                     <div id="facebookAlert"></div>

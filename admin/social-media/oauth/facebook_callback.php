@@ -104,33 +104,7 @@ try {
     $foundFacebook = false;
 
     if (empty($pages)) {
-        // Fallback: If no specific Pages returned, store the user profile account
-        $meUrl = "https://graph.facebook.com/v21.0/me?fields=name,id&access_token=" . urlencode($userToken);
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $meUrl);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        $meStr = curl_exec($ch);
-        curl_close($ch);
-        $meRes = json_decode($meStr ?: '', true);
-
-        $fbId = $meRes['id'] ?? 'fb_' . time();
-        $fbName = $meRes['name'] ?? 'Facebook Account';
-        $encryptedToken = TokenEncryption::encrypt($userToken);
-
-        $pdo->exec("UPDATE sm_connected_accounts SET is_active = 0 WHERE LOWER(platform) = 'facebook'");
-        $chkStmt = $pdo->prepare("SELECT id FROM sm_connected_accounts WHERE LOWER(platform) = 'facebook' AND (page_id = ? OR account_id = ?)");
-        $chkStmt->execute([$fbId, $fbId]);
-        $existing = $chkStmt->fetch(PDO::FETCH_ASSOC);
-
-        if ($existing) {
-            $stmt = $pdo->prepare("UPDATE sm_connected_accounts SET account_name = ?, access_token_encrypted = ?, is_active = 1, connected_by = ?, updated_at = NOW() WHERE id = ?");
-            $stmt->execute([$fbName, $encryptedToken, $userId, $existing['id']]);
-        } else {
-            $stmt = $pdo->prepare("INSERT INTO sm_connected_accounts (platform, account_name, account_id, page_id, access_token_encrypted, is_active, connected_by) 
-                VALUES ('facebook', ?, ?, ?, ?, 1, ?)");
-            $stmt->execute([$fbName, $fbId, $fbId, $encryptedToken, $userId]);
-        }
-        $foundFacebook = true;
+        throw new Exception('No Facebook Page found or selected. Meta allows auto-posting ONLY to Facebook Pages (not personal user profiles). Please re-connect Facebook and make sure to select your Facebook Page in the permission window.');
     } else {
         $pdo->exec("UPDATE sm_connected_accounts SET is_active = 0 WHERE LOWER(platform) = 'facebook'");
         foreach ($pages as $page) {
