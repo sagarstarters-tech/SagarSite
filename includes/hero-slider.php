@@ -148,4 +148,4 @@ $transition_type = $settings['transition_type'] ?? 'slide'; // fade, slide, zoom
 </div>
 
 <!-- hero-slider CSS is preloaded in <head> via header.php -->
-<script src="<?php echo ASSETS_URL; ?>/js/hero-slider-script.js" defer></script>
+<script src="<?php echo ASSETS_URL; ?>/js/hero-slider-script.js?v=1.5" defer></script>

@@ -320,8 +320,8 @@ if (isset($product['slug'])) {
     <?php endif; ?>
 
     <!-- Preload hero slider CSS (used above fold) -->
-    <link rel="preload" href="<?php echo ASSETS_URL; ?>/css/hero-slider-style.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link href="<?php echo ASSETS_URL; ?>/css/hero-slider-style.css" rel="stylesheet"></noscript>
+    <link rel="preload" href="<?php echo ASSETS_URL; ?>/css/hero-slider-style.css?v=1.5" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link href="<?php echo ASSETS_URL; ?>/css/hero-slider-style.css?v=1.5" rel="stylesheet"></noscript>
 
     <!-- Google Fonts with font-display:swap (non-render-blocking) —
          Montserrat (headings) + Poppins (body) — replaces @import in style.css -->

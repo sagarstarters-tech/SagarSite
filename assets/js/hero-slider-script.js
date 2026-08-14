@@ -119,11 +119,45 @@ document.addEventListener('DOMContentLoaded', () => {
         } 
     } 
 
+    // Touch Swipe Navigation for Mobile & Tablet
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchEndX = 0;
+    let touchEndY = 0;
+    const minSwipeDistance = 45;
+
+    slider.addEventListener('touchstart', (e) => {
+        if (!e.changedTouches || e.changedTouches.length === 0) return;
+        touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
+        stopAutoplay();
+    }, { passive: true });
+
+    slider.addEventListener('touchend', (e) => {
+        if (!e.changedTouches || e.changedTouches.length === 0) return;
+        touchEndX = e.changedTouches[0].screenX;
+        touchEndY = e.changedTouches[0].screenY;
+        handleSwipe();
+        startAutoplay();
+    }, { passive: true });
+
+    function handleSwipe() {
+        const deltaX = touchEndX - touchStartX;
+        const deltaY = touchEndY - touchStartY;
+        
+        // Trigger only when horizontal swipe is dominant and exceeds threshold
+        if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
+            if (deltaX < 0) {
+                nextSlide();
+            } else {
+                prevSlide();
+            }
+        }
+    }
+
     if (autoplayEnabled) { 
         startAutoplay(); 
         slider.addEventListener('mouseenter', stopAutoplay); 
         slider.addEventListener('mouseleave', startAutoplay); 
-        slider.addEventListener('touchstart', stopAutoplay, { passive: true }); 
-        slider.addEventListener('touchend', startAutoplay, { passive: true }); 
     } 
 });
