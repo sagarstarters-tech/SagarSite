@@ -40,122 +40,187 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 
-<div class="row mb-4 align-items-center">
-    <div class="col-md-6">
-        <h2 class="mb-0 text-dark fw-bold"><i class="fas fa-share-alt me-2 text-primary"></i> Product Share Settings</h2>
-        <p class="text-muted mb-0">Manage social sharing options for the Single Product Page.</p>
+<<div class="row mb-4 align-items-center">
+    <div class="col-md-8">
+        <h2 class="mb-1 text-dark fw-bold"><i class="fas fa-share-alt me-2 text-primary"></i> Product Share Settings</h2>
+        <p class="text-muted mb-0">Control social sharing icons and buttons displayed on single product detail pages.</p>
     </div>
 </div>
 
 <?php if ($success_msg): ?>
-<div class="alert alert-success alert-dismissible fade show" role="alert">
-    <i class="fas fa-check-circle me-2"></i> <?php echo $success_msg; ?>
-    <button type="button" class="btn-close" data-mdb-dismiss="alert" aria-label="Close"></button>
+<div class="alert alert-success alert-dismissible fade show rounded-3 shadow-sm border-0 d-flex align-items-center mb-4" role="alert">
+    <i class="fas fa-check-circle fa-lg me-3 text-success"></i>
+    <div>
+        <strong>Success!</strong> <?php echo $success_msg; ?>
+    </div>
+    <button type="button" class="btn-close ms-auto" data-mdb-dismiss="alert" aria-label="Close"></button>
 </div>
 <?php endif; ?>
 
-<div class="card shadow-sm border-0 mb-4">
-    <div class="card-body p-4">
-        <form method="POST">
+<form method="POST">
     <?php echo csrf_input(); ?>
-            <h5 class="fw-bold mb-4 border-bottom pb-2">General Settings</h5>
-            
-            <div class="row mb-4">
+    
+    <!-- General Settings Card -->
+    <div class="card shadow-sm border-0 mb-4 rounded-4 overflow-hidden">
+        <div class="card-header bg-white border-bottom py-3 px-4">
+            <h5 class="fw-bold mb-0 text-dark d-flex align-items-center">
+                <i class="fas fa-sliders-h text-primary me-2"></i> General Settings
+            </h5>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-4">
                 <div class="col-md-6">
                     <label class="form-label fw-bold">Share Section Title</label>
                     <input type="text" name="section_title" class="form-control form-control-lg bg-light" 
                            value="<?php echo htmlspecialchars($settings['section_title']); ?>" required>
-                    <small class="text-muted">The heading displayed above the share icons on the product page.</small>
+                    <small class="text-muted">The heading displayed above the share buttons on the product page.</small>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label fw-bold">Icon Style</label>
                     <select name="icon_style" class="form-select form-select-lg bg-light">
-                        <option value="rounded" <?php echo ($settings['icon_style'] == 'rounded') ? 'selected' : ''; ?>>Rounded Corners</option>
-                        <option value="circle" <?php echo ($settings['icon_style'] == 'circle') ? 'selected' : ''; ?>>Circle</option>
-                        <option value="square" <?php echo ($settings['icon_style'] == 'square') ? 'selected' : ''; ?>>Square</option>
+                        <option value="rounded" <?php echo ($settings['icon_style'] == 'rounded') ? 'selected' : ''; ?>>Rounded Corners (Modern)</option>
+                        <option value="circle" <?php echo ($settings['icon_style'] == 'circle') ? 'selected' : ''; ?>>Circle (Classic)</option>
+                        <option value="square" <?php echo ($settings['icon_style'] == 'square') ? 'selected' : ''; ?>>Square (Minimal)</option>
                     </select>
+                    <small class="text-muted">Visual border style of the social icons.</small>
                 </div>
             </div>
-
-            <h5 class="fw-bold mb-4 border-bottom pb-2 mt-5">Active Share Platforms</h5>
-
-            <div class="row align-items-center py-2 border-bottom">
-                <div class="col-md-6 border-end">
-                    <div class="d-flex align-items-center">
-                        <i class="fab fa-whatsapp fa-2x text-success me-3"></i>
-                        <div>
-                            <h6 class="fw-bold mb-0">WhatsApp</h6>
-                            <small class="text-muted">Allow users to share directly via WhatsApp</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6 text-end">
-                    <div class="form-check form-switch d-inline-block">
-                        <input class="form-check-input" type="checkbox" name="whatsapp_status" id="whatsappSwitch" value="1" 
-                               style="width: 40px; height: 20px;" <?php echo ($settings['whatsapp_status']) ? 'checked' : ''; ?>>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row align-items-center py-2 border-bottom mt-2">
-                <div class="col-md-6 border-end">
-                    <div class="d-flex align-items-center">
-                        <i class="fab fa-facebook fa-2x text-primary me-3"></i>
-                        <div>
-                            <h6 class="fw-bold mb-0">Facebook</h6>
-                            <small class="text-muted">Allow users to post to Facebook</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6 text-end">
-                    <div class="form-check form-switch d-inline-block">
-                        <input class="form-check-input" type="checkbox" name="facebook_status" id="fbSwitch" value="1" 
-                               style="width: 40px; height: 20px;" <?php echo ($settings['facebook_status']) ? 'checked' : ''; ?>>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row align-items-center py-2 border-bottom mt-2">
-                <div class="col-md-6 border-end">
-                    <div class="d-flex align-items-center">
-                        <i class="fab fa-telegram fa-2x text-info me-3"></i>
-                        <div>
-                            <h6 class="fw-bold mb-0">Telegram</h6>
-                            <small class="text-muted">Allow users to share via Telegram</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6 text-end">
-                    <div class="form-check form-switch d-inline-block">
-                        <input class="form-check-input" type="checkbox" name="telegram_status" id="tgSwitch" value="1" 
-                               style="width: 40px; height: 20px;" <?php echo ($settings['telegram_status']) ? 'checked' : ''; ?>>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row align-items-center py-2 mt-2">
-                <div class="col-md-6 border-end">
-                    <div class="d-flex align-items-center">
-                        <i class="fas fa-link fa-2x text-secondary me-3"></i>
-                        <div>
-                            <h6 class="fw-bold mb-0">Copy Link</h6>
-                            <small class="text-muted">Allow users to copy the product URL</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6 text-end">
-                    <div class="form-check form-switch d-inline-block">
-                        <input class="form-check-input" type="checkbox" name="copylink_status" id="copySwitch" value="1" 
-                               style="width: 40px; height: 20px;" <?php echo ($settings['copylink_status']) ? 'checked' : ''; ?>>
-                    </div>
-                </div>
-            </div>
-
-            <div class="mt-5 text-end">
-                <button type="submit" class="btn btn-primary btn-lg px-5">Save Settings</button>
-            </div>
-        </form>
+        </div>
     </div>
-</div>
+
+    <!-- Active Share Platforms Card -->
+    <div class="card shadow-sm border-0 mb-4 rounded-4 overflow-hidden">
+        <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold mb-0 text-dark d-flex align-items-center">
+                <i class="fas fa-network-wired text-primary me-2"></i> Active Share Platforms
+            </h5>
+            <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-2 fw-semibold">
+                Instant Toggle
+            </span>
+        </div>
+        <div class="card-body p-4">
+            <p class="text-muted small mb-4">Toggle individual platforms on or off. Disabled platforms will be hidden immediately from product pages.</p>
+            
+            <!-- WhatsApp -->
+            <div class="platform-share-card">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="platform-icon-box whatsapp">
+                        <i class="fab fa-whatsapp"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <h6 class="fw-bold mb-0 text-dark">WhatsApp</h6>
+                            <span class="badge rounded-pill <?php echo ($settings['whatsapp_status']) ? 'bg-success text-white' : 'bg-light text-muted border'; ?>" id="status-badge-whatsapp">
+                                <?php echo ($settings['whatsapp_status']) ? 'Active' : 'Disabled'; ?>
+                            </span>
+                        </div>
+                        <small class="text-muted">Allow customers to share product directly to WhatsApp contacts & groups</small>
+                    </div>
+                </div>
+                <div class="form-check form-switch ps-0 m-0">
+                    <input class="form-check-input modern-switch-input switch-success" type="checkbox" name="whatsapp_status" id="whatsappSwitch" value="1" 
+                           <?php echo ($settings['whatsapp_status']) ? 'checked' : ''; ?>
+                           onchange="updateToggleBadge('whatsapp', this.checked)">
+                </div>
+            </div>
+
+            <!-- Facebook -->
+            <div class="platform-share-card">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="platform-icon-box facebook">
+                        <i class="fab fa-facebook-f"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <h6 class="fw-bold mb-0 text-dark">Facebook</h6>
+                            <span class="badge rounded-pill <?php echo ($settings['facebook_status']) ? 'bg-primary text-white' : 'bg-light text-muted border'; ?>" id="status-badge-facebook">
+                                <?php echo ($settings['facebook_status']) ? 'Active' : 'Disabled'; ?>
+                            </span>
+                        </div>
+                        <small class="text-muted">Allow customers to share and post products to Facebook Feeds & Stories</small>
+                    </div>
+                </div>
+                <div class="form-check form-switch ps-0 m-0">
+                    <input class="form-check-input modern-switch-input" type="checkbox" name="facebook_status" id="fbSwitch" value="1" 
+                           <?php echo ($settings['facebook_status']) ? 'checked' : ''; ?>
+                           onchange="updateToggleBadge('facebook', this.checked)">
+                </div>
+            </div>
+
+            <!-- Telegram -->
+            <div class="platform-share-card">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="platform-icon-box telegram">
+                        <i class="fab fa-telegram-plane"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <h6 class="fw-bold mb-0 text-dark">Telegram</h6>
+                            <span class="badge rounded-pill <?php echo ($settings['telegram_status']) ? 'bg-info text-white' : 'bg-light text-muted border'; ?>" id="status-badge-telegram">
+                                <?php echo ($settings['telegram_status']) ? 'Active' : 'Disabled'; ?>
+                            </span>
+                        </div>
+                        <small class="text-muted">Allow customers to share products directly to Telegram channels & chats</small>
+                    </div>
+                </div>
+                <div class="form-check form-switch ps-0 m-0">
+                    <input class="form-check-input modern-switch-input" type="checkbox" name="telegram_status" id="tgSwitch" value="1" 
+                           <?php echo ($settings['telegram_status']) ? 'checked' : ''; ?>
+                           onchange="updateToggleBadge('telegram', this.checked)">
+                </div>
+            </div>
+
+            <!-- Copy Link -->
+            <div class="platform-share-card mb-0">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="platform-icon-box copylink">
+                        <i class="fas fa-link"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <h6 class="fw-bold mb-0 text-dark">Copy Link</h6>
+                            <span class="badge rounded-pill <?php echo ($settings['copylink_status']) ? 'bg-secondary text-white' : 'bg-light text-muted border'; ?>" id="status-badge-copylink">
+                                <?php echo ($settings['copylink_status']) ? 'Active' : 'Disabled'; ?>
+                            </span>
+                        </div>
+                        <small class="text-muted">Provide a 1-click button to copy the product URL to clipboard</small>
+                    </div>
+                </div>
+                <div class="form-check form-switch ps-0 m-0">
+                    <input class="form-check-input modern-switch-input" type="checkbox" name="copylink_status" id="copySwitch" value="1" 
+                           <?php echo ($settings['copylink_status']) ? 'checked' : ''; ?>
+                           onchange="updateToggleBadge('copylink', this.checked)">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Bar -->
+    <div class="d-flex justify-content-end align-items-center gap-3 mb-5">
+        <button type="submit" class="btn btn-primary btn-lg px-5 rounded-pill shadow-sm">
+            <i class="fas fa-save me-2"></i> Save Settings
+        </button>
+    </div>
+</form>
+
+<script>
+function updateToggleBadge(platform, isChecked) {
+    const badge = document.getElementById('status-badge-' + platform);
+    if (!badge) return;
+    
+    if (isChecked) {
+        let bgClass = 'bg-primary';
+        if (platform === 'whatsapp') bgClass = 'bg-success';
+        if (platform === 'telegram') bgClass = 'bg-info';
+        if (platform === 'copylink') bgClass = 'bg-secondary';
+        
+        badge.className = 'badge rounded-pill ' + bgClass + ' text-white';
+        badge.textContent = 'Active';
+    } else {
+        badge.className = 'badge rounded-pill bg-light text-muted border';
+        badge.textContent = 'Disabled';
+    }
+}
+</script>
 
 <?php require_once 'admin_footer.php'; ?>

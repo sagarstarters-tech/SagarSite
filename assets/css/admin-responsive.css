@@ -235,3 +235,113 @@
 .table td .action-btns .btn {
     width: auto;
 }
+
+/* ── 7. Modern Premium Toggle Switch System (iOS/Material 3 Inspired) ── */
+.form-check.form-switch {
+    display: inline-flex;
+    align-items: center;
+    padding-left: 0 !important;
+    margin-bottom: 0;
+    cursor: pointer;
+}
+
+.form-switch .form-check-input,
+.modern-switch-input {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    width: 48px !important;
+    height: 26px !important;
+    background-color: #cbd5e1 !important;
+    background-image: none !important;
+    border: 2px solid #cbd5e1 !important;
+    border-radius: 30px !important;
+    cursor: pointer !important;
+    position: relative !important;
+    outline: none !important;
+    margin: 0 !important;
+    transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.2s ease !important;
+    flex-shrink: 0;
+}
+
+.form-switch .form-check-input::after,
+.modern-switch-input::after {
+    content: '' !important;
+    position: absolute !important;
+    top: 1px !important;
+    left: 2px !important;
+    width: 20px !important;
+    height: 20px !important;
+    background-color: #ffffff !important;
+    border-radius: 50% !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s ease !important;
+}
+
+.form-switch .form-check-input:checked,
+.modern-switch-input:checked {
+    background-color: #2563eb !important;
+    border-color: #2563eb !important;
+}
+
+.form-switch .form-check-input:checked::after,
+.modern-switch-input:checked::after {
+    transform: translateX(22px) !important;
+}
+
+.form-switch .form-check-input:hover,
+.modern-switch-input:hover {
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12) !important;
+}
+
+.form-switch .form-check-input:focus,
+.modern-switch-input:focus {
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2) !important;
+}
+
+/* Success variation for toggles */
+.form-switch .form-check-input.switch-success:checked,
+.modern-switch-input.switch-success:checked {
+    background-color: #10b981 !important;
+    border-color: #10b981 !important;
+}
+.form-switch .form-check-input.switch-success:hover,
+.modern-switch-input.switch-success:hover {
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.14) !important;
+}
+
+/* Platform Share Card Styling */
+.platform-share-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 0.875rem;
+    transition: all 0.25s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.platform-share-card:hover {
+    border-color: #cbd5e1;
+    background-color: #f8fafc;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    transform: translateY(-1px);
+}
+
+.platform-icon-box {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+    flex-shrink: 0;
+}
+
+.platform-icon-box.whatsapp { background: rgba(37, 211, 102, 0.12); color: #25D366; }
+.platform-icon-box.facebook { background: rgba(24, 119, 242, 0.12); color: #1877F2; }
+.platform-icon-box.telegram { background: rgba(34, 158, 217, 0.12); color: #229ED9; }
+.platform-icon-box.copylink { background: rgba(99, 102, 241, 0.12); color: #6366F1; }
+
