@@ -25,6 +25,7 @@ class QueueProcessor {
     public function processBatch(int $batchSize = 10): array {
         $db = DbConnection::getInstance();
         $now = date('Y-m-d H:i:s');
+        $isCli = (php_sapi_name() === 'cli');
         
         $stmt = $db->prepare("SELECT * FROM sm_queue 
             WHERE (status IN ('scheduled', 'retry') OR (status = 'publishing' AND (updated_at <= NOW() - INTERVAL 2 MINUTE OR updated_at IS NULL))) 
@@ -43,27 +44,36 @@ class QueueProcessor {
         foreach ($queueItems as $item) {
             $platform = strtolower(trim($item['platform']));
             
-            // Skip if this platform hit Meta rate limit in current batch run
+            // Skip if this platform hit Meta rate limit or auth failure in current batch run
             if (isset($pausedPlatforms[$platform])) {
                 continue;
             }
 
-            // Throttle: wait 3 seconds between posts to avoid rate limit spikes
-            if ($processedCount > 0) {
-                sleep(3);
+            // Throttle: only sleep in CLI cron mode, never block web/AJAX threads
+            if ($processedCount > 0 && $isCli) {
+                sleep(2);
             }
 
-            $success = $this->processPost($item, $isRateLimit);
+            $isRateLimit = false;
+            $isAuthError = false;
+            $lastError = '';
+            $success = $this->processPost($item, $isRateLimit, $isAuthError, $lastError);
             $processedCount++;
 
             $results[] = [
                 'id' => $item['id'],
                 'platform' => $item['platform'],
                 'success' => $success,
-                'is_rate_limit' => $isRateLimit
+                'is_rate_limit' => $isRateLimit,
+                'is_auth_error' => $isAuthError
             ];
 
-            if ($isRateLimit) {
+            if ($isAuthError) {
+                $pausedPlatforms[$platform] = true;
+                // Fast batch fail: mark all other scheduled items for this platform as failed in 1 instant query
+                $db->prepare("UPDATE sm_queue SET status = 'failed', last_error = ? WHERE LOWER(platform) = ? AND status IN ('scheduled', 'retry')")
+                   ->execute([$lastError, $platform]);
+            } elseif ($isRateLimit) {
                 $pausedPlatforms[$platform] = true;
                 // Log platform pause
                 $logStmt = $db->prepare("INSERT INTO sm_logs (level, message, queue_id, platform) VALUES ('warning', ?, ?, ?)");
@@ -79,10 +89,14 @@ class QueueProcessor {
      *
      * @param array $queueItem
      * @param bool|null $outIsRateLimit Optional output reference parameter for rate limit status
+     * @param bool|null $outIsAuthError Optional output reference parameter for auth error status
+     * @param string|null $outLastError Optional output reference parameter for error message
      * @return bool
      */
-    public function processPost(array $queueItem, ?bool &$outIsRateLimit = false): bool {
+    public function processPost(array $queueItem, ?bool &$outIsRateLimit = false, ?bool &$outIsAuthError = false, ?string &$outLastError = ''): bool {
         $outIsRateLimit = false;
+        $outIsAuthError = false;
+        $outLastError = '';
         $db = DbConnection::getInstance();
         $id = (int)$queueItem['id'];
         
@@ -184,8 +198,10 @@ class QueueProcessor {
                 return true;
             } else {
                 $errorMsg = $pubRes['error'] ?? 'Platform adapter reported failure';
+                $outLastError = $errorMsg;
+                $outIsAuthError = $this->isAuthTokenError($errorMsg);
                 $this->updateStatus($id, 'failed', $errorMsg);
-                if (!$this->isAuthTokenError($errorMsg)) {
+                if (!$outIsAuthError) {
                     $this->retryPost($id, $outIsRateLimit);
                 }
                 return false;
@@ -193,9 +209,11 @@ class QueueProcessor {
             
         } catch (\Throwable $e) {
             $errorMsg = $e->getMessage();
+            $outLastError = $errorMsg;
             $outIsRateLimit = $this->isRateLimitError($errorMsg);
+            $outIsAuthError = $this->isAuthTokenError($errorMsg);
             $this->updateStatus($id, 'failed', $errorMsg);
-            if (!$this->isAuthTokenError($errorMsg)) {
+            if (!$outIsAuthError) {
                 $this->retryPost($id, $outIsRateLimit);
             }
             

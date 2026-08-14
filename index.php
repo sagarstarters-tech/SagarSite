@@ -1,7 +1,7 @@
 <?php
 include 'includes/header.php';
 // Fetch featured categories
-$cats = $conn->query("SELECT * FROM categories LIMIT 3");
+$cats = $conn->query("SELECT c.*, (SELECT p.image FROM products p WHERE p.category_id = c.id AND p.image != '' ORDER BY p.id DESC LIMIT 1) as product_fallback_image FROM categories c LIMIT 3");
 // Fetch trending products (those marked as trending in admin)
 $prods = $conn->query("SELECT * FROM products WHERE is_trending = 1 ORDER BY id DESC LIMIT 12");
 ?>
@@ -26,17 +26,8 @@ include 'includes/hero-slider.php';
             <?php 
             $delay = 100; 
             while($c = $cats->fetch_assoc()): 
-                $cat_img = !empty($c['image']) ? resolve_image_url($c['image']) : '';
-                if (empty($cat_img) || strpos($cat_img, 'placeholder.svg') !== false) {
-                    $cat_id_int = intval($c['id']);
-                    $p_img_q = $conn->query("SELECT image FROM products WHERE category_id = $cat_id_int AND image != '' ORDER BY id DESC LIMIT 1");
-                    if ($p_img_q && $p_img_row = $p_img_q->fetch_assoc()) {
-                        $cat_img = resolve_image_url($p_img_row['image']);
-                    }
-                }
-                if (empty($cat_img)) {
-                    $cat_img = ASSETS_URL . '/images/placeholder.svg';
-                }
+                $rawImg = !empty($c['image']) ? $c['image'] : (!empty($c['product_fallback_image']) ? $c['product_fallback_image'] : '');
+                $cat_img = !empty($rawImg) ? resolve_image_url($rawImg) : (ASSETS_URL . '/images/placeholder.svg');
             ?>
             <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="<?php echo $delay; $delay+=100; ?>">
                 <a href="shop.php?category=<?php echo $c['id']; ?>" class="category-card-pro text-decoration-none">

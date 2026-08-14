@@ -282,14 +282,5 @@ document.addEventListener('DOMContentLoaded', window.triggerProfileCompletionMod
 <?php endif; ?>
 </script>
 <?php endif; ?>
-<script>
-(function() {
-    setTimeout(function() {
-        if (navigator.onLine) {
-            fetch('<?php echo SITE_URL; ?>/cron/public_social_runner.php', { method: 'POST', cache: 'no-cache' }).catch(function(){});
-        }
-    }, 3000);
-})();
-</script>
 </body>
 </html>
