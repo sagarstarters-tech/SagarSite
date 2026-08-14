@@ -247,7 +247,10 @@ class QueueProcessor {
             'rate limit',
             'please try again later',
             'protect the community from spam',
-            'request limit reached'
+            'request limit reached',
+            'throttle',
+            'application_and_member_day',
+            'limit for calls to this resource is reached'
         ];
         foreach ($phrases as $phrase) {
             if (strpos($errLower, $phrase) !== false) {

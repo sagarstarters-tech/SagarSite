@@ -183,7 +183,14 @@ class LinkedInAdapter implements PlatformAdapterInterface {
         if (isset($res['error']) || isset($res['message']) || !isset($res['id'])) {
             $errorMsg = $res['message'] ?? ($res['error']['message'] ?? (json_encode($res)));
             error_log('LinkedIn Publish Error: ' . $errorMsg);
-            return ['success' => false, 'post_id' => null, 'post_url' => null, 'error' => 'LinkedIn API Error: ' . $errorMsg];
+
+            $isThrottle = false;
+            if (strpos(strtolower($errorMsg), 'throttle') !== false || strpos(strtolower($errorMsg), 'rate limit') !== false || strpos(strtolower($errorMsg), 'limit for calls') !== false) {
+                $isThrottle = true;
+                $errorMsg = "LinkedIn Daily Limit Reached (APPLICATION_AND_MEMBER_DAY). LinkedIn limits the number of daily API posts per account. This limit automatically resets within 24 hours.";
+            }
+
+            return ['success' => false, 'post_id' => null, 'post_url' => null, 'error' => 'LinkedIn API Error: ' . $errorMsg, 'is_rate_limit' => $isThrottle];
         }
 
         $postId = $res['id'] ?? null;
