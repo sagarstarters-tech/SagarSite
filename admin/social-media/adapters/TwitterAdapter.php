@@ -71,12 +71,24 @@ class TwitterAdapter implements PlatformAdapterInterface {
 
         if (isset($res['error'])) {
             error_log('Twitter Auth Error: ' . json_encode($res['error']));
-            return ['error' => $res['error_description'] ?? 'Authentication failed'];
+            return ['error' => $res['error_description'] ?? ($res['error'] ?? 'Authentication failed')];
         }
         
+        $accessToken = $res['access_token'] ?? '';
+        $refreshToken = $res['refresh_token'] ?? '';
+
+        // Fetch Twitter username and ID
+        $userRes = $this->curlRequest('https://api.twitter.com/2/users/me', 'GET', [], [
+            'Authorization: Bearer ' . $accessToken
+        ]);
+        $userName = !empty($userRes['data']['username']) ? ('@' . $userRes['data']['username']) : (!empty($userRes['data']['name']) ? $userRes['data']['name'] : 'Twitter Account');
+        $userId = $userRes['data']['id'] ?? ('tw_' . time());
+
         return [
-            'access_token' => $res['access_token'] ?? '',
-            'refresh_token' => $res['refresh_token'] ?? ''
+            'access_token' => $accessToken,
+            'refresh_token' => $refreshToken,
+            'account_id' => $userId,
+            'account_name' => $userName
         ];
     }
 
