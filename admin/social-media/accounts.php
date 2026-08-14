@@ -205,6 +205,13 @@ $platformsConfig = [
                                 </button>
                             <?php endif; ?>
                         <?php else: ?>
+                            <?php if ($key === 'instagram' && isset($connectedMap['facebook'])): ?>
+                                <button class="btn btn-danger rounded-pill shadow-sm btn-sync-instagram" 
+                                        data-csrf="<?php echo htmlspecialchars($csrfToken); ?>">
+                                    <i class="fab fa-instagram me-2"></i> 1-Click Auto Connect from Facebook
+                                </button>
+                            <?php endif; ?>
+
                             <?php if ($p['has_keys'] && $adapter->requiresOAuth()): ?>
                                 <a href="<?php echo htmlspecialchars($authUrl); ?>" 
                                    class="btn text-white rounded-pill shadow-sm" 
@@ -359,23 +366,37 @@ $platformsConfig = [
                     <input type="hidden" name="_csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
                     <input type="hidden" name="action" value="save_instagram">
                     
+                    <?php if (isset($connectedMap['facebook'])): ?>
+                        <div class="p-3 bg-light rounded-3 mb-3 border text-center">
+                            <div class="small fw-bold text-dark mb-1"><i class="fab fa-facebook text-primary me-1"></i> Connected Facebook Page: <?php echo htmlspecialchars($connectedMap['facebook']['account_name'] ?? 'Sagar Starters'); ?></div>
+                            <p class="extra-small text-muted mb-2">Agar aapka Instagram iss Facebook page se linked hai, toh aap 1-click me connect kar sakte hain:</p>
+                            <button type="button" class="btn btn-danger btn-sm rounded-pill px-3 shadow-sm btn-sync-instagram" data-csrf="<?php echo htmlspecialchars($csrfToken); ?>">
+                                <i class="fab fa-instagram me-1"></i> Auto-Connect Instagram From Linked Facebook Page
+                            </button>
+                        </div>
+                        <div class="text-center text-muted small my-2">─── YA MANUALLY ENTER KAREIN ───</div>
+                    <?php endif; ?>
+
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Instagram Handle / Name <span class="text-danger">*</span></label>
+                        <label class="form-label fw-bold">Instagram Handle / Name</label>
                         <input type="text" name="account_name" class="form-control rounded-3" 
-                               placeholder="e.g. @sagarstarter" required>
+                               placeholder="e.g. @sagarstarter">
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Instagram Business Account ID <span class="text-danger">*</span></label>
+                        <label class="form-label fw-bold">Instagram Business Account ID</label>
                         <input type="text" name="ig_user_id" class="form-control rounded-3" 
-                               placeholder="e.g. 17841400000000000" required>
-                        <div class="form-text">Find your Instagram Business Account ID in Meta Graph API Explorer or Facebook Page Settings.</div>
+                               placeholder="e.g. 17841400000000000">
+                        <div class="form-text">Graph API Explorer query: <code>me/accounts?fields=name,instagram_business_account{id,username}</code></div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Instagram Access Token <span class="text-danger">*</span></label>
+                        <label class="form-label fw-bold">Instagram / Page Access Token <span class="text-danger">*</span></label>
                         <textarea name="access_token" class="form-control rounded-3" rows="3" 
                                   placeholder="e.g. EAAB..." required></textarea>
+                        <div class="form-text mt-1 text-primary">
+                            <i class="fas fa-info-circle me-1"></i> Page Access Token jisme <code>instagram_basic</code> aur <code>instagram_content_publish</code> permissions hon.
+                        </div>
                     </div>
 
                     <div id="instagramAlert"></div>
@@ -746,6 +767,41 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
+
+    // 1-Click Sync Instagram from Linked Facebook Page
+    document.querySelectorAll('.btn-sync-instagram').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const originalHtml = this.innerHTML;
+            this.disabled = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Connecting Instagram...';
+
+            const formData = new FormData();
+            formData.append('action', 'sync_instagram_from_facebook');
+            formData.append('_csrf_token', '<?php echo htmlspecialchars($csrfToken); ?>');
+
+            fetch('ajax/ajax_account_actions.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                this.disabled = false;
+                this.innerHTML = originalHtml;
+                if (data.success) {
+                    alert('✅ ' + data.data);
+                    window.location.reload();
+                } else {
+                    alert('⚠️ ' + (data.error || 'Could not connect Instagram.'));
+                }
+            })
+            .catch(err => {
+                this.disabled = false;
+                this.innerHTML = originalHtml;
+                alert('Network error: ' + err.message);
+            });
+        });
+    });
 
     // Save LinkedIn Form AJAX
     const linkedinForm = document.getElementById('linkedinForm');

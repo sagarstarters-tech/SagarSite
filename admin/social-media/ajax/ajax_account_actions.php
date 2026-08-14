@@ -281,6 +281,97 @@ try {
             $response['data'] = "Facebook Page '{$finalPageName}' connected successfully!";
             break;
 
+        case 'sync_instagram_from_facebook':
+            $stmtFb = $pdo->prepare("SELECT * FROM sm_connected_accounts WHERE LOWER(platform) = 'facebook' AND is_active = 1 LIMIT 1");
+            $stmtFb->execute();
+            $fbAcc = $stmtFb->fetch(PDO::FETCH_ASSOC);
+
+            if (!$fbAcc) {
+                throw new Exception('Please connect your Facebook Page (Sagar Starters) first.');
+            }
+
+            $fbToken = TokenEncryption::decrypt($fbAcc['access_token_encrypted'] ?? '');
+            $pageId = $fbAcc['page_id'] ?? '';
+
+            if (empty($fbToken) || empty($pageId)) {
+                throw new Exception('Facebook Page ID or Access Token is missing.');
+            }
+
+            // 1. Check /{page_id}?fields=instagram_business_account{id,username,name}
+            $igUrl = "https://graph.facebook.com/v21.0/{$pageId}?" . http_build_query([
+                'fields' => 'instagram_business_account{id,username,name},connected_instagram_account{id,username,name}',
+                'access_token' => $fbToken
+            ]);
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $igUrl);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            $igResStr = curl_exec($ch);
+            curl_close($ch);
+            $igRes = json_decode($igResStr ?: '', true);
+
+            $igAccount = $igRes['instagram_business_account'] ?? ($igRes['connected_instagram_account'] ?? null);
+
+            // 2. If not found on page, check /me/accounts
+            if (empty($igAccount['id'])) {
+                $meUrl = "https://graph.facebook.com/v21.0/me/accounts?" . http_build_query([
+                    'fields' => 'name,id,access_token,instagram_business_account{id,username,name}',
+                    'access_token' => $fbToken
+                ]);
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, $meUrl);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+                $meAccountsRes = json_decode(curl_exec($ch) ?: '', true);
+                curl_close($ch);
+
+                if (!empty($meAccountsRes['data'])) {
+                    foreach ($meAccountsRes['data'] as $p) {
+                        if (!empty($p['instagram_business_account']['id'])) {
+                            $igAccount = $p['instagram_business_account'];
+                            if (!empty($p['access_token'])) {
+                                $fbToken = $p['access_token'];
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (empty($igAccount['id'])) {
+                $errHint = $igRes['error']['message'] ?? '';
+                if ($errHint) {
+                    throw new Exception("Meta API Error: {$errHint}. Ensure your Facebook Page Access Token has permissions: 'instagram_basic', 'instagram_content_publish', 'pages_read_engagement'.");
+                }
+                throw new Exception("Meta Graph API returned no linked Instagram Business Account for Facebook Page ID {$pageId}.\n\n👉 Please ensure that:\n1. In Instagram App: Account is set to 'Professional / Business' (not Personal).\n2. In Facebook Page Settings ➔ Linked Accounts ➔ Instagram is confirmed and permissions are allowed.\n3. In Graph API Explorer: Permissions 'instagram_basic' and 'instagram_content_publish' are added to the Page Token.");
+            }
+
+            $igId = $igAccount['id'];
+            $igHandle = !empty($igAccount['username']) ? '@' . $igAccount['username'] : (!empty($igAccount['name']) ? $igAccount['name'] : '@sagarstarter');
+            $encryptedToken = TokenEncryption::encrypt($fbToken);
+            $userId = $_SESSION['user_id'] ?? 1;
+
+            $deactIg = $pdo->prepare("UPDATE sm_connected_accounts SET is_active = 0 WHERE LOWER(platform) = 'instagram'");
+            $deactIg->execute();
+
+            $stmtIg = $pdo->prepare("SELECT id FROM sm_connected_accounts WHERE LOWER(platform) = 'instagram' LIMIT 1");
+            $stmtIg->execute();
+            $existingIg = $stmtIg->fetch(PDO::FETCH_ASSOC);
+
+            if ($existingIg) {
+                $upIg = $pdo->prepare("UPDATE sm_connected_accounts SET account_name = ?, account_id = ?, page_id = ?, access_token_encrypted = ?, is_active = 1, connected_by = ?, updated_at = NOW() WHERE id = ?");
+                $upIg->execute([$igHandle, $igId, $pageId, $encryptedToken, $userId, $existingIg['id']]);
+            } else {
+                $inIg = $pdo->prepare("INSERT INTO sm_connected_accounts (platform, account_name, account_id, page_id, access_token_encrypted, is_active, connected_by) VALUES ('instagram', ?, ?, ?, ?, 1, ?)");
+                $inIg->execute([$igHandle, $igId, $pageId, $encryptedToken, $userId]);
+            }
+
+            $response['success'] = true;
+            $response['data'] = "Instagram Account '{$igHandle}' (ID: {$igId}) connected successfully from Facebook Page!";
+            break;
+
         case 'save_pinterest':
             $access_token = trim($_POST['access_token'] ?? '');
             $board_id = trim($_POST['board_id'] ?? '');
