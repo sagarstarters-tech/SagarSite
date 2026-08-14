@@ -322,23 +322,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<script>
-(function() {
-    function triggerAdminSocialQueue() {
-        if (navigator.onLine) {
-            fetch('<?php echo defined("ADMIN_BASE_URL") ? ADMIN_BASE_URL : SITE_URL . "/admin"; ?>/social-media/ajax/ajax_process_queue.php', {
-                method: 'POST',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            }).catch(function(err) {});
-        }
-    }
-    // Trigger 2 seconds after page load on any admin page
-    setTimeout(triggerAdminSocialQueue, 2000);
-    // Poll every 30 seconds while any admin tab is open
-    setInterval(triggerAdminSocialQueue, 30000);
-})();
-</script>
-
 <!-- MDB JS -->
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.js"></script>
 </body>
