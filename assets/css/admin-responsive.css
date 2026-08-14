@@ -236,90 +236,97 @@
     width: auto;
 }
 
-/* ── 7. Modern Premium Toggle Switch System (iOS/Material 3 Inspired) ── */
-.form-check.form-switch {
-    display: inline-flex;
-    align-items: center;
-    padding-left: 0 !important;
-    margin-bottom: 0;
-    cursor: pointer;
-}
-
-.form-switch .form-check-input,
-.modern-switch-input {
-    appearance: none !important;
-    -webkit-appearance: none !important;
-    width: 48px !important;
-    height: 26px !important;
-    background-color: #cbd5e1 !important;
-    background-image: none !important;
-    border: 2px solid #cbd5e1 !important;
-    border-radius: 30px !important;
-    cursor: pointer !important;
+/* ── 7. Modern Premium Toggle Switch System (Framework Independent) ── */
+.custom-switch-slider {
     position: relative !important;
-    outline: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    width: 50px !important;
+    height: 28px !important;
     margin: 0 !important;
-    transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.2s ease !important;
-    flex-shrink: 0;
+    padding: 0 !important;
+    cursor: pointer !important;
+    flex-shrink: 0 !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
 }
 
-.form-switch .form-check-input::after,
-.modern-switch-input::after {
-    content: '' !important;
+.custom-switch-slider input {
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
     position: absolute !important;
-    top: 1px !important;
-    left: 2px !important;
-    width: 20px !important;
-    height: 20px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    pointer-events: none !important;
+    z-index: -1 !important;
+}
+
+.custom-switch-slider .slider-track {
+    position: absolute !important;
+    cursor: pointer !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    background-color: #cbd5e1 !important;
+    border-radius: 30px !important;
+    transition: background-color 0.25s ease, box-shadow 0.2s ease !important;
+}
+
+.custom-switch-slider .slider-track::before {
+    position: absolute !important;
+    content: "" !important;
+    height: 22px !important;
+    width: 22px !important;
+    left: 3px !important;
+    bottom: 3px !important;
     background-color: #ffffff !important;
     border-radius: 50% !important;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.1) !important;
-    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s ease !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25) !important;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
-.form-switch .form-check-input:checked,
-.modern-switch-input:checked {
+.custom-switch-slider input:checked + .slider-track {
     background-color: #2563eb !important;
-    border-color: #2563eb !important;
 }
 
-.form-switch .form-check-input:checked::after,
-.modern-switch-input:checked::after {
+.custom-switch-slider input:checked + .slider-track.track-whatsapp {
+    background-color: #25D366 !important;
+}
+
+.custom-switch-slider input:checked + .slider-track.track-facebook {
+    background-color: #1877F2 !important;
+}
+
+.custom-switch-slider input:checked + .slider-track.track-telegram {
+    background-color: #229ED9 !important;
+}
+
+.custom-switch-slider input:checked + .slider-track.track-copylink {
+    background-color: #6366F1 !important;
+}
+
+.custom-switch-slider input:checked + .slider-track::before {
     transform: translateX(22px) !important;
 }
 
-.form-switch .form-check-input:hover,
-.modern-switch-input:hover {
+.custom-switch-slider:hover .slider-track {
     box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12) !important;
-}
-
-.form-switch .form-check-input:focus,
-.modern-switch-input:focus {
-    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2) !important;
-}
-
-/* Success variation for toggles */
-.form-switch .form-check-input.switch-success:checked,
-.modern-switch-input.switch-success:checked {
-    background-color: #10b981 !important;
-    border-color: #10b981 !important;
-}
-.form-switch .form-check-input.switch-success:hover,
-.modern-switch-input.switch-success:hover {
-    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.14) !important;
 }
 
 /* Platform Share Card Styling */
 .platform-share-card {
     background: #ffffff;
     border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 1rem 1.25rem;
+    border-radius: 14px;
+    padding: 1.1rem 1.35rem;
     margin-bottom: 0.875rem;
     transition: all 0.25s ease;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    position: relative;
 }
 
 .platform-share-card:hover {
@@ -330,13 +337,13 @@
 }
 
 .platform-icon-box {
-    width: 46px;
-    height: 46px;
+    width: 48px;
+    height: 48px;
     border-radius: 12px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.35rem;
+    font-size: 1.4rem;
     flex-shrink: 0;
 }
 
@@ -344,4 +351,5 @@
 .platform-icon-box.facebook { background: rgba(24, 119, 242, 0.12); color: #1877F2; }
 .platform-icon-box.telegram { background: rgba(34, 158, 217, 0.12); color: #229ED9; }
 .platform-icon-box.copylink { background: rgba(99, 102, 241, 0.12); color: #6366F1; }
+
 

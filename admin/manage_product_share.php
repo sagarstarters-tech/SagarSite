@@ -117,10 +117,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <small class="text-muted">Allow customers to share product directly to WhatsApp contacts & groups</small>
                     </div>
                 </div>
-                <div class="form-check form-switch ps-0 m-0">
-                    <input class="form-check-input modern-switch-input switch-success" type="checkbox" name="whatsapp_status" id="whatsappSwitch" value="1" 
-                           <?php echo ($settings['whatsapp_status']) ? 'checked' : ''; ?>
-                           onchange="updateToggleBadge('whatsapp', this.checked)">
+                <div class="ms-auto ps-3">
+                    <label class="custom-switch-slider">
+                        <input type="checkbox" name="whatsapp_status" id="whatsappSwitch" value="1" 
+                               <?php echo ($settings['whatsapp_status']) ? 'checked' : ''; ?>
+                               onchange="updateToggleBadge('whatsapp', this.checked)">
+                        <span class="slider-track track-whatsapp"></span>
+                    </label>
                 </div>
             </div>
 
@@ -140,10 +143,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <small class="text-muted">Allow customers to share and post products to Facebook Feeds & Stories</small>
                     </div>
                 </div>
-                <div class="form-check form-switch ps-0 m-0">
-                    <input class="form-check-input modern-switch-input" type="checkbox" name="facebook_status" id="fbSwitch" value="1" 
-                           <?php echo ($settings['facebook_status']) ? 'checked' : ''; ?>
-                           onchange="updateToggleBadge('facebook', this.checked)">
+                <div class="ms-auto ps-3">
+                    <label class="custom-switch-slider">
+                        <input type="checkbox" name="facebook_status" id="fbSwitch" value="1" 
+                               <?php echo ($settings['facebook_status']) ? 'checked' : ''; ?>
+                               onchange="updateToggleBadge('facebook', this.checked)">
+                        <span class="slider-track track-facebook"></span>
+                    </label>
                 </div>
             </div>
 
@@ -163,10 +169,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <small class="text-muted">Allow customers to share products directly to Telegram channels & chats</small>
                     </div>
                 </div>
-                <div class="form-check form-switch ps-0 m-0">
-                    <input class="form-check-input modern-switch-input" type="checkbox" name="telegram_status" id="tgSwitch" value="1" 
-                           <?php echo ($settings['telegram_status']) ? 'checked' : ''; ?>
-                           onchange="updateToggleBadge('telegram', this.checked)">
+                <div class="ms-auto ps-3">
+                    <label class="custom-switch-slider">
+                        <input type="checkbox" name="telegram_status" id="tgSwitch" value="1" 
+                               <?php echo ($settings['telegram_status']) ? 'checked' : ''; ?>
+                               onchange="updateToggleBadge('telegram', this.checked)">
+                        <span class="slider-track track-telegram"></span>
+                    </label>
                 </div>
             </div>
 
@@ -186,10 +195,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <small class="text-muted">Provide a 1-click button to copy the product URL to clipboard</small>
                     </div>
                 </div>
-                <div class="form-check form-switch ps-0 m-0">
-                    <input class="form-check-input modern-switch-input" type="checkbox" name="copylink_status" id="copySwitch" value="1" 
-                           <?php echo ($settings['copylink_status']) ? 'checked' : ''; ?>
-                           onchange="updateToggleBadge('copylink', this.checked)">
+                <div class="ms-auto ps-3">
+                    <label class="custom-switch-slider">
+                        <input type="checkbox" name="copylink_status" id="copySwitch" value="1" 
+                               <?php echo ($settings['copylink_status']) ? 'checked' : ''; ?>
+                               onchange="updateToggleBadge('copylink', this.checked)">
+                        <span class="slider-track track-copylink"></span>
+                    </label>
                 </div>
             </div>
         </div>
