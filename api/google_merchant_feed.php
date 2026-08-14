@@ -79,9 +79,15 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
               }
           }
 
-          // Price calculation
-          $effective_price = (!empty($product['sale_price']) && $product['sale_price'] > 0) ? $product['sale_price'] : $product['price'];
-          $price_formatted = number_format((float)$effective_price, 2, '.', '') . ' ' . strtoupper($gmc_currency);
+          // Price calculation: Regular Price -> <g:price>, Sale Price -> <g:sale_price>
+          $reg_price_val = (!empty($product['regular_price']) && (float)$product['regular_price'] > 0)
+                            ? (float)$product['regular_price']
+                            : ((!empty($product['price']) && (float)$product['price'] > 0) ? (float)$product['price'] : 0);
+          $price_formatted = number_format((float)$reg_price_val, 2, '.', '') . ' ' . strtoupper($gmc_currency);
+
+          $sale_price_val = (!empty($product['sale_price']) && (float)$product['sale_price'] > 0) ? (float)$product['sale_price'] : 0;
+          $has_sale_price = ($sale_price_val > 0 && $sale_price_val < $reg_price_val);
+          $sale_price_formatted = $has_sale_price ? number_format((float)$sale_price_val, 2, '.', '') . ' ' . strtoupper($gmc_currency) : null;
 
           // Availability
           $stock = (int)($product['stock'] ?? 1);
@@ -108,6 +114,9 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
           <g:condition><?php echo htmlspecialchars($condition); ?></g:condition>
           <g:availability><?php echo htmlspecialchars($availability); ?></g:availability>
           <g:price><?php echo htmlspecialchars($price_formatted); ?></g:price>
+          <?php if (!empty($sale_price_formatted)): ?>
+          <g:sale_price><?php echo htmlspecialchars($sale_price_formatted); ?></g:sale_price>
+          <?php endif; ?>
           <g:brand><![CDATA[<?php echo $brand; ?>]]></g:brand>
           <?php if (!empty($category)): ?>
             <g:google_product_category><![CDATA[<?php echo $category; ?>]]></g:google_product_category>

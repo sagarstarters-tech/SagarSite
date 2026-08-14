@@ -49,7 +49,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
     
     // 4. Set browser cache revalidation strategy
-    if (isset($_SESSION['user_id']) || $_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_SESSION['user_id']) || ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         header("Cache-Control: no-cache, no-store, must-revalidate");
         header("Pragma: no-cache");
     } else {
