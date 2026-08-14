@@ -11,23 +11,60 @@ $prods = $conn->query("SELECT * FROM products WHERE is_trending = 1 ORDER BY id 
 include 'includes/hero-slider.php'; 
 ?>
 
-<!-- Featured Categories -->
-<div class="container mt-5 pt-3" data-aos="fade-up">
-    <h2 class="text-center montserrat fw-bold mb-4">Featured Categories</h2>
-    <div class="row g-4">
-        <?php $delay=100; while($c = $cats->fetch_assoc()): ?>
-        <div class="col-md-4" data-aos="zoom-in" data-aos-delay="<?php echo $delay; $delay+=100; ?>">
-            <div class="card category-card text-white">
-                <img src="<?php echo !empty($c['image']) ? htmlspecialchars(resolve_image_url($c['image'])) : 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=600'; ?>" class="category-card-img" alt="<?php echo htmlspecialchars($c['name']); ?>" loading="lazy" width="600" height="400" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=600';">
-                <div class="category-card-overlay">
-                    <h3 class="category-card-title montserrat"><?php echo htmlspecialchars($c['name']); ?></h3>
-                    <a href="shop.php?category=<?php echo $c['id']; ?>" class="btn btn-light btn-custom btn-sm">View Products <i class="fas fa-arrow-right ms-1"></i></a>
-                </div>
-            </div>
+<!-- Featured Categories Section -->
+<section class="featured-categories-section">
+    <div class="container mt-4" data-aos="fade-up">
+        <div class="text-center mb-5">
+            <span class="section-subtitle-badge mb-2">
+                <i class="fas fa-bolt text-warning me-1"></i> TOP COLLECTIONS
+            </span>
+            <h2 class="section-main-title montserrat fw-bold mt-2 mb-2">Featured Categories</h2>
+            <p class="section-desc mx-auto text-muted">Explore high-quality industrial motor starters, submersible controllers, and electrical panels</p>
+            <div class="section-divider-line mx-auto"></div>
         </div>
-        <?php endwhile; ?>
+        <div class="row g-4">
+            <?php 
+            $delay = 100; 
+            while($c = $cats->fetch_assoc()): 
+                $cat_img = !empty($c['image']) ? resolve_image_url($c['image']) : '';
+                if (empty($cat_img) || strpos($cat_img, 'placeholder.svg') !== false) {
+                    $cat_id_int = intval($c['id']);
+                    $p_img_q = $conn->query("SELECT image FROM products WHERE category_id = $cat_id_int AND image != '' ORDER BY id DESC LIMIT 1");
+                    if ($p_img_q && $p_img_row = $p_img_q->fetch_assoc()) {
+                        $cat_img = resolve_image_url($p_img_row['image']);
+                    }
+                }
+                if (empty($cat_img)) {
+                    $cat_img = ASSETS_URL . '/images/placeholder.svg';
+                }
+            ?>
+            <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="<?php echo $delay; $delay+=100; ?>">
+                <a href="shop.php?category=<?php echo $c['id']; ?>" class="category-card-pro text-decoration-none">
+                    <div class="category-card-stage">
+                        <div class="category-stage-backdrop"></div>
+                        <span class="category-badge-chip">
+                            <i class="fas fa-certificate text-primary me-1"></i> Heavy Duty
+                        </span>
+                        <div class="category-img-wrapper">
+                            <img src="<?php echo htmlspecialchars($cat_img); ?>" class="category-pro-img" alt="<?php echo htmlspecialchars($c['name']); ?>" loading="lazy" width="400" height="300" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';">
+                        </div>
+                    </div>
+                    <div class="category-card-body">
+                        <h3 class="category-pro-title montserrat"><?php echo htmlspecialchars($c['name']); ?></h3>
+                        <p class="category-pro-subtitle text-muted">Industrial Grade Protection & Control</p>
+                        <div class="category-cta-row">
+                            <span class="category-cta-label">Explore Products</span>
+                            <span class="category-cta-icon">
+                                <i class="fas fa-arrow-right"></i>
+                            </span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <?php endwhile; ?>
+        </div>
     </div>
-</div>
+</section>
 
 <!-- Trending Products -->
 <div class="container mt-5 pt-5 mb-5" data-aos="fade-up">
