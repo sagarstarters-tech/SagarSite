@@ -1,5 +1,7 @@
 <?php
 declare(strict_types=1);
+ignore_user_abort(true);
+set_time_limit(180);
 
 define('BASE_PATH', dirname(__DIR__));
 require_once BASE_PATH . '/config/config.php';
