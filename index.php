@@ -266,13 +266,13 @@ if ($selector_enabled == '1'):
                             <div class="row g-2 align-items-center">
                                 <div class="col-md-8 col-12">
                                     <div class="selector-pill-group" id="appPills">
-                                        <span class="selector-pill-btn active" data-filter="app" data-val="<?php echo htmlspecialchars(get_home_cfg('home_selector_app1_val', 'submersible')); ?>" data-link="<?php echo htmlspecialchars(get_home_cfg('home_selector_app1_link', 'shop.php?category=4')); ?>">
+                                        <span class="selector-pill-btn active" data-filter="app" data-val="<?php echo htmlspecialchars(get_home_cfg('home_selector_app1_val', 'submersible')); ?>" data-link="<?php echo htmlspecialchars(get_home_cfg('home_selector_app1_link', 'shop.php?app=submersible')); ?>">
                                             <i class="<?php echo htmlspecialchars(get_home_cfg('home_selector_app1_icon', 'fas fa-water')); ?>"></i> <?php echo htmlspecialchars(get_home_cfg('home_selector_app1_text', 'Submersible Pump')); ?>
                                         </span>
                                         <span class="selector-pill-btn" data-filter="app" data-val="<?php echo htmlspecialchars(get_home_cfg('home_selector_app2_val', 'openwell')); ?>" data-link="<?php echo htmlspecialchars(get_home_cfg('home_selector_app2_link', 'shop.php?app=openwell')); ?>">
                                             <i class="<?php echo htmlspecialchars(get_home_cfg('home_selector_app2_icon', 'fas fa-industry')); ?>"></i> <?php echo htmlspecialchars(get_home_cfg('home_selector_app2_text', 'Openwell / Monoblock')); ?>
                                         </span>
-                                        <span class="selector-pill-btn" data-filter="app" data-val="<?php echo htmlspecialchars(get_home_cfg('home_selector_app3_val', 'flourmill')); ?>" data-link="<?php echo htmlspecialchars(get_home_cfg('home_selector_app3_link', 'shop.php?category=6')); ?>">
+                                        <span class="selector-pill-btn" data-filter="app" data-val="<?php echo htmlspecialchars(get_home_cfg('home_selector_app3_val', 'flourmill')); ?>" data-link="<?php echo htmlspecialchars(get_home_cfg('home_selector_app3_link', 'shop.php?app=flourmill')); ?>">
                                             <i class="<?php echo htmlspecialchars(get_home_cfg('home_selector_app3_icon', 'fas fa-cog')); ?>"></i> <?php echo htmlspecialchars(get_home_cfg('home_selector_app3_text', 'Flour Mill / Heavy Motor')); ?>
                                         </span>
                                     </div>
@@ -662,48 +662,45 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Form Submission with Intelligent Link Redirection
+    // Form Submission with Multi-Criteria Filter
     const finderForm = document.getElementById('starterFinderForm');
     if (finderForm) {
         finderForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
             const activeApp = document.querySelector('#appPills .selector-pill-btn.active');
             const activePhase = document.querySelector('#phasePills .selector-pill-btn.active');
             const activeHp = document.querySelector('#hpPills .selector-pill-btn.active');
 
-            let customLink = '';
-            if (activeApp && activeApp.getAttribute('data-link') && activeApp.getAttribute('data-link').trim() !== '') {
-                customLink = activeApp.getAttribute('data-link').trim();
-            } else if (activePhase && activePhase.getAttribute('data-link') && activePhase.getAttribute('data-link').trim() !== '') {
-                customLink = activePhase.getAttribute('data-link').trim();
-            } else if (activeHp && activeHp.getAttribute('data-link') && activeHp.getAttribute('data-link').trim() !== '') {
-                customLink = activeHp.getAttribute('data-link').trim();
+            const phaseVal = activePhase ? activePhase.getAttribute('data-val') : '';
+            const hpVal = activeHp ? activeHp.getAttribute('data-val') : '';
+            const appVal = activeApp ? activeApp.getAttribute('data-val') : '';
+
+            let baseAction = finderForm.getAttribute('action') || 'shop.php';
+            if (!baseAction.startsWith('http') && !baseAction.startsWith('/')) {
+                baseAction = '<?php echo SITE_URL; ?>/' + baseAction;
             }
 
-            if (customLink !== '') {
-                e.preventDefault();
-                let url = customLink;
-                const phaseVal = activePhase ? activePhase.getAttribute('data-val') : '';
-                const hpVal = activeHp ? activeHp.getAttribute('data-val') : '';
-                const appVal = activeApp ? activeApp.getAttribute('data-val') : '';
+            const urlObj = new URL(baseAction, window.location.origin);
+            
+            // Clear any old/conflicting parameters
+            urlObj.searchParams.delete('phase');
+            urlObj.searchParams.delete('hp');
+            urlObj.searchParams.delete('app');
+            urlObj.searchParams.delete('category');
+            urlObj.searchParams.delete('category_slug');
 
-                // If relative link, prefix with SITE_URL if not starting with slash or http
-                if (!url.startsWith('http') && !url.startsWith('/')) {
-                    url = '<?php echo SITE_URL; ?>/' + url;
-                }
-
-                const urlObj = new URL(url, window.location.origin);
-                if (phaseVal && !urlObj.searchParams.has('phase')) {
-                    urlObj.searchParams.set('phase', phaseVal);
-                }
-                if (hpVal && !urlObj.searchParams.has('hp')) {
-                    urlObj.searchParams.set('hp', hpVal);
-                }
-                if (appVal && !urlObj.searchParams.has('app') && !urlObj.searchParams.has('category')) {
-                    urlObj.searchParams.set('app', appVal);
-                }
-
-                window.location.href = urlObj.toString();
+            if (phaseVal && phaseVal.trim() !== '') {
+                urlObj.searchParams.set('phase', phaseVal.trim());
             }
+            if (hpVal && hpVal.trim() !== '') {
+                urlObj.searchParams.set('hp', hpVal.trim());
+            }
+            if (appVal && appVal.trim() !== '') {
+                urlObj.searchParams.set('app', appVal.trim());
+            }
+
+            window.location.href = urlObj.toString();
         });
     }
 });

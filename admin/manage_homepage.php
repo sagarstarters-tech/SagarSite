@@ -84,7 +84,7 @@ $default_keys = [
     'home_selector_app1_text'   => 'Submersible Pump',
     'home_selector_app1_icon'   => 'fas fa-water',
     'home_selector_app1_val'    => 'submersible',
-    'home_selector_app1_link'   => 'shop.php?category=4',
+    'home_selector_app1_link'   => 'shop.php?app=submersible',
     'home_selector_app2_text'   => 'Openwell / Monoblock',
     'home_selector_app2_icon'   => 'fas fa-industry',
     'home_selector_app2_val'    => 'openwell',
@@ -92,7 +92,7 @@ $default_keys = [
     'home_selector_app3_text'   => 'Flour Mill / Heavy Motor',
     'home_selector_app3_icon'   => 'fas fa-cog',
     'home_selector_app3_val'    => 'flourmill',
-    'home_selector_app3_link'   => 'shop.php?category=6',
+    'home_selector_app3_link'   => 'shop.php?app=flourmill',
 
     // 5. Promotional Spotlights
     'home_promo_enabled'   => '1',
@@ -680,8 +680,8 @@ $active_tab = $_GET['tab'] ?? 'trust';
                                     <div>
                                         <label class="form-label small fw-bold text-success"><i class="fas fa-link me-1"></i>Redirect Page URL</label>
                                         <input type="text" name="home_selector_app1_link" class="form-control form-control-sm" 
-                                               value="<?php echo htmlspecialchars(get_home_setting('home_selector_app1_link', $default_keys['home_selector_app1_link'])); ?>" placeholder="e.g. shop.php?category=4">
-                                        <div class="form-text text-muted">Submersible Category page link (e.g. <code>shop.php?category=4</code>).</div>
+                                               value="<?php echo htmlspecialchars(get_home_setting('home_selector_app1_link', $default_keys['home_selector_app1_link'])); ?>" placeholder="e.g. shop.php?app=submersible">
+                                        <div class="form-text text-muted">Submersible Category ya search page link (e.g. <code>shop.php?app=submersible</code>).</div>
                                     </div>
                                 </div>
                             </div>
@@ -738,8 +738,8 @@ $active_tab = $_GET['tab'] ?? 'trust';
                                     <div>
                                         <label class="form-label small fw-bold text-success"><i class="fas fa-link me-1"></i>Redirect Page URL</label>
                                         <input type="text" name="home_selector_app3_link" class="form-control form-control-sm" 
-                                               value="<?php echo htmlspecialchars(get_home_setting('home_selector_app3_link', $default_keys['home_selector_app3_link'])); ?>" placeholder="e.g. shop.php?category=6">
-                                        <div class="form-text text-muted">Star Delta / Heavy Duty category page link (e.g. <code>shop.php?category=6</code>).</div>
+                                               value="<?php echo htmlspecialchars(get_home_setting('home_selector_app3_link', $default_keys['home_selector_app3_link'])); ?>" placeholder="e.g. shop.php?app=flourmill">
+                                        <div class="form-text text-muted">Star Delta / Heavy Duty search page link (e.g. <code>shop.php?app=flourmill</code>).</div>
                                     </div>
                                 </div>
                             </div>

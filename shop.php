@@ -12,58 +12,97 @@ if ($page < 1) $page = 1;
 $offset = ($page - 1) * $limit;
 
 // 2. Build Filters
-// Filter by category slug
-if (isset($_GET['category_slug'])) {
-    $slug = $_GET['category_slug'];
-    $cat_stmt = $conn->prepare("SELECT id FROM categories WHERE slug = ?");
+// Category filter logic
+$cat_id = null;
+$cat_name = '';
+$is_cat_conflict = false;
+
+if (isset($_GET['category_slug']) && trim($_GET['category_slug']) !== '') {
+    $slug = trim($_GET['category_slug']);
+    $cat_stmt = $conn->prepare("SELECT id, name FROM categories WHERE slug = ?");
     $cat_stmt->bind_param("s", $slug);
     $cat_stmt->execute();
     $cat_res = $cat_stmt->get_result();
     if ($cat_res->num_rows > 0) {
         $cat_data = $cat_res->fetch_assoc();
-        $whereClauses[] = "category_id = ?";
-        $params[] = $cat_data['id'];
-        $types .= "i";
+        $cat_id = (int)$cat_data['id'];
+        $cat_name = $cat_data['name'];
     }
     $cat_stmt->close();
 } elseif (isset($_GET['category']) && is_numeric($_GET['category'])) {
-    $whereClauses[] = "category_id = ?";
-    $params[] = (int)$_GET['category'];
-    $types .= "i";
+    $cat_id = (int)$_GET['category'];
+    $cat_stmt = $conn->prepare("SELECT id, name FROM categories WHERE id = ?");
+    $cat_stmt->bind_param("i", $cat_id);
+    $cat_stmt->execute();
+    $cat_res = $cat_stmt->get_result();
+    if ($cat_res->num_rows > 0) {
+        $cat_data = $cat_res->fetch_assoc();
+        $cat_name = $cat_data['name'];
+    }
+    $cat_stmt->close();
 }
 
 // 3. Smart Product Finder / Starter Selector Filters
 // Phase Filter
+$phase_filter_applied = false;
+$phase_label = '';
 if (isset($_GET['phase']) && trim($_GET['phase']) !== '') {
     $phaseVal = trim($_GET['phase']);
     if (stripos($phaseVal, '1') !== false || stripos($phaseVal, 'single') !== false) {
-        $whereClauses[] = "(name LIKE '%1 Phase%' OR name LIKE '%Single Phase%' OR name LIKE '%1-Phase%' OR description LIKE '%1 Phase%' OR description LIKE '%Single Phase%' OR category_id IN (SELECT id FROM categories WHERE name LIKE '%Single Phase%'))";
+        $whereClauses[] = "(name REGEXP '(^|[^0-9])(1[[:space:]]*-?[[:space:]]*Phase|Single[[:space:]]*-?[[:space:]]*Phase|1[[:space:]]*Ph|220[[:space:]]*V|230[[:space:]]*V)' OR description REGEXP '(^|[^0-9])(1[[:space:]]*-?[[:space:]]*Phase|Single[[:space:]]*-?[[:space:]]*Phase|1[[:space:]]*Ph|220[[:space:]]*V|230[[:space:]]*V)' OR category_id IN (SELECT id FROM categories WHERE name LIKE '%Single Phase%' OR name LIKE '%1 Hp%'))";
+        $phase_filter_applied = true;
+        $phase_label = '1-Phase (220V)';
+        // If category contradicts 1-Phase (e.g. 3 phase category selected), bypass category_id constraint
+        if ($cat_name !== '' && (stripos($cat_name, '3 phase') !== false || stripos($cat_name, 'three phase') !== false || stripos($cat_name, 'star delta') !== false)) {
+            $is_cat_conflict = true;
+        }
     } elseif (stripos($phaseVal, '3') !== false || stripos($phaseVal, 'three') !== false) {
-        $whereClauses[] = "(name LIKE '%3 Phase%' OR name LIKE '%Three Phase%' OR name LIKE '%3-Phase%' OR description LIKE '%3 Phase%' OR description LIKE '%Three Phase%' OR category_id IN (SELECT id FROM categories WHERE name LIKE '%3%Phase%' OR name LIKE '%Star Delta%'))";
+        $whereClauses[] = "(name REGEXP '(^|[^0-9])(3[[:space:]]*-?[[:space:]]*Phase|Three[[:space:]]*-?[[:space:]]*Phase|3[[:space:]]*Ph|415[[:space:]]*V|440[[:space:]]*V|Star[[:space:]]*-?[[:space:]]*Delta|DOL)' OR description REGEXP '(^|[^0-9])(3[[:space:]]*-?[[:space:]]*Phase|Three[[:space:]]*-?[[:space:]]*Phase|3[[:space:]]*Ph|415[[:space:]]*V|440[[:space:]]*V|Star[[:space:]]*-?[[:space:]]*Delta)' OR category_id IN (SELECT id FROM categories WHERE name LIKE '%3%Phase%' OR name LIKE '%Three Phase%' OR name LIKE '%Star Delta%'))";
+        $phase_filter_applied = true;
+        $phase_label = '3-Phase (415V)';
+        // If category contradicts 3-Phase (e.g. Single Phase category selected), bypass category_id constraint
+        if ($cat_name !== '' && stripos($cat_name, 'single phase') !== false) {
+            $is_cat_conflict = true;
+        }
     }
 }
 
+// Apply category filter only when not in direct contradiction with phase selection
+if ($cat_id !== null && !$is_cat_conflict) {
+    $whereClauses[] = "category_id = ?";
+    $params[] = $cat_id;
+    $types .= "i";
+}
+
 // HP Rating Filter
+$hp_label = '';
 if (isset($_GET['hp']) && trim($_GET['hp']) !== '') {
-    $hpVal = trim($_GET['hp']);
-    if (stripos($hpVal, '1') !== false || stripos($hpVal, '3') !== false) {
-        $whereClauses[] = "(name LIKE '%1 HP%' OR name LIKE '%1.5 HP%' OR name LIKE '%2 HP%' OR name LIKE '%3 HP%' OR name LIKE '%1-3%' OR description LIKE '%1 HP%' OR description LIKE '%2 HP%' OR description LIKE '%3 HP%')";
-    } elseif (stripos($hpVal, '5') !== false || stripos($hpVal, '7') !== false) {
-        $whereClauses[] = "(name LIKE '%5 HP%' OR name LIKE '%7.5 HP%' OR name LIKE '%6 HP%' OR description LIKE '%5 HP%' OR description LIKE '%7.5 HP%')";
-    } elseif (stripos($hpVal, '10') !== false || stripos($hpVal, '15') !== false || stripos($hpVal, '20') !== false || stripos($hpVal, '25') !== false) {
-        $whereClauses[] = "(name LIKE '%10 HP%' OR name LIKE '%12.5 HP%' OR name LIKE '%15 HP%' OR name LIKE '%20 HP%' OR name LIKE '%25 HP%' OR description LIKE '%10 HP%' OR description LIKE '%15 HP%' OR description LIKE '%20 HP%' OR description LIKE '%25 HP%')";
+    $hpVal = strtolower(trim($_GET['hp']));
+    if (strpos($hpVal, '10') !== false || strpos($hpVal, '15') !== false || strpos($hpVal, '20') !== false || strpos($hpVal, '25') !== false || strpos($hpVal, '30') !== false) {
+        $whereClauses[] = "(name REGEXP '(^|[^0-9.])(10|12[.]5|15|20|25|30)[[:space:]]*(HP|H[.]P|H\\\\.P|hp|H\\\\.P\\\\.)' OR description REGEXP '(^|[^0-9.])(10|12[.]5|15|20|25|30)[[:space:]]*(HP|H[.]P|H\\\\.P|hp|H\\\\.P\\\\.)' OR name LIKE '%10-25%' OR name LIKE '%10 to 25%' OR name LIKE '%up to 20%' OR name LIKE '%up to 25%' OR description LIKE '%up to 20%' OR description LIKE '%up to 25%' OR category_id IN (SELECT id FROM categories WHERE name LIKE '%Star Delta%'))";
+        $hp_label = '10 - 25+ HP';
+    } elseif (strpos($hpVal, '5-7.5') !== false || strpos($hpVal, '5') !== false || strpos($hpVal, '7.5') !== false || strpos($hpVal, '6') !== false || strpos($hpVal, '7') !== false) {
+        $whereClauses[] = "(name REGEXP '(^|[^0-9.])(5([.]5)?|6|7([.]5)?)[[:space:]]*(HP|H[.]P|H\\\\.P|hp|H\\\\.P\\\\.)' OR description REGEXP '(^|[^0-9.])(5([.]5)?|6|7([.]5)?)[[:space:]]*(HP|H[.]P|H\\\\.P|hp|H\\\\.P\\\\.)' OR name LIKE '%5-7.5%' OR name LIKE '%5 to 7.5%')";
+        $hp_label = '5 - 7.5 HP';
+    } elseif (strpos($hpVal, '1-3') !== false || strpos($hpVal, '1') !== false || strpos($hpVal, '2') !== false || strpos($hpVal, '3') !== false || strpos($hpVal, '0.5') !== false || strpos($hpVal, '1.5') !== false) {
+        $whereClauses[] = "(name REGEXP '(^|[^0-9.])(0?[.][5-9]|1([.]5)?|2|3)[[:space:]]*(HP|H[.]P|H\\\\.P|hp|H\\\\.P\\\\.)' OR description REGEXP '(^|[^0-9.])(0?[.][5-9]|1([.]5)?|2|3)[[:space:]]*(HP|H[.]P|H\\\\.P|hp|H\\\\.P\\\\.)' OR name LIKE '%1-3%' OR name LIKE '%1 to 3%' OR category_id IN (SELECT id FROM categories WHERE name LIKE '%1 Hp%'))";
+        $hp_label = '1 - 3 HP';
     }
 }
 
 // Application Filter
+$app_label = '';
 if (isset($_GET['app']) && trim($_GET['app']) !== '') {
-    $appVal = trim($_GET['app']);
-    if (stripos($appVal, 'submersible') !== false) {
-        $whereClauses[] = "(name LIKE '%Submersible%' OR description LIKE '%Submersible%' OR category_id IN (SELECT id FROM categories WHERE name LIKE '%Submersible%'))";
-    } elseif (stripos($appVal, 'openwell') !== false || stripos($appVal, 'monoblock') !== false) {
-        $whereClauses[] = "(name LIKE '%Openwell%' OR name LIKE '%Monoblock%' OR name LIKE '%Pump%' OR description LIKE '%Openwell%' OR description LIKE '%Monoblock%')";
-    } elseif (stripos($appVal, 'flourmill') !== false || stripos($appVal, 'heavy') !== false || stripos($appVal, 'star delta') !== false) {
-        $whereClauses[] = "(name LIKE '%Flour Mill%' OR name LIKE '%Star Delta%' OR description LIKE '%Flour Mill%' OR description LIKE '%Star Delta%' OR category_id IN (SELECT id FROM categories WHERE name LIKE '%Star Delta%'))";
+    $appVal = strtolower(trim($_GET['app']));
+    if (strpos($appVal, 'submersible') !== false) {
+        $whereClauses[] = "(name LIKE '%Submersible%' OR name LIKE '%Pump%' OR description LIKE '%Submersible%' OR description LIKE '%Pump%' OR category_id IN (SELECT id FROM categories WHERE name LIKE '%Submersible%' OR name LIKE '%3%Phase%' OR name LIKE '%Star Delta%'))";
+        $app_label = 'Submersible Pump';
+    } elseif (strpos($appVal, 'openwell') !== false || strpos($appVal, 'monoblock') !== false) {
+        $whereClauses[] = "(name LIKE '%Openwell%' OR name LIKE '%Monoblock%' OR name LIKE '%Pump%' OR description LIKE '%Openwell%' OR description LIKE '%Monoblock%' OR category_id IN (SELECT id FROM categories WHERE name LIKE '%3%Phase%' OR name LIKE '%Submersible%'))";
+        $app_label = 'Openwell / Monoblock';
+    } elseif (strpos($appVal, 'flourmill') !== false || strpos($appVal, 'heavy') !== false || strpos($appVal, 'star delta') !== false) {
+        $whereClauses[] = "(name LIKE '%Flour Mill%' OR name LIKE '%Heavy%' OR name LIKE '%Star Delta%' OR name LIKE '%Chakki%' OR description LIKE '%Flour Mill%' OR description LIKE '%Star Delta%' OR category_id IN (SELECT id FROM categories WHERE name LIKE '%Star Delta%' OR name LIKE '%3%Phase%'))";
+        $app_label = 'Flour Mill / Heavy Motor';
     }
 }
 
@@ -108,7 +147,7 @@ $stmt->bind_param($stmt_types, ...$stmt_params);
 $stmt->execute();
 $prods = $stmt->get_result();
 
-$cats = $conn->query("SELECT * FROM categories");
+$cats = $conn->query("SELECT * FROM categories ORDER BY id ASC");
 ?>
 
 <div class="container mt-5 mb-5">
@@ -148,11 +187,13 @@ if (!empty($global_settings[$setting_key])) {
                 <h5 class="fw-bold mb-3">Categories</h5>
                 <ul class="list-unstyled mb-4">
                     <li class="mb-1">
-                        <a href="<?php echo SITE_URL; ?>/shop.php" class="category-link <?php echo !isset($_GET['category']) && !isset($_GET['category_slug']) ? 'active fw-bold' : ''; ?>">All Categories</a>
+                        <a href="<?php echo SITE_URL; ?>/shop.php" class="category-link <?php echo (!$cat_id || $is_cat_conflict) ? 'active fw-bold' : ''; ?>">All Categories</a>
                     </li>
-                    <?php while($c = $cats->fetch_assoc()): ?>
+                    <?php while($c = $cats->fetch_assoc()): 
+                        $is_active_cat = ($cat_id == $c['id'] && !$is_cat_conflict);
+                    ?>
                     <li class="mb-1">
-                        <a href="<?php echo SITE_URL; ?>/shop.php?category=<?php echo $c['id']; ?>" class="category-link <?php echo (isset($_GET['category']) && $_GET['category'] == $c['id']) ? 'active fw-bold' : ''; ?>">
+                        <a href="<?php echo SITE_URL; ?>/shop.php?category=<?php echo $c['id']; ?>" class="category-link <?php echo $is_active_cat ? 'active fw-bold' : ''; ?>">
                             <?php echo htmlspecialchars($c['name']); ?>
                         </a>
                     </li>
@@ -175,14 +216,14 @@ if (!empty($global_settings[$setting_key])) {
                 <?php if(isset($_GET['app'])): ?>
                     <input type="hidden" name="app" value="<?php echo htmlspecialchars($_GET['app']); ?>">
                 <?php endif; ?>
-                <?php if(isset($_GET['category'])): ?>
-                    <input type="hidden" name="category" value="<?php echo htmlspecialchars($_GET['category']); ?>">
+                <?php if($cat_id && !$is_cat_conflict): ?>
+                    <input type="hidden" name="category" value="<?php echo $cat_id; ?>">
                 <?php endif; ?>
-                <?php if(isset($_GET['category_slug'])): ?>
+                <?php if(isset($_GET['category_slug']) && !$is_cat_conflict): ?>
                     <input type="hidden" name="category_slug" value="<?php echo htmlspecialchars($_GET['category_slug']); ?>">
                 <?php endif; ?>
                 
-                <?php if(isset($_GET['search']) || isset($_GET['phase']) || isset($_GET['hp']) || isset($_GET['app']) || isset($_GET['category']) || isset($_GET['category_slug']) || (isset($_GET['sort']) && $_GET['sort'] != 'newest')): ?>
+                <?php if(isset($_GET['search']) || isset($_GET['phase']) || isset($_GET['hp']) || isset($_GET['app']) || ($cat_id && !$is_cat_conflict) || (isset($_GET['sort']) && $_GET['sort'] != 'newest')): ?>
                     <a href="<?php echo SITE_URL; ?>/shop.php" class="btn btn-outline-secondary w-100 mt-2">Clear Filters</a>
                 <?php endif; ?>
             </form>
@@ -190,6 +231,43 @@ if (!empty($global_settings[$setting_key])) {
 
         <!-- Product Grid -->
         <div class="col-lg-9">
+            <?php 
+            $has_active_filters = (!empty($_GET['search']) || $phase_label !== '' || $hp_label !== '' || $app_label !== '' || ($cat_id && !$is_cat_conflict) || (isset($_GET['trending']) && $_GET['trending'] == 1));
+            if ($has_active_filters): 
+            ?>
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-4 p-3 bg-white rounded-3 shadow-sm border">
+                <span class="text-muted small fw-bold"><i class="fas fa-filter text-primary me-1"></i> Active Filters:</span>
+                <?php if ($phase_label): ?>
+                    <span class="badge bg-primary text-white px-3 py-2 rounded-pill">
+                        <i class="fas fa-bolt me-1"></i> <?php echo htmlspecialchars($phase_label); ?>
+                    </span>
+                <?php endif; ?>
+                <?php if ($hp_label): ?>
+                    <span class="badge bg-info text-dark px-3 py-2 rounded-pill">
+                        <i class="fas fa-gauge-high me-1"></i> <?php echo htmlspecialchars($hp_label); ?>
+                    </span>
+                <?php endif; ?>
+                <?php if ($app_label): ?>
+                    <span class="badge bg-secondary text-white px-3 py-2 rounded-pill">
+                        <i class="fas fa-cog me-1"></i> <?php echo htmlspecialchars($app_label); ?>
+                    </span>
+                <?php endif; ?>
+                <?php if ($cat_id && !$is_cat_conflict && !empty($cat_name)): ?>
+                    <span class="badge bg-dark text-white px-3 py-2 rounded-pill">
+                        <i class="fas fa-tag me-1"></i> <?php echo htmlspecialchars($cat_name); ?>
+                    </span>
+                <?php endif; ?>
+                <?php if (!empty($_GET['search'])): ?>
+                    <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
+                        <i class="fas fa-search me-1"></i> "<?php echo htmlspecialchars($_GET['search']); ?>"
+                    </span>
+                <?php endif; ?>
+                <a href="<?php echo SITE_URL; ?>/shop.php" class="btn btn-sm btn-outline-danger rounded-pill ms-auto">
+                    <i class="fas fa-times me-1"></i> Clear All
+                </a>
+            </div>
+            <?php endif; ?>
+
             <div class="row g-4">
                 <?php if($prods && $prods->num_rows > 0): ?>
                     <?php $delay=100; while($p = $prods->fetch_assoc()): ?>
