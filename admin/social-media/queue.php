@@ -275,12 +275,13 @@ $statusBadges = [
                                 $pMeta = $platformIcons[$pKey] ?? ['icon' => 'fas fa-share-alt', 'color' => '#0d6efd', 'name' => ucfirst($pKey)];
                                 $stMeta = $statusBadges[strtolower($item['status'])] ?? ['bg' => 'bg-secondary', 'label' => ucfirst($item['status'])];
                                 
-                                $rawPath = trim($item['post_image_url'] ?: ($item['image'] ?? ''));
-                                $rawPath = str_replace('/uploads/media/images/', '/uploads/images/', $rawPath);
-                                
+                                // Resolve image fresh from product (matches product page behavior)
+                                // Don't rely on post_image_url stored at queue creation — it may be stale/wrong
                                 if (function_exists('resolve_product_image_url')) {
-                                    $imgSrc = resolve_product_image_url($rawPath, $conn ?? null, (int)$item['product_id']);
+                                    $imgSrc = resolve_product_image_url('', $conn ?? null, (int)$item['product_id']);
                                 } else {
+                                    $rawPath = trim($item['image'] ?? $item['post_image_url'] ?? '');
+                                    $rawPath = str_replace('/uploads/media/images/', '/uploads/images/', $rawPath);
                                     if (empty($rawPath)) {
                                         $imgSrc = (defined('ASSETS_URL') ? ASSETS_URL : SITE_URL . '/assets') . '/images/logo.jpg';
                                     } elseif (strpos($rawPath, 'http://') === 0 || strpos($rawPath, 'https://') === 0) {
