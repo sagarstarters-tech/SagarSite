@@ -196,17 +196,17 @@ class ScheduleRunner {
         foreach ($products as $product) {
             $rawImg = trim($product['image'] ?? '');
             $imgUrl = '';
-            // Build image URL directly from products.image (main image only — no gallery fallback)
-            // resolve_product_image_url does disk checks and falls back to product_images (gallery)
-            // which is undesirable for social media posts
-            if (!empty($rawImg)) {
-                if (strpos($rawImg, 'http://') === 0 || strpos($rawImg, 'https://') === 0) {
-                    $imgUrl = $rawImg;
-                } elseif (strpos($rawImg, 'uploads/') === 0 || strpos($rawImg, 'assets/') === 0) {
-                    $imgUrl = $siteUrl . '/' . ltrim($rawImg, '/');
-                } else {
-                    // Bare filename — check common directories
-                    $imgUrl = $siteUrl . '/assets/images/' . ltrim($rawImg, '/');
+            if (function_exists('resolve_product_image_url')) {
+                $imgUrl = resolve_product_image_url($rawImg, null, (int)$product['id']);
+            } else {
+                if (!empty($rawImg)) {
+                    if (strpos($rawImg, 'http://') === 0 || strpos($rawImg, 'https://') === 0) {
+                        $imgUrl = $rawImg;
+                    } elseif (strpos($rawImg, 'uploads/') === 0 || strpos($rawImg, 'assets/') === 0) {
+                        $imgUrl = $siteUrl . '/' . ltrim($rawImg, '/');
+                    } else {
+                        $imgUrl = $siteUrl . '/assets/images/' . ltrim($rawImg, '/');
+                    }
                 }
             }
 
