@@ -148,30 +148,25 @@ class ScheduleRunner {
             $templateBody = "🔥 {product_name} 🔥\n\n💰 Price: ₹{price}\n🛒 Link: {product_url}\n\n{cta}\n\n{hashtags}";
         }
 
-        // 4. Calculate Stagger Interval between individual posts within this run
-        // NOTE: schedule_type intervals (every_30min=30, daily=1440) control how often
-        // the schedule RE-RUNS (via next_run_at). The stagger interval here controls
-        // how far apart individual products are spaced WITHIN a single run.
+        // 4. Calculate Stagger Interval — use the schedule's posting frequency
+        // This is the gap between each PRODUCT in the queue.
+        // All platforms for the same product are posted at the same time.
         $intervalMinutes = (int)($schedule['interval_minutes'] ?? 60);
         if ($intervalMinutes < 1) $intervalMinutes = 5;
 
-        // Use a sensible per-post stagger based on schedule frequency
-        // Fast schedules (every 5-30 min): 5 min between posts
-        // Medium schedules (hourly-2hr): 15 min between posts  
-        // Slow schedules (6hr+): 30 min between posts
-        $typeStaggerIntervals = [
+        $typeIntervals = [
             'every_5min'  => 5,
-            'every_15min' => 5,
-            'every_30min' => 5,
-            'every_1hr'   => 15,
-            'every_2hr'   => 15,
-            'every_6hr'   => 30,
-            'daily'       => 30,
-            'weekly'      => 30,
-            'monthly'     => 60
+            'every_15min' => 15,
+            'every_30min' => 30,
+            'every_1hr'   => 60,
+            'every_2hr'   => 120,
+            'every_6hr'   => 360,
+            'daily'       => 1440,
+            'weekly'      => 10080,
+            'monthly'     => 43200
         ];
-        if (isset($typeStaggerIntervals[$schedule['schedule_type']])) {
-            $intervalMinutes = $typeStaggerIntervals[$schedule['schedule_type']];
+        if (isset($typeIntervals[$schedule['schedule_type']])) {
+            $intervalMinutes = $typeIntervals[$schedule['schedule_type']];
         }
 
         // Resolve Base Start Time
@@ -226,6 +221,11 @@ class ScheduleRunner {
                 'cta_text' => $cta
             ]);
 
+            // Calculate scheduled time for this product (same time for all platforms)
+            $scheduledTime = $baseStartTimestamp + ($staggerIndex * $intervalMinutes * 60);
+            $scheduledAt = date('Y-m-d H:i:s', $scheduledTime);
+            $productQueued = false;
+
             foreach ($accounts as $acc) {
                 // Skip if this product is already in queue for this platform+account+schedule (including failed)
                 $chkStmt = $db->prepare("SELECT COUNT(*) FROM sm_queue 
@@ -237,9 +237,6 @@ class ScheduleRunner {
                 if ($chkStmt->fetchColumn() > 0) {
                     continue;
                 }
-
-                $scheduledTime = $baseStartTimestamp + ($staggerIndex * $intervalMinutes * 60);
-                $scheduledAt = date('Y-m-d H:i:s', $scheduledTime);
 
                 $stmtQueue->execute([
                     $product['id'],
@@ -253,6 +250,12 @@ class ScheduleRunner {
                     $scheduledAt
                 ]);
                 $queuedCount++;
+                $productQueued = true;
+            }
+
+            // Stagger increments per PRODUCT (not per platform)
+            // So all platforms of the same product post at the same time
+            if ($productQueued) {
                 $staggerIndex++;
             }
         }
