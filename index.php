@@ -491,11 +491,11 @@ if ($stats_enabled == '1'):
 <section class="container my-5" data-aos="fade-up">
     <div class="home-stats-section">
         <div class="text-center mb-4">
-            <span class="section-badge-pill mb-2 text-white bg-white bg-opacity-10 border-white border-opacity-25">
+            <span class="stats-badge-pill mb-2">
                 <i class="fas fa-award text-warning me-1"></i> <?php echo htmlspecialchars(get_home_cfg('home_stats_badge', 'PROVEN RELIABILITY')); ?>
             </span>
-            <h2 class="montserrat fw-bold text-white mb-2"><?php echo htmlspecialchars(get_home_cfg('home_stats_title', "Why Farmers & Engineers Trust Sagar Starter's")); ?></h2>
-            <p class="text-white text-opacity-75 mx-auto" style="max-width: 600px;"><?php echo htmlspecialchars(get_home_cfg('home_stats_subtitle', 'Over a decade of manufacturing excellence in motor control systems and agricultural power protection.')); ?></p>
+            <h2 class="stats-main-heading montserrat fw-bold text-white mb-2"><?php echo htmlspecialchars(get_home_cfg('home_stats_title', "Why Farmers & Engineers Trust Sagar Starter's")); ?></h2>
+            <p class="stats-sub-text text-white mx-auto" style="max-width: 600px;"><?php echo htmlspecialchars(get_home_cfg('home_stats_subtitle', 'Over a decade of manufacturing excellence in motor control systems and agricultural power protection.')); ?></p>
         </div>
 
         <div class="row g-4 justify-content-center mt-2">
@@ -613,11 +613,11 @@ if ($cta_enabled == '1'):
     <div class="home-cta-banner">
         <div class="row align-items-center g-4">
             <div class="col-lg-8 col-12">
-                <span class="section-badge-pill mb-2 text-white bg-white bg-opacity-10 border-white border-opacity-25">
+                <span class="cta-badge-pill mb-2">
                     <i class="fas fa-headset text-success me-1"></i> <?php echo htmlspecialchars(get_home_cfg('home_cta_badge', 'ENGINEERING CONSULTATION')); ?>
                 </span>
-                <h2 class="montserrat fw-bold text-white mb-2"><?php echo htmlspecialchars(get_home_cfg('home_cta_title', 'Need a Custom Control Panel or Bulk Order?')); ?></h2>
-                <p class="text-white text-opacity-75 mb-0" style="max-width: 650px;"><?php echo htmlspecialchars(get_home_cfg('home_cta_desc', 'Talk directly with our senior electrical engineers for custom DOL panels, automatic water level controllers, or commercial pricing.')); ?></p>
+                <h2 class="cta-banner-heading montserrat fw-bold text-white mb-2"><?php echo htmlspecialchars(get_home_cfg('home_cta_title', 'Need a Custom Control Panel or Bulk Order?')); ?></h2>
+                <p class="cta-banner-desc text-white mb-0" style="max-width: 650px;"><?php echo htmlspecialchars(get_home_cfg('home_cta_desc', 'Talk directly with our senior electrical engineers for custom DOL panels, automatic water level controllers, or commercial pricing.')); ?></p>
             </div>
             <div class="col-lg-4 col-12 text-lg-end text-start">
                 <div class="d-flex flex-column flex-sm-row flex-lg-column gap-2 justify-content-lg-end">

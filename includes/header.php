@@ -339,7 +339,7 @@ if (isset($product['slug'])) {
     <noscript><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"></noscript>
 
     <!-- Custom CSS -->
-    <link href="<?php echo ASSETS_URL; ?>/css/style.css?v=1.6" rel="stylesheet">
+    <link href="<?php echo ASSETS_URL; ?>/css/style.css?v=<?php echo file_exists(__DIR__ . '/../assets/css/style.css') ? filemtime(__DIR__ . '/../assets/css/style.css') : '1.7'; ?>" rel="stylesheet">
     <!-- Theme Customizer CSS Variables -->
     <?php
     require_once __DIR__ . '/ThemeService.php';
@@ -370,7 +370,7 @@ if (isset($product['slug'])) {
             autoContrast: <?php echo (isset($global_settings['auto_text_contrast']) && $global_settings['auto_text_contrast'] == '1') ? 'true' : 'false'; ?>
         };
     </script>
-    <script src="<?php echo ASSETS_URL; ?>/js/auto-contrast.js" defer></script>
+    <script src="<?php echo ASSETS_URL; ?>/js/auto-contrast.js?v=<?php echo file_exists(__DIR__ . '/../assets/js/auto-contrast.js') ? filemtime(__DIR__ . '/../assets/js/auto-contrast.js') : '2.0'; ?>" defer></script>
     
     <!-- Theme Selection Check Script for Immediate Load (prevents unstyled flash) -->
     <script>

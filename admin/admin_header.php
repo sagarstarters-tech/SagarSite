@@ -50,7 +50,12 @@ $__admin_menu = require __DIR__ . '/config/menu.php';
     echo $scriptService->getHeaderScripts();
     ?>
     <!-- Auto Contrast Algorithm -->
-    <script src="<?php echo ASSETS_URL; ?>/js/auto-contrast.js" defer></script>
+    <script>
+        window.siteConfig = {
+            autoContrast: <?php echo (isset($global_settings['auto_text_contrast']) && $global_settings['auto_text_contrast'] == '1') ? 'true' : 'false'; ?>
+        };
+    </script>
+    <script src="<?php echo ASSETS_URL; ?>/js/auto-contrast.js?v=<?php echo file_exists(__DIR__ . '/../assets/js/auto-contrast.js') ? filemtime(__DIR__ . '/../assets/js/auto-contrast.js') : '2.0'; ?>" defer></script>
 </head>
 <body class="bg-light">
 

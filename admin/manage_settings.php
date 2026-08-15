@@ -112,10 +112,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $enable_header_search = isset($_POST['enable_header_search']) ? '1' : '0';
         $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('enable_header_search', '$enable_header_search') ON DUPLICATE KEY UPDATE setting_value='$enable_header_search'");
 
-        // Automatic Text Contrast Setting
-        $auto_text_contrast = isset($_POST['auto_text_contrast']) ? '1' : '0';
-        $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('auto_text_contrast', '$auto_text_contrast') ON DUPLICATE KEY UPDATE setting_value='$auto_text_contrast'");
-
         // Maintenance Mode
         $maintenance_mode = isset($_POST['maintenance_mode']) ? '1' : '0';
         $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('maintenance_mode', '$maintenance_mode') ON DUPLICATE KEY UPDATE setting_value='$maintenance_mode'");
@@ -500,13 +496,7 @@ $active_tab = isset($_GET['tab']) ? $_GET['tab'] : 'general';
                         <small class="text-muted text-start d-block mt-1 ps-5">Displays a search option to the left of the cart icon.</small>
                     </div>
 
-                    <div class="mb-4">
-                        <div class="form-check form-switch fs-5">
-                            <input class="form-check-input" type="checkbox" role="switch" name="auto_text_contrast" id="autoTextContrast" <?php echo (isset($current_settings['auto_text_contrast']) && $current_settings['auto_text_contrast'] == '1') ? 'checked' : ''; ?>>
-                            <label class="form-check-label ms-2 fs-6 fw-bold" for="autoTextContrast">Automatic Text Contrast</label>
-                        </div>
-                        <small class="text-muted text-start d-block mt-1 ps-5">Automatically adjust text color (Light/Dark) based on section background brightness.</small>
-                    </div>
+
 
                     <div class="mb-4">
                         <div class="form-check form-switch fs-5">

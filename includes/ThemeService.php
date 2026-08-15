@@ -79,8 +79,9 @@ class ThemeService
             if (!isset($data[$key])) {
                 continue;
             }
+            $sanitized = self::sanitizeValue($key, (string)$data[$key]);
             $k = $conn->real_escape_string($key);
-            $v = $conn->real_escape_string($data[$key]);
+            $v = $conn->real_escape_string($sanitized);
             $conn->query("INSERT INTO settings (setting_key, setting_value)
                           VALUES ('$k', '$v')
                           ON DUPLICATE KEY UPDATE setting_value='$v'");
@@ -128,7 +129,7 @@ class ThemeService
         if ($key === 'theme_mode') {
             return in_array($val, ['light', 'dark']) ? $val : 'light';
         }
-        if ($key === 'theme_sticky_header') {
+        if ($key === 'theme_sticky_header' || $key === 'auto_text_contrast') {
             return in_array($val, ['0', '1']) ? $val : '1';
         }
         // Font family, header_style, footer_layout — strip tags
@@ -293,8 +294,9 @@ footer a:not(.btn):hover * {
 .card.bg-warning  { background-color: #ffc107 !important;         color: #212529 !important; }
 .card.bg-info     { background-color: #0dcaf0 !important;         color: #212529 !important; }
 .card.bg-dark     { background-color: #212529 !important;         color: #ffffff !important; }
-/* Ensure .text-white always wins, even when body color is overridden */
-.text-white, .text-white * { color: #ffffff !important; }
+/* Ensure .text-white and dark-card text always win, even when body color is overridden */
+.text-white, .text-white *, .bg-primary.text-white *, .bg-dark.text-white * { color: #ffffff !important; }
+.text-white-50, .text-white-50 * { color: rgba(255, 255, 255, 0.75) !important; }
 .text-primary { color: var(--primary) !important; }
 .badge.bg-primary { background-color: var(--primary) !important; }
 .form-control:focus {
