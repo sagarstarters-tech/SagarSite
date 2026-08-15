@@ -389,32 +389,55 @@ $active_tab = $_GET['tab'] ?? 'trust';
                     </div>
                 </div>
                 <div class="card-body p-4">
+                    <!-- Instruction Guide Banner -->
+                    <div class="alert alert-primary bg-light-subtle border border-primary-subtle rounded-4 p-3 mb-4">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="fas fa-lightbulb text-warning fs-5"></i>
+                            <h6 class="fw-bold mb-0 text-primary">Starter Selector Field Guide &amp; Instructions (इस्तेमाल करने की गाइड)</h6>
+                        </div>
+                        <div class="row g-2 small text-secondary">
+                            <div class="col-md-6">
+                                <div><i class="fas fa-check-circle text-success me-1"></i> <strong>Display Text:</strong> Button/Pill par jo text customer ko dikhana hai (e.g. <code>1-Phase (220V)</code>).</div>
+                                <div><i class="fas fa-check-circle text-success me-1"></i> <strong>Filter Value:</strong> Database me search karne ka keyword (e.g. <code>1-Phase</code>, <code>1-3 HP</code>, <code>submersible</code>). Sabhi ke liye khali rakhein.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <div><i class="fas fa-check-circle text-success me-1"></i> <strong>Redirect Link:</strong> Is option ko select karne par customer ko direct kis page par bhejana hai (e.g. <code>shop.php?category=4</code> ya full link <code>https://www.sagarstarters.com/shop.php?category=4</code>).</div>
+                                <div><i class="fas fa-check-circle text-success me-1"></i> <strong>Icon:</strong> FontAwesome icon code (e.g. <code>fas fa-water</code>, <code>fas fa-industry</code>, <code>fas fa-cog</code>).</div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- General Headings & Default Action -->
                     <div class="row g-3 mb-4">
                         <div class="col-md-3">
                             <label class="form-label fw-bold">Badge Text</label>
                             <input type="text" name="home_selector_badge" class="form-control" 
                                    value="<?php echo htmlspecialchars(get_home_setting('home_selector_badge', $default_keys['home_selector_badge'])); ?>" placeholder="SMART PRODUCT FINDER">
+                            <div class="form-text">Headline ke upar tag badge (e.g. SMART PRODUCT FINDER).</div>
                         </div>
                         <div class="col-md-5">
                             <label class="form-label fw-bold">Selector Headline</label>
                             <input type="text" name="home_selector_title" class="form-control" 
                                    value="<?php echo htmlspecialchars(get_home_setting('home_selector_title', $default_keys['home_selector_title'])); ?>" placeholder="Find the Right Starter for Your Motor">
+                            <div class="form-text">Section ka main title heading.</div>
                         </div>
                         <div class="col-md-2">
                             <label class="form-label fw-bold">Search Button Text</label>
                             <input type="text" name="home_selector_btn_text" class="form-control" 
                                    value="<?php echo htmlspecialchars(get_home_setting('home_selector_btn_text', $default_keys['home_selector_btn_text'])); ?>" placeholder="Find Starters">
+                            <div class="form-text">Search button ka label name.</div>
                         </div>
                         <div class="col-md-2">
                             <label class="form-label fw-bold text-success"><i class="fas fa-link me-1"></i>Default Page URL</label>
                             <input type="text" name="home_selector_action_url" class="form-control" 
                                    value="<?php echo htmlspecialchars(get_home_setting('home_selector_action_url', $default_keys['home_selector_action_url'])); ?>" placeholder="shop.php">
+                            <div class="form-text">Default search action page (e.g. <code>shop.php</code>).</div>
                         </div>
                         <div class="col-12">
                             <label class="form-label fw-bold">Selector Subtitle / Instructions</label>
                             <input type="text" name="home_selector_subtitle" class="form-control" 
                                    value="<?php echo htmlspecialchars(get_home_setting('home_selector_subtitle', $default_keys['home_selector_subtitle'])); ?>" placeholder="Select your motor specifications...">
+                            <div class="form-text">Customer ke liye subtitle description aur instruction text.</div>
                         </div>
                     </div>
 
@@ -425,71 +448,81 @@ $active_tab = $_GET['tab'] ?? 'trust';
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <h6 class="fw-bold text-primary mb-0"><i class="fas fa-bolt me-1"></i>Step 1: Power Phase Filter</h6>
                         </div>
-                        <div class="row g-3 mb-2">
-                            <div class="col-md-4">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-5">
                                 <label class="form-label small fw-bold">Step Title Label</label>
                                 <input type="text" name="home_selector_step1_label" class="form-control form-control-sm" 
                                        value="<?php echo htmlspecialchars(get_home_setting('home_selector_step1_label', $default_keys['home_selector_step1_label'])); ?>">
+                                <div class="form-text">Step 1 ka header text (e.g. <code>1. Power Phase</code>).</div>
                             </div>
                         </div>
                         <div class="row g-3">
                             <div class="col-md-4">
                                 <div class="p-3 border rounded-3 bg-light">
-                                    <span class="badge bg-secondary mb-2">Pill Option 1</span>
+                                    <span class="badge bg-secondary mb-2">Pill Option 1 (All)</span>
                                     <div class="mb-2">
                                         <label class="form-label small fw-bold">Display Text</label>
                                         <input type="text" name="home_selector_phase1_text" class="form-control form-control-sm" 
                                                value="<?php echo htmlspecialchars(get_home_setting('home_selector_phase1_text', $default_keys['home_selector_phase1_text'])); ?>">
+                                        <div class="form-text">Button par dikhne wala text (e.g. <code>All Phases</code>).</div>
                                     </div>
                                     <div class="mb-2">
                                         <label class="form-label small fw-bold">Filter Value (Empty for All)</label>
                                         <input type="text" name="home_selector_phase1_val" class="form-control form-control-sm" 
                                                value="<?php echo htmlspecialchars(get_home_setting('home_selector_phase1_val', $default_keys['home_selector_phase1_val'])); ?>" placeholder="(All)">
+                                        <div class="form-text">Sabhi phases dikhane ke liye khali rakhein.</div>
                                     </div>
                                     <div>
                                         <label class="form-label small fw-bold text-success"><i class="fas fa-link me-1"></i>Redirect Link (Optional)</label>
                                         <input type="text" name="home_selector_phase1_link" class="form-control form-control-sm" 
                                                value="<?php echo htmlspecialchars(get_home_setting('home_selector_phase1_link', $default_keys['home_selector_phase1_link'])); ?>" placeholder="e.g. shop.php">
+                                        <div class="form-text text-muted">Is option par direct redirect page link (e.g. <code>shop.php</code>).</div>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="p-3 border rounded-3 bg-light">
-                                    <span class="badge bg-primary mb-2">Pill Option 2</span>
+                                    <span class="badge bg-primary mb-2">Pill Option 2 (1-Phase)</span>
                                     <div class="mb-2">
                                         <label class="form-label small fw-bold">Display Text</label>
                                         <input type="text" name="home_selector_phase2_text" class="form-control form-control-sm" 
                                                value="<?php echo htmlspecialchars(get_home_setting('home_selector_phase2_text', $default_keys['home_selector_phase2_text'])); ?>">
+                                        <div class="form-text">Button par dikhne wala text (e.g. <code>1-Phase (220V)</code>).</div>
                                     </div>
                                     <div class="mb-2">
                                         <label class="form-label small fw-bold">Filter Value</label>
                                         <input type="text" name="home_selector_phase2_val" class="form-control form-control-sm" 
                                                value="<?php echo htmlspecialchars(get_home_setting('home_selector_phase2_val', $default_keys['home_selector_phase2_val'])); ?>" placeholder="1-Phase">
+                                        <div class="form-text">Search filter value (e.g. <code>1-Phase</code>).</div>
                                     </div>
                                     <div>
                                         <label class="form-label small fw-bold text-success"><i class="fas fa-link me-1"></i>Redirect Link (Optional)</label>
                                         <input type="text" name="home_selector_phase2_link" class="form-control form-control-sm" 
                                                value="<?php echo htmlspecialchars(get_home_setting('home_selector_phase2_link', $default_keys['home_selector_phase2_link'])); ?>" placeholder="e.g. shop.php?category=4">
+                                        <div class="form-text text-muted">Single Phase category ya page ka URL (e.g. <code>shop.php?category=4</code>).</div>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="p-3 border rounded-3 bg-light">
-                                    <span class="badge bg-primary mb-2">Pill Option 3</span>
+                                    <span class="badge bg-primary mb-2">Pill Option 3 (3-Phase)</span>
                                     <div class="mb-2">
                                         <label class="form-label small fw-bold">Display Text</label>
                                         <input type="text" name="home_selector_phase3_text" class="form-control form-control-sm" 
                                                value="<?php echo htmlspecialchars(get_home_setting('home_selector_phase3_text', $default_keys['home_selector_phase3_text'])); ?>">
+                                        <div class="form-text">Button par dikhne wala text (e.g. <code>3-Phase (415V)</code>).</div>
                                     </div>
                                     <div class="mb-2">
                                         <label class="form-label small fw-bold">Filter Value</label>
                                         <input type="text" name="home_selector_phase3_val" class="form-control form-control-sm" 
                                                value="<?php echo htmlspecialchars(get_home_setting('home_selector_phase3_val', $default_keys['home_selector_phase3_val'])); ?>" placeholder="3-Phase">
+                                        <div class="form-text">Search filter value (e.g. <code>3-Phase</code>).</div>
                                     </div>
                                     <div>
                                         <label class="form-label small fw-bold text-success"><i class="fas fa-link me-1"></i>Redirect Link (Optional)</label>
                                         <input type="text" name="home_selector_phase3_link" class="form-control form-control-sm" 
-                                               value="<?php echo htmlspecialchars(get_home_setting('home_selector_phase3_link', $default_keys['home_selector_phase3_link'])); ?>" placeholder="e.g. shop.php?category=6">
+                                               value="<?php echo htmlspecialchars(get_home_setting('home_selector_phase3_link', $default_keys['home_selector_phase3_link'])); ?>" placeholder="e.g. shop.php?category=5">
+                                        <div class="form-text text-muted">3-Phase category ya page ka URL (e.g. <code>shop.php?category=5</code>).</div>
                                     </div>
                                 </div>
                             </div>
@@ -503,11 +536,12 @@ $active_tab = $_GET['tab'] ?? 'trust';
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <h6 class="fw-bold text-primary mb-0"><i class="fas fa-gauge-high me-1"></i>Step 2: Motor Rating (HP) Filter</h6>
                         </div>
-                        <div class="row g-3 mb-2">
-                            <div class="col-md-4">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-5">
                                 <label class="form-label small fw-bold">Step Title Label</label>
                                 <input type="text" name="home_selector_step2_label" class="form-control form-control-sm" 
                                        value="<?php echo htmlspecialchars(get_home_setting('home_selector_step2_label', $default_keys['home_selector_step2_label'])); ?>">
+                                <div class="form-text">Step 2 ka header text (e.g. <code>2. Motor Rating (HP)</code>).</div>
                             </div>
                         </div>
                         <div class="row g-3">
@@ -518,16 +552,19 @@ $active_tab = $_GET['tab'] ?? 'trust';
                                         <label class="form-label small fw-bold">Display Text</label>
                                         <input type="text" name="home_selector_hp1_text" class="form-control form-control-sm" 
                                                value="<?php echo htmlspecialchars(get_home_setting('home_selector_hp1_text', $default_keys['home_selector_hp1_text'])); ?>">
+                                        <div class="form-text">Button text (e.g. <code>All HP</code>).</div>
                                     </div>
                                     <div class="mb-2">
                                         <label class="form-label small fw-bold">Filter Value</label>
                                         <input type="text" name="home_selector_hp1_val" class="form-control form-control-sm" 
                                                value="<?php echo htmlspecialchars(get_home_setting('home_selector_hp1_val', $default_keys['home_selector_hp1_val'])); ?>" placeholder="(All)">
+                                        <div class="form-text">All HP ke liye khali rakhein.</div>
                                     </div>
                                     <div>
                                         <label class="form-label small fw-bold text-success"><i class="fas fa-link me-1"></i>Redirect Link (Opt.)</label>
                                         <input type="text" name="home_selector_hp1_link" class="form-control form-control-sm" 
                                                value="<?php echo htmlspecialchars(get_home_setting('home_selector_hp1_link', $default_keys['home_selector_hp1_link'])); ?>" placeholder="e.g. shop.php">
+                                        <div class="form-text text-muted">Optional redirect URL.</div>
                                     </div>
                                 </div>
                             </div>
@@ -538,16 +575,19 @@ $active_tab = $_GET['tab'] ?? 'trust';
                                         <label class="form-label small fw-bold">Display Text</label>
                                         <input type="text" name="home_selector_hp2_text" class="form-control form-control-sm" 
                                                value="<?php echo htmlspecialchars(get_home_setting('home_selector_hp2_text', $default_keys['home_selector_hp2_text'])); ?>">
+                                        <div class="form-text">Button text (e.g. <code>1 - 3 HP</code>).</div>
                                     </div>
                                     <div class="mb-2">
                                         <label class="form-label small fw-bold">Filter Value</label>
                                         <input type="text" name="home_selector_hp2_val" class="form-control form-control-sm" 
                                                value="<?php echo htmlspecialchars(get_home_setting('home_selector_hp2_val', $default_keys['home_selector_hp2_val'])); ?>" placeholder="1-3 HP">
+                                        <div class="form-text">Search keyword (e.g. <code>1-3 HP</code>).</div>
                                     </div>
                                     <div>
                                         <label class="form-label small fw-bold text-success"><i class="fas fa-link me-1"></i>Redirect Link (Opt.)</label>
                                         <input type="text" name="home_selector_hp2_link" class="form-control form-control-sm" 
                                                value="<?php echo htmlspecialchars(get_home_setting('home_selector_hp2_link', $default_keys['home_selector_hp2_link'])); ?>" placeholder="e.g. shop.php?hp=1-3+HP">
+                                        <div class="form-text text-muted">Target product ya shop link.</div>
                                     </div>
                                 </div>
                             </div>
@@ -558,16 +598,19 @@ $active_tab = $_GET['tab'] ?? 'trust';
                                         <label class="form-label small fw-bold">Display Text</label>
                                         <input type="text" name="home_selector_hp3_text" class="form-control form-control-sm" 
                                                value="<?php echo htmlspecialchars(get_home_setting('home_selector_hp3_text', $default_keys['home_selector_hp3_text'])); ?>">
+                                        <div class="form-text">Button text (e.g. <code>5 - 7.5 HP</code>).</div>
                                     </div>
                                     <div class="mb-2">
                                         <label class="form-label small fw-bold">Filter Value</label>
                                         <input type="text" name="home_selector_hp3_val" class="form-control form-control-sm" 
                                                value="<?php echo htmlspecialchars(get_home_setting('home_selector_hp3_val', $default_keys['home_selector_hp3_val'])); ?>" placeholder="5-7.5 HP">
+                                        <div class="form-text">Search keyword (e.g. <code>5-7.5 HP</code>).</div>
                                     </div>
                                     <div>
                                         <label class="form-label small fw-bold text-success"><i class="fas fa-link me-1"></i>Redirect Link (Opt.)</label>
                                         <input type="text" name="home_selector_hp3_link" class="form-control form-control-sm" 
                                                value="<?php echo htmlspecialchars(get_home_setting('home_selector_hp3_link', $default_keys['home_selector_hp3_link'])); ?>" placeholder="e.g. shop.php?hp=5-7.5+HP">
+                                        <div class="form-text text-muted">Target product ya shop link.</div>
                                     </div>
                                 </div>
                             </div>
@@ -578,16 +621,19 @@ $active_tab = $_GET['tab'] ?? 'trust';
                                         <label class="form-label small fw-bold">Display Text</label>
                                         <input type="text" name="home_selector_hp4_text" class="form-control form-control-sm" 
                                                value="<?php echo htmlspecialchars(get_home_setting('home_selector_hp4_text', $default_keys['home_selector_hp4_text'])); ?>">
+                                        <div class="form-text">Button text (e.g. <code>10 - 25+ HP</code>).</div>
                                     </div>
                                     <div class="mb-2">
                                         <label class="form-label small fw-bold">Filter Value</label>
                                         <input type="text" name="home_selector_hp4_val" class="form-control form-control-sm" 
                                                value="<?php echo htmlspecialchars(get_home_setting('home_selector_hp4_val', $default_keys['home_selector_hp4_val'])); ?>" placeholder="10-25 HP">
+                                        <div class="form-text">Search keyword (e.g. <code>10-25 HP</code>).</div>
                                     </div>
                                     <div>
                                         <label class="form-label small fw-bold text-success"><i class="fas fa-link me-1"></i>Redirect Link (Opt.)</label>
                                         <input type="text" name="home_selector_hp4_link" class="form-control form-control-sm" 
                                                value="<?php echo htmlspecialchars(get_home_setting('home_selector_hp4_link', $default_keys['home_selector_hp4_link'])); ?>" placeholder="e.g. shop.php?hp=10-25+HP">
+                                        <div class="form-text text-muted">Target product ya shop link.</div>
                                     </div>
                                 </div>
                             </div>
@@ -601,11 +647,12 @@ $active_tab = $_GET['tab'] ?? 'trust';
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <h6 class="fw-bold text-primary mb-0"><i class="fas fa-industry me-1"></i>Step 3: Application / Motor Type Filter</h6>
                         </div>
-                        <div class="row g-3 mb-2">
-                            <div class="col-md-4">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-5">
                                 <label class="form-label small fw-bold">Step Title Label</label>
                                 <input type="text" name="home_selector_step3_label" class="form-control form-control-sm" 
                                        value="<?php echo htmlspecialchars(get_home_setting('home_selector_step3_label', $default_keys['home_selector_step3_label'])); ?>">
+                                <div class="form-text">Step 3 ka header text (e.g. <code>3. Application / Motor Type</code>).</div>
                             </div>
                         </div>
                         <div class="row g-3">
@@ -616,21 +663,25 @@ $active_tab = $_GET['tab'] ?? 'trust';
                                         <label class="form-label small fw-bold">Display Text</label>
                                         <input type="text" name="home_selector_app1_text" class="form-control form-control-sm" 
                                                value="<?php echo htmlspecialchars(get_home_setting('home_selector_app1_text', $default_keys['home_selector_app1_text'])); ?>">
+                                        <div class="form-text">Button text (e.g. <code>Submersible Pump</code>).</div>
                                     </div>
                                     <div class="mb-2">
                                         <label class="form-label small fw-bold">Icon (FontAwesome)</label>
                                         <input type="text" name="home_selector_app1_icon" class="form-control form-control-sm" 
                                                value="<?php echo htmlspecialchars(get_home_setting('home_selector_app1_icon', $default_keys['home_selector_app1_icon'])); ?>" placeholder="fas fa-water">
+                                        <div class="form-text">Icon class (e.g. <code>fas fa-water</code>).</div>
                                     </div>
                                     <div class="mb-2">
                                         <label class="form-label small fw-bold">Filter Keyword</label>
                                         <input type="text" name="home_selector_app1_val" class="form-control form-control-sm" 
                                                value="<?php echo htmlspecialchars(get_home_setting('home_selector_app1_val', $default_keys['home_selector_app1_val'])); ?>" placeholder="submersible">
+                                        <div class="form-text">Search keyword (e.g. <code>submersible</code>).</div>
                                     </div>
                                     <div>
                                         <label class="form-label small fw-bold text-success"><i class="fas fa-link me-1"></i>Redirect Page URL</label>
                                         <input type="text" name="home_selector_app1_link" class="form-control form-control-sm" 
                                                value="<?php echo htmlspecialchars(get_home_setting('home_selector_app1_link', $default_keys['home_selector_app1_link'])); ?>" placeholder="e.g. shop.php?category=4">
+                                        <div class="form-text text-muted">Submersible Category page link (e.g. <code>shop.php?category=4</code>).</div>
                                     </div>
                                 </div>
                             </div>
@@ -641,21 +692,25 @@ $active_tab = $_GET['tab'] ?? 'trust';
                                         <label class="form-label small fw-bold">Display Text</label>
                                         <input type="text" name="home_selector_app2_text" class="form-control form-control-sm" 
                                                value="<?php echo htmlspecialchars(get_home_setting('home_selector_app2_text', $default_keys['home_selector_app2_text'])); ?>">
+                                        <div class="form-text">Button text (e.g. <code>Openwell / Monoblock</code>).</div>
                                     </div>
                                     <div class="mb-2">
                                         <label class="form-label small fw-bold">Icon (FontAwesome)</label>
                                         <input type="text" name="home_selector_app2_icon" class="form-control form-control-sm" 
                                                value="<?php echo htmlspecialchars(get_home_setting('home_selector_app2_icon', $default_keys['home_selector_app2_icon'])); ?>" placeholder="fas fa-industry">
+                                        <div class="form-text">Icon class (e.g. <code>fas fa-industry</code>).</div>
                                     </div>
                                     <div class="mb-2">
                                         <label class="form-label small fw-bold">Filter Keyword</label>
                                         <input type="text" name="home_selector_app2_val" class="form-control form-control-sm" 
                                                value="<?php echo htmlspecialchars(get_home_setting('home_selector_app2_val', $default_keys['home_selector_app2_val'])); ?>" placeholder="openwell">
+                                        <div class="form-text">Search keyword (e.g. <code>openwell</code>).</div>
                                     </div>
                                     <div>
                                         <label class="form-label small fw-bold text-success"><i class="fas fa-link me-1"></i>Redirect Page URL</label>
                                         <input type="text" name="home_selector_app2_link" class="form-control form-control-sm" 
                                                value="<?php echo htmlspecialchars(get_home_setting('home_selector_app2_link', $default_keys['home_selector_app2_link'])); ?>" placeholder="e.g. shop.php?app=openwell">
+                                        <div class="form-text text-muted">Openwell category ya search page link (e.g. <code>shop.php?app=openwell</code>).</div>
                                     </div>
                                 </div>
                             </div>
@@ -666,21 +721,25 @@ $active_tab = $_GET['tab'] ?? 'trust';
                                         <label class="form-label small fw-bold">Display Text</label>
                                         <input type="text" name="home_selector_app3_text" class="form-control form-control-sm" 
                                                value="<?php echo htmlspecialchars(get_home_setting('home_selector_app3_text', $default_keys['home_selector_app3_text'])); ?>">
+                                        <div class="form-text">Button text (e.g. <code>Flour Mill / Heavy Motor</code>).</div>
                                     </div>
                                     <div class="mb-2">
                                         <label class="form-label small fw-bold">Icon (FontAwesome)</label>
                                         <input type="text" name="home_selector_app3_icon" class="form-control form-control-sm" 
                                                value="<?php echo htmlspecialchars(get_home_setting('home_selector_app3_icon', $default_keys['home_selector_app3_icon'])); ?>" placeholder="fas fa-cog">
+                                        <div class="form-text">Icon class (e.g. <code>fas fa-cog</code>).</div>
                                     </div>
                                     <div class="mb-2">
                                         <label class="form-label small fw-bold">Filter Keyword</label>
                                         <input type="text" name="home_selector_app3_val" class="form-control form-control-sm" 
                                                value="<?php echo htmlspecialchars(get_home_setting('home_selector_app3_val', $default_keys['home_selector_app3_val'])); ?>" placeholder="flourmill">
+                                        <div class="form-text">Search keyword (e.g. <code>flourmill</code>).</div>
                                     </div>
                                     <div>
                                         <label class="form-label small fw-bold text-success"><i class="fas fa-link me-1"></i>Redirect Page URL</label>
                                         <input type="text" name="home_selector_app3_link" class="form-control form-control-sm" 
                                                value="<?php echo htmlspecialchars(get_home_setting('home_selector_app3_link', $default_keys['home_selector_app3_link'])); ?>" placeholder="e.g. shop.php?category=6">
+                                        <div class="form-text text-muted">Star Delta / Heavy Duty category page link (e.g. <code>shop.php?category=6</code>).</div>
                                     </div>
                                 </div>
                             </div>
