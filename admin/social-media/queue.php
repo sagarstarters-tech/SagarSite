@@ -211,11 +211,11 @@ $statusBadges = [
                         <option value="bulk_cancel">Delete Selected</option>
                         <option value="bulk_retry">Retry Failed</option>
                     </select>
-                    <button type="button" id="btnApplyBulk" class="btn btn-outline-primary rounded-3 px-3">Apply</button>
-                    <button type="button" id="btnDeleteSelected" class="btn btn-danger rounded-3 px-3">
+                    <button type="button" id="btnApplyBulk" class="btn btn-primary rounded-3 px-3 fw-semibold">Apply</button>
+                    <button type="button" id="btnDeleteSelected" class="btn btn-outline-danger rounded-3 px-3 fw-semibold">
                         <i class="fas fa-trash-alt me-1"></i> Delete Selected
                     </button>
-                    <button type="button" id="btnDeleteAllQueue" class="btn btn-outline-danger rounded-3 px-3">
+                    <button type="button" id="btnDeleteAllQueue" class="btn btn-danger rounded-3 px-3 fw-semibold shadow-sm">
                         <i class="fas fa-trash me-1"></i> Delete All
                     </button>
                     <?php
@@ -690,10 +690,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const currentStatus = '<?php echo $currentStatus; ?>';
             const confirmMsg = currentStatus === 'all' 
-                ? 'Are you SURE you want to delete ALL items in the entire queue?' 
-                : `Are you SURE you want to delete ALL '${currentStatus}' items from the queue?`;
+                ? '⚠️ PERMANENT DELETION:\n\nAre you sure you want to COMPLETELY & PERMANENTLY DELETE ALL posts from the queue and database?\n\nThis will wipe out all scheduled and pending posts completely.' 
+                : `⚠️ PERMANENT DELETION:\n\nAre you sure you want to COMPLETELY & PERMANENTLY DELETE ALL '${currentStatus}' posts from the queue and database?`;
             
             if (confirm(confirmMsg)) {
+                btnDeleteAllQueue.disabled = true;
+                btnDeleteAllQueue.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Deleting...';
+
                 const formData = new FormData();
                 formData.append('_csrf_token', csrfToken);
                 formData.append('action', 'delete_all');
@@ -706,12 +709,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {
-                        window.location.reload();
+                        window.location.href = 'queue.php';
                     } else {
                         alert('Delete all failed: ' + (data.error || 'Unknown error'));
+                        btnDeleteAllQueue.disabled = false;
+                        btnDeleteAllQueue.innerHTML = '<i class="fas fa-trash me-1"></i> Delete All';
                     }
                 })
-                .catch(err => alert('Error executing action: ' + err.message));
+                .catch(err => {
+                    alert('Error executing action: ' + err.message);
+                    btnDeleteAllQueue.disabled = false;
+                    btnDeleteAllQueue.innerHTML = '<i class="fas fa-trash me-1"></i> Delete All';
+                });
             }
         });
     }

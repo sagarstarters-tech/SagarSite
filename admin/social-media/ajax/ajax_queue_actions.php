@@ -149,8 +149,14 @@ try {
             if ($status !== 'all' && !empty($status)) {
                 $stmt = $pdo->prepare("DELETE FROM sm_queue WHERE status = ?");
                 $stmt->execute([$status]);
+                $deletedCount = $stmt->rowCount();
+                $response['message'] = "All '{$status}' posts ({$deletedCount}) permanently deleted from database.";
             } else {
                 $pdo->query("DELETE FROM sm_queue");
+                try {
+                    $pdo->query("ALTER TABLE sm_queue AUTO_INCREMENT = 1");
+                } catch (\Throwable $e) {}
+                $response['message'] = "All queue posts completely and permanently deleted from database.";
             }
             $response['success'] = true;
             break;
