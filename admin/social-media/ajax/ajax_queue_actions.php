@@ -182,6 +182,18 @@ try {
             $response['success'] = true;
             $response['message'] = "Posting stopped! {$schedCount} schedule(s) paused, {$queueCount} queued post(s) cancelled.";
             break;
+        case 'start_posting':
+            // 1. Re-activate all paused schedules
+            $pdo->query("UPDATE sm_schedules SET is_active = 1 WHERE is_active = 0");
+            $schedCount = (int)$pdo->query("SELECT ROW_COUNT()")->fetchColumn();
+
+            // 2. Re-schedule items that were stopped by user
+            $pdo->query("UPDATE sm_queue SET status = 'scheduled', last_error = NULL WHERE status = 'failed' AND last_error = 'Posting stopped by user'");
+            $queueCount = (int)$pdo->query("SELECT ROW_COUNT()")->fetchColumn();
+
+            $response['success'] = true;
+            $response['message'] = "Posting started! {$schedCount} schedule(s) activated, {$queueCount} post(s) re-scheduled.";
+            break;
         default:
             throw new Exception('Invalid action');
     }

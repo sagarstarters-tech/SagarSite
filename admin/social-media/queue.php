@@ -213,8 +213,15 @@ $statusBadges = [
                     <button type="button" id="btnDeleteAllQueue" class="btn btn-outline-danger rounded-3 px-3">
                         <i class="fas fa-trash me-1"></i> Delete All
                     </button>
-                    <button type="button" id="btnStopPosting" class="btn btn-dark rounded-3 px-3">
-                        <i class="fas fa-stop-circle me-1"></i> Stop Posting
+                    <?php
+                    $activeScheduleCount = (int)$pdo->query("SELECT COUNT(*) FROM sm_schedules WHERE is_active = 1")->fetchColumn();
+                    $isPostingStopped = ($activeScheduleCount === 0);
+                    ?>
+                    <button type="button" id="btnTogglePosting" 
+                        class="btn <?php echo $isPostingStopped ? 'btn-success' : 'btn-dark'; ?> rounded-3 px-3"
+                        data-posting-state="<?php echo $isPostingStopped ? 'stopped' : 'active'; ?>">
+                        <i class="fas <?php echo $isPostingStopped ? 'fa-play-circle' : 'fa-stop-circle'; ?> me-1"></i>
+                        <?php echo $isPostingStopped ? 'Start Posting' : 'Stop Posting'; ?>
                     </button>
                     <?php
                     // Show reset button only if there are stuck publishing items
@@ -704,19 +711,27 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Stop Posting Button
-    const btnStopPosting = document.getElementById('btnStopPosting');
-    if (btnStopPosting) {
-        btnStopPosting.addEventListener('click', function(e) {
+    // Toggle Stop/Start Posting Button
+    const btnTogglePosting = document.getElementById('btnTogglePosting');
+    if (btnTogglePosting) {
+        btnTogglePosting.addEventListener('click', function(e) {
             e.preventDefault();
-            if (!confirm('⛔ Are you sure you want to STOP all posting?\n\n• All scheduled posts will be cancelled\n• All active schedules will be paused\n\nYou can resume from Schedules page later.')) return;
+            const currentState = btnTogglePosting.getAttribute('data-posting-state');
+            const isStop = (currentState === 'active');
+            const action = isStop ? 'stop_posting' : 'start_posting';
 
-            btnStopPosting.disabled = true;
-            btnStopPosting.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Stopping...';
+            const confirmMsg = isStop
+                ? '⛔ Are you sure you want to STOP all posting?\n\n• All scheduled posts will be cancelled\n• All active schedules will be paused'
+                : '▶️ Are you sure you want to START posting?\n\n• All paused schedules will be activated\n• Stopped posts will be re-scheduled';
+
+            if (!confirm(confirmMsg)) return;
+
+            btnTogglePosting.disabled = true;
+            btnTogglePosting.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> ' + (isStop ? 'Stopping...' : 'Starting...');
 
             const formData = new FormData();
             formData.append('_csrf_token', csrfToken);
-            formData.append('action', 'stop_posting');
+            formData.append('action', action);
 
             fetch('ajax/ajax_queue_actions.php', {
                 method: 'POST',
@@ -725,18 +740,22 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    alert(data.message || 'All posting stopped successfully!');
+                    alert(data.message || (isStop ? 'Posting stopped!' : 'Posting started!'));
                     window.location.reload();
                 } else {
                     alert('Error: ' + (data.error || 'Unknown error'));
-                    btnStopPosting.disabled = false;
-                    btnStopPosting.innerHTML = '<i class="fas fa-stop-circle me-1"></i> Stop Posting';
+                    btnTogglePosting.disabled = false;
+                    btnTogglePosting.innerHTML = isStop
+                        ? '<i class="fas fa-stop-circle me-1"></i> Stop Posting'
+                        : '<i class="fas fa-play-circle me-1"></i> Start Posting';
                 }
             })
             .catch(err => {
                 alert('Request error: ' + err.message);
-                btnStopPosting.disabled = false;
-                btnStopPosting.innerHTML = '<i class="fas fa-stop-circle me-1"></i> Stop Posting';
+                btnTogglePosting.disabled = false;
+                btnTogglePosting.innerHTML = isStop
+                    ? '<i class="fas fa-stop-circle me-1"></i> Stop Posting'
+                    : '<i class="fas fa-play-circle me-1"></i> Start Posting';
             });
         });
     }
