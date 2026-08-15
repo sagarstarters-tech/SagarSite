@@ -55,8 +55,11 @@ if ($res) {
 }
 ?>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="h3 mb-0 text-gray-800">Footer & Global Content</h2>
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h2 class="h3 mb-0 text-gray-800">Footer &amp; Global Content</h2>
+    <a href="manage_homepage.php" class="btn btn-primary btn-sm">
+        <i class="fas fa-desktop me-1"></i>Manage Homepage Sections &amp; UI
+    </a>
 </div>
 
 <?php if (isset($success_msg)): ?>

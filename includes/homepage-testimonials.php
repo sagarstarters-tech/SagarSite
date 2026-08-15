@@ -11,7 +11,25 @@ $section_title    = $global_settings['testimonial_section_title'] ?? 'What Our C
 $section_subtitle = $global_settings['testimonial_section_subtitle'] ?? 'Read honest reviews from people who love our products.';
 $display_count    = intval($global_settings['testimonial_show_count'] ?? 10);
 
-$testimonials_q = $conn->query("SELECT * FROM testimonials WHERE is_active = 1 ORDER BY rating DESC, id DESC LIMIT $display_count");
+// Ensure testimonials table exists safely
+$testimonials_q = false;
+try {
+    $conn->query("CREATE TABLE IF NOT EXISTS `testimonials` (
+        `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        `client_name` VARCHAR(255) NOT NULL,
+        `designation` VARCHAR(255) DEFAULT NULL,
+        `testimonial` TEXT NOT NULL,
+        `rating` TINYINT(1) DEFAULT 5,
+        `image_url` VARCHAR(500) DEFAULT NULL,
+        `is_active` TINYINT(1) DEFAULT 1,
+        `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+
+    $testimonials_q = $conn->query("SELECT * FROM testimonials WHERE is_active = 1 ORDER BY rating DESC, id DESC LIMIT $display_count");
+} catch (Throwable $e) {
+    $testimonials_q = false;
+}
 
 if ($testimonials_q && $testimonials_q->num_rows > 0):
 ?>

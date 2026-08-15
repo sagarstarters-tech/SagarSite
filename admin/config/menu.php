@@ -190,12 +190,18 @@ return [
         'label'    => 'Frontend Content',
         'icon'     => 'fa-desktop',
         'pages'    => [
-            'hero-slider-settings.php', 'manage-slides.php',
+            'manage_homepage.php', 'hero-slider-settings.php', 'manage-slides.php',
             'manage_homepage_features.php', 'manage_banners.php',
             'manage_pages.php', 'manage_about.php',
             'manage_site_content.php', 'manage_product_share.php'
         ],
         'children' => [
+            [
+                'label' => 'Homepage Sections',
+                'icon'  => 'fa-th-large',
+                'url'   => 'manage_homepage.php',
+                'pages' => ['manage_homepage.php'],
+            ],
             [
                 'label' => 'Hero Slider',
                 'icon'  => 'fa-layer-group',
