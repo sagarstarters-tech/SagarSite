@@ -278,18 +278,15 @@ $statusBadges = [
                                 $rawPath = trim($item['post_image_url'] ?: ($item['image'] ?? ''));
                                 $rawPath = str_replace('/uploads/media/images/', '/uploads/images/', $rawPath);
                                 
-                                if (function_exists('resolve_product_image_url')) {
-                                    $imgSrc = resolve_product_image_url($rawPath, $conn ?? null, (int)$item['product_id']);
+                                // Direct URL construction — no gallery fallback
+                                if (empty($rawPath)) {
+                                    $imgSrc = (defined('ASSETS_URL') ? ASSETS_URL : SITE_URL . '/assets') . '/images/logo.jpg';
+                                } elseif (strpos($rawPath, 'http://') === 0 || strpos($rawPath, 'https://') === 0) {
+                                    $imgSrc = $rawPath;
+                                } elseif (strpos($rawPath, 'uploads/') === 0 || strpos($rawPath, 'assets/') === 0) {
+                                    $imgSrc = SITE_URL . '/' . ltrim($rawPath, '/');
                                 } else {
-                                    if (empty($rawPath)) {
-                                        $imgSrc = SITE_URL . '/assets/images/logo.jpg';
-                                    } elseif (strpos($rawPath, 'http://') === 0 || strpos($rawPath, 'https://') === 0) {
-                                        $imgSrc = $rawPath;
-                                    } elseif (strpos($rawPath, 'uploads/') === 0 || strpos($rawPath, 'assets/') === 0) {
-                                        $imgSrc = SITE_URL . '/' . ltrim($rawPath, '/');
-                                    } else {
-                                        $imgSrc = SITE_URL . '/uploads/images/' . ltrim($rawPath, '/');
-                                    }
+                                    $imgSrc = SITE_URL . '/assets/images/' . ltrim($rawPath, '/');
                                 }
 
                                 $prodName = !empty($item['product_name']) ? $item['product_name'] : 'Product #' . $item['product_id'];
