@@ -43,11 +43,17 @@ try {
 @file_put_contents($lockFile, (string)time());
 
 try {
-    // 3. Process active schedules
-    $scheduleRunner = new \Admin\SocialMedia\Services\ScheduleRunner();
-    $schedSummary = $scheduleRunner->processActiveSchedules();
+    $schedSummary = ['schedules_run' => 0, 'posts_queued' => 0];
 
-    // 4. Process due queue items
+    // 3. Process active schedules (independent — don't let errors block queue processing)
+    try {
+        $scheduleRunner = new \Admin\SocialMedia\Services\ScheduleRunner();
+        $schedSummary = $scheduleRunner->processActiveSchedules();
+    } catch (Throwable $e) {
+        error_log('Public Social Runner - ScheduleRunner error: ' . $e->getMessage());
+    }
+
+    // 4. Process due queue items (always runs, even if step 3 failed)
     $processor = new \Admin\SocialMedia\Services\QueueProcessor();
     $results = $processor->processBatch(10);
 

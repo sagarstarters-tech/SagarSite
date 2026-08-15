@@ -14,11 +14,20 @@ require_once BASE_PATH . '/admin/social-media/services/ScheduleRunner.php';
 AuthMiddleware::check($conn);
 
 try {
-    // 1. Process active posting schedules to generate due items into sm_queue
-    $scheduleRunner = new \Admin\SocialMedia\Services\ScheduleRunner();
-    $schedSummary = $scheduleRunner->processActiveSchedules();
+    $schedSummary = ['schedules_run' => 0, 'posts_queued' => 0];
+    $results = [];
 
-    // 2. Process batch of due queue items
+    // 1. Process active posting schedules to generate due items into sm_queue
+    // (Independent try-catch so queue processing runs even if schedule runner fails)
+    try {
+        $scheduleRunner = new \Admin\SocialMedia\Services\ScheduleRunner();
+        $schedSummary = $scheduleRunner->processActiveSchedules();
+    } catch (Throwable $e) {
+        // Log but don't stop queue processing
+        error_log('ScheduleRunner error: ' . $e->getMessage());
+    }
+
+    // 2. Process batch of due queue items (always runs, even if step 1 failed)
     $processor = new \Admin\SocialMedia\Services\QueueProcessor();
     $results = $processor->processBatch(10);
 

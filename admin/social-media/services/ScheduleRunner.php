@@ -148,23 +148,30 @@ class ScheduleRunner {
             $templateBody = "🔥 {product_name} 🔥\n\n💰 Price: ₹{price}\n🛒 Link: {product_url}\n\n{cta}\n\n{hashtags}";
         }
 
-        // 4. Calculate Stagger Interval
+        // 4. Calculate Stagger Interval between individual posts within this run
+        // NOTE: schedule_type intervals (every_30min=30, daily=1440) control how often
+        // the schedule RE-RUNS (via next_run_at). The stagger interval here controls
+        // how far apart individual products are spaced WITHIN a single run.
         $intervalMinutes = (int)($schedule['interval_minutes'] ?? 60);
         if ($intervalMinutes < 1) $intervalMinutes = 5;
 
-        $typeIntervals = [
+        // Use a sensible per-post stagger based on schedule frequency
+        // Fast schedules (every 5-30 min): 5 min between posts
+        // Medium schedules (hourly-2hr): 15 min between posts  
+        // Slow schedules (6hr+): 30 min between posts
+        $typeStaggerIntervals = [
             'every_5min'  => 5,
-            'every_15min' => 15,
-            'every_30min' => 30,
-            'every_1hr'   => 60,
-            'every_2hr'   => 120,
-            'every_6hr'   => 360,
-            'daily'       => 1440,
-            'weekly'      => 10080,
-            'monthly'     => 43200
+            'every_15min' => 5,
+            'every_30min' => 5,
+            'every_1hr'   => 15,
+            'every_2hr'   => 15,
+            'every_6hr'   => 30,
+            'daily'       => 30,
+            'weekly'      => 30,
+            'monthly'     => 60
         ];
-        if (isset($typeIntervals[$schedule['schedule_type']])) {
-            $intervalMinutes = $typeIntervals[$schedule['schedule_type']];
+        if (isset($typeStaggerIntervals[$schedule['schedule_type']])) {
+            $intervalMinutes = $typeStaggerIntervals[$schedule['schedule_type']];
         }
 
         // Resolve Base Start Time

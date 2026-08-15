@@ -36,12 +36,17 @@ $start = microtime(true);
 log_message("Cron started.");
 
 // 1. Process Active Posting Schedules to generate pending queue items
-$scheduleRunner = new \Admin\SocialMedia\Services\ScheduleRunner();
-$schedSummary = $scheduleRunner->processActiveSchedules();
+$schedSummary = ['schedules_checked' => 0, 'schedules_run' => 0, 'posts_queued' => 0];
+try {
+    $scheduleRunner = new \Admin\SocialMedia\Services\ScheduleRunner();
+    $schedSummary = $scheduleRunner->processActiveSchedules();
+} catch (Throwable $e) {
+    log_message("Schedule Runner ERROR: " . $e->getMessage());
+}
 log_message(sprintf("Schedule Runner: Checked: %d, Executed: %d, Queued: %d", 
-    $schedSummary['schedules_checked'], $schedSummary['schedules_run'], $schedSummary['posts_queued']));
+    $schedSummary['schedules_checked'] ?? 0, $schedSummary['schedules_run'] ?? 0, $schedSummary['posts_queued'] ?? 0));
 
-// 2. Process Queue items
+// 2. Process Queue items (always runs, even if step 1 failed)
 $processor = new \Admin\SocialMedia\Services\QueueProcessor();
 $results = $processor->processBatch(20);
 
