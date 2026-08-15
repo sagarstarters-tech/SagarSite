@@ -123,6 +123,17 @@ class QueueProcessor {
         $id = (int)$queueItem['id'];
         
         try {
+            // Verify that the product still exists in the catalog (skip deleted products)
+            if (!empty($queueItem['product_id'])) {
+                $stmtCheck = $db->prepare("SELECT id FROM products WHERE id = ?");
+                $stmtCheck->execute([(int)$queueItem['product_id']]);
+                if (!$stmtCheck->fetchColumn()) {
+                    $this->updateStatus($id, 'failed', null, 'Auto-post skipped: Product was deleted from catalog.');
+                    $outLastError = 'Product was deleted from catalog.';
+                    return false;
+                }
+            }
+
             $this->updateStatus($id, 'publishing');
             
             $platform = strtolower(trim($queueItem['platform']));

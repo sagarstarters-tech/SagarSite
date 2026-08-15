@@ -396,6 +396,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         $conn->query("DELETE FROM products WHERE id=$id");
+        try {
+            $conn->query("DELETE FROM sm_queue WHERE product_id = " . (int)$id . " AND status IN ('pending', 'scheduled', 'retry')");
+        } catch (\Throwable $e) {}
         $_SESSION['flash_success'] = "Product deleted successfully.";
         header("Location: manage_products.php?action=list");
         exit;

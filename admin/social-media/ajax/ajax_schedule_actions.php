@@ -98,16 +98,54 @@ require_once BASE_PATH . '/admin/social-media/services/ScheduleRunner.php';
             }
 
             $rawStartDate = trim($_POST['start_date'] ?? '');
-            if ($startMode === 'custom' && !empty($rawStartDate)) {
-                $startDate = $rawStartDate;
-            } else {
-                $startDate = !empty($rawStartDate) ? $rawStartDate : date('Y-m-d');
-            }
-
             $startTime = trim($_POST['start_time'] ?? date('H:i'));
             if (strlen($startTime) === 5) $startTime .= ':00'; // Format HH:MM:SS
 
-            $nextRunAt = $startDate . ' ' . $startTime;
+            $nowTs = time();
+
+            // Calculate precise future start date and next_run_at
+            if ($startMode === 'custom' && !empty($rawStartDate)) {
+                $startDate = $rawStartDate;
+                $targetTs = strtotime("$startDate $startTime");
+                if ($targetTs === false || $targetTs <= $nowTs) {
+                    // If custom time already passed, shift to today's or next available slot
+                    $targetTs = max($nowTs + 120, strtotime(date('Y-m-d') . " $startTime"));
+                    $startDate = date('Y-m-d', $targetTs);
+                }
+                $nextRunAt = date('Y-m-d H:i:s', $targetTs);
+            } elseif ($startMode === 'once_weekly') {
+                $todayTargetTs = strtotime(date('Y-m-d') . " $startTime");
+                if ($todayTargetTs > $nowTs + 60) {
+                    $startDate = date('Y-m-d');
+                    $nextRunAt = date('Y-m-d H:i:s', $todayTargetTs);
+                } else {
+                    // Today's slot has already passed — schedule for tomorrow at startTime (or +7 days)
+                    $nextTs = strtotime("+1 day " . date('Y-m-d') . " $startTime");
+                    $startDate = date('Y-m-d', $nextTs);
+                    $nextRunAt = date('Y-m-d H:i:s', $nextTs);
+                }
+            } elseif ($startMode === 'once_monthly') {
+                $todayTargetTs = strtotime(date('Y-m-d') . " $startTime");
+                if ($todayTargetTs > $nowTs + 60) {
+                    $startDate = date('Y-m-d');
+                    $nextRunAt = date('Y-m-d H:i:s', $todayTargetTs);
+                } else {
+                    $nextTs = strtotime("+1 month " . date('Y-m-d') . " $startTime");
+                    $startDate = date('Y-m-d', $nextTs);
+                    $nextRunAt = date('Y-m-d H:i:s', $nextTs);
+                }
+            } else { // once_daily
+                $todayTargetTs = strtotime(date('Y-m-d') . " $startTime");
+                if ($todayTargetTs > $nowTs + 60) {
+                    $startDate = date('Y-m-d');
+                    $nextRunAt = date('Y-m-d H:i:s', $todayTargetTs);
+                } else {
+                    // Time has already passed today — schedule for tomorrow
+                    $nextTs = strtotime("+1 day " . date('Y-m-d') . " $startTime");
+                    $startDate = date('Y-m-d', $nextTs);
+                    $nextRunAt = date('Y-m-d H:i:s', $nextTs);
+                }
+            }
 
             try {
                 if ($id) {

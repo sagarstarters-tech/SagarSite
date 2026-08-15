@@ -22,6 +22,11 @@ try {
     if (!empty($dbCronKey)) $cronSecretKey = $dbCronKey;
 } catch (\Throwable $e) {}
 
+// Automatically purge scheduled/pending queue items for deleted products
+try {
+    $pdo->query("DELETE FROM sm_queue WHERE product_id IS NOT NULL AND product_id > 0 AND product_id NOT IN (SELECT id FROM products) AND status IN ('pending', 'scheduled', 'retry')");
+} catch (\Throwable $e) {}
+
 // Fast GET Page Load: Fetch Queue Status Counters without blocking network API calls
 $statusCounts = [
     'all' => 0,

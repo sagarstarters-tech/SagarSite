@@ -170,12 +170,15 @@ class ScheduleRunner {
         }
 
         // Resolve Base Start Time
-        // Use start_date/start_time ONLY if it's in the future; otherwise use current time
-        // This prevents all items getting the same old past timestamp on re-runs
         $baseStartTimestamp = time();
-        if (!empty($schedule['start_date'])) {
-            $sDate = $schedule['start_date'];
-            $sTime = !empty($schedule['start_time']) ? $schedule['start_time'] : '00:00:00';
+        if (!empty($schedule['next_run_at'])) {
+            $nextTs = strtotime($schedule['next_run_at']);
+            if ($nextTs !== false && $nextTs > time()) {
+                $baseStartTimestamp = $nextTs;
+            }
+        } elseif (!empty($schedule['start_date']) || !empty($schedule['start_time'])) {
+            $sDate = !empty($schedule['start_date']) ? $schedule['start_date'] : date('Y-m-d');
+            $sTime = !empty($schedule['start_time']) ? $schedule['start_time'] : '09:00:00';
             $parsedStart = strtotime("$sDate $sTime");
             if ($parsedStart !== false && $parsedStart > time()) {
                 $baseStartTimestamp = $parsedStart;
@@ -227,13 +230,14 @@ class ScheduleRunner {
             $productQueued = false;
 
             foreach ($accounts as $acc) {
-                // Skip if this product is already in queue for this platform+account+schedule (including failed)
+                // Strict duplicate check: skip if already scheduled/pending or posted in last 7 days for this platform
                 $chkStmt = $db->prepare("SELECT COUNT(*) FROM sm_queue 
-                    WHERE product_id = ? AND LOWER(platform) = ? AND account_id = ?
-                    AND schedule_id = ?
-                    AND status IN ('pending', 'scheduled', 'publishing', 'failed')
-                    AND scheduled_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)");
-                $chkStmt->execute([$product['id'], strtolower($acc['platform']), $acc['id'], $scheduleId]);
+                    WHERE product_id = ? AND LOWER(platform) = ?
+                    AND (
+                        status IN ('pending', 'scheduled', 'publishing')
+                        OR (status = 'posted' AND scheduled_at >= DATE_SUB(NOW(), INTERVAL 7 DAY))
+                    )");
+                $chkStmt->execute([$product['id'], strtolower($acc['platform'])]);
                 if ($chkStmt->fetchColumn() > 0) {
                     continue;
                 }

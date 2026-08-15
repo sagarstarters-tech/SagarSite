@@ -95,6 +95,9 @@ class ProductRepository
 
     public function delete(int $id): bool
     {
+        try {
+            $this->conn->query("DELETE FROM sm_queue WHERE product_id = $id AND status IN ('pending', 'scheduled', 'retry')");
+        } catch (\Throwable $e) {}
         $stmt = $this->conn->prepare("DELETE FROM products WHERE id=?");
         $stmt->bind_param('i', $id);
         $ok = $stmt->execute();

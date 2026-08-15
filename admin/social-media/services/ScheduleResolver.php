@@ -19,6 +19,27 @@ class ScheduleResolver {
      */
     public function getNextPostTime(array $schedule): ?DateTime {
         $now = new DateTime();
+        $startMode = $schedule['start_mode'] ?? '';
+        $startTime = !empty($schedule['start_time']) ? $schedule['start_time'] : '09:00:00';
+        if (strlen($startTime) === 5) $startTime .= ':00';
+        $parts = explode(':', $startTime);
+        $hour = isset($parts[0]) ? (int)$parts[0] : 9;
+        $min = isset($parts[1]) ? (int)$parts[1] : 0;
+
+        if ($startMode === 'once_weekly') {
+            $next = clone $now;
+            $next->modify('+7 days')->setTime($hour, $min, 0);
+            return $next;
+        } elseif ($startMode === 'once_monthly') {
+            $next = clone $now;
+            $next->modify('+1 month')->setTime($hour, $min, 0);
+            return $next;
+        } elseif ($startMode === 'once_daily') {
+            $next = clone $now;
+            $next->modify('+1 day')->setTime($hour, $min, 0);
+            return $next;
+        }
+
         $type = $schedule['schedule_type'] ?? '';
         
         switch ($type) {
@@ -35,22 +56,20 @@ class ScheduleResolver {
             case 'every_6hr':
                 return $now->modify('+6 hours');
             case 'daily':
-                return $this->getNextTimeSlot($schedule['time_slots'] ?? '[]', $now, false);
+                $next = clone $now;
+                $next->modify('+1 day')->setTime($hour, $min, 0);
+                return $next;
             case 'weekly':
-                return $this->getNextTimeSlot($schedule['time_slots'] ?? '[]', $now, true, $schedule['days_of_week'] ?? '[]');
+                $next = clone $now;
+                $next->modify('+7 days')->setTime($hour, $min, 0);
+                return $next;
             case 'monthly':
-                // Post on 1st and 15th by default
-                $day = (int)$now->format('d');
-                if ($day < 15) {
-                    $now->setDate((int)$now->format('Y'), (int)$now->format('m'), 15)->setTime(12, 0);
-                } else {
-                    $now->modify('first day of next month')->setTime(12, 0);
-                }
-                return $now;
+                $next = clone $now;
+                $next->modify('+1 month')->setTime($hour, $min, 0);
+                return $next;
             case 'custom':
-                // Add rudimentary cron parsing or simple interval fallback
                 if (!empty($schedule['interval_minutes'])) {
-                    return $now->modify('+' . $schedule['interval_minutes'] . ' minutes');
+                    return $now->modify('+' . (int)$schedule['interval_minutes'] . ' minutes');
                 }
                 return $now->modify('+1 hour');
             default:
