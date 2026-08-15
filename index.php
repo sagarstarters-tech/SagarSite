@@ -335,7 +335,7 @@ if ($prods_enabled == '1'):
                 <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6 col-12" data-aos="fade-up" data-aos-delay="<?php echo $delay; $delay+=50; ?>">
                     <div class="product-card-pro">
                         <!-- Media Stage -->
-                        <a href="<?php echo $p_url; ?>" class="product-media-stage" title="<?php echo htmlspecialchars($p['name']); ?>">
+                        <div class="product-media-stage">
                             <?php if ($has_discount): ?>
                                 <span class="product-badge-discount">
                                     <i class="fas fa-tag me-1"></i><?php echo $discount_percent; ?>% OFF
@@ -356,7 +356,7 @@ if ($prods_enabled == '1'):
                                  loading="lazy" 
                                  width="300" 
                                  height="300">
-                        </a>
+                        </div>
 
                         <!-- Details Body -->
                         <div class="product-card-pro-body">
