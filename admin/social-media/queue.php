@@ -788,15 +788,15 @@ document.addEventListener('DOMContentLoaded', function() {
         if (icon) icon.classList.add('fa-spin');
         if (timerElem) timerElem.textContent = '...';
 
-        // Trigger queue processor and wait for publishing to finish before reloading
-        fetch('ajax/ajax_process_queue.php', { method: 'POST' })
-            .then(res => res.json())
-            .then(data => {
-                window.location.reload();
-            })
-            .catch(() => {
-                window.location.reload();
-            });
+        // Trigger queue processor in background asynchronously
+        try {
+            fetch('ajax/ajax_process_queue.php', { method: 'POST' }).catch(() => {});
+        } catch(e) {}
+
+        // Reload page
+        setTimeout(() => {
+            window.location.reload();
+        }, 500);
     };
 
     // Manual Process Queue Button

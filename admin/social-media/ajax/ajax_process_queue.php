@@ -1,7 +1,5 @@
 <?php
 declare(strict_types=1);
-ignore_user_abort(true);
-set_time_limit(180);
 header('Content-Type: application/json');
 
 define('BASE_PATH', dirname(__DIR__, 3));
