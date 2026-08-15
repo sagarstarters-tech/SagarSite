@@ -213,6 +213,9 @@ $statusBadges = [
                     <button type="button" id="btnDeleteAllQueue" class="btn btn-outline-danger rounded-3 px-3">
                         <i class="fas fa-trash me-1"></i> Delete All
                     </button>
+                    <button type="button" id="btnStopPosting" class="btn btn-dark rounded-3 px-3">
+                        <i class="fas fa-stop-circle me-1"></i> Stop Posting
+                    </button>
                     <?php
                     // Show reset button only if there are stuck publishing items
                     $stuckCount = (int)$pdo->query("SELECT COUNT(*) FROM sm_queue WHERE status='publishing' AND updated_at <= DATE_SUB(NOW(), INTERVAL 5 MINUTE)")->fetchColumn();
@@ -698,6 +701,43 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
                 .catch(err => alert('Error executing action: ' + err.message));
             }
+        });
+    }
+
+    // Stop Posting Button
+    const btnStopPosting = document.getElementById('btnStopPosting');
+    if (btnStopPosting) {
+        btnStopPosting.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (!confirm('⛔ Are you sure you want to STOP all posting?\n\n• All scheduled posts will be cancelled\n• All active schedules will be paused\n\nYou can resume from Schedules page later.')) return;
+
+            btnStopPosting.disabled = true;
+            btnStopPosting.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Stopping...';
+
+            const formData = new FormData();
+            formData.append('_csrf_token', csrfToken);
+            formData.append('action', 'stop_posting');
+
+            fetch('ajax/ajax_queue_actions.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message || 'All posting stopped successfully!');
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + (data.error || 'Unknown error'));
+                    btnStopPosting.disabled = false;
+                    btnStopPosting.innerHTML = '<i class="fas fa-stop-circle me-1"></i> Stop Posting';
+                }
+            })
+            .catch(err => {
+                alert('Request error: ' + err.message);
+                btnStopPosting.disabled = false;
+                btnStopPosting.innerHTML = '<i class="fas fa-stop-circle me-1"></i> Stop Posting';
+            });
         });
     }
 

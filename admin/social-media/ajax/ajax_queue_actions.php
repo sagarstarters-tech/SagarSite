@@ -170,6 +170,18 @@ try {
             $response['success'] = true;
             $response['message'] = "Reset {$affected} stuck publishing item(s) to scheduled.";
             break;
+        case 'stop_posting':
+            // 1. Pause all active schedules
+            $schedPaused = $pdo->query("UPDATE sm_schedules SET is_active = 0 WHERE is_active = 1");
+            $schedCount = (int)$pdo->query("SELECT ROW_COUNT()")->fetchColumn();
+
+            // 2. Cancel all scheduled/pending/retry queue items
+            $pdo->query("UPDATE sm_queue SET status = 'failed', last_error = 'Posting stopped by user' WHERE status IN ('scheduled', 'pending', 'retry')");
+            $queueCount = (int)$pdo->query("SELECT ROW_COUNT()")->fetchColumn();
+
+            $response['success'] = true;
+            $response['message'] = "Posting stopped! {$schedCount} schedule(s) paused, {$queueCount} queued post(s) cancelled.";
+            break;
         default:
             throw new Exception('Invalid action');
     }
