@@ -17,7 +17,15 @@ if ($slides_q->num_rows == 0) {
 }
 
 // Generate inline CSS variables for the settings
-$layout_class = $settings['layout'] === 'boxed' ? 'container rounded-4 overflow-hidden mt-4' : 'container-fluid p-0';
+$desktop_height = !empty($settings['desktop_height']) ? $settings['desktop_height'] : '560px';
+$tablet_height = !empty($settings['tablet_height']) ? $settings['tablet_height'] : '460px';
+$mobile_height = !empty($settings['mobile_height']) ? $settings['mobile_height'] : '380px';
+$container_width = !empty($settings['container_width']) ? $settings['container_width'] : '100%';
+$image_fit = !empty($settings['image_fit']) ? $settings['image_fit'] : 'cover';
+
+$layout_class = ($settings['layout'] ?? 'full') === 'boxed' ? 'container rounded-4 overflow-hidden mt-4' : 'container-fluid p-0';
+$max_width_style = (($settings['layout'] ?? 'full') === 'boxed' && $container_width !== '100%') ? "max-width: " . htmlspecialchars($container_width) . ";" : '';
+
 $transition_speed = $settings['transition_speed'] ?? 800;
 $autoplay_delay = $settings['autoplay_delay'] ?? 5000;
 $autoplay_enabled = ($settings['autoplay'] && $slides_q->num_rows > 1) ? 'true' : 'false';
@@ -25,9 +33,12 @@ $transition_type = $settings['transition_type'] ?? 'slide'; // fade, slide, zoom
 ?>
 
 <div class="hero-slider-wrapper <?php echo $layout_class; ?>" 
-     style="--desktop-height: <?php echo htmlspecialchars($settings['desktop_height']); ?>; 
-            --mobile-height: <?php echo htmlspecialchars($settings['mobile_height']); ?>;
-            --transition-speed: <?php echo $transition_speed; ?>ms;">
+     style="--desktop-height: <?php echo htmlspecialchars($desktop_height); ?>; 
+            --tablet-height: <?php echo htmlspecialchars($tablet_height); ?>; 
+            --mobile-height: <?php echo htmlspecialchars($mobile_height); ?>;
+            --slider-fit: <?php echo htmlspecialchars($image_fit); ?>;
+            --transition-speed: <?php echo $transition_speed; ?>ms;
+            <?php echo $max_width_style; ?>">
     
     <div class="hero-slider" 
          data-autoplay="<?php echo $autoplay_enabled; ?>" 

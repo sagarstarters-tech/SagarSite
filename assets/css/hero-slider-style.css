@@ -5,23 +5,22 @@
     --desktop-height: 560px;
     --tablet-height: 460px;
     --mobile-height: 380px;
+    --slider-fit: cover;
     --transition-speed: 800ms;
     height: var(--desktop-height);
-    max-height: 85vh;
-    min-height: 460px;
     overflow: hidden;
     background: #0f172a;
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 /* Tablet Breakpoint (769px - 1024px) */
 @media (max-width: 1024px) {
     .hero-slider-wrapper {
         height: var(--tablet-height);
-        min-height: 400px;
-        max-height: 70vh;
     }
 }
 
@@ -29,16 +28,13 @@
 @media (max-width: 768px) {
     .hero-slider-wrapper {
         height: var(--mobile-height);
-        min-height: 350px;
-        max-height: 65vh;
     }
 }
 
 /* Small Mobile Breakpoint (<= 480px) */
 @media (max-width: 480px) {
     .hero-slider-wrapper {
-        height: clamp(330px, 58vh, 390px);
-        min-height: 320px;
+        height: var(--mobile-height);
     }
 }
 
@@ -95,7 +91,7 @@
 .hero-bg video {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: var(--slider-fit, cover);
     object-position: center center;
     display: block !important;
     opacity: 1 !important;
