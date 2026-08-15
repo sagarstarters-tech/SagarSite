@@ -136,12 +136,12 @@ $res = $conn->query("SELECT * FROM testimonials ORDER BY id DESC");
                                 </div>
                             </td>
                             <td class="text-end pe-4">
-                                <button class="btn btn-sm btn-light text-primary me-2" onclick='editTestimonial(<?php echo json_encode($row); ?>)'><i class="fas fa-edit"></i></button>
+                                <button class="btn btn-sm btn-light text-primary me-2" title="Edit Testimonial" onclick='editTestimonial(<?php echo json_encode($row); ?>)'><i class="fas fa-edit"></i></button>
                                 <form method="POST" class="d-inline" onsubmit="return confirm('Delete this testimonial?');">
                                     <?php echo csrf_input(); ?>
                                     <input type="hidden" name="action" value="delete">
                                     <input type="hidden" name="testimonial_id" value="<?php echo $row['id']; ?>">
-                                    <button class="btn btn-sm btn-light text-danger"><i class="fas fa-trash"></i></button>
+                                    <button class="btn btn-sm btn-light text-danger" title="Delete Testimonial"><i class="fas fa-trash"></i></button>
                                 </form>
                             </td>
                         </tr>

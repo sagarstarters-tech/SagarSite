@@ -80,8 +80,8 @@ $templates = $stmtTemplates->fetchAll(PDO::FETCH_ASSOC);
                                     <i class="fas fa-copy me-1"></i> Clone
                                 </button>
                                 <button type="button" class="btn btn-sm btn-outline-danger rounded-pill btn-delete-tpl" 
-                                        data-id="<?php echo $tpl['id']; ?>">
-                                    <i class="fas fa-trash-alt"></i>
+                                        title="Delete Template" data-id="<?php echo $tpl['id']; ?>">
+                                    <i class="fas fa-trash-alt me-1"></i> Delete
                                 </button>
                             </div>
                         </div>

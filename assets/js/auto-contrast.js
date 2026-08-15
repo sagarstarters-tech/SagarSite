@@ -61,7 +61,7 @@
         ].join(', '),
 
         // Classes to completely skip
-        skipClasses: ['no-contrast', 'navbar-toggler', 'btn-close', 'carousel-control-prev', 'carousel-control-next', 'carousel-indicators']
+        skipClasses: ['no-contrast', 'navbar-toggler', 'btn-close', 'carousel-control-prev', 'carousel-control-next', 'carousel-indicators', 'admin-main-wrapper', 'admin-sidebar', 'admin-main-col']
     };
 
     // Cache for image luminance sampling
@@ -71,6 +71,9 @@
      * Check if auto-contrast is enabled in settings
      */
     function isAutoContrastEnabled() {
+        if (typeof window !== 'undefined' && window.location && window.location.pathname.includes('/admin/')) {
+            return false;
+        }
         if (window.siteConfig && window.siteConfig.autoContrast === false) {
             return false;
         }
@@ -295,6 +298,8 @@
      */
     function applyToButton(btn) {
         if (!btn || CONFIG.skipClasses.some(cls => btn.classList.contains(cls))) return;
+        if (btn.className && (btn.className.includes('btn-outline-') || btn.className.includes('btn-light') || btn.className.includes('var-btn'))) return;
+        if (btn.closest && btn.closest('.admin-main-wrapper, .admin-sidebar, .admin-main-col')) return;
 
         const style = window.getComputedStyle(btn);
 

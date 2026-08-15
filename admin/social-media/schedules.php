@@ -175,12 +175,14 @@ $scheduleTypes = [
                                 </div>
                                 <div class="btn-group">
                                     <button type="button" class="btn btn-sm btn-outline-primary btn-edit-schedule" 
+                                            title="Edit Schedule"
                                             data-schedule='<?php echo htmlspecialchars(json_encode($sched), ENT_QUOTES); ?>'>
-                                        <i class="fas fa-edit"></i>
+                                        <i class="fas fa-edit me-1"></i> Edit
                                     </button>
                                     <button type="button" class="btn btn-sm btn-outline-danger btn-delete-schedule" 
+                                            title="Delete Schedule"
                                             data-id="<?php echo $sched['id']; ?>">
-                                        <i class="fas fa-trash-alt"></i>
+                                        <i class="fas fa-trash-alt me-1"></i> Delete
                                     </button>
                                 </div>
                             </div>

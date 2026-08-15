@@ -85,4 +85,133 @@
     100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
 }
 
-/* More premium styles can be added here */
+/* Social Media Module Action Buttons */
+.btn-edit-tpl {
+    background-color: #eff6ff !important;
+    border: 1.5px solid #3b82f6 !important;
+    color: #1d4ed8 !important;
+    font-weight: 600 !important;
+}
+.btn-edit-tpl:hover {
+    background-color: #2563eb !important;
+    color: #ffffff !important;
+    border-color: #2563eb !important;
+}
+.btn-edit-tpl:hover i {
+    color: #ffffff !important;
+}
+
+.btn-set-default {
+    background-color: #f0fdf4 !important;
+    border: 1.5px solid #22c55e !important;
+    color: #15803d !important;
+    font-weight: 600 !important;
+}
+.btn-set-default:hover {
+    background-color: #16a34a !important;
+    color: #ffffff !important;
+    border-color: #16a34a !important;
+}
+.btn-set-default:hover i {
+    color: #ffffff !important;
+}
+
+.btn-clone-tpl {
+    background-color: #f0f9ff !important;
+    border: 1.5px solid #0ea5e9 !important;
+    color: #0369a1 !important;
+    font-weight: 600 !important;
+}
+.btn-clone-tpl:hover {
+    background-color: #0284c7 !important;
+    color: #ffffff !important;
+    border-color: #0284c7 !important;
+}
+.btn-clone-tpl:hover i {
+    color: #ffffff !important;
+}
+
+.btn-delete-tpl, .btn-delete-schedule {
+    background-color: #fef2f2 !important;
+    border: 1.5px solid #ef4444 !important;
+    color: #dc2626 !important;
+    font-weight: 600 !important;
+    min-width: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.btn-delete-tpl:hover, .btn-delete-schedule:hover {
+    background-color: #dc2626 !important;
+    color: #ffffff !important;
+    border-color: #dc2626 !important;
+}
+.btn-delete-tpl i, .btn-delete-schedule i {
+    color: #dc2626 !important;
+}
+.btn-delete-tpl:hover i, .btn-delete-schedule:hover i {
+    color: #ffffff !important;
+}
+
+.btn-toggle-status {
+    background-color: #f8fafc !important;
+    border: 1.5px solid #94a3b8 !important;
+    color: #334155 !important;
+    font-weight: 600 !important;
+}
+.btn-toggle-status:hover {
+    background-color: #475569 !important;
+    color: #ffffff !important;
+    border-color: #475569 !important;
+}
+
+.btn-edit-schedule {
+    background-color: #eff6ff !important;
+    border: 1.5px solid #3b82f6 !important;
+    color: #1d4ed8 !important;
+    font-weight: 600 !important;
+}
+.btn-edit-schedule:hover {
+    background-color: #2563eb !important;
+    color: #ffffff !important;
+}
+.btn-edit-schedule i {
+    color: #1d4ed8 !important;
+}
+.btn-edit-schedule:hover i {
+    color: #ffffff !important;
+}
+
+.btn-run-now {
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%) !important;
+    border: 1px solid #15803d !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25) !important;
+}
+.btn-run-now:hover {
+    background: linear-gradient(135deg, #15803d 0%, #166534 100%) !important;
+    color: #ffffff !important;
+}
+.btn-run-now i {
+    color: #ffffff !important;
+}
+
+.var-btn {
+    background-color: #eff6ff !important;
+    border: 1px solid #bfdbfe !important;
+    color: #1d4ed8 !important;
+    font-weight: 600 !important;
+}
+.var-btn:hover {
+    background-color: #2563eb !important;
+    color: #ffffff !important;
+    border-color: #2563eb !important;
+}
+.var-btn i {
+    color: #2563eb !important;
+}
+.var-btn:hover i {
+    color: #ffffff !important;
+}
+
