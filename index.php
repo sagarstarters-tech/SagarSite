@@ -308,13 +308,13 @@ include 'includes/hero-slider.php';
     <div class="container" data-aos="fade-up">
         <div class="row g-4">
             <div class="col-lg-6 col-12">
-                <div class="promo-spotlight-card variant-blue">
+                <div class="promo-spotlight-card variant-blue text-white">
                     <div>
-                        <span class="promo-badge-tag">
+                        <span class="promo-badge-tag text-white">
                             <i class="fas fa-water me-1"></i> Agricultural & Submersible
                         </span>
-                        <h3 class="promo-card-title montserrat">Submersible Pump Starters & Panels</h3>
-                        <p class="promo-card-desc">Equipped with dry run auto cut, electronic overload relays, digital ammeter-voltmeter, and surge safety for borewell motors.</p>
+                        <h3 class="promo-card-title montserrat text-white">Submersible Pump Starters & Panels</h3>
+                        <p class="promo-card-desc text-white">Equipped with dry run auto cut, electronic overload relays, digital ammeter-voltmeter, and surge safety for borewell motors.</p>
                     </div>
                     <a href="<?php echo SITE_URL; ?>/shop.php?category=4" class="promo-cta-btn">
                         Explore Submersible Starters <i class="fas fa-arrow-right"></i>
@@ -322,13 +322,13 @@ include 'includes/hero-slider.php';
                 </div>
             </div>
             <div class="col-lg-6 col-12">
-                <div class="promo-spotlight-card variant-dark">
+                <div class="promo-spotlight-card variant-dark text-white">
                     <div>
-                        <span class="promo-badge-tag">
+                        <span class="promo-badge-tag text-white">
                             <i class="fas fa-industry me-1"></i> 3-Phase Industrial Range
                         </span>
-                        <h3 class="promo-card-title montserrat">Star Delta & Heavy Duty Panels</h3>
-                        <p class="promo-card-desc">Engineered for factories, flour mills, and heavy agricultural motors. 100% heavy copper coils with thermal overload trip mechanism.</p>
+                        <h3 class="promo-card-title montserrat text-white">Star Delta & Heavy Duty Panels</h3>
+                        <p class="promo-card-desc text-white">Engineered for factories, flour mills, and heavy agricultural motors. 100% heavy copper coils with thermal overload trip mechanism.</p>
                     </div>
                     <a href="<?php echo SITE_URL; ?>/shop.php?category=6" class="promo-cta-btn">
                         Explore Star Delta Starters <i class="fas fa-arrow-right"></i>
@@ -341,41 +341,41 @@ include 'includes/hero-slider.php';
 
 <!-- 6. Industrial Excellence & Trust Stats Section -->
 <section class="container my-5" data-aos="fade-up">
-    <div class="home-stats-section">
+    <div class="home-stats-section text-white">
         <div class="text-center mb-4">
             <span class="section-badge-pill mb-2 text-white bg-white bg-opacity-10 border-white border-opacity-25">
                 <i class="fas fa-award text-warning me-1"></i> PROVEN RELIABILITY
             </span>
             <h2 class="montserrat fw-bold text-white mb-2">Why Farmers & Engineers Trust Sagar Starter's</h2>
-            <p class="text-white text-opacity-75 mx-auto" style="max-width: 600px;">Over a decade of manufacturing excellence in motor control systems and agricultural power protection.</p>
+            <p class="text-white text-opacity-90 mx-auto stat-desc-subtitle" style="max-width: 600px;">Over a decade of manufacturing excellence in motor control systems and agricultural power protection.</p>
         </div>
 
         <div class="row g-4 justify-content-center mt-2">
             <div class="col-lg-3 col-md-6 col-6">
                 <div class="stat-item-box">
                     <div class="stat-icon-wrap">
-                        <i class="fas fa-calendar-check"></i>
+                        <i class="fas fa-calendar-check text-info"></i>
                     </div>
-                    <div class="stat-number-big">15+</div>
-                    <p class="stat-label-text">Years of Excellence</p>
+                    <div class="stat-number-big text-white">15+</div>
+                    <p class="stat-label-text text-white text-opacity-90">Years of Excellence</p>
                 </div>
             </div>
             <div class="col-lg-3 col-md-6 col-6">
                 <div class="stat-item-box">
                     <div class="stat-icon-wrap">
-                        <i class="fas fa-shield-virus"></i>
+                        <i class="fas fa-shield-virus text-info"></i>
                     </div>
-                    <div class="stat-number-big">50,000+</div>
-                    <p class="stat-label-text">Motors Protected</p>
+                    <div class="stat-number-big text-white">50,000+</div>
+                    <p class="stat-label-text text-white text-opacity-90">Motors Protected</p>
                 </div>
             </div>
             <div class="col-lg-3 col-md-6 col-6">
                 <div class="stat-item-box">
                     <div class="stat-icon-wrap">
-                        <i class="fas fa-microchip"></i>
+                        <i class="fas fa-microchip text-info"></i>
                     </div>
-                    <div class="stat-number-big">100%</div>
-                    <p class="stat-label-text">Pre-Tested Relays</p>
+                    <div class="stat-number-big text-white">100%</div>
+                    <p class="stat-label-text text-white text-opacity-90">Pre-Tested Relays</p>
                 </div>
             </div>
             <div class="col-lg-3 col-md-6 col-6">
@@ -383,8 +383,8 @@ include 'includes/hero-slider.php';
                     <div class="stat-icon-wrap">
                         <i class="fas fa-star text-warning"></i>
                     </div>
-                    <div class="stat-number-big">4.9 / 5</div>
-                    <p class="stat-label-text">Customer Rating</p>
+                    <div class="stat-number-big text-white">4.9 / 5</div>
+                    <p class="stat-label-text text-white text-opacity-90">Customer Rating</p>
                 </div>
             </div>
         </div>

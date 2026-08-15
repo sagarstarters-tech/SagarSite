@@ -339,7 +339,7 @@ if (isset($product['slug'])) {
     <noscript><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"></noscript>
 
     <!-- Custom CSS -->
-    <link href="<?php echo ASSETS_URL; ?>/css/style.css?v=1.4" rel="stylesheet">
+    <link href="<?php echo ASSETS_URL; ?>/css/style.css?v=1.5" rel="stylesheet">
     <!-- Theme Customizer CSS Variables -->
     <?php
     require_once __DIR__ . '/ThemeService.php';
