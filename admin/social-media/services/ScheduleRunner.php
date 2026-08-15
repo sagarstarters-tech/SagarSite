@@ -168,12 +168,14 @@ class ScheduleRunner {
         }
 
         // Resolve Base Start Time
+        // Use start_date/start_time ONLY if it's in the future; otherwise use current time
+        // This prevents all items getting the same old past timestamp on re-runs
         $baseStartTimestamp = time();
         if (!empty($schedule['start_date'])) {
             $sDate = $schedule['start_date'];
             $sTime = !empty($schedule['start_time']) ? $schedule['start_time'] : '00:00:00';
             $parsedStart = strtotime("$sDate $sTime");
-            if ($parsedStart !== false) {
+            if ($parsedStart !== false && $parsedStart > time()) {
                 $baseStartTimestamp = $parsedStart;
             }
         }
@@ -218,10 +220,13 @@ class ScheduleRunner {
             ]);
 
             foreach ($accounts as $acc) {
-                // Skip if this product is already in active queue for this platform
+                // Skip if this product is already in queue for this platform+account+schedule (including failed)
                 $chkStmt = $db->prepare("SELECT COUNT(*) FROM sm_queue 
-                    WHERE product_id = ? AND LOWER(platform) = ? AND status IN ('pending', 'scheduled', 'publishing')");
-                $chkStmt->execute([$product['id'], strtolower($acc['platform'])]);
+                    WHERE product_id = ? AND LOWER(platform) = ? AND account_id = ?
+                    AND schedule_id = ?
+                    AND status IN ('pending', 'scheduled', 'publishing', 'failed')
+                    AND scheduled_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)");
+                $chkStmt->execute([$product['id'], strtolower($acc['platform']), $acc['id'], $scheduleId]);
                 if ($chkStmt->fetchColumn() > 0) {
                     continue;
                 }

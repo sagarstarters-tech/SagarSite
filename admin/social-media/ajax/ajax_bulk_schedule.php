@@ -150,13 +150,14 @@ try {
         }
 
         foreach ($connectedAccounts as $acc) {
-            // Duplicate Check: Skip if this product is already queued for this platform in any active/waiting status
+            // Duplicate Check: Skip if this product is already queued for this platform+account (including failed within 24h)
             $chkStmt = $pdo->prepare("SELECT COUNT(*) FROM sm_queue 
-                WHERE product_id = ? AND LOWER(platform) = ? 
-                AND status IN ('pending', 'scheduled', 'publishing')");
-            $chkStmt->execute([$prod['id'], strtolower($acc['platform'])]);
+                WHERE product_id = ? AND LOWER(platform) = ? AND account_id = ?
+                AND status IN ('pending', 'scheduled', 'publishing', 'failed')
+                AND scheduled_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)");
+            $chkStmt->execute([$prod['id'], strtolower($acc['platform']), $acc['id']]);
             if ($chkStmt->fetchColumn() > 0) {
-                continue; // Skip - already in active queue for this platform
+                continue; // Skip - already in queue for this platform+account recently
             }
 
             $renderedContent = $templateEngine->render($templateBody, $prod, [
