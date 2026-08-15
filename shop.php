@@ -49,7 +49,7 @@ $phase_label = '';
 if (isset($_GET['phase']) && trim($_GET['phase']) !== '') {
     $phaseVal = trim($_GET['phase']);
     if (stripos($phaseVal, '1') !== false || stripos($phaseVal, 'single') !== false) {
-        $whereClauses[] = "(name REGEXP '(^|[^0-9])(1[[:space:]]*-?[[:space:]]*Phase|Single[[:space:]]*-?[[:space:]]*Phase|1[[:space:]]*Ph|220[[:space:]]*V|230[[:space:]]*V)' OR description REGEXP '(^|[^0-9])(1[[:space:]]*-?[[:space:]]*Phase|Single[[:space:]]*-?[[:space:]]*Phase|1[[:space:]]*Ph|220[[:space:]]*V|230[[:space:]]*V)' OR category_id IN (SELECT id FROM categories WHERE name LIKE '%Single Phase%' OR name LIKE '%1 Hp%'))";
+        $whereClauses[] = "(name REGEXP '(^|[^0-9])(1[[:space:]]*-?[[:space:]]*Phase|Single[[:space:]]*-?[[:space:]]*Phase|1[[:space:]]*Ph|220[[:space:]]*V|230[[:space:]]*V)' OR description REGEXP '(^|[^0-9])(1[[:space:]]*-?[[:space:]]*Phase|Single[[:space:]]*-?[[:space:]]*Phase|1[[:space:]]*Ph|220[[:space:]]*V|230[[:space:]]*V)' OR category_id IN (SELECT id FROM categories WHERE name LIKE '%Single Phase%' OR name LIKE '%Submersible Pump%'))";
         $phase_filter_applied = true;
         $phase_label = '1-Phase (220V)';
         // If category contradicts 1-Phase (e.g. 3 phase category selected), bypass category_id constraint
@@ -85,7 +85,7 @@ if (isset($_GET['hp']) && trim($_GET['hp']) !== '') {
         $whereClauses[] = "(name REGEXP '(^|[^0-9.])(5([.]5)?|6|7([.]5)?)[[:space:]]*(HP|H[.]P|H\\\\.P|hp|H\\\\.P\\\\.)' OR description REGEXP '(^|[^0-9.])(5([.]5)?|6|7([.]5)?)[[:space:]]*(HP|H[.]P|H\\\\.P|hp|H\\\\.P\\\\.)' OR name LIKE '%5-7.5%' OR name LIKE '%5 to 7.5%')";
         $hp_label = '5 - 7.5 HP';
     } elseif (strpos($hpVal, '1-3') !== false || strpos($hpVal, '1') !== false || strpos($hpVal, '2') !== false || strpos($hpVal, '3') !== false || strpos($hpVal, '0.5') !== false || strpos($hpVal, '1.5') !== false) {
-        $whereClauses[] = "(name REGEXP '(^|[^0-9.])(0?[.][5-9]|1([.]5)?|2|3)[[:space:]]*(HP|H[.]P|H\\\\.P|hp|H\\\\.P\\\\.)' OR description REGEXP '(^|[^0-9.])(0?[.][5-9]|1([.]5)?|2|3)[[:space:]]*(HP|H[.]P|H\\\\.P|hp|H\\\\.P\\\\.)' OR name LIKE '%1-3%' OR name LIKE '%1 to 3%' OR category_id IN (SELECT id FROM categories WHERE name LIKE '%1 Hp%'))";
+        $whereClauses[] = "(name REGEXP '(^|[^0-9.])(0?[.][5-9]|1([.]5)?|2|3)[[:space:]]*(HP|H[.]P|H\\\\.P|hp|H\\\\.P\\\\.)' OR description REGEXP '(^|[^0-9.])(0?[.][5-9]|1([.]5)?|2|3)[[:space:]]*(HP|H[.]P|H\\\\.P|hp|H\\\\.P\\\\.)' OR name LIKE '%1-3%' OR name LIKE '%1 to 3%')";
         $hp_label = '1 - 3 HP';
     }
 }
@@ -95,10 +95,10 @@ $app_label = '';
 if (isset($_GET['app']) && trim($_GET['app']) !== '') {
     $appVal = strtolower(trim($_GET['app']));
     if (strpos($appVal, 'submersible') !== false) {
-        $whereClauses[] = "(name LIKE '%Submersible%' OR name LIKE '%Pump%' OR description LIKE '%Submersible%' OR description LIKE '%Pump%' OR category_id IN (SELECT id FROM categories WHERE name LIKE '%Submersible%' OR name LIKE '%3%Phase%' OR name LIKE '%Star Delta%'))";
+        $whereClauses[] = "(name LIKE '%Submersible%' OR description LIKE '%Submersible%' OR category_id IN (SELECT id FROM categories WHERE name LIKE '%Submersible%' OR name LIKE '%3%Phase%' OR name LIKE '%Star Delta%'))";
         $app_label = 'Submersible Pump';
     } elseif (strpos($appVal, 'openwell') !== false || strpos($appVal, 'monoblock') !== false) {
-        $whereClauses[] = "(name LIKE '%Openwell%' OR name LIKE '%Monoblock%' OR name LIKE '%Pump%' OR description LIKE '%Openwell%' OR description LIKE '%Monoblock%' OR category_id IN (SELECT id FROM categories WHERE name LIKE '%3%Phase%' OR name LIKE '%Submersible%'))";
+        $whereClauses[] = "((name LIKE '%Openwell%' OR name LIKE '%Monoblock%' OR description LIKE '%Openwell%' OR description LIKE '%Monoblock%' OR category_id IN (SELECT id FROM categories WHERE name LIKE '%Openwell%' OR name LIKE '%Monoblock%')) AND name NOT LIKE '%Submersible%' AND category_id NOT IN (SELECT id FROM categories WHERE name LIKE '%Submersible%'))";
         $app_label = 'Openwell / Monoblock';
     } elseif (strpos($appVal, 'flourmill') !== false || strpos($appVal, 'heavy') !== false || strpos($appVal, 'star delta') !== false) {
         $whereClauses[] = "(name LIKE '%Flour Mill%' OR name LIKE '%Heavy%' OR name LIKE '%Star Delta%' OR name LIKE '%Chakki%' OR description LIKE '%Flour Mill%' OR description LIKE '%Star Delta%' OR category_id IN (SELECT id FROM categories WHERE name LIKE '%Star Delta%' OR name LIKE '%3%Phase%'))";
