@@ -201,6 +201,10 @@ if ($selector_enabled == '1'):
     $init_phase = get_home_cfg('home_selector_phase1_val', '');
     $init_hp    = get_home_cfg('home_selector_hp1_val', '');
     $init_app   = get_home_cfg('home_selector_app1_val', 'submersible');
+    $form_action = get_home_cfg('home_selector_action_url', 'shop.php');
+    if (!str_starts_with($form_action, 'http') && !str_starts_with($form_action, '/')) {
+        $form_action = SITE_URL . '/' . ltrim($form_action, '/');
+    }
 ?>
 <section class="container my-5" data-aos="fade-up">
     <div class="starter-selector-box">
@@ -214,7 +218,7 @@ if ($selector_enabled == '1'):
             </div>
             
             <div class="col-lg-8 col-12">
-                <form action="<?php echo SITE_URL; ?>/shop.php" method="GET" id="starterFinderForm">
+                <form action="<?php echo htmlspecialchars($form_action); ?>" method="GET" id="starterFinderForm">
                     <div class="row g-3">
                         <!-- Step 1: Phase -->
                         <div class="col-md-6 col-12">
@@ -222,13 +226,13 @@ if ($selector_enabled == '1'):
                                 <?php echo htmlspecialchars(get_home_cfg('home_selector_step1_label', '1. Power Phase')); ?>
                             </label>
                             <div class="selector-pill-group" id="phasePills">
-                                <span class="selector-pill-btn active" data-filter="phase" data-val="<?php echo htmlspecialchars(get_home_cfg('home_selector_phase1_val', '')); ?>">
+                                <span class="selector-pill-btn active" data-filter="phase" data-val="<?php echo htmlspecialchars(get_home_cfg('home_selector_phase1_val', '')); ?>" data-link="<?php echo htmlspecialchars(get_home_cfg('home_selector_phase1_link', '')); ?>">
                                     <i class="fas fa-bolt"></i> <?php echo htmlspecialchars(get_home_cfg('home_selector_phase1_text', 'All Phases')); ?>
                                 </span>
-                                <span class="selector-pill-btn" data-filter="phase" data-val="<?php echo htmlspecialchars(get_home_cfg('home_selector_phase2_val', '1-Phase')); ?>">
+                                <span class="selector-pill-btn" data-filter="phase" data-val="<?php echo htmlspecialchars(get_home_cfg('home_selector_phase2_val', '1-Phase')); ?>" data-link="<?php echo htmlspecialchars(get_home_cfg('home_selector_phase2_link', 'shop.php?phase=1-Phase')); ?>">
                                     <?php echo htmlspecialchars(get_home_cfg('home_selector_phase2_text', '1-Phase (220V)')); ?>
                                 </span>
-                                <span class="selector-pill-btn" data-filter="phase" data-val="<?php echo htmlspecialchars(get_home_cfg('home_selector_phase3_val', '3-Phase')); ?>">
+                                <span class="selector-pill-btn" data-filter="phase" data-val="<?php echo htmlspecialchars(get_home_cfg('home_selector_phase3_val', '3-Phase')); ?>" data-link="<?php echo htmlspecialchars(get_home_cfg('home_selector_phase3_link', 'shop.php?phase=3-Phase')); ?>">
                                     <?php echo htmlspecialchars(get_home_cfg('home_selector_phase3_text', '3-Phase (415V)')); ?>
                                 </span>
                             </div>
@@ -241,16 +245,16 @@ if ($selector_enabled == '1'):
                                 <?php echo htmlspecialchars(get_home_cfg('home_selector_step2_label', '2. Motor Rating (HP)')); ?>
                             </label>
                             <div class="selector-pill-group" id="hpPills">
-                                <span class="selector-pill-btn active" data-filter="hp" data-val="<?php echo htmlspecialchars(get_home_cfg('home_selector_hp1_val', '')); ?>">
+                                <span class="selector-pill-btn active" data-filter="hp" data-val="<?php echo htmlspecialchars(get_home_cfg('home_selector_hp1_val', '')); ?>" data-link="<?php echo htmlspecialchars(get_home_cfg('home_selector_hp1_link', '')); ?>">
                                     <?php echo htmlspecialchars(get_home_cfg('home_selector_hp1_text', 'All HP')); ?>
                                 </span>
-                                <span class="selector-pill-btn" data-filter="hp" data-val="<?php echo htmlspecialchars(get_home_cfg('home_selector_hp2_val', '1-3 HP')); ?>">
+                                <span class="selector-pill-btn" data-filter="hp" data-val="<?php echo htmlspecialchars(get_home_cfg('home_selector_hp2_val', '1-3 HP')); ?>" data-link="<?php echo htmlspecialchars(get_home_cfg('home_selector_hp2_link', '')); ?>">
                                     <?php echo htmlspecialchars(get_home_cfg('home_selector_hp2_text', '1 - 3 HP')); ?>
                                 </span>
-                                <span class="selector-pill-btn" data-filter="hp" data-val="<?php echo htmlspecialchars(get_home_cfg('home_selector_hp3_val', '5-7.5 HP')); ?>">
+                                <span class="selector-pill-btn" data-filter="hp" data-val="<?php echo htmlspecialchars(get_home_cfg('home_selector_hp3_val', '5-7.5 HP')); ?>" data-link="<?php echo htmlspecialchars(get_home_cfg('home_selector_hp3_link', '')); ?>">
                                     <?php echo htmlspecialchars(get_home_cfg('home_selector_hp3_text', '5 - 7.5 HP')); ?>
                                 </span>
-                                <span class="selector-pill-btn" data-filter="hp" data-val="<?php echo htmlspecialchars(get_home_cfg('home_selector_hp4_val', '10-25 HP')); ?>">
+                                <span class="selector-pill-btn" data-filter="hp" data-val="<?php echo htmlspecialchars(get_home_cfg('home_selector_hp4_val', '10-25 HP')); ?>" data-link="<?php echo htmlspecialchars(get_home_cfg('home_selector_hp4_link', '')); ?>">
                                     <?php echo htmlspecialchars(get_home_cfg('home_selector_hp4_text', '10 - 25+ HP')); ?>
                                 </span>
                             </div>
@@ -262,13 +266,13 @@ if ($selector_enabled == '1'):
                             <div class="row g-2 align-items-center">
                                 <div class="col-md-8 col-12">
                                     <div class="selector-pill-group" id="appPills">
-                                        <span class="selector-pill-btn active" data-filter="app" data-val="<?php echo htmlspecialchars(get_home_cfg('home_selector_app1_val', 'submersible')); ?>">
+                                        <span class="selector-pill-btn active" data-filter="app" data-val="<?php echo htmlspecialchars(get_home_cfg('home_selector_app1_val', 'submersible')); ?>" data-link="<?php echo htmlspecialchars(get_home_cfg('home_selector_app1_link', 'shop.php?category=4')); ?>">
                                             <i class="<?php echo htmlspecialchars(get_home_cfg('home_selector_app1_icon', 'fas fa-water')); ?>"></i> <?php echo htmlspecialchars(get_home_cfg('home_selector_app1_text', 'Submersible Pump')); ?>
                                         </span>
-                                        <span class="selector-pill-btn" data-filter="app" data-val="<?php echo htmlspecialchars(get_home_cfg('home_selector_app2_val', 'openwell')); ?>">
+                                        <span class="selector-pill-btn" data-filter="app" data-val="<?php echo htmlspecialchars(get_home_cfg('home_selector_app2_val', 'openwell')); ?>" data-link="<?php echo htmlspecialchars(get_home_cfg('home_selector_app2_link', 'shop.php?app=openwell')); ?>">
                                             <i class="<?php echo htmlspecialchars(get_home_cfg('home_selector_app2_icon', 'fas fa-industry')); ?>"></i> <?php echo htmlspecialchars(get_home_cfg('home_selector_app2_text', 'Openwell / Monoblock')); ?>
                                         </span>
-                                        <span class="selector-pill-btn" data-filter="app" data-val="<?php echo htmlspecialchars(get_home_cfg('home_selector_app3_val', 'flourmill')); ?>">
+                                        <span class="selector-pill-btn" data-filter="app" data-val="<?php echo htmlspecialchars(get_home_cfg('home_selector_app3_val', 'flourmill')); ?>" data-link="<?php echo htmlspecialchars(get_home_cfg('home_selector_app3_link', 'shop.php?category=6')); ?>">
                                             <i class="<?php echo htmlspecialchars(get_home_cfg('home_selector_app3_icon', 'fas fa-cog')); ?>"></i> <?php echo htmlspecialchars(get_home_cfg('home_selector_app3_text', 'Flour Mill / Heavy Motor')); ?>
                                         </span>
                                     </div>
@@ -657,6 +661,51 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     });
+
+    // Form Submission with Intelligent Link Redirection
+    const finderForm = document.getElementById('starterFinderForm');
+    if (finderForm) {
+        finderForm.addEventListener('submit', function(e) {
+            const activeApp = document.querySelector('#appPills .selector-pill-btn.active');
+            const activePhase = document.querySelector('#phasePills .selector-pill-btn.active');
+            const activeHp = document.querySelector('#hpPills .selector-pill-btn.active');
+
+            let customLink = '';
+            if (activeApp && activeApp.getAttribute('data-link') && activeApp.getAttribute('data-link').trim() !== '') {
+                customLink = activeApp.getAttribute('data-link').trim();
+            } else if (activePhase && activePhase.getAttribute('data-link') && activePhase.getAttribute('data-link').trim() !== '') {
+                customLink = activePhase.getAttribute('data-link').trim();
+            } else if (activeHp && activeHp.getAttribute('data-link') && activeHp.getAttribute('data-link').trim() !== '') {
+                customLink = activeHp.getAttribute('data-link').trim();
+            }
+
+            if (customLink !== '') {
+                e.preventDefault();
+                let url = customLink;
+                const phaseVal = activePhase ? activePhase.getAttribute('data-val') : '';
+                const hpVal = activeHp ? activeHp.getAttribute('data-val') : '';
+                const appVal = activeApp ? activeApp.getAttribute('data-val') : '';
+
+                // If relative link, prefix with SITE_URL if not starting with slash or http
+                if (!url.startsWith('http') && !url.startsWith('/')) {
+                    url = '<?php echo SITE_URL; ?>/' + url;
+                }
+
+                const urlObj = new URL(url, window.location.origin);
+                if (phaseVal && !urlObj.searchParams.has('phase')) {
+                    urlObj.searchParams.set('phase', phaseVal);
+                }
+                if (hpVal && !urlObj.searchParams.has('hp')) {
+                    urlObj.searchParams.set('hp', hpVal);
+                }
+                if (appVal && !urlObj.searchParams.has('app') && !urlObj.searchParams.has('category')) {
+                    urlObj.searchParams.set('app', appVal);
+                }
+
+                window.location.href = urlObj.toString();
+            }
+        });
+    }
 });
 </script>
 
