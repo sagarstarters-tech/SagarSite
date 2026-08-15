@@ -86,9 +86,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $res = $conn->query("SELECT * FROM testimonials ORDER BY id DESC");
 ?>
 
+<style>
+    .btn-outline-primary {
+        background-color: #eff6ff !important;
+        border: 1.5px solid #3b82f6 !important;
+        color: #1d4ed8 !important;
+        font-weight: 600 !important;
+    }
+    .btn-outline-primary:hover {
+        background-color: #2563eb !important;
+        color: #ffffff !important;
+        border-color: #2563eb !important;
+    }
+    .btn-outline-primary:hover i {
+        color: #ffffff !important;
+    }
+    .btn-outline-danger {
+        background-color: #fef2f2 !important;
+        border: 1.5px solid #ef4444 !important;
+        color: #dc2626 !important;
+        font-weight: 600 !important;
+    }
+    .btn-outline-danger:hover {
+        background-color: #dc2626 !important;
+        color: #ffffff !important;
+        border-color: #dc2626 !important;
+    }
+    .btn-outline-danger i {
+        color: #dc2626 !important;
+    }
+    .btn-outline-danger:hover i {
+        color: #ffffff !important;
+    }
+</style>
+
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="h3 mb-0 fw-bold"><i class="fas fa-comment-dots text-primary me-2"></i>Manage Testimonials</h2>
-    <button class="btn btn-primary" onclick="openTestimonialModal()"><i class="fas fa-plus me-2"></i>Add Testimonial</button>
+    <button class="btn btn-primary rounded-pill px-4 shadow-sm" onclick="openTestimonialModal()"><i class="fas fa-plus me-2"></i>Add Testimonial</button>
 </div>
 
 <?php render_flash(); ?>
@@ -135,13 +169,17 @@ $res = $conn->query("SELECT * FROM testimonials ORDER BY id DESC");
                                     <input class="form-check-input" type="checkbox" onchange="toggleActive(<?php echo $row['id']; ?>, this.checked)" <?php echo $row['is_active'] ? 'checked' : ''; ?>>
                                 </div>
                             </td>
-                            <td class="text-end pe-4">
-                                <button class="btn btn-sm btn-light text-primary me-2" title="Edit Testimonial" onclick='editTestimonial(<?php echo json_encode($row); ?>)'><i class="fas fa-edit"></i></button>
+                            <td class="text-end pe-4 text-nowrap">
+                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 me-2 fw-semibold" title="Edit Testimonial" onclick='editTestimonial(<?php echo json_encode($row); ?>)'>
+                                    <i class="fas fa-edit me-1"></i> Edit
+                                </button>
                                 <form method="POST" class="d-inline" onsubmit="return confirm('Delete this testimonial?');">
                                     <?php echo csrf_input(); ?>
                                     <input type="hidden" name="action" value="delete">
                                     <input type="hidden" name="testimonial_id" value="<?php echo $row['id']; ?>">
-                                    <button class="btn btn-sm btn-light text-danger" title="Delete Testimonial"><i class="fas fa-trash"></i></button>
+                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-semibold" title="Delete Testimonial">
+                                        <i class="fas fa-trash-alt me-1"></i> Delete
+                                    </button>
                                 </form>
                             </td>
                         </tr>
