@@ -198,6 +198,9 @@ if ($cats_enabled == '1'):
 // ── SECTION 4: SMART MOTOR STARTER FINDER / SELECTOR WIDGET ──────────────────
 $selector_enabled = get_home_cfg('home_selector_enabled', '1');
 if ($selector_enabled == '1'): 
+    $init_phase = get_home_cfg('home_selector_phase1_val', '');
+    $init_hp    = get_home_cfg('home_selector_hp1_val', '');
+    $init_app   = get_home_cfg('home_selector_app1_val', 'submersible');
 ?>
 <section class="container my-5" data-aos="fade-up">
     <div class="starter-selector-box">
@@ -215,31 +218,43 @@ if ($selector_enabled == '1'):
                     <div class="row g-3">
                         <!-- Step 1: Phase -->
                         <div class="col-md-6 col-12">
-                            <label class="form-label fw-bold small text-muted text-uppercase mb-2">1. Power Phase</label>
+                            <label class="form-label fw-bold small text-muted text-uppercase mb-2">
+                                <?php echo htmlspecialchars(get_home_cfg('home_selector_step1_label', '1. Power Phase')); ?>
+                            </label>
                             <div class="selector-pill-group" id="phasePills">
-                                <span class="selector-pill-btn active" data-filter="phase" data-val="">
-                                    <i class="fas fa-bolt"></i> All
+                                <span class="selector-pill-btn active" data-filter="phase" data-val="<?php echo htmlspecialchars(get_home_cfg('home_selector_phase1_val', '')); ?>">
+                                    <i class="fas fa-bolt"></i> <?php echo htmlspecialchars(get_home_cfg('home_selector_phase1_text', 'All Phases')); ?>
                                 </span>
-                                <span class="selector-pill-btn" data-filter="phase" data-val="1-Phase">
-                                    1-Phase (220V)
+                                <span class="selector-pill-btn" data-filter="phase" data-val="<?php echo htmlspecialchars(get_home_cfg('home_selector_phase2_val', '1-Phase')); ?>">
+                                    <?php echo htmlspecialchars(get_home_cfg('home_selector_phase2_text', '1-Phase (220V)')); ?>
                                 </span>
-                                <span class="selector-pill-btn" data-filter="phase" data-val="3-Phase">
-                                    3-Phase (415V)
+                                <span class="selector-pill-btn" data-filter="phase" data-val="<?php echo htmlspecialchars(get_home_cfg('home_selector_phase3_val', '3-Phase')); ?>">
+                                    <?php echo htmlspecialchars(get_home_cfg('home_selector_phase3_text', '3-Phase (415V)')); ?>
                                 </span>
                             </div>
-                            <input type="hidden" name="phase" id="filter_phase" value="">
+                            <input type="hidden" name="phase" id="filter_phase" value="<?php echo htmlspecialchars($init_phase); ?>">
                         </div>
 
                         <!-- Step 2: Motor HP -->
                         <div class="col-md-6 col-12">
-                            <label class="form-label fw-bold small text-muted text-uppercase mb-2">2. Motor Rating (HP)</label>
+                            <label class="form-label fw-bold small text-muted text-uppercase mb-2">
+                                <?php echo htmlspecialchars(get_home_cfg('home_selector_step2_label', '2. Motor Rating (HP)')); ?>
+                            </label>
                             <div class="selector-pill-group" id="hpPills">
-                                <span class="selector-pill-btn active" data-filter="hp" data-val="">All HP</span>
-                                <span class="selector-pill-btn" data-filter="hp" data-val="1hp">1 - 3 HP</span>
-                                <span class="selector-pill-btn" data-filter="hp" data-val="5hp">5 - 7.5 HP</span>
-                                <span class="selector-pill-btn" data-filter="hp" data-val="10hp">10 - 25+ HP</span>
+                                <span class="selector-pill-btn active" data-filter="hp" data-val="<?php echo htmlspecialchars(get_home_cfg('home_selector_hp1_val', '')); ?>">
+                                    <?php echo htmlspecialchars(get_home_cfg('home_selector_hp1_text', 'All HP')); ?>
+                                </span>
+                                <span class="selector-pill-btn" data-filter="hp" data-val="<?php echo htmlspecialchars(get_home_cfg('home_selector_hp2_val', '1-3 HP')); ?>">
+                                    <?php echo htmlspecialchars(get_home_cfg('home_selector_hp2_text', '1 - 3 HP')); ?>
+                                </span>
+                                <span class="selector-pill-btn" data-filter="hp" data-val="<?php echo htmlspecialchars(get_home_cfg('home_selector_hp3_val', '5-7.5 HP')); ?>">
+                                    <?php echo htmlspecialchars(get_home_cfg('home_selector_hp3_text', '5 - 7.5 HP')); ?>
+                                </span>
+                                <span class="selector-pill-btn" data-filter="hp" data-val="<?php echo htmlspecialchars(get_home_cfg('home_selector_hp4_val', '10-25 HP')); ?>">
+                                    <?php echo htmlspecialchars(get_home_cfg('home_selector_hp4_text', '10 - 25+ HP')); ?>
+                                </span>
                             </div>
-                            <input type="hidden" name="hp" id="filter_hp" value="">
+                            <input type="hidden" name="hp" id="filter_hp" value="<?php echo htmlspecialchars($init_hp); ?>">
                         </div>
 
                         <!-- Step 3: Application & Search Button -->
@@ -247,21 +262,21 @@ if ($selector_enabled == '1'):
                             <div class="row g-2 align-items-center">
                                 <div class="col-md-8 col-12">
                                     <div class="selector-pill-group" id="appPills">
-                                        <span class="selector-pill-btn active" data-filter="app" data-val="">
-                                            <i class="fas fa-water"></i> Submersible Pump
+                                        <span class="selector-pill-btn active" data-filter="app" data-val="<?php echo htmlspecialchars(get_home_cfg('home_selector_app1_val', 'submersible')); ?>">
+                                            <i class="<?php echo htmlspecialchars(get_home_cfg('home_selector_app1_icon', 'fas fa-water')); ?>"></i> <?php echo htmlspecialchars(get_home_cfg('home_selector_app1_text', 'Submersible Pump')); ?>
                                         </span>
-                                        <span class="selector-pill-btn" data-filter="app" data-val="openwell">
-                                            <i class="fas fa-industry"></i> Openwell / Monoblock
+                                        <span class="selector-pill-btn" data-filter="app" data-val="<?php echo htmlspecialchars(get_home_cfg('home_selector_app2_val', 'openwell')); ?>">
+                                            <i class="<?php echo htmlspecialchars(get_home_cfg('home_selector_app2_icon', 'fas fa-industry')); ?>"></i> <?php echo htmlspecialchars(get_home_cfg('home_selector_app2_text', 'Openwell / Monoblock')); ?>
                                         </span>
-                                        <span class="selector-pill-btn" data-filter="app" data-val="flourmill">
-                                            <i class="fas fa-cog"></i> Flour Mill / Heavy Motor
+                                        <span class="selector-pill-btn" data-filter="app" data-val="<?php echo htmlspecialchars(get_home_cfg('home_selector_app3_val', 'flourmill')); ?>">
+                                            <i class="<?php echo htmlspecialchars(get_home_cfg('home_selector_app3_icon', 'fas fa-cog')); ?>"></i> <?php echo htmlspecialchars(get_home_cfg('home_selector_app3_text', 'Flour Mill / Heavy Motor')); ?>
                                         </span>
                                     </div>
-                                    <input type="hidden" name="app" id="filter_app" value="">
+                                    <input type="hidden" name="app" id="filter_app" value="<?php echo htmlspecialchars($init_app); ?>">
                                 </div>
                                 <div class="col-md-4 col-12">
                                     <button type="submit" class="btn-finder-search">
-                                        <i class="fas fa-search me-1"></i> Find Starters
+                                        <i class="fas fa-search me-1"></i> <?php echo htmlspecialchars(get_home_cfg('home_selector_btn_text', 'Find Starters')); ?>
                                     </button>
                                 </div>
                             </div>

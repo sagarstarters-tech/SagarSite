@@ -32,7 +32,42 @@ if (isset($_GET['category_slug'])) {
     $types .= "i";
 }
 
-// Search
+// 3. Smart Product Finder / Starter Selector Filters
+// Phase Filter
+if (isset($_GET['phase']) && trim($_GET['phase']) !== '') {
+    $phaseVal = trim($_GET['phase']);
+    if (stripos($phaseVal, '1') !== false || stripos($phaseVal, 'single') !== false) {
+        $whereClauses[] = "(name LIKE '%1 Phase%' OR name LIKE '%Single Phase%' OR name LIKE '%1-Phase%' OR description LIKE '%1 Phase%' OR description LIKE '%Single Phase%' OR category_id IN (SELECT id FROM categories WHERE name LIKE '%Single Phase%'))";
+    } elseif (stripos($phaseVal, '3') !== false || stripos($phaseVal, 'three') !== false) {
+        $whereClauses[] = "(name LIKE '%3 Phase%' OR name LIKE '%Three Phase%' OR name LIKE '%3-Phase%' OR description LIKE '%3 Phase%' OR description LIKE '%Three Phase%' OR category_id IN (SELECT id FROM categories WHERE name LIKE '%3%Phase%' OR name LIKE '%Star Delta%'))";
+    }
+}
+
+// HP Rating Filter
+if (isset($_GET['hp']) && trim($_GET['hp']) !== '') {
+    $hpVal = trim($_GET['hp']);
+    if (stripos($hpVal, '1') !== false || stripos($hpVal, '3') !== false) {
+        $whereClauses[] = "(name LIKE '%1 HP%' OR name LIKE '%1.5 HP%' OR name LIKE '%2 HP%' OR name LIKE '%3 HP%' OR name LIKE '%1-3%' OR description LIKE '%1 HP%' OR description LIKE '%2 HP%' OR description LIKE '%3 HP%')";
+    } elseif (stripos($hpVal, '5') !== false || stripos($hpVal, '7') !== false) {
+        $whereClauses[] = "(name LIKE '%5 HP%' OR name LIKE '%7.5 HP%' OR name LIKE '%6 HP%' OR description LIKE '%5 HP%' OR description LIKE '%7.5 HP%')";
+    } elseif (stripos($hpVal, '10') !== false || stripos($hpVal, '15') !== false || stripos($hpVal, '20') !== false || stripos($hpVal, '25') !== false) {
+        $whereClauses[] = "(name LIKE '%10 HP%' OR name LIKE '%12.5 HP%' OR name LIKE '%15 HP%' OR name LIKE '%20 HP%' OR name LIKE '%25 HP%' OR description LIKE '%10 HP%' OR description LIKE '%15 HP%' OR description LIKE '%20 HP%' OR description LIKE '%25 HP%')";
+    }
+}
+
+// Application Filter
+if (isset($_GET['app']) && trim($_GET['app']) !== '') {
+    $appVal = trim($_GET['app']);
+    if (stripos($appVal, 'submersible') !== false) {
+        $whereClauses[] = "(name LIKE '%Submersible%' OR description LIKE '%Submersible%' OR category_id IN (SELECT id FROM categories WHERE name LIKE '%Submersible%'))";
+    } elseif (stripos($appVal, 'openwell') !== false || stripos($appVal, 'monoblock') !== false) {
+        $whereClauses[] = "(name LIKE '%Openwell%' OR name LIKE '%Monoblock%' OR name LIKE '%Pump%' OR description LIKE '%Openwell%' OR description LIKE '%Monoblock%')";
+    } elseif (stripos($appVal, 'flourmill') !== false || stripos($appVal, 'heavy') !== false || stripos($appVal, 'star delta') !== false) {
+        $whereClauses[] = "(name LIKE '%Flour Mill%' OR name LIKE '%Star Delta%' OR description LIKE '%Flour Mill%' OR description LIKE '%Star Delta%' OR category_id IN (SELECT id FROM categories WHERE name LIKE '%Star Delta%'))";
+    }
+}
+
+// Search Keyword
 if (isset($_GET['search']) && !empty($_GET['search'])) {
     $search = "%" . $_GET['search'] . "%";
     $whereClauses[] = "(name LIKE ? OR description LIKE ?)";
@@ -131,6 +166,15 @@ if (!empty($global_settings[$setting_key])) {
                     <option value="price_desc" <?php echo (isset($_GET['sort']) && $_GET['sort'] == 'price_desc') ? 'selected' : ''; ?>>Price: High to Low</option>
                 </select>
                 
+                <?php if(isset($_GET['phase'])): ?>
+                    <input type="hidden" name="phase" value="<?php echo htmlspecialchars($_GET['phase']); ?>">
+                <?php endif; ?>
+                <?php if(isset($_GET['hp'])): ?>
+                    <input type="hidden" name="hp" value="<?php echo htmlspecialchars($_GET['hp']); ?>">
+                <?php endif; ?>
+                <?php if(isset($_GET['app'])): ?>
+                    <input type="hidden" name="app" value="<?php echo htmlspecialchars($_GET['app']); ?>">
+                <?php endif; ?>
                 <?php if(isset($_GET['category'])): ?>
                     <input type="hidden" name="category" value="<?php echo htmlspecialchars($_GET['category']); ?>">
                 <?php endif; ?>
@@ -138,7 +182,7 @@ if (!empty($global_settings[$setting_key])) {
                     <input type="hidden" name="category_slug" value="<?php echo htmlspecialchars($_GET['category_slug']); ?>">
                 <?php endif; ?>
                 
-                <?php if(isset($_GET['search']) || isset($_GET['category']) || isset($_GET['category_slug']) || (isset($_GET['sort']) && $_GET['sort'] != 'newest')): ?>
+                <?php if(isset($_GET['search']) || isset($_GET['phase']) || isset($_GET['hp']) || isset($_GET['app']) || isset($_GET['category']) || isset($_GET['category_slug']) || (isset($_GET['sort']) && $_GET['sort'] != 'newest')): ?>
                     <a href="<?php echo SITE_URL; ?>/shop.php" class="btn btn-outline-secondary w-100 mt-2">Clear Filters</a>
                 <?php endif; ?>
             </form>
