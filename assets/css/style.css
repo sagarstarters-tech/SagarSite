@@ -1293,18 +1293,34 @@ body.dark-mode-active .footer-link:hover,
     padding: 9px 14px;
     font-size: 0.85rem;
     font-weight: 700;
-    color: var(--primary, #0d6efd);
-    background: rgba(13, 110, 253, 0.08);
-    border: 1px solid rgba(13, 110, 253, 0.2);
+    color: var(--primary, #007aff) !important;
+    background: rgba(0, 122, 255, 0.08) !important;
+    border: 1px solid rgba(0, 122, 255, 0.25) !important;
     border-radius: 10px;
-    text-decoration: none;
+    text-decoration: none !important;
     transition: all 0.25s ease;
 }
 
-.btn-pro-view:hover {
-    background: var(--primary, #0d6efd);
-    color: #ffffff;
-    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+.btn-pro-view i {
+    color: inherit !important;
+    transition: transform 0.2s ease;
+}
+
+.btn-pro-view:hover,
+.btn-pro-view:focus,
+.btn-pro-view:active {
+    background: var(--primary, #007aff) !important;
+    color: #ffffff !important;
+    border-color: var(--primary, #007aff) !important;
+    box-shadow: 0 4px 14px rgba(0, 122, 255, 0.35) !important;
+    text-decoration: none !important;
+}
+
+.btn-pro-view:hover i,
+.btn-pro-view:focus i,
+.btn-pro-view:active i {
+    color: #ffffff !important;
+    transform: scale(1.1);
 }
 
 .btn-pro-wa {
