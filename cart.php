@@ -28,9 +28,14 @@ if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
 
         $base_price = (float)$row['price'];
         $is_bulk_applied = false;
+        $is_bulk_shipping_applied = false;
         if ($bulk_price > 0 && $qty >= $effective_min_qty && $bulk_price < $base_price) {
             $effective_price = $bulk_price;
             $is_bulk_applied = true;
+            if ($row['bulk_shipping_cost'] !== null && $row['bulk_shipping_cost'] !== '') {
+                $row['shipping_cost'] = floatval($row['bulk_shipping_cost']);
+                $is_bulk_shipping_applied = true;
+            }
         } else {
             $effective_price = $base_price;
         }
@@ -41,6 +46,7 @@ if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
         $row['moq'] = $moq;
         $row['effective_price'] = $effective_price;
         $row['is_bulk_applied'] = $is_bulk_applied;
+        $row['is_bulk_shipping_applied'] = $is_bulk_shipping_applied;
         $row['is_retailer_applied'] = ($is_retailer_user && $is_bulk_applied && $qty < $bulk_min_qty);
         $row['total'] = $total;
         $cart_items[] = $row;

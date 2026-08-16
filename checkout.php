@@ -89,6 +89,9 @@ if (!empty($_SESSION['cart'])) {
             $base_price = (float)$row['price'];
             if ($bulk_price > 0 && $qty >= $effective_min_qty && $bulk_price < $base_price) {
                 $effective_price = $bulk_price;
+                if ($row['bulk_shipping_cost'] !== null && $row['bulk_shipping_cost'] !== '') {
+                    $row['shipping_cost'] = floatval($row['bulk_shipping_cost']);
+                }
             } else {
                 $effective_price = $base_price;
             }

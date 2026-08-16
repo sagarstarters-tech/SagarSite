@@ -328,13 +328,25 @@ if (!empty($global_settings['hero_banner_product'])) {
             </div>
 
             <?php if ($has_bulk_discount): ?>
-                <?php $is_retailer_user = (isset($_SESSION['role']) && $_SESSION['role'] === 'retailer'); ?>
+                <?php 
+                $is_retailer_user = (isset($_SESSION['role']) && $_SESSION['role'] === 'retailer');
+                $bulk_shipping_badge = '';
+                if (isset($product['bulk_shipping_cost']) && $product['bulk_shipping_cost'] !== null && $product['bulk_shipping_cost'] !== '') {
+                    $b_ship = (float)$product['bulk_shipping_cost'];
+                    if ($b_ship == 0) {
+                        $bulk_shipping_badge = '<span class="badge bg-success text-white ms-1"><i class="fas fa-truck me-1"></i>Free Bulk Shipping</span>';
+                    } else {
+                        $bulk_shipping_badge = '<span class="badge bg-info text-dark ms-1"><i class="fas fa-truck me-1"></i>Shipping: ' . $global_currency . number_format($b_ship, 2) . '</span>';
+                    }
+                }
+                ?>
                 <?php if ($is_retailer_user): ?>
                 <div id="bulkOfferCard" class="card border border-success border-opacity-50 bg-success bg-opacity-10 rounded-3 mb-4 p-3 shadow-none transition-all">
                     <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                        <div class="d-flex align-items-center gap-2">
+                        <div class="d-flex align-items-center flex-wrap gap-2">
                             <span class="badge bg-success text-white rounded-pill px-3 py-2 fw-bold"><i class="fas fa-store me-1"></i> Retailer Privilege</span>
                             <span class="fw-bold text-dark">Buy <span class="text-success fw-bolder">2+ units</span> for only <span class="text-success fs-5 fw-bolder"><?php echo $global_currency . number_format($bulk_price, 2); ?></span> / unit</span>
+                            <?php echo $bulk_shipping_badge; ?>
                         </div>
                         <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-50 px-2 py-1 small fw-bold"><i class="fas fa-arrow-down me-1"></i>Save <?php echo $global_currency . number_format($current_unit_price - $bulk_price, 2); ?>/unit</span>
                     </div>
@@ -342,9 +354,10 @@ if (!empty($global_settings['hero_banner_product'])) {
                 <?php else: ?>
                 <div id="bulkOfferCard" class="card border border-primary border-opacity-25 bg-primary bg-opacity-10 rounded-3 mb-4 p-3 shadow-none transition-all">
                     <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                        <div class="d-flex align-items-center gap-2">
+                        <div class="d-flex align-items-center flex-wrap gap-2">
                             <span class="badge bg-primary text-white rounded-pill px-3 py-2 fw-bold"><i class="fas fa-layer-group me-1"></i> Bulk Wholesale Offer</span>
                             <span class="fw-bold text-dark">Buy <?php echo $bulk_min_qty; ?>+ units for only <span class="text-primary fs-5 fw-bolder"><?php echo $global_currency . number_format($bulk_price, 2); ?></span> / unit</span>
+                            <?php echo $bulk_shipping_badge; ?>
                         </div>
                         <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-50 px-2 py-1 small fw-bold"><i class="fas fa-arrow-down me-1"></i>Save <?php echo $global_currency . number_format($current_unit_price - $bulk_price, 2); ?>/unit</span>
                     </div>
