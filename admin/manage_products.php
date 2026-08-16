@@ -85,6 +85,20 @@ if ($check_cod_charge && $check_cod_charge->num_rows == 0) {
     $conn->query("ALTER TABLE products ADD COLUMN cod_charge DECIMAL(10,2) DEFAULT NULL COMMENT 'Per-product COD charge (NULL = use global default)'");
 }
 
+// Auto-migrate: MOQ & Bulk Pricing columns (Safe for live server)
+$check_moq = $conn->query("SHOW COLUMNS FROM products LIKE 'min_order_qty'");
+if ($check_moq && $check_moq->num_rows == 0) {
+    $conn->query("ALTER TABLE products ADD COLUMN min_order_qty INT NOT NULL DEFAULT 1 COMMENT 'Minimum Order Quantity (MOQ)' AFTER stock");
+}
+$check_bulk_price = $conn->query("SHOW COLUMNS FROM products LIKE 'bulk_price'");
+if ($check_bulk_price && $check_bulk_price->num_rows == 0) {
+    $conn->query("ALTER TABLE products ADD COLUMN bulk_price DECIMAL(10,2) DEFAULT NULL COMMENT 'Bulk Order Price' AFTER sale_price");
+}
+$check_bulk_min_qty = $conn->query("SHOW COLUMNS FROM products LIKE 'bulk_min_qty'");
+if ($check_bulk_min_qty && $check_bulk_min_qty->num_rows == 0) {
+    $conn->query("ALTER TABLE products ADD COLUMN bulk_min_qty INT DEFAULT NULL COMMENT 'Bulk Minimum Quantity' AFTER bulk_price");
+}
+
 // Migration for Gallery Position
 $check_pos = $conn->query("SHOW COLUMNS FROM product_images LIKE 'position'");
 if ($check_pos && $check_pos->num_rows == 0) {
@@ -133,7 +147,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $cod_charge = ($cod_charge_raw !== '' && $cod_charge_raw !== null) ? floatval($cod_charge_raw) : null;
         $cod_charge_sql = ($cod_charge !== null) ? $cod_charge : 'NULL';
 
-
+        $min_order_qty = max(1, intval($_POST['min_order_qty'] ?? 1));
+        $bulk_price_raw = $_POST['bulk_price'] ?? '';
+        $bulk_price = ($bulk_price_raw !== '' && $bulk_price_raw !== null) ? floatval($bulk_price_raw) : null;
+        $bulk_price_sql = ($bulk_price !== null && $bulk_price >= 0) ? $bulk_price : 'NULL';
+        $bulk_min_qty_raw = $_POST['bulk_min_qty'] ?? '';
+        $bulk_min_qty = ($bulk_min_qty_raw !== '' && $bulk_min_qty_raw !== null) ? intval($bulk_min_qty_raw) : ($bulk_price !== null ? 12 : null);
+        $bulk_min_qty_sql = ($bulk_min_qty !== null && $bulk_min_qty > 0) ? $bulk_min_qty : 'NULL';
 
         $meta_desc = $conn->real_escape_string($_POST['meta_description'] ?? '');
         $image_fit = $conn->real_escape_string($_POST['image_fit'] ?? 'contain');
@@ -180,7 +200,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Use NULL in SQL when no image is uploaded, not empty string
         $image_sql = ($image !== null) ? "'" . $conn->real_escape_string($image) . "'" : "NULL";
-        $sql = "INSERT INTO products (name, slug, short_description, description, features, meta_description, category_id, product_type, download_file, download_url, download_limit, download_expiry_days, regular_price, sale_price, price, sku, brand, stock, shipping_cost, weight, length, width, height, cod_available, is_trending, cod_charge, image, image_fit) VALUES ('$name', '$slug', '$short_desc', '$desc', '$features', '$meta_desc', $cat_id, '$product_type', '$download_file', '$download_url', $download_limit, $download_expiry, $regular_price, $sale_price, $price, '$sku', '$brand', $stock, $shipping_cost, $weight, $length, $width, $height, $cod_available, $is_trending, $cod_charge_sql, $image_sql, '$image_fit')";
+        $sql = "INSERT INTO products (name, slug, short_description, description, features, meta_description, category_id, product_type, download_file, download_url, download_limit, download_expiry_days, regular_price, sale_price, bulk_price, bulk_min_qty, price, sku, brand, stock, min_order_qty, shipping_cost, weight, length, width, height, cod_available, is_trending, cod_charge, image, image_fit) VALUES ('$name', '$slug', '$short_desc', '$desc', '$features', '$meta_desc', $cat_id, '$product_type', '$download_file', '$download_url', $download_limit, $download_expiry, $regular_price, $sale_price, $bulk_price_sql, $bulk_min_qty_sql, $price, '$sku', '$brand', $stock, $min_order_qty, $shipping_cost, $weight, $length, $width, $height, $cod_available, $is_trending, $cod_charge_sql, $image_sql, '$image_fit')";
 
         if ($conn->query($sql)) {
             $product_id = $conn->insert_id;
@@ -255,7 +275,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $cod_charge = ($cod_charge_raw !== '' && $cod_charge_raw !== null) ? floatval($cod_charge_raw) : null;
         $cod_charge_sql = ($cod_charge !== null) ? $cod_charge : 'NULL';
 
-
+        $min_order_qty = max(1, intval($_POST['min_order_qty'] ?? 1));
+        $bulk_price_raw = $_POST['bulk_price'] ?? '';
+        $bulk_price = ($bulk_price_raw !== '' && $bulk_price_raw !== null) ? floatval($bulk_price_raw) : null;
+        $bulk_price_sql = ($bulk_price !== null && $bulk_price >= 0) ? $bulk_price : 'NULL';
+        $bulk_min_qty_raw = $_POST['bulk_min_qty'] ?? '';
+        $bulk_min_qty = ($bulk_min_qty_raw !== '' && $bulk_min_qty_raw !== null) ? intval($bulk_min_qty_raw) : ($bulk_price !== null ? 12 : null);
+        $bulk_min_qty_sql = ($bulk_min_qty !== null && $bulk_min_qty > 0) ? $bulk_min_qty : 'NULL';
 
         $meta_desc = $conn->real_escape_string($_POST['meta_description'] ?? '');
         $image_fit = $conn->real_escape_string($_POST['image_fit'] ?? 'contain');
@@ -322,7 +348,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        $sql = "UPDATE products SET name='$name', slug='$slug', short_description='$short_desc', description='$desc', features='$features', meta_description='$meta_desc', category_id=$cat_id, product_type='$product_type', download_url='$download_url', download_limit=$download_limit, download_expiry_days=$download_expiry, regular_price=$regular_price, sale_price=$sale_price, price=$price, sku='$sku', brand='$brand', stock=$stock, shipping_cost=$shipping_cost, weight=$weight, length=$length, width=$width, height=$height, cod_available=$cod_available, is_trending=$is_trending, cod_charge=$cod_charge_sql, image_fit='$image_fit' $image_query $dl_file_query WHERE id=$id";
+        $sql = "UPDATE products SET name='$name', slug='$slug', short_description='$short_desc', description='$desc', features='$features', meta_description='$meta_desc', category_id=$cat_id, product_type='$product_type', download_url='$download_url', download_limit=$download_limit, download_expiry_days=$download_expiry, regular_price=$regular_price, sale_price=$sale_price, bulk_price=$bulk_price_sql, bulk_min_qty=$bulk_min_qty_sql, price=$price, sku='$sku', brand='$brand', stock=$stock, min_order_qty=$min_order_qty, shipping_cost=$shipping_cost, weight=$weight, length=$length, width=$width, height=$height, cod_available=$cod_available, is_trending=$is_trending, cod_charge=$cod_charge_sql, image_fit='$image_fit' $image_query $dl_file_query WHERE id=$id";
 
 
 
@@ -608,7 +634,15 @@ if ($seo_q) {
                                     <?php endif; ?>
                                 </div>
                             </td>
-                            <td class="fw-bold text-dark fs-6"><?php echo $global_currency; ?><?php echo number_format($p['price'], 2); ?></td>
+                            <td class="text-dark">
+                                <div class="fw-bold fs-6"><?php echo $global_currency; ?><?php echo number_format($p['price'], 2); ?></div>
+                                <?php if (!empty($p['bulk_price']) && (float)$p['bulk_price'] > 0): ?>
+                                    <small class="text-muted d-block" style="font-size: 0.75rem;"><span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-1 py-0"><i class="fas fa-layer-group me-1"></i>Bulk: <?php echo $global_currency . number_format($p['bulk_price'], 2); ?><?php echo !empty($p['bulk_min_qty']) ? ' ('.$p['bulk_min_qty'].'+)' : ''; ?></span></small>
+                                <?php endif; ?>
+                                <?php if (!empty($p['min_order_qty']) && (int)$p['min_order_qty'] > 1): ?>
+                                    <small class="text-muted d-block" style="font-size: 0.75rem;"><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-1 py-0">MOQ: <?php echo $p['min_order_qty']; ?></span></small>
+                                <?php endif; ?>
+                            </td>
                             <td>
                                 <?php if($p['product_type'] !== 'physical'): ?>
                                     <span class="text-muted small">N/A</span>
@@ -634,6 +668,9 @@ if ($seo_q) {
                                         data-download-expiry="<?php echo $p['download_expiry_days']; ?>"
                                         data-regular-price="<?php echo $p['regular_price']; ?>"
                                         data-sale-price="<?php echo $p['sale_price']; ?>"
+                                        data-bulk-price="<?php echo htmlspecialchars($p['bulk_price'] ?? ''); ?>"
+                                        data-bulk-min-qty="<?php echo htmlspecialchars($p['bulk_min_qty'] ?? ''); ?>"
+                                        data-min-order-qty="<?php echo (int)($p['min_order_qty'] ?? 1); ?>"
                                         data-sku="<?php echo htmlspecialchars($p['sku'] ?? ''); ?>"
                                         data-brand="<?php echo htmlspecialchars($p['brand'] ?? ''); ?>"
                                         data-short-description="<?php echo htmlspecialchars($p['short_description'] ?? ''); ?>"
@@ -834,6 +871,34 @@ if ($seo_q) {
                             <div class="col-md-3 mb-3">
                                 <label class="form-label fw-bold small">Height (cm)</label>
                                 <input type="number" step="0.01" name="height" id="edit_p_height" class="form-control" value="0">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- B2B & Bulk Order Pricing Group -->
+                <div class="col-12 mb-3">
+                    <div class="bg-light p-3 rounded border">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-boxes me-2 text-primary"></i>Minimum Order Quantity (MOQ) & Bulk Order Pricing</h6>
+                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1 small">B2B / Wholesale</span>
+                        </div>
+                        <p class="text-muted small mb-3">Set minimum purchasing limits and special wholesale prices for bulk buyers.</p>
+                        <div class="row">
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label fw-bold small"><i class="fas fa-sort-numeric-up me-1 text-primary"></i>Minimum Order Quantity (MOQ)</label>
+                                <input type="number" min="1" name="min_order_qty" id="edit_p_min_order_qty" class="form-control" value="1" placeholder="Default: 1">
+                                <div class="form-text mt-1 small">Minimum units customer must buy (Default is 1).</div>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label fw-bold small"><i class="fas fa-tags me-1 text-success"></i>Bulk Order Price (<?php echo $global_currency; ?>)</label>
+                                <input type="number" step="0.01" min="0" name="bulk_price" id="edit_p_bulk_price" class="form-control" placeholder="e.g. 850.00 (Optional)">
+                                <div class="form-text mt-1 small">Discounted unit price for bulk purchases.</div>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label fw-bold small"><i class="fas fa-layer-group me-1 text-info"></i>Bulk Min. Quantity (Units)</label>
+                                <input type="number" min="1" name="bulk_min_qty" id="edit_p_bulk_min_qty" class="form-control" placeholder="Default: 12 units">
+                                <div class="form-text mt-1 small">Minimum quantity required to unlock Bulk Price (Default: 12).</div>
                             </div>
                         </div>
                     </div>
@@ -1060,6 +1125,34 @@ if ($seo_q) {
                     </div>
                 </div>
 
+                <!-- B2B & Bulk Order Pricing Group -->
+                <div class="col-12 mb-3">
+                    <div class="bg-light p-3 rounded border">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-boxes me-2 text-primary"></i>Minimum Order Quantity (MOQ) & Bulk Order Pricing</h6>
+                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1 small">B2B / Wholesale</span>
+                        </div>
+                        <p class="text-muted small mb-3">Set minimum purchasing limits and special wholesale prices for bulk buyers.</p>
+                        <div class="row">
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label fw-bold small"><i class="fas fa-sort-numeric-up me-1 text-primary"></i>Minimum Order Quantity (MOQ)</label>
+                                <input type="number" min="1" name="min_order_qty" id="add_p_min_order_qty" class="form-control" value="1" placeholder="Default: 1">
+                                <div class="form-text mt-1 small">Minimum units customer must buy (Default is 1).</div>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label fw-bold small"><i class="fas fa-tags me-1 text-success"></i>Bulk Order Price (<?php echo $global_currency; ?>)</label>
+                                <input type="number" step="0.01" min="0" name="bulk_price" id="add_p_bulk_price" class="form-control" placeholder="e.g. 850.00 (Optional)">
+                                <div class="form-text mt-1 small">Discounted unit price for bulk purchases.</div>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label fw-bold small"><i class="fas fa-layer-group me-1 text-info"></i>Bulk Min. Quantity (Units)</label>
+                                <input type="number" min="1" name="bulk_min_qty" id="add_p_bulk_min_qty" class="form-control" placeholder="Default: 12 units">
+                                <div class="form-text mt-1 small">Minimum quantity required to unlock Bulk Price (Default: 12).</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Payment & Visibility Options Group -->
                 <div class="col-12 mb-3 add_payment_options_group">
                     <div class="bg-light p-3 rounded border">
@@ -1166,6 +1259,9 @@ document.addEventListener('DOMContentLoaded', function() {
             
             document.getElementById('edit_p_regular_price').value = this.dataset.regularPrice;
             document.getElementById('edit_p_sale_price').value = this.dataset.salePrice;
+            document.getElementById('edit_p_bulk_price').value = this.dataset.bulkPrice || '';
+            document.getElementById('edit_p_bulk_min_qty').value = this.dataset.bulkMinQty || '';
+            document.getElementById('edit_p_min_order_qty').value = this.dataset.minOrderQty || '1';
             document.getElementById('edit_p_sku').value = this.dataset.sku;
             document.getElementById('edit_p_brand').value = this.dataset.brand;
             document.getElementById('edit_p_short_description').value = this.dataset.shortDescription;

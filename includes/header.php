@@ -505,12 +505,20 @@ if (isset($product['slug'])) {
                    $clean_site_url = preg_replace('#/(includes|admin|api|user|auth)$#i', '', $clean_site_url);
                    ?>
                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownMenuLink">
+                       <li class="px-3 py-2 border-bottom mb-1">
+                           <span class="d-block fw-bold text-dark text-truncate" style="max-width: 180px;"><?php echo htmlspecialchars($_SESSION['name'] ?? 'Account'); ?></span>
+                           <?php if(isset($_SESSION['role']) && $_SESSION['role'] === 'retailer'): ?>
+                               <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-0 small" style="font-size: 0.72rem;"><i class="fas fa-store me-1"></i>Retailer</span>
+                           <?php elseif(isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                               <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-0 small" style="font-size: 0.72rem;"><i class="fas fa-user-shield me-1"></i>Admin</span>
+                           <?php endif; ?>
+                       </li>
                        <li><a class="dropdown-item" href="<?php echo $clean_site_url; ?>/user/profile.php">My Profile</a></li>
                        <li><a class="dropdown-item" href="<?php echo $clean_site_url; ?>/user/orders.php">My Orders</a></li>
                        <?php if(isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
                            <li><a class="dropdown-item" href="<?php echo $clean_site_url; ?>/admin/index.php">Admin Panel</a></li>
                        <?php endif; ?>
-                       <li><a class="dropdown-item" href="<?php echo $clean_site_url; ?>/includes/auth.php?action=logout">Logout</a></li>
+                       <li><a class="dropdown-item text-danger" href="<?php echo $clean_site_url; ?>/includes/auth.php?action=logout">Logout</a></li>
                    </ul>
               </div>
           <?php else: ?>

@@ -12,14 +12,36 @@ $shippingService = new \ShippingModule\Services\ShippingService($shippingRepo);
 $cart_items = [];
 $subtotal = 0;
 
+$is_retailer_user = (isset($_SESSION['role']) && $_SESSION['role'] === 'retailer');
+
 if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
     $ids = implode(',', array_keys($_SESSION['cart']));
     $result = $conn->query("SELECT * FROM products WHERE id IN ($ids)");
     while ($row = $result->fetch_assoc()) {
         $qty = $_SESSION['cart'][$row['id']];
-        $total = $row['price'] * $qty;
+        $moq = !empty($row['min_order_qty']) ? max(1, intval($row['min_order_qty'])) : 1;
+        $bulk_price = !empty($row['bulk_price']) ? floatval($row['bulk_price']) : 0;
+        $bulk_min_qty = !empty($row['bulk_min_qty']) && (int)$row['bulk_min_qty'] > 0 ? (int)$row['bulk_min_qty'] : 12;
+        
+        // Retailer customers get bulk rate on > 1 unit (i.e. 2+ units)
+        $effective_min_qty = $is_retailer_user ? 2 : $bulk_min_qty;
+
+        $base_price = (float)$row['price'];
+        $is_bulk_applied = false;
+        if ($bulk_price > 0 && $qty >= $effective_min_qty && $bulk_price < $base_price) {
+            $effective_price = $bulk_price;
+            $is_bulk_applied = true;
+        } else {
+            $effective_price = $base_price;
+        }
+
+        $total = $effective_price * $qty;
         $subtotal += $total;
         $row['qty'] = $qty;
+        $row['moq'] = $moq;
+        $row['effective_price'] = $effective_price;
+        $row['is_bulk_applied'] = $is_bulk_applied;
+        $row['is_retailer_applied'] = ($is_retailer_user && $is_bulk_applied && $qty < $bulk_min_qty);
         $row['total'] = $total;
         $cart_items[] = $row;
     }
@@ -27,7 +49,14 @@ if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
 ?>
 
 <div class="container mt-5 pt-3 mb-5" style="min-height: 50vh;">
-    <h1 class="montserrat fw-bold primary-blue mb-4">Shopping Cart</h1>
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
+        <h1 class="montserrat fw-bold primary-blue mb-0">Shopping Cart</h1>
+        <?php if($is_retailer_user): ?>
+            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill fw-bold">
+                <i class="fas fa-store me-1"></i> Retailer Account: Bulk rates active for 2+ units
+            </span>
+        <?php endif; ?>
+    </div>
     
     <?php if(empty($cart_items)): ?>
     <div class="text-center py-5">
@@ -62,10 +91,20 @@ if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
                                             <img src="<?php echo htmlspecialchars(resolve_product_image_url($item['image'] ?? '', $conn, $item['id'])); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="rounded" style="width: 60px; height: 60px; object-fit: contain; background-color: #fff; padding: 5px;">
                                             <div class="ms-3">
                                                 <h6 class="fw-bold mb-0"><?php echo htmlspecialchars($item['name']); ?></h6>
+                                                <?php if (!empty($item['moq']) && $item['moq'] > 1): ?>
+                                                    <small class="text-muted"><span class="badge bg-light text-dark border">MOQ: <?php echo $item['moq']; ?></span></small>
+                                                <?php endif; ?>
                                             </div>
                                         </div>
                                     </td>
-                                    <td><?php echo $global_currency; ?><?php echo number_format($item['price'], 2); ?></td>
+                                    <td>
+                                        <div><?php echo $global_currency; ?><?php echo number_format($item['effective_price'], 2); ?></div>
+                                        <?php if (!empty($item['is_retailer_applied'])): ?>
+                                            <small class="d-block text-success fw-bold" style="font-size: 0.72rem;"><i class="fas fa-store me-1"></i>Retailer Rate</small>
+                                        <?php elseif (!empty($item['is_bulk_applied'])): ?>
+                                            <small class="d-block text-success fw-bold" style="font-size: 0.72rem;"><i class="fas fa-layer-group me-1"></i>Bulk Price</small>
+                                        <?php endif; ?>
+                                    </td>
                                     <td>
                                         <?php if($item['product_type'] !== 'physical'): ?>
                                             <span class="text-muted small">N/A</span>
@@ -77,10 +116,10 @@ if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
                                     </td>
                                     <td>
 
-                                        <form action="includes/cart_actions.php" method="POST" class="d-flex align-items-center">
+                                        <form action="includes/cart_actions.php" method="POST" class="d-flex flex-column align-items-start">
                                             <input type="hidden" name="action" value="update">
                                             <input type="hidden" name="product_id" value="<?php echo $item['id']; ?>">
-                                            <input type="number" name="quantity" value="<?php echo $item['qty']; ?>" class="form-control text-center me-2" style="width: 70px;" min="1" max="<?php echo $item['stock']; ?>" onchange="this.form.submit()">
+                                            <input type="number" name="quantity" value="<?php echo $item['qty']; ?>" class="form-control text-center me-2" style="width: 75px;" min="<?php echo $item['moq']; ?>" max="<?php echo $item['stock']; ?>" onchange="this.form.submit()">
                                         </form>
                                     </td>
                                     <td class="fw-bold"><?php echo $global_currency; ?><?php echo number_format($item['total'], 2); ?></td>

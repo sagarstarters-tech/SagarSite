@@ -386,12 +386,23 @@ if ($prods_enabled == '1'):
 
                             <!-- Pricing Wrap -->
                             <div class="product-pricing-wrap">
-                                <div class="d-flex align-items-baseline">
-                                    <?php if ($has_discount): ?>
-                                        <span class="price-regular-cut"><?php echo $global_currency; ?><?php echo number_format($reg_price, 2); ?></span>
-                                        <span class="price-sale-bold text-danger"><?php echo $global_currency; ?><?php echo number_format($sale_price, 2); ?></span>
-                                    <?php else: ?>
-                                        <span class="price-sale-bold"><?php echo $global_currency; ?><?php echo number_format($reg_price, 2); ?></span>
+                                <div class="d-flex align-items-baseline justify-content-between w-100 flex-wrap gap-1">
+                                    <div class="d-flex align-items-baseline">
+                                        <?php if ($has_discount): ?>
+                                            <span class="price-regular-cut"><?php echo $global_currency; ?><?php echo number_format($reg_price, 2); ?></span>
+                                            <span class="price-sale-bold text-danger"><?php echo $global_currency; ?><?php echo number_format($sale_price, 2); ?></span>
+                                        <?php else: ?>
+                                            <span class="price-sale-bold"><?php echo $global_currency; ?><?php echo number_format($reg_price, 2); ?></span>
+                                        <?php endif; ?>
+                                    </div>
+                                    <?php 
+                                    $p_bulk_price = !empty($p['bulk_price']) ? (float)$p['bulk_price'] : 0;
+                                    $p_bulk_qty = !empty($p['bulk_min_qty']) && (int)$p['bulk_min_qty'] > 0 ? (int)$p['bulk_min_qty'] : 12;
+                                    ?>
+                                    <?php if ($p_bulk_price > 0): ?>
+                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1 small" style="font-size: 0.72rem;">
+                                            <i class="fas fa-layer-group me-1"></i>Bulk: <?php echo $global_currency . number_format($p_bulk_price, 2); ?> (<?php echo $p_bulk_qty; ?>+)
+                                        </span>
                                     <?php endif; ?>
                                 </div>
                             </div>

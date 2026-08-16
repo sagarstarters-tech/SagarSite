@@ -279,7 +279,34 @@ if (!empty($global_settings[$setting_key])) {
                             <img src="<?php echo htmlspecialchars($main_img_src); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="card-img-top" alt="<?php echo htmlspecialchars($p['name']); ?>" loading="lazy" style="object-fit: <?php echo htmlspecialchars($p['image_fit'] ?? 'contain'); ?>; background-color:#fff;">
                             <div class="card-body d-flex flex-column">
                                 <h5 class="card-title fw-bold mb-1 text-truncate"><?php echo htmlspecialchars($p['name']); ?></h5>
-                                <p class="card-text text-muted small text-truncate mb-3"><?php echo htmlspecialchars(!empty($p['short_description']) ? $p['short_description'] : $p['description']); ?></p>
+                                <p class="card-text text-muted small text-truncate mb-2"><?php echo htmlspecialchars(!empty($p['short_description']) ? $p['short_description'] : $p['description']); ?></p>
+                                
+                                <?php 
+                                $p_moq = !empty($p['min_order_qty']) ? (int)$p['min_order_qty'] : 1;
+                                $p_bulk_price = !empty($p['bulk_price']) ? (float)$p['bulk_price'] : 0;
+                                $p_bulk_qty = !empty($p['bulk_min_qty']) && (int)$p['bulk_min_qty'] > 0 ? (int)$p['bulk_min_qty'] : 12;
+                                $is_retailer_user = (isset($_SESSION['role']) && $_SESSION['role'] === 'retailer');
+                                ?>
+                                <?php if ($p_bulk_price > 0): ?>
+                                    <div class="mb-2">
+                                        <?php if ($is_retailer_user): ?>
+                                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1 small" style="font-size: 0.75rem;">
+                                                <i class="fas fa-store me-1"></i>Retailer: <?php echo $global_currency . number_format($p_bulk_price, 2); ?> (2+ pcs)
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1 small" style="font-size: 0.75rem;">
+                                                <i class="fas fa-layer-group me-1"></i>Bulk: <?php echo $global_currency . number_format($p_bulk_price, 2); ?> (<?php echo $p_bulk_qty; ?>+ pcs)
+                                            </span>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php elseif ($p_moq > 1): ?>
+                                    <div class="mb-2">
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1 small" style="font-size: 0.75rem;">
+                                            <i class="fas fa-boxes me-1"></i>MOQ: <?php echo $p_moq; ?> Units
+                                        </span>
+                                    </div>
+                                <?php endif; ?>
+
                                 <div class="mt-auto d-flex flex-wrap justify-content-between align-items-center pt-3 border-top gap-2">
                                     <?php if ($p['sale_price'] > 0): ?>
                                         <div class="d-flex flex-column">

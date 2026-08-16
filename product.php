@@ -289,6 +289,13 @@ if (!empty($global_settings['hero_banner_product'])) {
             </div>
             <?php endif; ?>
             <div class="mb-3 d-flex align-items-center flex-wrap">
+                <?php 
+                $moq = !empty($product['min_order_qty']) ? max(1, intval($product['min_order_qty'])) : 1;
+                $bulk_price = !empty($product['bulk_price']) ? floatval($product['bulk_price']) : 0;
+                $bulk_min_qty = !empty($product['bulk_min_qty']) && (int)$product['bulk_min_qty'] > 0 ? (int)$product['bulk_min_qty'] : 12;
+                $current_unit_price = ($product['sale_price'] > 0) ? floatval($product['sale_price']) : (floatval($product['regular_price']) > 0 ? floatval($product['regular_price']) : floatval($product['price']));
+                $has_bulk_discount = ($bulk_price > 0 && $bulk_price < $current_unit_price);
+                ?>
                 <?php if ($product['sale_price'] > 0): ?>
                     <span class="fs-4 text-muted text-decoration-line-through me-2"><?php echo $global_currency; ?><?php echo number_format($product['regular_price'], 2); ?></span>
                     <span class="fs-3 d-inline-block fw-bold text-danger me-2"><?php echo $global_currency; ?><?php echo number_format($product['sale_price'], 2); ?></span>
@@ -299,6 +306,9 @@ if (!empty($global_settings['hero_banner_product'])) {
                     <span class="badge bg-success ms-2 fs-6 align-middle badge-pulse">In Stock (<?php echo $product['stock']; ?>)</span>
                 <?php else: ?>
                     <span class="badge bg-danger ms-2 fs-6 align-middle">Out of Stock</span>
+                <?php endif; ?>
+                <?php if ($moq > 1): ?>
+                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 ms-2 fs-6 align-middle"><i class="fas fa-boxes me-1"></i>Min. Order: <?php echo $moq; ?> Units</span>
                 <?php endif; ?>
             </div>
             
@@ -317,15 +327,38 @@ if (!empty($global_settings['hero_banner_product'])) {
                 <?php endif; ?>
             </div>
 
-            
+            <?php if ($has_bulk_discount): ?>
+                <?php $is_retailer_user = (isset($_SESSION['role']) && $_SESSION['role'] === 'retailer'); ?>
+                <?php if ($is_retailer_user): ?>
+                <div id="bulkOfferCard" class="card border border-success border-opacity-50 bg-success bg-opacity-10 rounded-3 mb-4 p-3 shadow-none transition-all">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-success text-white rounded-pill px-3 py-2 fw-bold"><i class="fas fa-store me-1"></i> Retailer Privilege</span>
+                            <span class="fw-bold text-dark">Buy <span class="text-success fw-bolder">2+ units</span> for only <span class="text-success fs-5 fw-bolder"><?php echo $global_currency . number_format($bulk_price, 2); ?></span> / unit</span>
+                        </div>
+                        <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-50 px-2 py-1 small fw-bold"><i class="fas fa-arrow-down me-1"></i>Save <?php echo $global_currency . number_format($current_unit_price - $bulk_price, 2); ?>/unit</span>
+                    </div>
+                </div>
+                <?php else: ?>
+                <div id="bulkOfferCard" class="card border border-primary border-opacity-25 bg-primary bg-opacity-10 rounded-3 mb-4 p-3 shadow-none transition-all">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-primary text-white rounded-pill px-3 py-2 fw-bold"><i class="fas fa-layer-group me-1"></i> Bulk Wholesale Offer</span>
+                            <span class="fw-bold text-dark">Buy <?php echo $bulk_min_qty; ?>+ units for only <span class="text-primary fs-5 fw-bolder"><?php echo $global_currency . number_format($bulk_price, 2); ?></span> / unit</span>
+                        </div>
+                        <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-50 px-2 py-1 small fw-bold"><i class="fas fa-arrow-down me-1"></i>Save <?php echo $global_currency . number_format($current_unit_price - $bulk_price, 2); ?>/unit</span>
+                    </div>
+                </div>
+                <?php endif; ?>
+            <?php endif; ?>
             
             <?php if($product['stock'] > 0): ?>
             <form id="addToCartForm" action="<?php echo SITE_URL; ?>/includes/cart_actions.php" method="POST" class="d-flex flex-wrap align-items-center mb-4 bg-light p-3 rounded gap-3">
                 <input type="hidden" name="action" value="add">
                 <input type="hidden" name="product_id" value="<?php echo $product['id']; ?>">
-                <label class="fw-bold me-3">Quantity:</label>
-                <div class="me-3" style="width: 100px;">
-                    <input type="number" name="quantity" class="form-control text-center fw-bold" value="1" min="1" max="<?php echo $product['stock']; ?>">
+                <label class="fw-bold me-3">Quantity:<?php if ($moq > 1): ?> <small class="text-muted fw-normal">(MOQ: <?php echo $moq; ?>)</small><?php endif; ?></label>
+                <div class="me-3" style="width: 110px;">
+                    <input type="number" name="quantity" id="productQtyInput" class="form-control text-center fw-bold" value="<?php echo $moq; ?>" min="<?php echo $moq; ?>" max="<?php echo $product['stock']; ?>">
                 </div>
                 <button type="submit" class="btn btn-primary btn-lg btn-custom px-4"><i class="fas fa-shopping-cart me-2"></i>Add to Cart</button>
             </form>
@@ -342,6 +375,30 @@ if (!empty($global_settings['hero_banner_product'])) {
                     }, 800);
                 });
             </script>
+            <?php if ($has_bulk_discount): ?>
+            <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const qtyInput = document.getElementById('productQtyInput');
+                const bulkCard = document.getElementById('bulkOfferCard');
+                const bulkMinQty = <?php echo (!empty($is_retailer_user)) ? 2 : $bulk_min_qty; ?>;
+                if (qtyInput && bulkCard) {
+                    function checkBulkActive() {
+                        const val = parseInt(qtyInput.value) || 1;
+                        if (val >= bulkMinQty) {
+                            bulkCard.classList.remove('bg-opacity-10', 'border-primary');
+                            bulkCard.classList.add('bg-opacity-25', 'border-success', 'shadow-sm');
+                        } else {
+                            bulkCard.classList.add('bg-opacity-10', 'border-primary');
+                            bulkCard.classList.remove('bg-opacity-25', 'border-success', 'shadow-sm');
+                        }
+                    }
+                    qtyInput.addEventListener('input', checkBulkActive);
+                    qtyInput.addEventListener('change', checkBulkActive);
+                    checkBulkActive();
+                }
+            });
+            </script>
+            <?php endif; ?>
             <?php else: ?>
             <button class="btn btn-secondary btn-lg btn-custom mb-4 px-4 w-100" disabled>Out of Stock</button>
             <?php endif; ?>

@@ -1,13 +1,21 @@
 <?php
 include 'admin_header.php';
 
+// Auto-migrate: Ensure retailer role is supported in enum
+$check_role_enum = $conn->query("SHOW COLUMNS FROM users LIKE 'role'");
+if ($check_role_enum && $r_enum = $check_role_enum->fetch_assoc()) {
+    if (strpos($r_enum['Type'], 'retailer') === false) {
+        $conn->query("ALTER TABLE users MODIFY COLUMN role ENUM('user','admin','retailer') DEFAULT 'user'");
+    }
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     
     if ($action === 'delete') {
         $id = intval($_POST['id']);
         if ($id != $_SESSION['user_id']) { // Don't delete self
-            $conn->query("DELETE FROM users WHERE id=$id AND role='user'");
+            $conn->query("DELETE FROM users WHERE id=$id AND role!='admin'");
             $_SESSION['flash_success'] = "User deleted successfully.";
         } else {
             $_SESSION['flash_error'] = "You cannot delete your own admin account.";
@@ -27,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $role = $conn->real_escape_string($_POST['role']);
         
         // Prevent admin from demoting themselves or deleting their own rights accidentally
-        if ($id == $_SESSION['user_id'] && $role == 'user') {
+        if ($id == $_SESSION['user_id'] && $role !== 'admin') {
              $error = "You cannot demote yourself from admin.";
         } else {
              // Check if email already exists for another user
@@ -105,6 +113,7 @@ $offset = ($page - 1) * $limit;
 
 $users = $conn->query("SELECT * FROM users ORDER BY created_at DESC LIMIT $limit OFFSET $offset");
 $total_users = $conn->query("SELECT COUNT(*) as c FROM users")->fetch_assoc()['c'];
+$retailers_count = (int)($conn->query("SELECT COUNT(*) as c FROM users WHERE role='retailer'")->fetch_assoc()['c'] ?? 0);
 $total_pages = ceil($total_users / $limit);
 ?>
 
@@ -154,10 +163,15 @@ $total_pages = ceil($total_users / $limit);
     <div class="mu-hero">
         <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
             <div>
-                <div class="d-flex align-items-center gap-2 mb-1">
+                <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
                     <span class="badge bg-primary bg-opacity-25 text-white border border-primary border-opacity-50 rounded-pill px-3 py-1 small">
                         <i class="fas fa-users me-1"></i> User Accounts
                     </span>
+                    <?php if($retailers_count > 0): ?>
+                    <span class="badge bg-success bg-opacity-25 text-white border border-success border-opacity-50 rounded-pill px-3 py-1 small">
+                        <i class="fas fa-store me-1"></i> <?php echo $retailers_count; ?> Retailers
+                    </span>
+                    <?php endif; ?>
                     <span class="text-white-50 small"><?php echo $total_users; ?> registered users</span>
                 </div>
                 <h3 class="fw-bold mb-0 text-white">Customer & User Management</h3>
@@ -227,6 +241,8 @@ $total_pages = ceil($total_users / $limit);
                             <td>
                                 <?php if($u['role'] === 'admin'): ?>
                                     <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1"><i class="fas fa-user-shield me-1"></i> Admin</span>
+                                <?php elseif($u['role'] === 'retailer'): ?>
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1 fw-bold"><i class="fas fa-store me-1"></i> Retailer</span>
                                 <?php else: ?>
                                     <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1"><i class="fas fa-user me-1"></i> Customer</span>
                                 <?php endif; ?>
@@ -250,7 +266,7 @@ $total_pages = ceil($total_users / $limit);
                                         title="Edit User">
                                         <i class="fas fa-edit"></i>
                                     </button>
-                                    <?php if($u['role'] === 'user'): ?>
+                                    <?php if($u['role'] !== 'admin'): ?>
                                     <form method="POST" class="d-inline m-0 p-0" onsubmit="return confirm('Delete this user? This will also remove their orders.');">
                                         <?php echo csrf_input(); ?>
                                         <input type="hidden" name="action" value="delete">
@@ -323,7 +339,8 @@ $total_pages = ceil($total_users / $limit);
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Role</label>
                             <select name="role" class="form-select">
-                                <option value="user">User</option>
+                                <option value="user">Customer</option>
+                                <option value="retailer">Retailer (Wholesale Buyer)</option>
                                 <option value="admin">Admin</option>
                             </select>
                         </div>
@@ -414,7 +431,8 @@ $total_pages = ceil($total_users / $limit);
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Role</label>
                             <select name="role" id="edit_role" class="form-select">
-                                <option value="user">User</option>
+                                <option value="user">Customer</option>
+                                <option value="retailer">Retailer (Wholesale Buyer)</option>
                                 <option value="admin">Admin</option>
                             </select>
                         </div>

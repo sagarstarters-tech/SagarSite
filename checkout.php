@@ -62,6 +62,8 @@ if ($has_saved_address) {
 
 $cart_items = [];
 $subtotal = 0;
+$is_retailer_user = (isset($_SESSION['role']) && $_SESSION['role'] === 'retailer') || (isset($user_data['role']) && $user_data['role'] === 'retailer');
+
 if (!empty($_SESSION['cart'])) {
     // Sanitize IDs for the IN clause
     $safe_ids = implode(',', array_map('intval', array_keys($_SESSION['cart'])));
@@ -78,9 +80,23 @@ if (!empty($_SESSION['cart'])) {
         }
         
         if ($qty > 0) {
-            $total = (float)$row['price'] * $qty;
+            $bulk_price = !empty($row['bulk_price']) ? floatval($row['bulk_price']) : 0;
+            $bulk_min_qty = !empty($row['bulk_min_qty']) && (int)$row['bulk_min_qty'] > 0 ? (int)$row['bulk_min_qty'] : 12;
+            
+            // Retailer customers get bulk rate on > 1 unit (i.e. 2+ units)
+            $effective_min_qty = $is_retailer_user ? 2 : $bulk_min_qty;
+
+            $base_price = (float)$row['price'];
+            if ($bulk_price > 0 && $qty >= $effective_min_qty && $bulk_price < $base_price) {
+                $effective_price = $bulk_price;
+            } else {
+                $effective_price = $base_price;
+            }
+
+            $total = $effective_price * $qty;
             $subtotal += $total;
             $row['qty'] = $qty;
+            $row['price'] = $effective_price;
             $cart_items[] = $row;
             
             if ($row['product_type'] === 'physical') {
@@ -291,6 +307,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt2->close();
         $stock_stmt->close();
         
+        // Auto-promote Customer to 'Retailer' if purchasing 12 or more units of any item or total >= 12
+        $is_retailer_qualifying = false;
+        $total_order_qty = 0;
+        foreach ($cart_items as $item) {
+            $i_qty = (int)$item['qty'];
+            $total_order_qty += $i_qty;
+            if ($i_qty >= 12) {
+                $is_retailer_qualifying = true;
+            }
+        }
+        if ($total_order_qty >= 12) {
+            $is_retailer_qualifying = true;
+        }
+
+        if ($is_retailer_qualifying && $user_id > 0) {
+            $u_role_res = $conn->query("SELECT role FROM users WHERE id = $user_id");
+            if ($u_role_res && $u_role_res->num_rows > 0) {
+                $current_role = $u_role_res->fetch_assoc()['role'] ?? 'user';
+                if ($current_role === 'user') {
+                    $conn->query("UPDATE users SET role = 'retailer' WHERE id = $user_id");
+                    if (isset($_SESSION['user_id']) && (int)$_SESSION['user_id'] === (int)$user_id) {
+                        $_SESSION['role'] = 'retailer';
+                    }
+                }
+            }
+        }
+
         // If we reach here, commit everything
         $conn->commit();
     } catch (\Throwable $e) {

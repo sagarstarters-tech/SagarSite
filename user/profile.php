@@ -102,11 +102,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <i class="fas fa-user-circle fa-5x primary-blue mb-3"></i>
                     <?php endif; ?>
                     <h4><?php echo htmlspecialchars($user['name']); ?></h4>
+                    <?php if (($user['role'] ?? '') === 'retailer'): ?>
+                        <div class="mb-2">
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-1 rounded-pill fw-bold">
+                                <i class="fas fa-store me-1"></i> Verified Retailer
+                            </span>
+                        </div>
+                    <?php elseif (($user['role'] ?? '') === 'admin'): ?>
+                        <div class="mb-2">
+                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-1 rounded-pill">
+                                <i class="fas fa-user-shield me-1"></i> Administrator
+                            </span>
+                        </div>
+                    <?php else: ?>
+                        <div class="mb-2">
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-3 py-1 rounded-pill">
+                                <i class="fas fa-user me-1"></i> Customer
+                            </span>
+                        </div>
+                    <?php endif; ?>
                     <p class="text-muted mb-1"><?php echo htmlspecialchars($user['email']); ?></p>
                     <p class="small text-muted mb-3"><i class="fas fa-phone me-1"></i> <?php echo !empty($user['phone']) ? htmlspecialchars($user['phone']) : 'No phone set'; ?></p>
                     <a href="../includes/auth.php?action=logout" class="btn btn-danger btn-custom w-100">Logout</a>
                 </div>
             </div>
+            <?php if (($user['role'] ?? '') === 'retailer'): ?>
+            <div class="card product-card mb-4 border-success border-opacity-25 bg-success bg-opacity-10">
+                <div class="card-body p-3 text-start">
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <i class="fas fa-badge-check text-success fs-5"></i>
+                        <h6 class="fw-bold mb-0 text-success">Retailer Account Active</h6>
+                    </div>
+                    <p class="small text-dark mb-0">You are eligible for bulk wholesale prices on purchases of 12+ units per order.</p>
+                </div>
+            </div>
+            <?php endif; ?>
             <div class="card product-card">
                 <div class="card-body p-4">
                     <h5 class="montserrat fw-bold mb-3">Shipping Address</h5>

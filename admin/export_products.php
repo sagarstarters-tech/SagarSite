@@ -86,14 +86,14 @@ while ($row = $result->fetch_assoc()) {
         $row['id'],
         $row['name'],
         $row['slug'],
-        '', // SKU (Not in DB)
+        trim($row['sku'] ?? ''), // SKU
         trim($row['category_name'] ?? 'Uncategorized'),
         '', // Subcategory (Not in DB)
-        '', // Brand (Not in DB)
+        trim($row['brand'] ?? ''), // Brand
         trim($row['description']),
-        '', // Short Description (Not in DB)
+        trim($row['short_description'] ?? ''), // Short Description
         $row['price'],
-        '', // Discount Price (Not in DB)
+        $row['sale_price'] ?? '', // Discount Price
         $row['stock'],
         $stock_status,
         trim($row['image'] ?? ''),

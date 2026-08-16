@@ -11,25 +11,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['cart'] = [];
     }
 
-    // Check available stock
+    // Check available stock and MOQ
     $stock = 0;
+    $moq = 1;
     if ($product_id > 0) {
-        $stmt = $conn->prepare("SELECT stock FROM products WHERE id = ?");
+        $stmt = $conn->prepare("SELECT stock, min_order_qty FROM products WHERE id = ?");
         $stmt->bind_param("i", $product_id);
         $stmt->execute();
         $res = $stmt->get_result();
         if ($res->num_rows > 0) {
-            $stock = intval($res->fetch_assoc()['stock']);
+            $p_row = $res->fetch_assoc();
+            $stock = intval($p_row['stock']);
+            $moq = !empty($p_row['min_order_qty']) ? max(1, intval($p_row['min_order_qty'])) : 1;
         }
         $stmt->close();
     }
 
     if ($action === 'add') {
         $qty = intval($_POST['quantity'] ?? 1);
-        if ($qty < 1) $qty = 1;
+        if ($qty < $moq) $qty = $moq;
 
         $current_qty = isset($_SESSION['cart'][$product_id]) ? $_SESSION['cart'][$product_id] : 0;
         $new_qty = $current_qty + $qty;
+        if ($new_qty < $moq) $new_qty = $moq;
 
         if ($new_qty > $stock) {
             $new_qty = $stock; // Limit to max stock
@@ -47,6 +51,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'update') {
         $qty = intval($_POST['quantity'] ?? 1);
+        if ($qty > 0 && $qty < $moq) {
+            $qty = $moq;
+        }
         if ($qty > $stock) {
             $qty = $stock;
         }
