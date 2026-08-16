@@ -20,8 +20,8 @@ error_log('[500] Internal Server Error at ' . date('Y-m-d H:i:s') . ' URI: ' . (
         .error-code { font-size: 8rem; font-weight: 900; color: #dc3545; line-height: 1; }
         .error-title { font-size: 1.8rem; font-weight: 700; color: #222; margin: 16px 0 8px; }
         .error-desc { color: #666; margin-bottom: 32px; line-height: 1.6; }
-        .btn-home { background: #007aff; color: #fff; padding: 12px 32px; border-radius: 30px; text-decoration: none; font-weight: 600; display: inline-block; }
-        .btn-home:hover { background: #005ecc; color: #fff; }
+        .btn-home { background: #007aff; color: #fff !important; padding: 12px 32px; border-radius: 30px; text-decoration: none !important; font-weight: 600; display: inline-block; }
+        .btn-home:hover { background: #005ecc; color: #fff !important; }
     </style>
 </head>
 <body>

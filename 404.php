@@ -26,8 +26,8 @@ $assets_url = defined('ASSETS_URL') ? ASSETS_URL : '/assets';
         .error-code { font-size: 8rem; font-weight: 900; color: #007aff; line-height: 1; }
         .error-title { font-size: 1.8rem; font-weight: 700; color: #222; margin: 16px 0 8px; }
         .error-desc { color: #666; margin-bottom: 32px; }
-        .btn-home { background: #007aff; color: #fff; padding: 12px 32px; border-radius: 30px; text-decoration: none; font-weight: 600; display: inline-block; }
-        .btn-home:hover { background: #005ecc; color: #fff; }
+        .btn-home { background: #007aff; color: #fff !important; padding: 12px 32px; border-radius: 30px; text-decoration: none !important; font-weight: 600; display: inline-block; }
+        .btn-home:hover { background: #005ecc; color: #fff !important; }
         .links a { color: #007aff; text-decoration: none; margin: 0 12px; font-size: 0.9rem; }
     </style>
 </head>

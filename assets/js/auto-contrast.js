@@ -298,8 +298,19 @@
      */
     function applyToButton(btn) {
         if (!btn || CONFIG.skipClasses.some(cls => btn.classList.contains(cls))) return;
-        if (btn.className && (btn.className.includes('btn-outline-') || btn.className.includes('btn-light') || btn.className.includes('var-btn'))) return;
-        if (btn.closest && btn.closest('.admin-main-wrapper, .admin-sidebar, .admin-main-col')) return;
+        // Standard & custom styled buttons manage their own contrast via CSS — skip JS override
+        if (btn.className && (
+            btn.className.includes('btn-') ||
+            btn.className.includes('btn ') ||
+            btn.className.includes('btn-pro-view') ||
+            btn.className.includes('btn-pro-wa') ||
+            btn.className.includes('hero-btn') ||
+            btn.className.includes('share-btn') ||
+            btn.className.includes('btn-custom') ||
+            btn.className.includes('btn-home') ||
+            btn.className.includes('var-btn')
+        )) return;
+        if (btn.closest && btn.closest('.admin-main-wrapper, .admin-sidebar, .admin-main-col, .product-actions-footer, .category-card-pro')) return;
 
         const style = window.getComputedStyle(btn);
 

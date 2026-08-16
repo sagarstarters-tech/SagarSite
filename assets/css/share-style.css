@@ -10,12 +10,23 @@
     width: 45px;
     height: 45px;
     font-size: 1.25rem;
-    color: #fff;
+    color: #fff !important;
     border: none;
     cursor: pointer;
     transition: all 0.2s ease-in-out;
     background-color: #6c757d;
-    /* Default fallback */
+    text-decoration: none !important;
+}
+
+.share-btn i {
+    color: #fff !important;
+}
+
+.share-btn:hover,
+.share-btn:focus,
+.share-btn:active {
+    color: #fff !important;
+    text-decoration: none !important;
 }
 
 /* Button Shapes from Admin Settings */

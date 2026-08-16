@@ -518,7 +518,7 @@ if (!empty($global_settings['hero_banner_product'])) {
                             <textarea class="form-control bg-light" name="review_text" rows="4" placeholder="What did you like or dislike? What did you use this product for?" required></textarea>
                         </div>
                         <div id="reviewAlert" class="alert d-none small"></div>
-                        <button type="submit" class="btn btn-primary btn-custom w-100 dark-text" id="btnSubmitReview">Submit Review</button>
+                        <button type="submit" class="btn btn-primary btn-custom w-100 text-white" id="btnSubmitReview">Submit Review</button>
                     </form>
                     
                     <script>
@@ -570,7 +570,7 @@ if (!empty($global_settings['hero_banner_product'])) {
                 <?php else: ?>
                     <div class="card p-4 text-center border-0 shadow-sm bg-light">
                         <p class="mb-3">You must be logged in to write a review. Share your thoughts with other customers!</p>
-                        <a href="<?php echo SITE_URL; ?>/user/login.php" class="btn btn-primary btn-custom dark-text">Login to Review</a>
+                        <a href="<?php echo SITE_URL; ?>/user/login.php" class="btn btn-primary btn-custom text-white">Login to Review</a>
                     </div>
                 <?php endif; ?>
             </div>
