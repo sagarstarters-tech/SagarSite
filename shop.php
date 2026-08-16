@@ -290,19 +290,19 @@ if (!empty($global_settings[$setting_key])) {
                                 <?php if ($p_bulk_price > 0): ?>
                                     <div class="mb-2">
                                         <?php if ($is_retailer_user): ?>
-                                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1 small" style="font-size: 0.75rem;">
-                                                <i class="fas fa-store me-1"></i>Retailer: <?php echo $global_currency . number_format($p_bulk_price, 2); ?> (2+ pcs)
+                                            <span class="d-inline-flex align-items-center gap-1 px-2 py-1 rounded-pill" style="background-color: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; font-size: 0.75rem; font-weight: 600;">
+                                                <i class="fas fa-store"></i> Retailer: <?php echo $global_currency . number_format($p_bulk_price, 2); ?> (2+ pcs)
                                             </span>
                                         <?php else: ?>
-                                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1 small" style="font-size: 0.75rem;">
-                                                <i class="fas fa-layer-group me-1"></i>Bulk: <?php echo $global_currency . number_format($p_bulk_price, 2); ?> (<?php echo $p_bulk_qty; ?>+ pcs)
+                                            <span class="d-inline-flex align-items-center gap-1 px-2 py-1 rounded-pill" style="background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-size: 0.75rem; font-weight: 600;">
+                                                <i class="fas fa-layer-group"></i> Bulk: <?php echo $global_currency . number_format($p_bulk_price, 2); ?> (<?php echo $p_bulk_qty; ?>+ pcs)
                                             </span>
                                         <?php endif; ?>
                                     </div>
                                 <?php elseif ($p_moq > 1): ?>
                                     <div class="mb-2">
-                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1 small" style="font-size: 0.75rem;">
-                                            <i class="fas fa-boxes me-1"></i>MOQ: <?php echo $p_moq; ?> Units
+                                        <span class="d-inline-flex align-items-center gap-1 px-2 py-1 rounded-pill" style="background-color: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; font-size: 0.75rem; font-weight: 600;">
+                                            <i class="fas fa-boxes"></i> MOQ: <?php echo $p_moq; ?> Units
                                         </span>
                                     </div>
                                 <?php endif; ?>

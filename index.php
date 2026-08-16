@@ -400,8 +400,8 @@ if ($prods_enabled == '1'):
                                     $p_bulk_qty = !empty($p['bulk_min_qty']) && (int)$p['bulk_min_qty'] > 0 ? (int)$p['bulk_min_qty'] : 12;
                                     ?>
                                     <?php if ($p_bulk_price > 0): ?>
-                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1 small" style="font-size: 0.72rem;">
-                                            <i class="fas fa-layer-group me-1"></i>Bulk: <?php echo $global_currency . number_format($p_bulk_price, 2); ?> (<?php echo $p_bulk_qty; ?>+)
+                                        <span class="d-inline-flex align-items-center gap-1 px-2 py-1 rounded-pill" style="background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-size: 0.72rem; font-weight: 600;">
+                                            <i class="fas fa-layer-group"></i>Bulk: <?php echo $global_currency . number_format($p_bulk_price, 2); ?> (<?php echo $p_bulk_qty; ?>+)
                                         </span>
                                     <?php endif; ?>
                                 </div>
