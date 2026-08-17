@@ -349,6 +349,8 @@ if (isset($product['slug'])) {
     <link href="<?php echo SITE_URL; ?>/whatsapp-style.css" rel="stylesheet">
     <!-- Custom Animations CSS -->
     <link href="<?php echo ASSETS_URL; ?>/css/animations.css?v=1.2" rel="stylesheet">
+    <!-- Language Switcher CSS -->
+    <link href="<?php echo ASSETS_URL; ?>/css/language-switcher.css?v=<?php echo file_exists(__DIR__ . '/../assets/css/language-switcher.css') ? filemtime(__DIR__ . '/../assets/css/language-switcher.css') : '1.0'; ?>" rel="stylesheet">
     <!-- jQuery moved to footer for non-render-blocking load -->
 
     <?php
@@ -381,6 +383,10 @@ if (isset($product['slug'])) {
         })();
     </script>
     <script src="<?php echo ASSETS_URL; ?>/js/theme-toggle.js?v=1.1" defer></script>
+
+    <!-- Language Switcher & Translation Engine -->
+    <script src="<?php echo ASSETS_URL; ?>/js/language-switcher.js?v=<?php echo file_exists(__DIR__ . '/../assets/js/language-switcher.js') ? filemtime(__DIR__ . '/../assets/js/language-switcher.js') : '1.0'; ?>" defer></script>
+    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" defer></script>
 
     <!-- Register Service Worker -->
     <script>
@@ -451,6 +457,32 @@ if (isset($product['slug'])) {
           <!-- Mobile Search Toggle Icon -->
           <a class="text-reset me-3 d-lg-none" href="#" data-mdb-toggle="collapse" data-mdb-target="#mobileSearchForm" aria-expanded="false" aria-label="Toggle search"><i class="fas fa-search fs-5"></i></a>
       <?php endif; ?>
+
+      <!-- Language Switcher Dropdown (Desktop & Mobile) -->
+      <div class="dropdown me-2" id="header-lang-container">
+          <button class="btn btn-link text-reset p-2 d-flex align-items-center border-0 shadow-none dropdown-toggle lang-dropdown-toggle" 
+                  type="button" id="headerLangDropdown" data-mdb-toggle="dropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Change Language / भाषा बदलें">
+              <i class="fas fa-globe fs-5 text-primary me-1"></i>
+              <span class="d-none d-sm-inline-block small fw-bold text-dark current-lang-name notranslate">English</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 py-2 lang-dropdown-menu" aria-labelledby="headerLangDropdown">
+              <li class="dropdown-header px-3 py-2 text-uppercase text-muted extra-small fw-bold border-bottom notranslate">
+                  <i class="fas fa-language me-1 text-primary"></i> Select Language / भाषा चुनें
+              </li>
+              <li><a class="dropdown-item d-flex justify-content-between align-items-center lang-option notranslate" href="javascript:void(0);" data-lang="en"><span class="fw-semibold">🇬🇧 English</span><i class="fas fa-check text-primary check-icon d-none"></i></a></li>
+              <li><a class="dropdown-item d-flex justify-content-between align-items-center lang-option notranslate" href="javascript:void(0);" data-lang="hi"><span class="fw-semibold">🇮🇳 हिन्दी (Hindi)</span><i class="fas fa-check text-primary check-icon d-none"></i></a></li>
+              <li><a class="dropdown-item d-flex justify-content-between align-items-center lang-option notranslate" href="javascript:void(0);" data-lang="gu"><span class="fw-semibold">🇮🇳 ગુજરાતી (Gujarati)</span><i class="fas fa-check text-primary check-icon d-none"></i></a></li>
+              <li><a class="dropdown-item d-flex justify-content-between align-items-center lang-option notranslate" href="javascript:void(0);" data-lang="mr"><span class="fw-semibold">🇮🇳 मराठी (Marathi)</span><i class="fas fa-check text-primary check-icon d-none"></i></a></li>
+              <li><a class="dropdown-item d-flex justify-content-between align-items-center lang-option notranslate" href="javascript:void(0);" data-lang="pa"><span class="fw-semibold">🇮🇳 ਪੰਜਾਬੀ (Punjabi)</span><i class="fas fa-check text-primary check-icon d-none"></i></a></li>
+              <li><a class="dropdown-item d-flex justify-content-between align-items-center lang-option notranslate" href="javascript:void(0);" data-lang="bn"><span class="fw-semibold">🇮🇳 বাংলা (Bengali)</span><i class="fas fa-check text-primary check-icon d-none"></i></a></li>
+              <li><a class="dropdown-item d-flex justify-content-between align-items-center lang-option notranslate" href="javascript:void(0);" data-lang="te"><span class="fw-semibold">🇮🇳 తెలుగు (Telugu)</span><i class="fas fa-check text-primary check-icon d-none"></i></a></li>
+              <li><a class="dropdown-item d-flex justify-content-between align-items-center lang-option notranslate" href="javascript:void(0);" data-lang="ta"><span class="fw-semibold">🇮🇳 தமிழ் (Tamil)</span><i class="fas fa-check text-primary check-icon d-none"></i></a></li>
+              <li><a class="dropdown-item d-flex justify-content-between align-items-center lang-option notranslate" href="javascript:void(0);" data-lang="kn"><span class="fw-semibold">🇮🇳 ಕನ್ನಡ (Kannada)</span><i class="fas fa-check text-primary check-icon d-none"></i></a></li>
+              <li><a class="dropdown-item d-flex justify-content-between align-items-center lang-option notranslate" href="javascript:void(0);" data-lang="ml"><span class="fw-semibold">🇮🇳 മലയാളം (Malayalam)</span><i class="fas fa-check text-primary check-icon d-none"></i></a></li>
+              <li><a class="dropdown-item d-flex justify-content-between align-items-center lang-option notranslate" href="javascript:void(0);" data-lang="or"><span class="fw-semibold">🇮🇳 ଓଡ଼ିଆ (Odia)</span><i class="fas fa-check text-primary check-icon d-none"></i></a></li>
+              <li><a class="dropdown-item d-flex justify-content-between align-items-center lang-option notranslate" href="javascript:void(0);" data-lang="ur"><span class="fw-semibold">🇮🇳 اردو (Urdu)</span><i class="fas fa-check text-primary check-icon d-none"></i></a></li>
+          </ul>
+      </div>
 
       <div id="header-cart-container">
           <a class="text-reset me-3 position-relative d-flex align-items-center" href="<?php echo SITE_URL; ?>/cart.php" aria-label="Shopping cart<?php echo $cart_count > 0 ? ' (' . $cart_count . ' items)' : ''; ?>">
@@ -541,6 +573,34 @@ if (isset($product['slug'])) {
           </button>
           <span class="fw-bold text-muted small pe-2 text-uppercase"><i class="fas fa-compass me-1"></i>Menu</span>
       </div>
+
+      <!-- Mobile Language Selector Row -->
+      <div class="d-lg-none px-2 mb-3">
+          <div class="dropdown w-100">
+              <button class="btn btn-outline-primary btn-sm w-100 d-flex justify-content-between align-items-center rounded-pill py-2 px-3 dropdown-toggle shadow-none notranslate" 
+                      type="button" id="mobileLangDropdown" data-mdb-toggle="dropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                  <span><i class="fas fa-globe me-2"></i>Language: <strong class="current-lang-name ms-1">English</strong></span>
+              </button>
+              <ul class="dropdown-menu w-100 shadow-lg border-0 rounded-4 py-2 lang-dropdown-menu" aria-labelledby="mobileLangDropdown">
+                  <li class="dropdown-header px-3 py-2 text-uppercase text-muted extra-small fw-bold border-bottom notranslate">
+                      <i class="fas fa-language me-1 text-primary"></i> Select Language / भाषा चुनें
+                  </li>
+                  <li><a class="dropdown-item d-flex justify-content-between align-items-center lang-option notranslate" href="javascript:void(0);" data-lang="en"><span class="fw-semibold">🇬🇧 English</span><i class="fas fa-check text-primary check-icon d-none"></i></a></li>
+                  <li><a class="dropdown-item d-flex justify-content-between align-items-center lang-option notranslate" href="javascript:void(0);" data-lang="hi"><span class="fw-semibold">🇮🇳 हिन्दी (Hindi)</span><i class="fas fa-check text-primary check-icon d-none"></i></a></li>
+                  <li><a class="dropdown-item d-flex justify-content-between align-items-center lang-option notranslate" href="javascript:void(0);" data-lang="gu"><span class="fw-semibold">🇮🇳 ગુજરાતી (Gujarati)</span><i class="fas fa-check text-primary check-icon d-none"></i></a></li>
+                  <li><a class="dropdown-item d-flex justify-content-between align-items-center lang-option notranslate" href="javascript:void(0);" data-lang="mr"><span class="fw-semibold">🇮🇳 मराठी (Marathi)</span><i class="fas fa-check text-primary check-icon d-none"></i></a></li>
+                  <li><a class="dropdown-item d-flex justify-content-between align-items-center lang-option notranslate" href="javascript:void(0);" data-lang="pa"><span class="fw-semibold">🇮🇳 ਪੰਜਾਬੀ (Punjabi)</span><i class="fas fa-check text-primary check-icon d-none"></i></a></li>
+                  <li><a class="dropdown-item d-flex justify-content-between align-items-center lang-option notranslate" href="javascript:void(0);" data-lang="bn"><span class="fw-semibold">🇮🇳 বাংলা (Bengali)</span><i class="fas fa-check text-primary check-icon d-none"></i></a></li>
+                  <li><a class="dropdown-item d-flex justify-content-between align-items-center lang-option notranslate" href="javascript:void(0);" data-lang="te"><span class="fw-semibold">🇮🇳 తెలుగు (Telugu)</span><i class="fas fa-check text-primary check-icon d-none"></i></a></li>
+                  <li><a class="dropdown-item d-flex justify-content-between align-items-center lang-option notranslate" href="javascript:void(0);" data-lang="ta"><span class="fw-semibold">🇮🇳 தமிழ் (Tamil)</span><i class="fas fa-check text-primary check-icon d-none"></i></a></li>
+                  <li><a class="dropdown-item d-flex justify-content-between align-items-center lang-option notranslate" href="javascript:void(0);" data-lang="kn"><span class="fw-semibold">🇮🇳 ಕನ್ನಡ (Kannada)</span><i class="fas fa-check text-primary check-icon d-none"></i></a></li>
+                  <li><a class="dropdown-item d-flex justify-content-between align-items-center lang-option notranslate" href="javascript:void(0);" data-lang="ml"><span class="fw-semibold">🇮🇳 മലയാളം (Malayalam)</span><i class="fas fa-check text-primary check-icon d-none"></i></a></li>
+                  <li><a class="dropdown-item d-flex justify-content-between align-items-center lang-option notranslate" href="javascript:void(0);" data-lang="or"><span class="fw-semibold">🇮🇳 ଓଡ଼ିଆ (Odia)</span><i class="fas fa-check text-primary check-icon d-none"></i></a></li>
+                  <li><a class="dropdown-item d-flex justify-content-between align-items-center lang-option notranslate" href="javascript:void(0);" data-lang="ur"><span class="fw-semibold">🇮🇳 اردو (Urdu)</span><i class="fas fa-check text-primary check-icon d-none"></i></a></li>
+              </ul>
+          </div>
+      </div>
+
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
         <?php
         // Fetch top-level menus for Header
@@ -596,6 +656,8 @@ if (isset($product['slug'])) {
         </div>
     </div>
     <?php endif; ?>
+    <!-- Hidden Google Translate Element Container -->
+    <div id="google_translate_element" style="display:none;" aria-hidden="true"></div>
   </div>
 </nav>
 

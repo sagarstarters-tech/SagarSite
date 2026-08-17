@@ -1,0 +1,125 @@
+/* ==========================================================================
+   Language Switcher & Google Translate Shield Styles
+   Prevents Google Translate frames from displacing layout & styles custom UI
+   ========================================================================== */
+
+/* 1. Prevent Google top-banner displacement */
+body {
+    top: 0px !important;
+    position: static !important;
+}
+
+.goog-te-banner-frame,
+.goog-te-banner-frame.skiptranslate,
+iframe.goog-te-banner-frame,
+.goog-te-balloon-frame,
+#goog-gt-tt,
+.goog-tooltip,
+.goog-tooltip:hover {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    height: 0 !important;
+    width: 0 !important;
+}
+
+.goog-text-highlight {
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+#google_translate_element {
+    display: none !important;
+}
+
+/* 2. Custom Navbar Language Button */
+.lang-dropdown-toggle {
+    font-size: 0.88rem;
+    padding: 0.35rem 0.65rem;
+    border-radius: 50rem;
+    transition: all 0.2s ease-in-out;
+    background-color: transparent;
+    border: 1px solid transparent;
+}
+
+.lang-dropdown-toggle:hover,
+.lang-dropdown-toggle:focus {
+    background-color: rgba(13, 110, 253, 0.08);
+    border-color: rgba(13, 110, 253, 0.2);
+    color: #0d6efd !important;
+}
+
+/* Dark mode compatibility */
+[data-mdb-theme="dark"] .lang-dropdown-toggle:hover,
+[data-bs-theme="dark"] .lang-dropdown-toggle:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #ffffff !important;
+}
+
+[data-mdb-theme="dark"] .lang-dropdown-menu,
+[data-bs-theme="dark"] .lang-dropdown-menu {
+    background-color: #212529;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+[data-mdb-theme="dark"] .lang-dropdown-menu .dropdown-item,
+[data-bs-theme="dark"] .lang-dropdown-menu .dropdown-item {
+    color: #e0e0e0;
+}
+
+[data-mdb-theme="dark"] .lang-dropdown-menu .dropdown-item:hover,
+[data-bs-theme="dark"] .lang-dropdown-menu .dropdown-item:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+}
+
+/* 3. Dropdown Menu Styling */
+.lang-dropdown-menu {
+    min-width: 220px;
+    max-height: 380px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #0d6efd rgba(0,0,0,0.05);
+}
+
+.lang-dropdown-menu::-webkit-scrollbar {
+    width: 5px;
+}
+
+.lang-dropdown-menu::-webkit-scrollbar-thumb {
+    background-color: rgba(13, 110, 253, 0.5);
+    border-radius: 10px;
+}
+
+.lang-dropdown-menu .dropdown-item {
+    font-size: 0.88rem;
+    border-radius: 8px;
+    margin: 2px 6px;
+    width: auto;
+    padding: 0.45rem 0.75rem;
+    transition: all 0.15s ease-in-out;
+}
+
+.lang-dropdown-menu .dropdown-item:hover {
+    background-color: rgba(13, 110, 253, 0.1);
+    color: #0d6efd;
+    transform: translateX(2px);
+}
+
+.lang-dropdown-menu .dropdown-item.active-lang {
+    background-color: #0d6efd !important;
+    color: #ffffff !important;
+    font-weight: 600;
+}
+
+.lang-dropdown-menu .dropdown-item.active-lang .check-icon {
+    display: inline-block !important;
+    color: #ffffff !important;
+}
+
+/* 4. Extra Small Helper */
+.extra-small {
+    font-size: 0.75rem;
+}
