@@ -27,6 +27,60 @@ class ChatbotService
         }
 
         $this->loadSettings();
+        $this->ensureTableAndDefaults();
+    }
+
+    /**
+     * Auto-create database table and default settings if missing on production
+     */
+    public function ensureTableAndDefaults(): void
+    {
+        try {
+            // 1. Create table if not exists
+            $this->pdo->exec("CREATE TABLE IF NOT EXISTS `chatbot_logs` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `session_id` VARCHAR(100) NOT NULL,
+                `user_ip` VARCHAR(50) NULL,
+                `user_message` TEXT NOT NULL,
+                `bot_response` LONGTEXT NOT NULL,
+                `intent` VARCHAR(50) DEFAULT 'general',
+                `provider_used` VARCHAR(50) DEFAULT 'hybrid',
+                `response_time_ms` INT DEFAULT 0,
+                `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+                INDEX (`session_id`),
+                INDEX (`created_at`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+            // 2. Insert missing defaults
+            $defaults = [
+                'chatbot_enabled'         => '1',
+                'chatbot_name'            => 'Sagar Sahayak',
+                'chatbot_title'           => 'Sagar AI Assistant',
+                'chatbot_welcome_msg'     => "Namaste! 🙏 Main Sagar Starters ka AI Assistant hu. Main aapko Motor Starters, Submersible Panels, Price, Bulk Discounts aur Order Tracking me help kar sakta hu.\n\nAap niche diye gaye options chun sakte hain ya direct message likh sakte hain!",
+                'chatbot_provider'        => 'hybrid',
+                'chatbot_gemini_key'      => '',
+                'chatbot_gemini_model'    => 'gemini-1.5-flash',
+                'chatbot_openai_key'      => '',
+                'chatbot_openai_model'    => 'gpt-4o-mini',
+                'chatbot_groq_key'        => '',
+                'chatbot_groq_model'      => 'llama-3.3-70b-versatile',
+                'chatbot_system_prompt'   => 'You are Sagar Sahayak, the intelligent, friendly, and expert AI Assistant for Sagar Starters (sagarstarters.com) — an Indian eCommerce store specializing in premium motor starters, submersible pump control panels (1-Phase & 3-Phase), Star Delta starters, DOL starters, circuit breakers, and agricultural motor automation. Respond in a warm, professional, and helpful tone. Answer in the same language the customer speaks (Hindi, Hinglish, English, Gujarati, etc.). When customers ask about products, recommend matching items with their specs and prices. Always offer help with order tracking, bulk discounts, and technical advice.',
+                'chatbot_whatsapp_number' => '919837248000',
+                'chatbot_position'        => 'bottom-right',
+                'chatbot_theme_color'     => '#007aff',
+                'chatbot_quick_prompts'   => "5HP Submersible Starter,Single Phase vs 3 Phase,Track My Order,Bulk Purchase Discount,Talk to Expert on WhatsApp"
+            ];
+
+            $stmt = $this->pdo->prepare("INSERT INTO settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_key=setting_key");
+            foreach ($defaults as $k => $v) {
+                if (!isset($this->settings[$k])) {
+                    $stmt->execute([$k, $v]);
+                    $this->settings[$k] = $v;
+                }
+            }
+        } catch (Exception $e) {
+            error_log("ChatbotService ensureTableAndDefaults error: " . $e->getMessage());
+        }
     }
 
     /**

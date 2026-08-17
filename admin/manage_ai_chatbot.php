@@ -137,10 +137,35 @@ if (isset($_POST['clear_chatbot_logs'])) {
 
 // Reload service settings
 $chatbotService = new ChatbotService($conn);
+$chatbotService->ensureTableAndDefaults();
 
-// Fetch recent conversation logs
-$logsRes = $conn->query("SELECT * FROM chatbot_logs ORDER BY id DESC LIMIT 20");
-$totalLogsCount = $conn->query("SELECT COUNT(*) as cnt FROM chatbot_logs")->fetch_assoc()['cnt'] ?? 0;
+// Fetch recent conversation logs safely
+$logsRes = null;
+$totalLogsCount = 0;
+
+try {
+    $conn->query("CREATE TABLE IF NOT EXISTS `chatbot_logs` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `session_id` VARCHAR(100) NOT NULL,
+        `user_ip` VARCHAR(50) NULL,
+        `user_message` TEXT NOT NULL,
+        `bot_response` LONGTEXT NOT NULL,
+        `intent` VARCHAR(50) DEFAULT 'general',
+        `provider_used` VARCHAR(50) DEFAULT 'hybrid',
+        `response_time_ms` INT DEFAULT 0,
+        `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX (`session_id`),
+        INDEX (`created_at`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+    $logsRes = $conn->query("SELECT * FROM chatbot_logs ORDER BY id DESC LIMIT 20");
+    $cntRes = $conn->query("SELECT COUNT(*) as cnt FROM chatbot_logs");
+    if ($cntRes && $cntRes->num_rows > 0) {
+        $totalLogsCount = (int)$cntRes->fetch_assoc()['cnt'];
+    }
+} catch (Exception $e) {
+    error_log("Error fetching chatbot logs: " . $e->getMessage());
+}
 ?>
 
 <div class="container-fluid px-4 py-4">
