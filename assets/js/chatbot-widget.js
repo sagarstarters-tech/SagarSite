@@ -79,7 +79,8 @@
     function createChatWidget() {
         // 1. Launcher Container
         const launcher = document.createElement('div');
-        launcher.className = `sagar-chat-launcher ${config.position === 'bottom-left' ? 'pos-bottom-left' : ''}`;
+        launcher.className = `sagar-chat-launcher notranslate ${config.position === 'bottom-left' ? 'pos-bottom-left' : ''}`;
+        launcher.setAttribute('translate', 'no');
         launcher.id = 'sagarChatLauncher';
         launcher.innerHTML = `
             <div class="sagar-launcher-teaser" id="sagarChatTeaser" style="display:none;">
@@ -93,7 +94,8 @@
 
         // 2. Chat Window Container
         const chatWindow = document.createElement('div');
-        chatWindow.className = `sagar-chat-window ${config.position === 'bottom-left' ? 'pos-bottom-left' : ''}`;
+        chatWindow.className = `sagar-chat-window notranslate ${config.position === 'bottom-left' ? 'pos-bottom-left' : ''}`;
+        chatWindow.setAttribute('translate', 'no');
         chatWindow.id = 'sagarChatWindow';
         chatWindow.innerHTML = `
             <!-- Header -->

@@ -475,8 +475,8 @@ class ChatbotService
         $curr = $this->getSetting('currency_symbol', '₹');
         $siteName = $this->getSetting('site_name', "Sagar Starter's");
         $phone = $this->getSetting('contact_phone', '+91 8573934013');
-        $email = $this->getSetting('contact_email', 'sagarstarters@gmail.com');
-        $address = $this->getSetting('contact_address', 'Alipur Madra, Jakhanian, Ghazipur, Uttar Pradesh');
+        $email = $this->getSetting('contact_email', 'support@sagarstarters.com');
+        $address = 'Alipur Madra, Jakhanian, Ghazipur, Uttar Pradesh, India - PIN Code: 275203';
 
         // 1. Direct Purchase Link Request (e.g. "मुझे इसे खरीदने का लिंक दीजिए", "Buy link do", "Purchase link")
         if (preg_match('/link|खरीदने का लिंक|खरीदने के लिए लिंक|खरीदना है|buy link|purchase link|order link|लिंक|link do|link dijiye|direct link|ऑनलाइन लिंक|website link/iu', $msg)) {
@@ -539,19 +539,34 @@ class ChatbotService
             return "👑 **सागर स्टार्टर्स के संस्थापक एवं संचालक (Founder & Owner):**\n\n"
                  . "**श्री प्रमोद कुमार सागर (Mr. Pramod Kumar Sagar)** सागर स्टार्टर्स (sagarstarters.com) के संस्थापक और मुख्य संचालक हैं।\n\n"
                  . "• **कंपनी**: Sagar Starter's (ISO Certified Quality Manufacturer)\n"
-                 . "• **यूनिट / हेड ऑफिस**: अलीपुर मदरा, जखनियाँ, गाजीपुर (उत्तर प्रदेश)\n"
+                 . "• **यूनिट / हेड ऑफिस**: अलीपुर मदरा, जखनियाँ, गाजीपुर, उत्तर प्रदेश, भारत (पिन: 275203)\n"
                  . "• **विशेषज्ञता**: उच्च गुणवत्ता वाले मोटर स्टार्टर्स, सबमर्सिबल पंप पैनल्स एवं ऑटोमेशन इक्विपमेंट्स निर्माण।\n\n"
                  . "सीधे संपर्क या बिज़नेस इंक्वायरी के लिए आप कॉल/WhatsApp (`{$phone}`) पर भी जुड़ सकते हैं!";
         }
 
         // 7. Address / Location / Factory Queries
-        if (preg_match('/address|location|kaha par|kaha hai|kahan hai|office|factory|dukan|shop|city|state|ghazipur|jakhanian|store location|pata kya hai|पता|कहा है|कहाँ है|कहाँ पर|दुकान|ऑफिस|स्थान|लोकेशन/iu', $msg)) {
-            return "📍 **सागर स्टार्टर्स का पता एवं संपर्क विवरण:**\n\n"
-                 . "• **पता**: {$address}\n"
-                 . "• **हेल्पलाइन / व्हाट्सएप**: `{$phone}`\n"
-                 . "• **ईमेल**: `{$email}`\n"
-                 . "• **ऑफिस समय**: सोमवार से शनिवार, सुबह 9:00 AM से शाम 6:00 PM\n\n"
-                 . "आप गूगल मैप्स पर भी **'SAGAR STARTERS'** सर्च करके आसानी से हमारी लोकेशन देख सकते हैं!";
+        if (preg_match('/address|location|kaha par|kaha hai|kahan hai|where is your shop|store address|office|factory|dukan|shop|city|state|ghazipur|jakhanian|store location|pata kya hai|country|पता|कहा है|कहाँ है|कहाँ पर|दुकान|ऑफिस|स्थान|लोकेशन|देश/iu', $msg)) {
+            $isEnglish = (bool)preg_match('/(?:where|address|shop|store|location|country|city)/i', $msg) && !preg_match('/[\x{0900}-\x{097F}]/u', $msg);
+
+            if ($isEnglish) {
+                return "📍 **Sagar Starter's Factory & Store Address:**\n\n"
+                     . "• **Address**: Alipur Madra, Jakhanian, Ghazipur, Uttar Pradesh, India\n"
+                     . "• **PIN Code**: 275203\n"
+                     . "• **Country**: India 🇮🇳\n"
+                     . "• **Phone / WhatsApp**: `{$phone}`\n"
+                     . "• **Email**: `{$email}`\n"
+                     . "• **Working Hours**: Monday to Saturday, 9:00 AM to 6:00 PM\n\n"
+                     . "You can also search **'SAGAR STARTERS'** directly on Google Maps to navigate to our location!";
+            } else {
+                return "📍 **सागर स्टार्टर्स का स्टोर एवं फैक्ट्री पता:**\n\n"
+                     . "• **पता**: अलीपुर मदरा, जखनियाँ, गाजीपुर (उत्तर प्रदेश)\n"
+                     . "• **पिन कोड (PIN Code)**: 275203\n"
+                     . "• **देश (Country)**: भारत (India 🇮🇳)\n"
+                     . "• **हेल्पलाइन / व्हाट्सएप**: `{$phone}`\n"
+                     . "• **ईमेल**: `{$email}`\n"
+                     . "• **ऑफिस समय**: सोमवार से शनिवार, सुबह 9:00 AM से शाम 6:00 PM\n\n"
+                     . "आप गूगल मैप्स पर भी **'SAGAR STARTERS'** सर्च करके आसानी से हमारी लोकेशन देख सकते हैं!";
+            }
         }
 
         // 8. Single Phase vs 3 Phase Guidance
