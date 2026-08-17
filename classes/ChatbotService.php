@@ -176,30 +176,38 @@ class ChatbotService
         // Fetch Relevant Products based on context-enriched query
         $matchedProducts = $this->searchRelevantProducts($contextQuery);
 
-        // 3. Determine AI Provider Execution (Collaborative Dual-Engine Architecture)
+        // 3. Determine AI Provider Execution
         $provider = strtolower($this->getSetting('chatbot_provider', 'hybrid_groq'));
         $groqKey = $this->getSetting('chatbot_groq_key');
         $replyText = '';
         $providerUsed = 'hybrid';
 
-        // Check if user is asking for direct purchase links or exact location
         $isDirectLink = (bool)preg_match('/link|खरीदने का लिंक|खरीदने के लिए लिंक|buy link|purchase link|order link|लिंक|link do|link dijiye|direct link/iu', $userMessage);
 
-        // Collaborative Logic:
-        // Direct transactional tasks (links, exact price confirmation) use Local Engine for 100% precision.
-        // Conversational, recommendation, troubleshooting, and general inquiries use Groq LLaMA Cloud with Local Knowledge context!
-        $isDualGroq = in_array($provider, ['hybrid_groq', 'groq', 'hybrid']) && !empty($groqKey);
-
-        if ($isDirectLink && !empty($matchedProducts)) {
-            $replyText = $this->smartLocalHybridReply($userMessage, $matchedProducts, $history);
-            $providerUsed = 'local_direct_link';
-        } elseif ($isDualGroq) {
+        if ($provider === 'hybrid_groq') {
+            // DUAL ENGINE: Local Database Precision + Groq Cloud LLaMA Intelligence
+            if ($isDirectLink && !empty($matchedProducts)) {
+                $replyText = $this->smartLocalHybridReply($userMessage, $matchedProducts, $history);
+                $providerUsed = 'dual_local_direct';
+            } elseif (!empty($groqKey)) {
+                try {
+                    $replyText = $this->callGroqAPI($userMessage, $history, $matchedProducts);
+                    $providerUsed = 'dual_groq_llama';
+                } catch (Exception $e) {
+                    error_log("Dual Engine Groq Fallback: " . $e->getMessage());
+                    $replyText = $this->smartLocalHybridReply($userMessage, $matchedProducts, $history);
+                    $providerUsed = 'dual_local_fallback';
+                }
+            } else {
+                $replyText = $this->smartLocalHybridReply($userMessage, $matchedProducts, $history);
+                $providerUsed = 'smart_local_engine';
+            }
+        } elseif ($provider === 'groq' && !empty($groqKey)) {
             try {
-                // Groq Cloud LLaMA + Local Catalog RAG Context
                 $replyText = $this->callGroqAPI($userMessage, $history, $matchedProducts);
-                $providerUsed = 'groq_cloud_llama';
+                $providerUsed = 'groq';
             } catch (Exception $e) {
-                error_log("Groq Dual-Engine Fallback: " . $e->getMessage());
+                error_log("Groq API Error: " . $e->getMessage());
                 $replyText = $this->smartLocalHybridReply($userMessage, $matchedProducts, $history);
                 $providerUsed = 'local_engine_fallback';
             }
@@ -222,7 +230,7 @@ class ChatbotService
                 $providerUsed = 'local_engine_fallback';
             }
         } else {
-            // Default Smart Local Engine
+            // Smart Local Engine (Standalone 100% Offline)
             $replyText = $this->smartLocalHybridReply($userMessage, $matchedProducts, $history);
             $providerUsed = 'smart_local_engine';
         }
