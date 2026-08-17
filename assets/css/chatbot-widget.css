@@ -402,17 +402,23 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    box-sizing: border-box;
+    width: 100%;
+    position: relative;
+    z-index: 10;
 }
 
 .sagar-chat-input {
-    flex: 1;
+    flex: 1 1 auto;
+    min-width: 0;
     border: 1px solid #cbd5e1;
     border-radius: 24px;
-    padding: 8px 14px;
+    padding: 9px 16px;
     font-size: 0.88rem;
     outline: none;
     transition: border-color 0.2s ease;
     background: #f8fafc;
+    box-sizing: border-box;
 }
 
 .sagar-chat-input:focus {
@@ -421,8 +427,10 @@
 }
 
 .sagar-send-btn {
-    width: 38px;
-    height: 38px;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    max-width: 40px;
     border-radius: 50%;
     background: #007aff;
     color: #ffffff;
@@ -433,7 +441,9 @@
     justify-content: center;
     font-size: 0.95rem;
     transition: all 0.2s ease;
+    flex: 0 0 40px;
     flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
 }
 
 .sagar-send-btn:hover {
@@ -501,23 +511,68 @@ body.dark-mode-active .sagar-product-chip-title {
 /* ── Mobile View Adaptations ─────────────────────────────────────────── */
 @media (max-width: 576px) {
     .sagar-chat-launcher {
-        bottom: 76px; /* Position above bottom navigation bar */
-        right: 16px;
+        bottom: 72px; /* Position cleanly above bottom mobile navigation */
+        right: 14px;
+        z-index: 1040;
     }
     .sagar-chat-launcher.pos-bottom-left {
-        left: 16px;
+        left: 14px;
     }
     .sagar-launcher-btn {
-        width: 52px;
-        height: 52px;
-        font-size: 1.4rem;
+        width: 50px;
+        height: 50px;
+        font-size: 1.3rem;
     }
+
+    /* Hide floating button while chat is open to avoid covering the send input */
+    .sagar-chat-launcher.chat-open {
+        display: none !important;
+    }
+
     .sagar-chat-window {
-        bottom: 80px;
-        right: 12px;
-        left: 12px;
-        width: auto;
-        height: calc(100vh - 160px);
-        max-height: 550px;
+        bottom: 64px !important; /* Floats above mobile navbar with perfect breathing room */
+        right: 8px !important;
+        left: 8px !important;
+        width: auto !important;
+        max-width: calc(100vw - 16px) !important;
+        height: calc(100dvh - 130px) !important;
+        max-height: calc(100vh - 130px) !important;
+        border-radius: 18px !important;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3) !important;
+        z-index: 1060 !important;
+    }
+
+    .sagar-chat-header {
+        padding: 12px 14px;
+    }
+
+    .sagar-chat-body {
+        padding: 12px;
+        gap: 10px;
+    }
+
+    .sagar-msg-bubble {
+        max-width: 88%;
+        font-size: 0.84rem;
+        padding: 9px 12px;
+    }
+
+    .sagar-chat-footer {
+        padding: 8px 10px;
+        gap: 6px;
+    }
+
+    .sagar-chat-input {
+        padding: 8px 12px;
+        font-size: 0.84rem;
+    }
+
+    .sagar-send-btn {
+        width: 36px !important;
+        height: 36px !important;
+        min-width: 36px !important;
+        max-width: 36px !important;
+        flex: 0 0 36px !important;
+        font-size: 0.88rem;
     }
 }

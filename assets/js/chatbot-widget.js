@@ -199,13 +199,15 @@
      */
     function toggleChat() {
         const win = document.getElementById('sagarChatWindow');
+        const launcher = document.getElementById('sagarChatLauncher');
         const icon = document.getElementById('sagarLauncherIcon');
         const teaser = document.getElementById('sagarChatTeaser');
 
         isOpen = !isOpen;
         if (isOpen) {
             win.classList.add('active');
-            icon.className = 'fas fa-chevron-down';
+            if (launcher) launcher.classList.add('chat-open');
+            if (icon) icon.className = 'fas fa-chevron-down';
             if (teaser) teaser.style.display = 'none';
             sessionStorage.setItem('sagar_teaser_dismissed', '1');
             setTimeout(() => {
@@ -215,7 +217,8 @@
             scrollToBottom();
         } else {
             win.classList.remove('active');
-            icon.className = 'fas fa-robot';
+            if (launcher) launcher.classList.remove('chat-open');
+            if (icon) icon.className = 'fas fa-robot';
         }
     }
 
