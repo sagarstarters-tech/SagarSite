@@ -26,17 +26,39 @@ class ScheduleResolver {
         $hour = isset($parts[0]) ? (int)$parts[0] : 9;
         $min = isset($parts[1]) ? (int)$parts[1] : 0;
 
+        $baseTime = clone $now;
+        if (!empty($schedule['next_run_at'])) {
+            $candidate = DateTime::createFromFormat('Y-m-d H:i:s', $schedule['next_run_at']);
+            if ($candidate) {
+                $baseTime = $candidate;
+            }
+        } elseif (!empty($schedule['start_date'])) {
+            $candidate = DateTime::createFromFormat('Y-m-d H:i:s', $schedule['start_date'] . ' ' . $startTime);
+            if ($candidate) {
+                $baseTime = $candidate;
+            }
+        }
+
         if ($startMode === 'once_weekly') {
-            $next = clone $now;
+            $next = clone $baseTime;
             $next->modify('+7 days')->setTime($hour, $min, 0);
+            while ($next <= $now) {
+                $next->modify('+7 days');
+            }
             return $next;
         } elseif ($startMode === 'once_monthly') {
-            $next = clone $now;
+            $next = clone $baseTime;
             $next->modify('+1 month')->setTime($hour, $min, 0);
+            while ($next <= $now) {
+                $next->modify('+1 month');
+            }
             return $next;
         } elseif ($startMode === 'once_daily') {
-            $next = clone $now;
+            $next = clone $baseTime;
             $next->modify('+1 day')->setTime($hour, $min, 0);
+            while ($next <= $now) {
+                $next->modify('+1 day');
+            }
             return $next;
         }
 

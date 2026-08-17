@@ -143,12 +143,37 @@ $scheduleTypes = [
                                 </div>
 
                                 <div class="border-top pt-2 mt-3">
+                                    <?php 
+                                        $sDate = !empty($sched['start_date']) ? $sched['start_date'] : date('Y-m-d');
+                                        $sTime = !empty($sched['start_time']) ? $sched['start_time'] : '00:00:00';
+                                        $sDT = $sDate . ' ' . $sTime;
+                                        $startDayName = date('l', strtotime($sDate));
+                                        $startFormatted = date('M d, Y', strtotime($sDate));
+                                        $timeFormatted = date('h:i A', strtotime($sDT));
+
+                                        $startMode = $sched['start_mode'] ?? 'once_daily';
+                                        $modeBadge = '';
+                                        if ($startMode === 'once_weekly') {
+                                            $modeBadge = 'Weekly (' . $startDayName . 's)';
+                                        } elseif ($startMode === 'once_monthly') {
+                                            $modeBadge = 'Monthly (Day ' . date('j', strtotime($sDate)) . ')';
+                                        } elseif ($startMode === 'custom') {
+                                            $modeBadge = 'Custom / Specific Date';
+                                        } else {
+                                            $modeBadge = 'Daily';
+                                        }
+                                    ?>
                                     <div class="text-muted extra-small mb-1">
-                                        <i class="fas fa-calendar-alt text-info me-1"></i> <strong>Start Time:</strong> 
-                                        <?php 
-                                            $sDT = (!empty($sched['start_date']) ? $sched['start_date'] : date('Y-m-d')) . ' ' . (!empty($sched['start_time']) ? $sched['start_time'] : '00:00:00');
-                                            echo date('M d, Y h:i A', strtotime($sDT)); 
-                                        ?>
+                                        <i class="fas fa-calendar-alt text-info me-1"></i> <strong>Start Date:</strong> 
+                                        <span class="text-dark fw-semibold"><?php echo $startFormatted; ?> (<?php echo $startDayName; ?>)</span>
+                                    </div>
+                                    <div class="text-muted extra-small mb-1">
+                                        <i class="fas fa-clock text-secondary me-1"></i> <strong>Start Time:</strong> 
+                                        <span class="text-dark fw-semibold"><?php echo $timeFormatted; ?></span>
+                                    </div>
+                                    <div class="text-muted extra-small mb-1">
+                                        <i class="fas fa-redo text-primary me-1"></i> <strong>Recurrence:</strong> 
+                                        <span class="badge bg-light text-primary border rounded-pill px-2 py-0 fw-semibold"><?php echo htmlspecialchars($modeBadge); ?></span>
                                     </div>
                                     <div class="text-muted extra-small mb-1">
                                         <i class="fas fa-history text-secondary me-1"></i> <strong>Last Run:</strong> 
@@ -224,21 +249,23 @@ $scheduleTypes = [
                             </select>
                         </div>
 
-                        <div class="col-md-6">
-                            <label for="schedStartMode" class="form-label fw-bold small text-muted">Posting Start <span class="text-danger">*</span></label>
+                        <div class="col-md-4">
+                            <label for="schedStartMode" class="form-label fw-bold small text-muted">Posting Start / Repeat <span class="text-danger">*</span></label>
                             <select class="form-select rounded-3" id="schedStartMode" name="start_mode" required>
                                 <option value="once_daily">Once a Daily</option>
                                 <option value="once_weekly">Once a Weekly</option>
                                 <option value="once_monthly">Once a Monthly</option>
-                                <option value="custom">Custom Posting</option>
+                                <option value="custom">Custom / Specific Date</option>
                             </select>
-                            <div class="mt-2" id="customStartDateGroup" style="display: none;">
-                                <label for="schedStartDate" class="form-label extra-small text-muted mb-1">Select Custom Date <span class="text-danger">*</span></label>
-                                <input type="date" class="form-control rounded-3" id="schedStartDate" name="start_date">
-                            </div>
                         </div>
 
-                        <div class="col-md-6">
+                        <div class="col-md-4">
+                            <label for="schedStartDate" class="form-label fw-bold small text-muted">Posting Start Date <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control rounded-3" id="schedStartDate" name="start_date" required>
+                            <div class="extra-small text-primary mt-1 fw-semibold" id="startDateHelperText"></div>
+                        </div>
+
+                        <div class="col-md-4">
                             <label for="schedStartTime" class="form-label fw-bold small text-muted">Posting Start Time <span class="text-danger">*</span></label>
                             <input type="time" class="form-control rounded-3" id="schedStartTime" name="start_time" required>
                         </div>
@@ -424,26 +451,48 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     const schedStartMode = document.getElementById('schedStartMode');
-    const customStartDateGroup = document.getElementById('customStartDateGroup');
     const schedStartDate = document.getElementById('schedStartDate');
+    const schedStartTime = document.getElementById('schedStartTime');
+    const startDateHelperText = document.getElementById('startDateHelperText');
 
-    function checkStartModeVisibility() {
-        const nowObj = new Date();
-        const todayStr = nowObj.getFullYear() + '-' + String(nowObj.getMonth() + 1).padStart(2, '0') + '-' + String(nowObj.getDate()).padStart(2, '0');
-        if (schedStartMode && schedStartMode.value === 'custom') {
-            if (customStartDateGroup) customStartDateGroup.style.display = 'block';
-            if (schedStartDate) {
-                if (!schedStartDate.value) schedStartDate.value = todayStr;
-            }
-        } else {
-            if (customStartDateGroup) customStartDateGroup.style.display = 'none';
-            if (schedStartDate) {
-                schedStartDate.value = todayStr;
+    function updateStartDateHelper() {
+        if (!schedStartDate || !startDateHelperText) return;
+        const val = schedStartDate.value;
+        if (!val) {
+            startDateHelperText.textContent = '';
+            return;
+        }
+
+        const dateParts = val.split('-');
+        if (dateParts.length === 3) {
+            const year = parseInt(dateParts[0], 10);
+            const month = parseInt(dateParts[1], 10) - 1;
+            const day = parseInt(dateParts[2], 10);
+            const d = new Date(year, month, day);
+            const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const weekday = weekdays[d.getDay()];
+            const formatted = months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+
+            const mode = schedStartMode ? schedStartMode.value : 'once_daily';
+            if (mode === 'once_weekly') {
+                startDateHelperText.innerHTML = '<i class="fas fa-redo me-1"></i> Repeats weekly on <strong>' + weekday + '</strong> starting ' + formatted;
+            } else if (mode === 'once_daily') {
+                startDateHelperText.innerHTML = '<i class="fas fa-calendar-check me-1"></i> Starts <strong>' + formatted + ' (' + weekday + ')</strong>, repeats daily';
+            } else if (mode === 'once_monthly') {
+                startDateHelperText.innerHTML = '<i class="fas fa-redo me-1"></i> Repeats on day <strong>' + d.getDate() + '</strong> of each month starting ' + formatted;
+            } else {
+                startDateHelperText.innerHTML = '<i class="fas fa-calendar-day me-1"></i> Starts on <strong>' + formatted + ' (' + weekday + ')</strong>';
             }
         }
     }
+
+    if (schedStartDate) {
+        schedStartDate.addEventListener('input', updateStartDateHelper);
+        schedStartDate.addEventListener('change', updateStartDateHelper);
+    }
     if (schedStartMode) {
-        schedStartMode.addEventListener('change', checkStartModeVisibility);
+        schedStartMode.addEventListener('change', updateStartDateHelper);
     }
 
     function updateFilterValueOptions(selectedVal) {
@@ -502,9 +551,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (schedStartMode) schedStartMode.value = 'once_daily';
         if (schedStartDate) schedStartDate.value = todayStr;
-        document.getElementById('schedStartTime').value = timeStr;
+        if (schedStartTime) schedStartTime.value = timeStr;
 
-        checkStartModeVisibility();
+        updateStartDateHelper();
         checkIntervalVisibility();
         updateFilterValueOptions();
         showScheduleModal();
@@ -535,13 +584,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 const todayStr = nowObj.getFullYear() + '-' + String(nowObj.getMonth() + 1).padStart(2, '0') + '-' + String(nowObj.getDate()).padStart(2, '0');
                 const timeStr = String(nowObj.getHours()).padStart(2, '0') + ':' + String(nowObj.getMinutes()).padStart(2, '0');
 
-                let sMode = data.start_mode;
-                if (!sMode || sMode === 'once_day') sMode = (data.start_date && data.start_date !== todayStr ? 'custom' : 'once_daily');
+                let sMode = data.start_mode || 'once_daily';
+                if (sMode === 'once_day') sMode = 'once_daily';
                 if (schedStartMode) schedStartMode.value = sMode;
                 if (schedStartDate) schedStartDate.value = data.start_date || todayStr;
-                document.getElementById('schedStartTime').value = data.start_time ? data.start_time.substring(0, 5) : timeStr;
+                if (schedStartTime) schedStartTime.value = data.start_time ? data.start_time.substring(0, 5) : timeStr;
 
-                checkStartModeVisibility();
+                updateStartDateHelper();
                 updateFilterValueOptions(data.filter_value);
 
                 let pIds = [];
