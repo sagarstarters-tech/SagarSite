@@ -360,16 +360,16 @@ try {
                         
                         <label class="form-label fw-bold text-dark mb-2">Select Active AI Engine</label>
                         <div class="d-flex flex-column gap-2 mb-4">
-                            <!-- Provider 1: Smart Local Hybrid -->
-                            <label class="p-3 border rounded-3 d-flex align-items-center justify-content-between cursor-pointer <?php echo $activeProvider === 'hybrid' ? 'border-primary bg-primary bg-opacity-10' : 'bg-light'; ?>" style="cursor: pointer;">
+                            <!-- Provider 1: Smart Local + Groq Cloud Dual Engine -->
+                            <label class="p-3 border rounded-3 d-flex align-items-center justify-content-between cursor-pointer <?php echo in_array($activeProvider, ['hybrid_groq', 'hybrid', 'groq']) ? 'border-primary bg-primary bg-opacity-10' : 'bg-light'; ?>" style="cursor: pointer;">
                                 <div class="d-flex align-items-center gap-2">
-                                    <input type="radio" name="chatbot_provider" value="hybrid" class="form-check-input mt-0" <?php echo $activeProvider === 'hybrid' ? 'checked' : ''; ?>>
+                                    <input type="radio" name="chatbot_provider" value="hybrid_groq" class="form-check-input mt-0" <?php echo in_array($activeProvider, ['hybrid_groq', 'hybrid', 'groq']) ? 'checked' : ''; ?>>
                                     <div>
-                                        <div class="fw-bold text-dark"><i class="fas fa-bolt text-warning me-1"></i> Smart Local Engine</div>
-                                        <div class="text-muted small">100% Free & Fast (No API Key Required)</div>
+                                        <div class="fw-bold text-dark"><i class="fas fa-bolt text-warning me-1"></i><i class="fas fa-rocket text-danger me-1"></i> Smart Local Engine + Groq Cloud AI <span class="badge bg-primary rounded-pill small ms-1">Dual Engine</span></div>
+                                        <div class="text-muted small">Local Database Precision (Orders, Pricing & Links) + Groq LLaMA 3.3 Intelligence (Natural Chat)</div>
                                     </div>
                                 </div>
-                                <span class="badge bg-success rounded-pill px-2 py-1 small">Free / Built-in</span>
+                                <span class="badge bg-success rounded-pill px-2 py-1 small">Recommended / Best</span>
                             </label>
 
                             <!-- Provider 2: Google Gemini -->
@@ -378,7 +378,7 @@ try {
                                     <input type="radio" name="chatbot_provider" value="gemini" class="form-check-input mt-0" <?php echo $activeProvider === 'gemini' ? 'checked' : ''; ?>>
                                     <div>
                                         <div class="fw-bold text-dark"><i class="fab fa-google text-primary me-1"></i> Google Gemini AI</div>
-                                        <div class="text-muted small">Gemini 2.0 / 1.5 Flash (Recommended)</div>
+                                        <div class="text-muted small">Gemini 2.0 / 1.5 Flash (Local Catalog RAG)</div>
                                     </div>
                                 </div>
                                 <span class="badge <?php echo !empty($chatbotService->getSetting('chatbot_gemini_key')) ? 'bg-primary' : 'bg-secondary'; ?> rounded-pill px-2 py-1 small">
@@ -386,21 +386,7 @@ try {
                                 </span>
                             </label>
 
-                            <!-- Provider 3: Groq Cloud -->
-                            <label class="p-3 border rounded-3 d-flex align-items-center justify-content-between cursor-pointer <?php echo $activeProvider === 'groq' ? 'border-primary bg-primary bg-opacity-10' : 'bg-light'; ?>" style="cursor: pointer;">
-                                <div class="d-flex align-items-center gap-2">
-                                    <input type="radio" name="chatbot_provider" value="groq" class="form-check-input mt-0" <?php echo $activeProvider === 'groq' ? 'checked' : ''; ?>>
-                                    <div>
-                                        <div class="fw-bold text-dark"><i class="fas fa-rocket text-danger me-1"></i> Groq Cloud AI</div>
-                                        <div class="text-muted small">LLaMA 3.3 70B (Ultra-Fast)</div>
-                                    </div>
-                                </div>
-                                <span class="badge <?php echo !empty($chatbotService->getSetting('chatbot_groq_key')) ? 'bg-primary' : 'bg-secondary'; ?> rounded-pill px-2 py-1 small">
-                                    <?php echo !empty($chatbotService->getSetting('chatbot_groq_key')) ? 'Configured' : 'Needs Key'; ?>
-                                </span>
-                            </label>
-
-                            <!-- Provider 4: OpenAI ChatGPT -->
+                            <!-- Provider 3: OpenAI ChatGPT -->
                             <label class="p-3 border rounded-3 d-flex align-items-center justify-content-between cursor-pointer <?php echo $activeProvider === 'openai' ? 'border-primary bg-primary bg-opacity-10' : 'bg-light'; ?>" style="cursor: pointer;">
                                 <div class="d-flex align-items-center gap-2">
                                     <input type="radio" name="chatbot_provider" value="openai" class="form-check-input mt-0" <?php echo $activeProvider === 'openai' ? 'checked' : ''; ?>>

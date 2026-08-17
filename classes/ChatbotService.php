@@ -176,43 +176,55 @@ class ChatbotService
         // Fetch Relevant Products based on context-enriched query
         $matchedProducts = $this->searchRelevantProducts($contextQuery);
 
-        // 3. Determine AI Provider
-        $provider = strtolower($this->getSetting('chatbot_provider', 'hybrid'));
+        // 3. Determine AI Provider Execution (Collaborative Dual-Engine Architecture)
+        $provider = strtolower($this->getSetting('chatbot_provider', 'hybrid_groq'));
+        $groqKey = $this->getSetting('chatbot_groq_key');
         $replyText = '';
         $providerUsed = 'hybrid';
 
-        // Attempt external AI if configured
-        if ($provider === 'gemini' && !empty($this->getSetting('chatbot_gemini_key'))) {
+        // Check if user is asking for direct purchase links or exact location
+        $isDirectLink = (bool)preg_match('/link|खरीदने का लिंक|खरीदने के लिए लिंक|buy link|purchase link|order link|लिंक|link do|link dijiye|direct link/iu', $userMessage);
+
+        // Collaborative Logic:
+        // Direct transactional tasks (links, exact price confirmation) use Local Engine for 100% precision.
+        // Conversational, recommendation, troubleshooting, and general inquiries use Groq LLaMA Cloud with Local Knowledge context!
+        $isDualGroq = in_array($provider, ['hybrid_groq', 'groq', 'hybrid']) && !empty($groqKey);
+
+        if ($isDirectLink && !empty($matchedProducts)) {
+            $replyText = $this->smartLocalHybridReply($userMessage, $matchedProducts, $history);
+            $providerUsed = 'local_direct_link';
+        } elseif ($isDualGroq) {
+            try {
+                // Groq Cloud LLaMA + Local Catalog RAG Context
+                $replyText = $this->callGroqAPI($userMessage, $history, $matchedProducts);
+                $providerUsed = 'groq_cloud_llama';
+            } catch (Exception $e) {
+                error_log("Groq Dual-Engine Fallback: " . $e->getMessage());
+                $replyText = $this->smartLocalHybridReply($userMessage, $matchedProducts, $history);
+                $providerUsed = 'local_engine_fallback';
+            }
+        } elseif ($provider === 'gemini' && !empty($this->getSetting('chatbot_gemini_key'))) {
             try {
                 $replyText = $this->callGeminiAPI($userMessage, $history, $matchedProducts);
                 $providerUsed = 'gemini';
             } catch (Exception $e) {
-                error_log("Gemini API Error: " . $e->getMessage() . " - Falling back to Smart Hybrid Engine");
+                error_log("Gemini API Error: " . $e->getMessage());
                 $replyText = $this->smartLocalHybridReply($userMessage, $matchedProducts, $history);
-                $providerUsed = 'hybrid_fallback';
+                $providerUsed = 'local_engine_fallback';
             }
         } elseif ($provider === 'openai' && !empty($this->getSetting('chatbot_openai_key'))) {
             try {
                 $replyText = $this->callOpenAIAPI($userMessage, $history, $matchedProducts);
                 $providerUsed = 'openai';
             } catch (Exception $e) {
-                error_log("OpenAI API Error: " . $e->getMessage() . " - Falling back to Smart Hybrid Engine");
+                error_log("OpenAI API Error: " . $e->getMessage());
                 $replyText = $this->smartLocalHybridReply($userMessage, $matchedProducts, $history);
-                $providerUsed = 'hybrid_fallback';
-            }
-        } elseif ($provider === 'groq' && !empty($this->getSetting('chatbot_groq_key'))) {
-            try {
-                $replyText = $this->callGroqAPI($userMessage, $history, $matchedProducts);
-                $providerUsed = 'groq';
-            } catch (Exception $e) {
-                error_log("Groq API Error: " . $e->getMessage() . " - Falling back to Smart Hybrid Engine");
-                $replyText = $this->smartLocalHybridReply($userMessage, $matchedProducts, $history);
-                $providerUsed = 'hybrid_fallback';
+                $providerUsed = 'local_engine_fallback';
             }
         } else {
-            // Default Smart Local Hybrid Engine (Always Works 100%)
+            // Default Smart Local Engine
             $replyText = $this->smartLocalHybridReply($userMessage, $matchedProducts, $history);
-            $providerUsed = 'hybrid';
+            $providerUsed = 'smart_local_engine';
         }
 
         // Format product payload for UI rendering
@@ -895,36 +907,33 @@ class ChatbotService
         throw new Exception("Invalid Groq API response payload");
     }
 
-    /**
-     * Build RAG System Context with store products and policies
-     */
     private function buildSystemContext(array $products): string
     {
-        $basePrompt = $this->getSetting('chatbot_system_prompt', 'You are Sagar Sahayak, the helpful AI Assistant for Sagar Starters.');
         $siteName = $this->getSetting('site_name', "Sagar Starter's");
         $curr = $this->getSetting('currency_symbol', '₹');
-        $phone = $this->getSetting('contact_phone', '+91 9837248000');
+        $phone = $this->getSetting('contact_phone', '+91 8573934013');
+        $email = $this->getSetting('contact_email', 'support@sagarstarters.com');
+        $address = 'Alipur Madra, Jakhanian, Ghazipur, Uttar Pradesh, India - PIN Code: 275203';
 
-        $context = $basePrompt . "\n\n"
-                 . "SAGAR STARTERS VERIFIED STORE KNOWLEDGE:\n"
-                 . "- Store / Brand Name: {$siteName} (sagarstarters.com)\n"
+        $context = "You are 'Sagar Sahayak', the personal electrical sales engineer & technical assistant at Sagar Starter's (sagarstarters.com).\n"
+                 . "Talk like a warm, experienced, and helpful human sales engineer. Never sound like a generic robotic chatbot.\n\n"
+                 . "SAGAR STARTERS FACTORY & STORE KNOWLEDGE:\n"
+                 . "- Company / Brand: {$siteName} (ISO Certified Electrical Starters Manufacturer)\n"
                  . "- Founder & Owner: Shri Pramod Kumar Sagar (Mr. Pramod Kumar Sagar)\n"
-                 . "- Head Office & Factory Location: Alipur Madra, Jakhanian, Ghazipur, Uttar Pradesh, India\n"
-                 . "- Official Contact & WhatsApp: {$phone}\n"
-                 . "- Official Email: sagarstarters@gmail.com\n"
-                 . "- Currency: {$curr}\n"
-                 . "- Speciality: Motor Starters (DOL, Star Delta, 1-Phase, 3-Phase), Submersible Pump Control Panels, Automatic Star Delta Starters, Voltage Stabilizers, MCB Breakers, Meters, and Spares.\n"
-                 . "- Order Tracking: Customers can track orders directly by providing their Order ID or Phone number.\n"
-                 . "- Shipping & Delivery: Pan-India fast delivery in 3 to 7 business days.\n"
-                 . "- Payment Methods: Cash on Delivery (COD) and 100% Secure Online Payments (UPI, PhonePe, Google Pay, Cards, NetBanking).\n\n";
+                 . "- Factory & Shop Address: {$address}\n"
+                 . "- Helpline & WhatsApp: {$phone}\n"
+                 . "- Email: {$email}\n"
+                 . "- Country: India 🇮🇳 (Pan-India Shipping in 3-7 days via Delhivery/DTDC)\n"
+                 . "- Payment: Cash on Delivery (COD) & Online (UPI, QR, Cards)\n"
+                 . "- Products Made: Single Phase Submersible Panels (0.5 to 3 HP), Three Phase DOL Starters (3 to 7.5 HP), Automatic Star Delta Starters (7.5 to 35 HP for Flour Mills/Atta Chakki/Tubewell), Low Voltage Stabilizers (5 KVA/10 KVA Copper), Spare Parts (relays, contactors, capacitors, digital meters).\n\n";
 
         if (!empty($products)) {
-            $context .= "MATCHED LIVE PRODUCTS IN DATABASE FOR THIS QUERY:\n";
+            $context .= "VERIFIED LIVE DATABASE PRODUCTS MATCHING USER QUERY:\n";
             foreach ($products as $p) {
                 $price = $p['sale_price'] > 0 ? $p['sale_price'] : ($p['regular_price'] > 0 ? $p['regular_price'] : $p['price']);
-                $context .= "- Product: {$p['name']} | Price: {$curr}{$price} | Category: " . ($p['category_name'] ?? 'Starters') . "\n";
+                $context .= "• {$p['name']} | Price: {$curr}" . number_format($price, 2) . " | Category: " . ($p['category_name'] ?? 'Starters') . "\n";
             }
-            $context .= "\nINSTRUCTION: Provide a concise, friendly response in the user's language (Hindi, Hinglish, or English). Highlight 1-2 product benefits if relevant. Product cards will be automatically displayed by the UI below your reply.";
+            $context .= "\nINSTRUCTION: Provide a crisp, friendly, respectful answer in the user's language (Hindi or English). Recommend the best product and mention its factory price. Product cards with Buy buttons are displayed below your reply.";
         }
 
         return $context;
