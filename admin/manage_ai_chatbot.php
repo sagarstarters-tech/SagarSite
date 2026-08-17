@@ -60,7 +60,11 @@ if (isset($_POST['ajax_action']) && $_POST['ajax_action'] === 'test_ai_connectio
                 echo json_encode(['success' => true, 'message' => 'Google Gemini Connection Successful! Response: ' . trim($json['candidates'][0]['content']['parts'][0]['text'])]);
             } else {
                 $err = $json['error']['message'] ?? ('HTTP ' . $code . ' - ' . substr((string)$res, 0, 150));
-                echo json_encode(['success' => false, 'message' => 'Gemini API Error: ' . $err]);
+                $hint = '';
+                if (strpos($apiKey, 'AIzaSy') !== 0) {
+                    $hint = ' (Note: Standard Gemini API Keys start with "AIzaSy...". In Google AI Studio, click "+ Create API key" > "Create API key in new project" to get a direct AI Key).';
+                }
+                echo json_encode(['success' => false, 'message' => 'Gemini API Error: ' . $err . $hint]);
             }
             exit;
         } elseif ($provider === 'openai' || $provider === 'groq') {
