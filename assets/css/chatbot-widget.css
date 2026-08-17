@@ -1,0 +1,523 @@
+/**
+ * Sagar Starters - AI ChatBot Floating Widget Styles
+ * Sleek, responsive, modern glassmorphic chat interface
+ */
+
+/* ── Launcher Floating Button ─────────────────────────────────────────── */
+.sagar-chat-launcher {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 1040;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: inherit;
+}
+
+.sagar-chat-launcher.pos-bottom-left {
+    right: auto;
+    left: 24px;
+}
+
+.sagar-launcher-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #007aff 0%, #0056b3 100%);
+    color: #ffffff !important;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    box-shadow: 0 8px 24px rgba(0, 122, 255, 0.4);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    outline: none;
+    position: relative;
+}
+
+.sagar-launcher-btn:hover {
+    transform: scale(1.08);
+    box-shadow: 0 12px 30px rgba(0, 122, 255, 0.55);
+}
+
+.sagar-launcher-btn:active {
+    transform: scale(0.95);
+}
+
+.sagar-launcher-badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 14px;
+    height: 14px;
+    background-color: #00e676;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    animation: sagarPulse 2s infinite;
+}
+
+@keyframes sagarPulse {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 230, 118, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(0, 230, 118, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 230, 118, 0); }
+}
+
+/* ── Proactive Teaser Tooltip ────────────────────────────────────────── */
+.sagar-launcher-teaser {
+    background: #ffffff;
+    color: #1e293b;
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.15);
+    white-space: nowrap;
+    border: 1px solid rgba(0, 122, 255, 0.15);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    animation: sagarSlideIn 0.3s ease-out;
+    cursor: pointer;
+}
+
+.sagar-launcher-teaser i {
+    color: #007aff;
+}
+
+/* ── Chat Window Modal / Container ───────────────────────────────────── */
+.sagar-chat-window {
+    position: fixed;
+    bottom: 96px;
+    right: 24px;
+    width: 380px;
+    max-width: calc(100vw - 32px);
+    height: 580px;
+    max-height: calc(100vh - 120px);
+    background: #ffffff;
+    border-radius: 20px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 1050;
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.2);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.sagar-chat-window.pos-bottom-left {
+    right: auto;
+    left: 24px;
+}
+
+.sagar-chat-window.active {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+}
+
+/* ── Chat Header ─────────────────────────────────────────────────────── */
+.sagar-chat-header {
+    background: linear-gradient(135deg, #007aff 0%, #0056b3 100%);
+    color: #ffffff;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.sagar-header-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    position: relative;
+    border: 1.5px solid rgba(255, 255, 255, 0.4);
+}
+
+.sagar-header-avatar .status-dot {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 10px;
+    height: 10px;
+    background: #00e676;
+    border: 2px solid #007aff;
+    border-radius: 50%;
+}
+
+.sagar-header-info {
+    flex: 1;
+    margin-left: 12px;
+}
+
+.sagar-header-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 0;
+    line-height: 1.2;
+    color: #ffffff;
+}
+
+.sagar-header-subtitle {
+    font-size: 0.72rem;
+    opacity: 0.9;
+    margin: 0;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.sagar-header-actions button {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 1rem;
+    padding: 4px 6px;
+    cursor: pointer;
+    transition: color 0.15s ease;
+}
+
+.sagar-header-actions button:hover {
+    color: #ffffff;
+}
+
+/* ── Chat Messages Body ──────────────────────────────────────────────── */
+.sagar-chat-body {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+    background: #f8fafc;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    scroll-behavior: smooth;
+}
+
+.sagar-msg-row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+}
+
+.sagar-msg-row.user {
+    justify-content: flex-end;
+}
+
+.sagar-msg-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+}
+
+.sagar-msg-bubble {
+    max-width: 82%;
+    padding: 10px 14px;
+    border-radius: 16px;
+    font-size: 0.88rem;
+    line-height: 1.45;
+    word-break: break-word;
+}
+
+.sagar-msg-row.bot .sagar-msg-bubble {
+    background: #ffffff;
+    color: #1e293b;
+    border-bottom-left-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    border: 1px solid #e2e8f0;
+}
+
+.sagar-msg-row.user .sagar-msg-bubble {
+    background: #007aff;
+    color: #ffffff;
+    border-bottom-right-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 122, 255, 0.25);
+}
+
+.sagar-msg-time {
+    font-size: 0.65rem;
+    opacity: 0.6;
+    margin-top: 4px;
+    text-align: right;
+}
+
+/* ── Products Recommendation Grid in Chat ────────────────────────────── */
+.sagar-chat-products {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+    width: 100%;
+}
+
+.sagar-product-chip {
+    display: flex;
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 8px;
+    gap: 10px;
+    transition: all 0.2s ease;
+}
+
+.sagar-product-chip:hover {
+    border-color: #007aff;
+    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.12);
+}
+
+.sagar-product-chip img {
+    width: 52px;
+    height: 52px;
+    object-fit: contain;
+    border-radius: 8px;
+    background: #f8fafc;
+    flex-shrink: 0;
+}
+
+.sagar-product-chip-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.sagar-product-chip-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 2px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sagar-product-chip-price {
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: #dc2626;
+}
+
+.sagar-product-chip-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.sagar-product-chip-actions a {
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.sagar-chip-view {
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
+.sagar-chip-wa {
+    background: #25d366;
+    color: #ffffff !important;
+}
+
+/* ── Typing Animation Dots ───────────────────────────────────────────── */
+.sagar-typing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px;
+}
+
+.sagar-typing-dot {
+    width: 6px;
+    height: 6px;
+    background: #94a3b8;
+    border-radius: 50%;
+    animation: sagarBounce 1.4s infinite ease-in-out both;
+}
+
+.sagar-typing-dot:nth-child(1) { animation-delay: -0.32s; }
+.sagar-typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes sagarBounce {
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1); }
+}
+
+/* ── Quick Suggestions Scrollbar ─────────────────────────────────────── */
+.sagar-chat-suggestions {
+    padding: 8px 12px;
+    background: #ffffff;
+    border-top: 1px solid #f1f5f9;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.sagar-chat-suggestions::-webkit-scrollbar {
+    display: none;
+}
+
+.sagar-suggestion-btn {
+    background: #f1f5f9;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+}
+
+.sagar-suggestion-btn:hover {
+    background: #007aff;
+    color: #ffffff;
+    border-color: #007aff;
+}
+
+/* ── Chat Input Footer ───────────────────────────────────────────────── */
+.sagar-chat-footer {
+    padding: 10px 14px;
+    background: #ffffff;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sagar-chat-input {
+    flex: 1;
+    border: 1px solid #cbd5e1;
+    border-radius: 24px;
+    padding: 8px 14px;
+    font-size: 0.88rem;
+    outline: none;
+    transition: border-color 0.2s ease;
+    background: #f8fafc;
+}
+
+.sagar-chat-input:focus {
+    border-color: #007aff;
+    background: #ffffff;
+}
+
+.sagar-send-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: #007aff;
+    color: #ffffff;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.sagar-send-btn:hover {
+    background: #0056b3;
+    transform: scale(1.05);
+}
+
+.sagar-send-btn:active {
+    transform: scale(0.95);
+}
+
+/* ── Dark Theme Compatibility ────────────────────────────────────────── */
+[data-mdb-theme="dark"] .sagar-chat-window,
+[data-bs-theme="dark"] .sagar-chat-window,
+body.dark-mode-active .sagar-chat-window {
+    background: #1e293b;
+    border-color: #334155;
+}
+
+[data-mdb-theme="dark"] .sagar-chat-body,
+[data-bs-theme="dark"] .sagar-chat-body,
+body.dark-mode-active .sagar-chat-body {
+    background: #0f172a;
+}
+
+[data-mdb-theme="dark"] .sagar-msg-row.bot .sagar-msg-bubble,
+[data-bs-theme="dark"] .sagar-msg-row.bot .sagar-msg-bubble,
+body.dark-mode-active .sagar-msg-row.bot .sagar-msg-bubble {
+    background: #1e293b;
+    color: #e2e8f0;
+    border-color: #334155;
+}
+
+[data-mdb-theme="dark"] .sagar-chat-footer,
+[data-bs-theme="dark"] .sagar-chat-footer,
+[data-mdb-theme="dark"] .sagar-chat-suggestions,
+[data-bs-theme="dark"] .sagar-chat-suggestions,
+body.dark-mode-active .sagar-chat-footer,
+body.dark-mode-active .sagar-chat-suggestions {
+    background: #1e293b;
+    border-color: #334155;
+}
+
+[data-mdb-theme="dark"] .sagar-chat-input,
+[data-bs-theme="dark"] .sagar-chat-input,
+body.dark-mode-active .sagar-chat-input {
+    background: #0f172a;
+    color: #ffffff;
+    border-color: #475569;
+}
+
+[data-mdb-theme="dark"] .sagar-product-chip,
+[data-bs-theme="dark"] .sagar-product-chip,
+body.dark-mode-active .sagar-product-chip {
+    background: #1e293b;
+    border-color: #334155;
+}
+
+[data-mdb-theme="dark"] .sagar-product-chip-title,
+[data-bs-theme="dark"] .sagar-product-chip-title,
+body.dark-mode-active .sagar-product-chip-title {
+    color: #e2e8f0;
+}
+
+/* ── Mobile View Adaptations ─────────────────────────────────────────── */
+@media (max-width: 576px) {
+    .sagar-chat-launcher {
+        bottom: 76px; /* Position above bottom navigation bar */
+        right: 16px;
+    }
+    .sagar-chat-launcher.pos-bottom-left {
+        left: 16px;
+    }
+    .sagar-launcher-btn {
+        width: 52px;
+        height: 52px;
+        font-size: 1.4rem;
+    }
+    .sagar-chat-window {
+        bottom: 80px;
+        right: 12px;
+        left: 12px;
+        width: auto;
+        height: calc(100vh - 160px);
+        max-height: 550px;
+    }
+}

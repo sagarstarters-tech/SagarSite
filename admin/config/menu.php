@@ -263,8 +263,14 @@ return [
     [
         'label'    => 'Marketing',
         'icon'     => 'fa-bullhorn',
-        'pages'    => ['manage_google_merchant.php', 'manage_whatsapp_settings.php', 'view_email_logs.php', 'manage_email_templates.php', 'manage_abandoned_carts.php'],
+        'pages'    => ['manage_ai_chatbot.php', 'manage_google_merchant.php', 'manage_whatsapp_settings.php', 'view_email_logs.php', 'manage_email_templates.php', 'manage_abandoned_carts.php'],
         'children' => [
+            [
+                'label' => 'AI ChatBot Assistant',
+                'icon'  => 'fa-robot',
+                'url'   => 'manage_ai_chatbot.php',
+                'pages' => ['manage_ai_chatbot.php'],
+            ],
             [
                 'label' => 'Cart Recovery',
                 'icon'  => 'fa-cart-arrow-down',

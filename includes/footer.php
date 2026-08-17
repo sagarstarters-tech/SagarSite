@@ -282,5 +282,27 @@ document.addEventListener('DOMContentLoaded', window.triggerProfileCompletionMod
 <?php endif; ?>
 </script>
 <?php endif; ?>
+
+<!-- AI ChatBot Floating Widget Integration -->
+<?php
+$chatbot_enabled = (isset($global_settings['chatbot_enabled']) && $global_settings['chatbot_enabled'] == '1') ? true : false;
+if (!$chatbot_enabled && isset($conn)) {
+    $cb_chk = $conn->query("SELECT setting_value FROM settings WHERE setting_key = 'chatbot_enabled' LIMIT 1");
+    if ($cb_chk && $cb_chk->num_rows > 0) {
+        $chatbot_enabled = ($cb_chk->fetch_assoc()['setting_value'] === '1');
+    }
+}
+
+if ($chatbot_enabled): 
+?>
+    <!-- ChatBot Widget CSS & JS -->
+    <link href="<?php echo ASSETS_URL; ?>/css/chatbot-widget.css?v=<?php echo file_exists(__DIR__ . '/../assets/css/chatbot-widget.css') ? filemtime(__DIR__ . '/../assets/css/chatbot-widget.css') : '1.0'; ?>" rel="stylesheet">
+    <script>
+        window.sagarChatConfig = {
+            apiEndpoint: '<?php echo SITE_URL; ?>/api/chatbot/chat.php'
+        };
+    </script>
+    <script src="<?php echo ASSETS_URL; ?>/js/chatbot-widget.js?v=<?php echo file_exists(__DIR__ . '/../assets/js/chatbot-widget.js') ? filemtime(__DIR__ . '/../assets/js/chatbot-widget.js') : '1.0'; ?>" defer></script>
+<?php endif; ?>
 </body>
 </html>
