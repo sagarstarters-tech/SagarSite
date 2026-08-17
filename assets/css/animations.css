@@ -30,13 +30,9 @@ body.body-fade-in.loaded {
     transform: scale(1.05) !important;
 }
 
-/* ── Lazy Image Blur-In ─────────────────────────────────── */
-img[loading="lazy"].lazy-anim {
-    filter: blur(5px);
-    transition: filter 0.5s ease-in-out;
-}
-img[loading="lazy"].lazy-anim.loaded {
-    filter: blur(0);
+/* ── Lazy Image Smooth Rendering ─────────────────────────── */
+img[loading="lazy"] {
+    content-visibility: auto;
 }
 
 /* ── Button Hover Animations ────────────────────────────── */

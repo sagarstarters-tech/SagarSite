@@ -389,33 +389,43 @@
      * Initialize listeners and observer
      */
     function init() {
-        scan();
+        if (!isAutoContrastEnabled()) {
+            return;
+        }
+
+        const runScan = () => {
+            if ('requestIdleCallback' in window) {
+                requestIdleCallback(scan, { timeout: 1000 });
+            } else {
+                requestAnimationFrame(scan);
+            }
+        };
+
+        runScan();
 
         const observer = new MutationObserver(debounce(() => {
-            if (isAutoContrastEnabled()) scan();
-        }, 150));
+            if (isAutoContrastEnabled()) runScan();
+        }, 300));
 
-        observer.observe(document.body, { childList: true, subtree: true });
+        if (document.body) {
+            observer.observe(document.body, { childList: true, subtree: true });
+        }
 
-        window.addEventListener('resize', debounce(scan, 200));
+        window.addEventListener('resize', debounce(runScan, 300));
         window.addEventListener('themeColorChanged', () => {
             document.querySelectorAll('[data-ac-done]').forEach(el => delete el.dataset.acDone);
-            scan();
+            runScan();
         });
     }
 
-    // Initialize on DOM ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
+    // Initialize only if autoContrast is enabled
+    if (isAutoContrastEnabled()) {
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
     }
-
-    // Secondary scan on complete window load
-    window.addEventListener('load', () => {
-        setTimeout(scan, 100);
-        setTimeout(scan, 500);
-    });
 
     // Public API
     window.UniversalContrast = {

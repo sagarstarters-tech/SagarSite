@@ -151,12 +151,15 @@ Options -Indexes
 </IfModule>
 
 <IfModule mod_headers.c>
+    # Serve correct Vary header for compressed content
+    Header append Vary Accept-Encoding
+
     # CSS/JS — 1 year, immutable (versioned via ?v= params)
     <FilesMatch "\.(css|js)$">
         Header set Cache-Control "public, max-age=31536000, immutable"
     </FilesMatch>
     # Images — 1 year, immutable
-    <FilesMatch "\.(jpg|jpeg|png|gif|webp|ico|svg)$">
+    <FilesMatch "\.(jpg|jpeg|png|gif|webp|ico|svg|avif)$">
         Header set Cache-Control "public, max-age=31536000, immutable"
     </FilesMatch>
     # Fonts — 1 year

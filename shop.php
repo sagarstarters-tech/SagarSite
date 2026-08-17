@@ -299,7 +299,7 @@ if (!empty($global_settings[$setting_key])) {
                                         <i class="fas fa-tag me-1"></i><?php echo $discount_percent; ?>% OFF
                                     </span>
                                 <?php endif; ?>
-                                <img src="<?php echo htmlspecialchars($main_img_src); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="card-img-top" alt="<?php echo htmlspecialchars($p['name']); ?>" loading="lazy" style="height: 220px; object-fit: <?php echo htmlspecialchars($p['image_fit'] ?? 'contain'); ?>; background-color:#fff;">
+                                <img src="<?php echo htmlspecialchars($main_img_src); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="card-img-top" alt="<?php echo htmlspecialchars($p['name']); ?>" loading="lazy" width="300" height="220" decoding="async" style="height: 220px; object-fit: <?php echo htmlspecialchars($p['image_fit'] ?? 'contain'); ?>; background-color:#fff;">
                             </div>
                             <div class="card-body d-flex flex-column p-3">
                                 <h5 class="card-title fw-bold mb-1 text-truncate" title="<?php echo htmlspecialchars($p['name']); ?>">

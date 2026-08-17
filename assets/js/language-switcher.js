@@ -178,16 +178,47 @@
     };
 
     /**
+     * Lazy Load Google Translate Script on Demand
+     */
+    function loadGoogleTranslateScript() {
+        if (window._gtScriptLoaded) return;
+        window._gtScriptLoaded = true;
+        const s = document.createElement('script');
+        s.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+        s.async = true;
+        document.head.appendChild(s);
+    }
+    window.loadGoogleTranslateScript = loadGoogleTranslateScript;
+
+    /**
      * DOM Ready Event Handler
      */
     document.addEventListener('DOMContentLoaded', function () {
         const initialLang = getCurrentLanguage();
         updateLanguageUI(initialLang);
 
+        // If non-English is already active, load translation script on idle
+        if (initialLang !== 'en') {
+            if ('requestIdleCallback' in window) {
+                requestIdleCallback(loadGoogleTranslateScript, { timeout: 1500 });
+            } else {
+                setTimeout(loadGoogleTranslateScript, 800);
+            }
+        }
+
+        // On hover or focus of language dropdown, pre-load translate script
+        const langDropdowns = document.querySelectorAll('.language-switcher-dropdown, .language-switcher-wrapper, .language-selector');
+        langDropdowns.forEach(dd => {
+            dd.addEventListener('mouseenter', loadGoogleTranslateScript, { once: true });
+            dd.addEventListener('focusin', loadGoogleTranslateScript, { once: true });
+            dd.addEventListener('click', loadGoogleTranslateScript, { once: true });
+        });
+
         // Bind click events on all language options
         document.querySelectorAll('.lang-option').forEach(option => {
             option.addEventListener('click', function (e) {
                 e.preventDefault();
+                loadGoogleTranslateScript();
                 const lang = this.getAttribute('data-lang');
                 if (lang) {
                     window.changeSiteLanguage(lang);

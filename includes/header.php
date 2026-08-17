@@ -323,9 +323,8 @@ if (isset($product['slug'])) {
     <link rel="preload" href="<?php echo ASSETS_URL; ?>/css/hero-slider-style.css?v=1.5" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link href="<?php echo ASSETS_URL; ?>/css/hero-slider-style.css?v=1.5" rel="stylesheet"></noscript>
 
-    <!-- Google Fonts with font-display:swap (non-render-blocking) —
-         Montserrat (headings) + Poppins (body) — replaces @import in style.css -->
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght@300;400;500;600&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <!-- Google Fonts with font-display:swap (non-render-blocking) -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght@300;400;500;600&display=swap" media="print" onload="this.media='all'">
     <noscript><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet"></noscript>
 
     <!-- MDBootstrap CSS (preload for faster render) -->
@@ -348,10 +347,9 @@ if (isset($product['slug'])) {
     <!-- WhatsApp Widget CSS -->
     <link href="<?php echo SITE_URL; ?>/whatsapp-style.css" rel="stylesheet">
     <!-- Custom Animations CSS -->
-    <link href="<?php echo ASSETS_URL; ?>/css/animations.css?v=1.2" rel="stylesheet">
+    <link href="<?php echo ASSETS_URL; ?>/css/animations.css?v=1.3" rel="stylesheet">
     <!-- Language Switcher CSS -->
     <link href="<?php echo ASSETS_URL; ?>/css/language-switcher.css?v=<?php echo file_exists(__DIR__ . '/../assets/css/language-switcher.css') ? filemtime(__DIR__ . '/../assets/css/language-switcher.css') : '1.0'; ?>" rel="stylesheet">
-    <!-- jQuery moved to footer for non-render-blocking load -->
 
     <?php
     require_once 'ScriptService.php';
@@ -366,13 +364,16 @@ if (isset($product['slug'])) {
         }
     }
     ?>
+    <?php
+    $auto_contrast_enabled = (isset($global_settings['auto_text_contrast']) && !is_array($global_settings['auto_text_contrast']) && ($global_settings['auto_text_contrast'] === '1' || $global_settings['auto_text_contrast'] === 1));
+    if ($auto_contrast_enabled):
+    ?>
     <!-- Auto Contrast Algorithm: ensures all button text is always readable -->
     <script>
-        window.siteConfig = {
-            autoContrast: <?php echo (isset($global_settings['auto_text_contrast']) && $global_settings['auto_text_contrast'] == '1') ? 'true' : 'false'; ?>
-        };
+        window.siteConfig = { autoContrast: true };
     </script>
-    <script src="<?php echo ASSETS_URL; ?>/js/auto-contrast.js?v=<?php echo file_exists(__DIR__ . '/../assets/js/auto-contrast.js') ? filemtime(__DIR__ . '/../assets/js/auto-contrast.js') : '2.0'; ?>" defer></script>
+    <script src="<?php echo ASSETS_URL; ?>/js/auto-contrast.js?v=<?php echo file_exists(__DIR__ . '/../assets/js/auto-contrast.js') ? filemtime(__DIR__ . '/../assets/js/auto-contrast.js') : '2.1'; ?>" defer></script>
+    <?php endif; ?>
     
     <!-- Theme Selection Check Script for Immediate Load (prevents unstyled flash) -->
     <script>
@@ -385,8 +386,7 @@ if (isset($product['slug'])) {
     <script src="<?php echo ASSETS_URL; ?>/js/theme-toggle.js?v=1.1" defer></script>
 
     <!-- Language Switcher & Translation Engine -->
-    <script src="<?php echo ASSETS_URL; ?>/js/language-switcher.js?v=<?php echo file_exists(__DIR__ . '/../assets/js/language-switcher.js') ? filemtime(__DIR__ . '/../assets/js/language-switcher.js') : '1.0'; ?>" defer></script>
-    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" defer></script>
+    <script src="<?php echo ASSETS_URL; ?>/js/language-switcher.js?v=<?php echo file_exists(__DIR__ . '/../assets/js/language-switcher.js') ? filemtime(__DIR__ . '/../assets/js/language-switcher.js') : '1.1'; ?>" defer></script>
 
     <!-- Register Service Worker -->
     <script>
@@ -437,7 +437,7 @@ if (isset($product['slug'])) {
                 $header_logo_url = ASSETS_URL . '/images/' . $fallback;
             }
         ?>
-            <img src="<?php echo htmlspecialchars($header_logo_url); ?>" alt="Logo" style="height: <?php echo htmlspecialchars($global_settings['header_logo_height'] ?? '40'); ?>px; width: auto; object-fit: contain;">
+            <img src="<?php echo htmlspecialchars($header_logo_url); ?>" alt="Logo" width="160" height="<?php echo htmlspecialchars($global_settings['header_logo_height'] ?? '40'); ?>" loading="eager" decoding="async" style="height: <?php echo htmlspecialchars($global_settings['header_logo_height'] ?? '40'); ?>px; width: auto; object-fit: contain;">
         <?php else: ?>
             <span>Sagar Starter's</span>
         <?php endif; ?>

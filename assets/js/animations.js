@@ -4,38 +4,23 @@
    ========================================================= */
 
 document.addEventListener('DOMContentLoaded', () => {
-
-    // Page loader removed — body is always visible immediately.
-    // Just mark body as loaded for any JS that depends on this class.
     window.addEventListener('load', () => {
         document.body.classList.add('loaded');
     });
 
-    /* ── Button Ripple Effect ──────────────────────────── */
-    const buttons = document.querySelectorAll('.btn');
-    buttons.forEach(btn => {
-        btn.addEventListener('click', function (e) {
-            let ripple = document.createElement('span');
-            ripple.classList.add('ripple');
-            this.appendChild(ripple);
-            let rect = this.getBoundingClientRect();
-            let x = e.clientX - rect.left;
-            let y = e.clientY - rect.top;
-            ripple.style.left = `${x}px`;
-            ripple.style.top  = `${y}px`;
-            setTimeout(() => { ripple.remove(); }, 600);
-        });
-    });
-
-    /* ── Lazy Image Blur-In ────────────────────────────── */
-    const lazyImages = document.querySelectorAll('img[loading="lazy"]');
-    lazyImages.forEach(img => {
-        img.classList.add('lazy-anim');
-        if (img.complete) {
-            img.classList.add('loaded');
-        } else {
-            img.addEventListener('load', () => { img.classList.add('loaded'); });
-        }
+    /* ── Button Ripple Effect via Event Delegation (Zero initial scan) ──── */
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.btn-custom, .btn-primary, .btn-outline-primary');
+        if (!btn) return;
+        const ripple = document.createElement('span');
+        ripple.classList.add('ripple');
+        btn.appendChild(ripple);
+        const rect = btn.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        ripple.style.left = `${x}px`;
+        ripple.style.top  = `${y}px`;
+        setTimeout(() => { ripple.remove(); }, 600);
     });
 });
 

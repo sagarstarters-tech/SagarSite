@@ -184,7 +184,7 @@ if (!empty($global_settings['hero_banner_product'])) {
             $main_image_src = resolve_product_image_url($product['image'] ?? '', $conn, $id);
             ?>
             <div class="card product-card shadow-sm border-0 bg-light d-flex align-items-center justify-content-center p-3 mb-3" style="position: relative; overflow: hidden;" id="imageZoomContainer">
-                <img id="mainProductImage" src="<?php echo htmlspecialchars($main_image_src); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="img-fluid rounded" alt="<?php echo htmlspecialchars($product['name']); ?>" style="width: 100%; aspect-ratio: 1 / 1; object-fit: <?php echo htmlspecialchars($product['image_fit'] ?? 'contain'); ?>; transition: opacity 0.3s ease;">
+                <img id="mainProductImage" src="<?php echo htmlspecialchars($main_image_src); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="img-fluid rounded" alt="<?php echo htmlspecialchars($product['name']); ?>" width="500" height="500" fetchpriority="high" decoding="async" style="width: 100%; aspect-ratio: 1 / 1; object-fit: <?php echo htmlspecialchars($product['image_fit'] ?? 'contain'); ?>; transition: opacity 0.3s ease;">
             </div>
             
             <style>
@@ -227,7 +227,7 @@ if (!empty($global_settings['hero_banner_product'])) {
             <div class="d-flex gap-2 overflow-auto py-2" style="white-space: nowrap;">
                 <!-- Include main image as first thumbnail -->
                 <div class="gallery-thumbnail active-thumbnail" style="width: 80px; height: 80px; cursor: pointer; flex-shrink: 0; border: 2px solid var(--primary-color); border-radius: 8px; overflow: hidden; padding: 2px;" onclick="changeMainImage(this, '<?php echo htmlspecialchars($main_image_src); ?>')">
-                    <img src="<?php echo htmlspecialchars($main_image_src); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="w-100 h-100 object-fit-cover rounded">
+                    <img src="<?php echo htmlspecialchars($main_image_src); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="w-100 h-100 object-fit-cover rounded" width="80" height="80" loading="lazy" decoding="async">
                 </div>
                 
                 <!-- Output extra gallery images -->
@@ -238,7 +238,7 @@ if (!empty($global_settings['hero_banner_product'])) {
                     }
                 ?>
                 <div class="gallery-thumbnail" style="width: 80px; height: 80px; cursor: pointer; flex-shrink: 0; border: 2px solid transparent; border-radius: 8px; overflow: hidden; padding: 2px;" onclick="changeMainImage(this, '<?php echo htmlspecialchars($g_src); ?>')">
-                    <img src="<?php echo htmlspecialchars($g_src); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="w-100 h-100 object-fit-cover rounded">
+                    <img src="<?php echo htmlspecialchars($g_src); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="w-100 h-100 object-fit-cover rounded" width="80" height="80" loading="lazy" decoding="async">
                 </div>
                 <?php endwhile; ?>
             </div>
@@ -660,7 +660,7 @@ if (!empty($global_settings['hero_banner_product'])) {
             ?>
             <div class="col-md-3" data-aos="zoom-in" data-aos-delay="<?php echo $delay; $delay+=100; ?>">
                 <div class="card product-card h-100 border-0 shadow-sm">
-                    <img src="<?php echo htmlspecialchars(resolve_product_image_url($p['image'] ?? '', $conn, $p['id'])); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="card-img-top" alt="<?php echo htmlspecialchars($p['name']); ?>" loading="lazy" style="height: 180px; object-fit: <?php echo htmlspecialchars($p['image_fit'] ?? 'contain'); ?>; background-color:#fff;">
+                    <img src="<?php echo htmlspecialchars(resolve_product_image_url($p['image'] ?? '', $conn, $p['id'])); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="card-img-top" alt="<?php echo htmlspecialchars($p['name']); ?>" loading="lazy" width="260" height="180" decoding="async" style="height: 180px; object-fit: <?php echo htmlspecialchars($p['image_fit'] ?? 'contain'); ?>; background-color:#fff;">
                     <div class="card-body d-flex flex-column p-3">
                         <h6 class="card-title fw-bold text-truncate mb-2" title="<?php echo htmlspecialchars($p['name']); ?>">
                             <a href="<?php echo $rel_url; ?>" class="text-reset text-decoration-none"><?php echo htmlspecialchars($p['name']); ?></a>
