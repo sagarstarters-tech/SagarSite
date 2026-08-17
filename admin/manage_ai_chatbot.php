@@ -388,9 +388,9 @@ try {
                             <div class="row g-2 align-items-center">
                                 <div class="col-sm-7">
                                     <select name="chatbot_gemini_model" id="geminiModel" class="form-select form-select-sm">
-                                        <option value="gemini-1.5-flash" <?php echo $chatbotService->getSetting('chatbot_gemini_model') === 'gemini-1.5-flash' ? 'selected' : ''; ?>>gemini-1.5-flash (Fast & Free Tier)</option>
-                                        <option value="gemini-2.0-flash" <?php echo $chatbotService->getSetting('chatbot_gemini_model') === 'gemini-2.0-flash' ? 'selected' : ''; ?>>gemini-2.0-flash (Latest 2026)</option>
-                                        <option value="gemini-1.5-pro" <?php echo $chatbotService->getSetting('chatbot_gemini_model') === 'gemini-1.5-pro' ? 'selected' : ''; ?>>gemini-1.5-pro</option>
+                                        <option value="gemini-1.5-pro" <?php echo $chatbotService->getSetting('chatbot_gemini_model') === 'gemini-1.5-pro' ? 'selected' : ''; ?>>👑 gemini-1.5-pro (Recommended for Pro)</option>
+                                        <option value="gemini-2.0-flash" <?php echo $chatbotService->getSetting('chatbot_gemini_model') === 'gemini-2.0-flash' ? 'selected' : ''; ?>>⚡ gemini-2.0-flash (Latest Ultra-Fast)</option>
+                                        <option value="gemini-1.5-flash" <?php echo ($chatbotService->getSetting('chatbot_gemini_model') === 'gemini-1.5-flash' || empty($chatbotService->getSetting('chatbot_gemini_model'))) ? 'selected' : ''; ?>>🚀 gemini-1.5-flash (Fast)</option>
                                     </select>
                                 </div>
                                 <div class="col-sm-5 text-end">
