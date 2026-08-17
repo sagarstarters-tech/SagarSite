@@ -271,7 +271,7 @@ if (!empty($global_settings[$setting_key])) {
             <div class="row g-4">
                 <?php if($prods && $prods->num_rows > 0): ?>
                     <?php 
-                    $wa_phone = !empty($global_settings['whatsapp_number']) ? preg_replace('/[^0-9]/', '', $global_settings['whatsapp_number']) : '919837248000';
+                    $wa_phone = get_store_whatsapp_number();
                     $delay=100; 
                     while($p = $prods->fetch_assoc()): 
                         $main_img_src = resolve_product_image_url($p['image'] ?? '', $conn, $p['id']);

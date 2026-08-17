@@ -646,7 +646,7 @@ if (!empty($global_settings['hero_banner_product'])) {
         <h3 class="montserrat fw-bold text-center mb-5">Related Products</h3>
         <div class="row g-4">
             <?php 
-            $wa_phone = !empty($global_settings['whatsapp_number']) ? preg_replace('/[^0-9]/', '', $global_settings['whatsapp_number']) : '919837248000';
+            $wa_phone = get_store_whatsapp_number();
             $delay=100; 
             while($p = $related->fetch_assoc()): 
                 $rel_reg_price = (float)($p['regular_price'] > 0 ? $p['regular_price'] : $p['price']);

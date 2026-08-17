@@ -173,7 +173,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_chatbot_settings
         'chatbot_groq_key'        => trim($_POST['chatbot_groq_key'] ?? ''),
         'chatbot_groq_model'      => trim($_POST['chatbot_groq_model'] ?? 'llama-3.3-70b-versatile'),
         'chatbot_system_prompt'   => trim($_POST['chatbot_system_prompt'] ?? ''),
-        'chatbot_whatsapp_number' => trim($_POST['chatbot_whatsapp_number'] ?? '919837248000'),
+        'chatbot_whatsapp_number' => trim($_POST['chatbot_whatsapp_number'] ?? '918573934013'),
         'chatbot_position'        => trim($_POST['chatbot_position'] ?? 'bottom-right'),
         'chatbot_theme_color'     => trim($_POST['chatbot_theme_color'] ?? '#007aff'),
         'chatbot_quick_prompts'   => trim($_POST['chatbot_quick_prompts'] ?? ''),
@@ -296,7 +296,7 @@ try {
                                 <label class="form-label fw-semibold small text-muted">WhatsApp Support Number</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light"><i class="fab fa-whatsapp text-success"></i></span>
-                                    <input type="text" name="chatbot_whatsapp_number" class="form-control" value="<?php echo htmlspecialchars($chatbotService->getSetting('chatbot_whatsapp_number', '919837248000')); ?>" placeholder="919837248000">
+                                    <input type="text" name="chatbot_whatsapp_number" class="form-control" value="<?php echo htmlspecialchars($chatbotService->getSetting('chatbot_whatsapp_number', '918573934013')); ?>" placeholder="918573934013">
                                 </div>
                             </div>
                             <div class="col-md-6">

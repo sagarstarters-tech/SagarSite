@@ -41,7 +41,7 @@ try {
         $botName = $chatbotService->getSetting('chatbot_name', 'Sagar Sahayak');
         $botTitle = $chatbotService->getSetting('chatbot_title', 'Sagar AI Assistant');
         $quickReplies = $chatbotService->getQuickReplies();
-        $waPhone = !empty($chatbotService->getSetting('whatsapp_number')) ? preg_replace('/[^0-9]/', '', $chatbotService->getSetting('whatsapp_number')) : '919837248000';
+        $waPhone = !empty($chatbotService->getSetting('whatsapp_number')) ? preg_replace('/[^0-9]/', '', $chatbotService->getSetting('whatsapp_number')) : (!empty($chatbotService->getSetting('chatbot_whatsapp_number')) ? preg_replace('/[^0-9]/', '', $chatbotService->getSetting('chatbot_whatsapp_number')) : (function_exists('get_store_whatsapp_number') ? get_store_whatsapp_number() : '918573934013'));
 
         echo json_encode([
             'success'           => true,

@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Phone number and message are injected by PHP via window.WA_WIDGET_CONFIG (see footer.php).
     // Fallback values are used if the config is missing (e.g., static HTML preview).
     const _cfg = window.WA_WIDGET_CONFIG || {};
-    const phoneNumber = _cfg.phoneNumber || "919999999999"; // Replace with your WhatsApp number without '+'
+    const phoneNumber = _cfg.phoneNumber || "918573934013"; // Replace with your WhatsApp number without '+'
     const prefillMessage = _cfg.prefillMessage || "Hello, I have a question about your products.";
 
     // Advanced Options

@@ -12,7 +12,7 @@
         botTitle: 'Sagar AI Assistant',
         welcomeMsg: 'Namaste! 🙏 Main Sagar Starters ka AI Assistant hu. Main aapko Motor Starters, Submersible Panels, Price aur Order Tracking me help kar sakta hu.',
         quickReplies: ['5HP Submersible Starter', 'Single Phase vs 3 Phase', 'Track My Order', 'Bulk Purchase Discount'],
-        waPhone: '919837248000',
+        waPhone: '918573934013',
         position: 'bottom-right',
         soundEnabled: localStorage.getItem('sagar_chat_sound') !== '0',
         responseDelay: 800
@@ -127,7 +127,15 @@
             <div class="sagar-chat-body" id="sagarChatMessages"></div>
 
             <!-- Quick Suggestions -->
-            <div class="sagar-chat-suggestions" id="sagarChatSuggestions"></div>
+            <div class="sagar-chat-suggestions-wrapper" id="sagarSugWrapper">
+                <button type="button" class="sagar-sug-nav sagar-sug-prev d-none" id="sagarSugPrev" aria-label="Previous suggestions" title="Scroll left">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <div class="sagar-chat-suggestions" id="sagarChatSuggestions"></div>
+                <button type="button" class="sagar-sug-nav sagar-sug-next d-none" id="sagarSugNext" aria-label="Next suggestions" title="Scroll right">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
 
             <!-- Input Footer -->
             <form class="sagar-chat-footer" id="sagarChatForm">
@@ -194,6 +202,8 @@
                 input.value = '';
             }
         });
+
+        initSuggestionsScroll();
     }
 
     /**
@@ -215,6 +225,7 @@
             setTimeout(() => {
                 const input = document.getElementById('sagarChatInput');
                 if (input) input.focus();
+                updateNavButtons();
             }, 300);
             scrollToBottom();
         } else {
@@ -383,6 +394,105 @@
         msgs.appendChild(row);
     }
 
+    let hasDragged = false;
+
+    /**
+     * Initialize Suggestions Desktop Wheel, Drag & Arrow Scrolling
+     */
+    function initSuggestionsScroll() {
+        const container = document.getElementById('sagarChatSuggestions');
+        const prevBtn = document.getElementById('sagarSugPrev');
+        const nextBtn = document.getElementById('sagarSugNext');
+        if (!container) return;
+
+        // 1. Mouse Wheel Scroll (Translates vertical wheel scroll to horizontal on Desktop)
+        container.addEventListener('wheel', (e) => {
+            if (e.deltaY !== 0) {
+                e.preventDefault();
+                container.scrollLeft += e.deltaY;
+                updateNavButtons();
+            }
+        }, { passive: false });
+
+        // 2. Mouse Click & Drag to Scroll (Desktop)
+        let isDown = false;
+        let startX = 0;
+        let scrollStartLeft = 0;
+
+        container.addEventListener('mousedown', (e) => {
+            isDown = true;
+            hasDragged = false;
+            startX = e.pageX - container.offsetLeft;
+            scrollStartLeft = container.scrollLeft;
+            container.classList.add('is-dragging');
+        });
+
+        window.addEventListener('mouseup', () => {
+            if (isDown) {
+                isDown = false;
+                container.classList.remove('is-dragging');
+                setTimeout(() => { hasDragged = false; }, 60);
+            }
+        });
+
+        container.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - container.offsetLeft;
+            const walk = (x - startX) * 1.5;
+            if (Math.abs(walk) > 4) {
+                hasDragged = true;
+            }
+            container.scrollLeft = scrollStartLeft - walk;
+            updateNavButtons();
+        });
+
+        // 3. Navigation Arrow Click Handlers
+        if (prevBtn) {
+            prevBtn.addEventListener('click', () => {
+                container.scrollBy({ left: -140, behavior: 'smooth' });
+                setTimeout(updateNavButtons, 250);
+            });
+        }
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => {
+                container.scrollBy({ left: 140, behavior: 'smooth' });
+                setTimeout(updateNavButtons, 250);
+            });
+        }
+
+        container.addEventListener('scroll', updateNavButtons);
+        window.addEventListener('resize', updateNavButtons);
+    }
+
+    /**
+     * Update Suggestions Navigation Arrow Visibility
+     */
+    function updateNavButtons() {
+        const container = document.getElementById('sagarChatSuggestions');
+        const prevBtn = document.getElementById('sagarSugPrev');
+        const nextBtn = document.getElementById('sagarSugNext');
+        if (!container || !prevBtn || !nextBtn) return;
+
+        const maxScroll = container.scrollWidth - container.clientWidth;
+        if (maxScroll <= 4) {
+            prevBtn.classList.add('d-none');
+            nextBtn.classList.add('d-none');
+        } else {
+            if (container.scrollLeft <= 2) {
+                prevBtn.classList.add('d-none');
+            } else {
+                prevBtn.classList.remove('d-none');
+            }
+
+            if (container.scrollLeft >= maxScroll - 4) {
+                nextBtn.classList.add('d-none');
+            } else {
+                nextBtn.classList.remove('d-none');
+            }
+        }
+    }
+
     /**
      * Render Quick Suggestion Chips
      */
@@ -391,12 +501,21 @@
         if (!container) return;
         container.innerHTML = '';
 
+        if (!chips || chips.length === 0) {
+            updateNavButtons();
+            return;
+        }
+
         chips.forEach(chip => {
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'sagar-suggestion-btn';
             btn.textContent = chip;
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', (e) => {
+                if (hasDragged) {
+                    e.preventDefault();
+                    return;
+                }
                 if (chip.toLowerCase().includes('whatsapp')) {
                     window.open(`https://wa.me/${config.waPhone}?text=` + encodeURIComponent("Hello Sagar Starters, I need technical support & sales assistance."), '_blank');
                 } else {
@@ -405,6 +524,8 @@
             });
             container.appendChild(btn);
         });
+
+        setTimeout(updateNavButtons, 80);
     }
 
     /**

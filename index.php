@@ -45,8 +45,8 @@ if (!$prods || $prods->num_rows === 0) {
 }
 
 // ── 3. Contact & Phone Info ───────────────────────────────────────────────────
-$wa_phone = !empty($global_settings['whatsapp_number']) ? preg_replace('/[^0-9]/', '', $global_settings['whatsapp_number']) : '919837248000';
-$contact_phone = !empty($global_settings['contact_phone']) ? $global_settings['contact_phone'] : '+91 98372 48000';
+$wa_phone = get_store_whatsapp_number();
+$contact_phone = !empty($global_settings['contact_phone']) ? $global_settings['contact_phone'] : '+91 8573934013';
 $clean_contact_phone = preg_replace('/[^0-9+]/', '', $contact_phone);
 ?>
 

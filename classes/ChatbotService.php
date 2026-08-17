@@ -65,7 +65,7 @@ class ChatbotService
                 'chatbot_groq_key'        => '',
                 'chatbot_groq_model'      => 'llama-3.3-70b-versatile',
                 'chatbot_system_prompt'   => 'You are Sagar Sahayak, the intelligent, friendly, and expert AI Assistant for Sagar Starters (sagarstarters.com) — an Indian eCommerce store specializing in premium motor starters, submersible pump control panels (1-Phase & 3-Phase), Star Delta starters, DOL starters, circuit breakers, and agricultural motor automation. Respond in a warm, professional, and helpful tone. Answer in the same language the customer speaks (Hindi, Hinglish, English, Gujarati, etc.). When customers ask about products, recommend matching items with their specs and prices. Always offer help with order tracking, bulk discounts, and technical advice.',
-                'chatbot_whatsapp_number' => '919837248000',
+                'chatbot_whatsapp_number' => '918573934013',
                 'chatbot_position'        => 'bottom-right',
                 'chatbot_theme_color'     => '#007aff',
                 'chatbot_quick_prompts'   => "5HP Submersible Starter,Single Phase vs 3 Phase,Track My Order,Bulk Purchase Discount,Talk to Expert on WhatsApp",
@@ -239,7 +239,7 @@ class ChatbotService
         $formattedProducts = [];
         $siteUrl = defined('SITE_URL') ? rtrim(SITE_URL, '/') : '';
         $currency = $this->getSetting('currency_symbol', '₹');
-        $waPhone = !empty($this->getSetting('whatsapp_number')) ? preg_replace('/[^0-9]/', '', $this->getSetting('whatsapp_number')) : '919837248000';
+        $waPhone = !empty($this->getSetting('whatsapp_number')) ? preg_replace('/[^0-9]/', '', $this->getSetting('whatsapp_number')) : (!empty($this->getSetting('chatbot_whatsapp_number')) ? preg_replace('/[^0-9]/', '', $this->getSetting('chatbot_whatsapp_number')) : (function_exists('get_store_whatsapp_number') ? get_store_whatsapp_number() : '918573934013'));
 
         foreach ($matchedProducts as $p) {
             $regPrice = (float)($p['regular_price'] > 0 ? $p['regular_price'] : $p['price']);

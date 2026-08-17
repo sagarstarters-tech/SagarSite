@@ -201,12 +201,16 @@ document.addEventListener('DOMContentLoaded', function() {
 $wa_widget_q = $conn->query("SELECT chat_widget_enabled, chat_widget_number, chat_widget_message FROM whatsapp_settings WHERE id = 1");
 $wa_widget   = $wa_widget_q ? $wa_widget_q->fetch_assoc() : null;
 if ($wa_widget && $wa_widget['chat_widget_enabled']) {
-    $wa_number  = htmlspecialchars($wa_widget['chat_widget_number'] ?? '918573934013');
+    $widget_raw_num = !empty($wa_widget['chat_widget_number']) ? $wa_widget['chat_widget_number'] : (function_exists('get_store_whatsapp_number') ? get_store_whatsapp_number() : '918573934013');
+    $wa_number  = htmlspecialchars($widget_raw_num);
     $wa_message = htmlspecialchars($wa_widget['chat_widget_message'] ?? 'Hello, I have a question about your products.');
+    $clean_wa_widget_num = preg_replace('/[^0-9]/', '', $widget_raw_num);
+    if (strpos($clean_wa_widget_num, '0') === 0) $clean_wa_widget_num = ltrim($clean_wa_widget_num, '0');
+    if (strlen($clean_wa_widget_num) === 10) $clean_wa_widget_num = '91' . $clean_wa_widget_num;
     include BASE_PATH . '/whatsapp-button.html';
     echo "<script>
 window.WA_WIDGET_CONFIG = {
-    phoneNumber: " . json_encode($wa_widget['chat_widget_number'] ?: '918573934013') . ",
+    phoneNumber: " . json_encode(!empty($clean_wa_widget_num) ? $clean_wa_widget_num : '918573934013') . ",
     prefillMessage: " . json_encode($wa_widget['chat_widget_message'] ?: 'Hello, I have a question about your products.') . "
 };
 </script>";

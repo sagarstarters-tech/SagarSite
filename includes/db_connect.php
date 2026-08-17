@@ -68,7 +68,42 @@ try {
 // ── Global Currency Symbol ───────────────────────────────────
 $global_currency = !empty($global_settings['currency_symbol']) ? $global_settings['currency_symbol'] : '₹';
 
-// ── Cart Abandonment Background Auto-Trigger ──────────────────
+// ── Global Helper: Get Store WhatsApp Number ────────────────
+if (!function_exists('get_store_whatsapp_number')) {
+    function get_store_whatsapp_number($raw = false) {
+        global $global_settings, $conn;
+        $number = '';
+        if (!empty($global_settings['whatsapp_number'])) {
+            $number = $global_settings['whatsapp_number'];
+        } elseif (!empty($global_settings['contact_phone'])) {
+            $number = $global_settings['contact_phone'];
+        } else {
+            if (!empty($conn) && $conn instanceof mysqli) {
+                try {
+                    $wq = $conn->query("SELECT chat_widget_number, sender_number FROM whatsapp_settings WHERE id = 1 LIMIT 1");
+                    if ($wq && $wrow = $wq->fetch_assoc()) {
+                        $number = !empty($wrow['chat_widget_number']) ? $wrow['chat_widget_number'] : ($wrow['sender_number'] ?? '');
+                    }
+                } catch (\Throwable $e) {}
+            }
+        }
+        if (empty($number)) {
+            $number = '918573934013';
+        }
+        if ($raw) {
+            return $number;
+        }
+        $clean = preg_replace('/[^0-9]/', '', $number);
+        if (strpos($clean, '0') === 0) {
+            $clean = ltrim($clean, '0');
+        }
+        if (strlen($clean) === 10) {
+            $clean = '91' . $clean;
+        }
+        return !empty($clean) ? $clean : '918573934013';
+    }
+}
+
 if (!defined('DISABLE_AUTO_REMINDER_TRIGGER')) {
     try {
         $lastRunTs = 0;
@@ -83,3 +118,5 @@ if (!defined('DISABLE_AUTO_REMINDER_TRIGGER')) {
         }
     } catch (\Throwable $e) {}
 }
+
+
