@@ -69,10 +69,41 @@ if (isset($_POST['ajax_action']) && $_POST['ajax_action'] === 'test_ai_connectio
             exit;
         } elseif ($provider === 'openai' || $provider === 'groq') {
             $endpoint = ($provider === 'groq') ? 'https://api.groq.com/openai/v1/chat/completions' : 'https://api.openai.com/v1/chat/completions';
-            $testModel = $model ?: (($provider === 'groq') ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini');
+            $testModel = $model;
+
+            if ($provider === 'groq') {
+                // Auto-fetch active model list for this specific key
+                $chModels = curl_init('https://api.groq.com/openai/v1/models');
+                curl_setopt_array($chModels, [
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $apiKey],
+                    CURLOPT_TIMEOUT => 8,
+                    CURLOPT_SSL_VERIFYPEER => true
+                ]);
+                $mRes = curl_exec($chModels);
+                $mCode = curl_getinfo($chModels, CURLINFO_HTTP_CODE);
+                curl_close($chModels);
+
+                $mJson = json_decode($mRes, true);
+                if ($mCode === 200 && !empty($mJson['data'])) {
+                    $available = array_column($mJson['data'], 'id');
+                    if (!in_array($testModel, $available)) {
+                        $testModel = $available[0];
+                    }
+                } elseif ($mCode !== 200) {
+                    $mErr = $mJson['error']['message'] ?? ('HTTP ' . $mCode);
+                    echo json_encode(['success' => false, 'message' => 'Groq API Key Error: ' . $mErr . ' (Kripya verify karein ki key sahi copy hui hai aur console.groq.com/keys me active hai).']);
+                    exit;
+                }
+            }
+
+            if (empty($testModel)) {
+                $testModel = ($provider === 'groq') ? 'llama-3.1-8b-instant' : 'gpt-4o-mini';
+            }
+
             $payload = [
                 'model' => $testModel,
-                'messages' => [['role' => 'user', 'content' => 'Say hello']],
+                'messages' => [['role' => 'user', 'content' => 'Say hello in 3 words']],
                 'max_tokens' => 15
             ];
             $ch = curl_init($endpoint);
@@ -96,7 +127,7 @@ if (isset($_POST['ajax_action']) && $_POST['ajax_action'] === 'test_ai_connectio
 
             $json = json_decode($res, true);
             if ($code === 200 && !empty($json['choices'][0]['message']['content'])) {
-                echo json_encode(['success' => true, 'message' => strtoupper($provider) . ' Connected Successfully! Response: ' . trim($json['choices'][0]['message']['content'])]);
+                echo json_encode(['success' => true, 'message' => strtoupper($provider) . ' (' . $testModel . ') Connected Successfully! Response: ' . trim($json['choices'][0]['message']['content'])]);
             } else {
                 $err = $json['error']['message'] ?? ('HTTP ' . $code . ' - ' . substr((string)$res, 0, 150));
                 echo json_encode(['success' => false, 'message' => strtoupper($provider) . ' API Error: ' . $err]);
