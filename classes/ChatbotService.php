@@ -411,80 +411,97 @@ class ChatbotService
     }
 
     /**
-     * Smart Local Hybrid NLP Engine (100% Offline / Non-API Fallback)
+     * Smart Local Hybrid NLP Engine (100% Offline / Human-Like Sales Engineer Assistant)
      */
     private function smartLocalHybridReply(string $message, array $products): string
     {
-        $clean = strtolower($message);
+        $msg = trim($message);
+        $clean = strtolower($msg);
         $curr = $this->getSetting('currency_symbol', '₹');
         $siteName = $this->getSetting('site_name', "Sagar Starter's");
         $phone = $this->getSetting('contact_phone', '+91 8573934013');
         $email = $this->getSetting('contact_email', 'sagarstarters@gmail.com');
         $address = $this->getSetting('contact_address', 'Alipur Madra, Jakhanian, Ghazipur, Uttar Pradesh');
 
-        // 1. Owner / Founder / Malik Queries (Hindi + English + Hinglish)
-        if (preg_match('/malik|owner|founder|director|kiska hai|kiske dwara|banaya|sanchalak|proprietor|who is the owner|who founded|owner name|malik kaun|मालिक|संस्थापक|ओनर|फाउंडर|किसकी कंपनी|किसका है|संचालक/iu', $message)) {
-            return "👑 **सागर स्टार्टर्स के संस्थापक एवं मालिक (Founder & Owner):**\n\n"
+        // 1. Casual / Polite Greetings & Inquiries
+        if (preg_match('/^(?:kaise ho|kya haal hai|how are you|kaisa chal raha hai|sab theek)/iu', $msg)) {
+            return "Namaste ji! 🙏 Main bilkul badiya hu, dhanyawad!\n\nAap batayein, aaj main aapki motor starter, submersible panel selection, live factory pricing ya order enquiry me kis tarah sahayata kar sakta hu?";
+        }
+
+        if (preg_match('/^(?:thanks|thank you|dhanyawad|shukriya|dhanyawaad|bahut dhanyawad|shukriya ji|thnx|ty)/iu', $msg)) {
+            return "Aapka bahut-bahut swagat hai ji! 🙏\n\nAgar motor starter, wiring connection ya order ko lekar koi aur bhi sawal ho to bejhijhak puchiye. **{$siteName}** par hum hamesha aapki madad ke liye taiyar hain!";
+        }
+
+        if (preg_match('/^(?:ok|okay|theek hai|thik hai|acha|achha|got it|done|samajh gaya)/iu', $msg)) {
+            return "Ji bilkul! 👍 Agar aapko kisi specific HP ki motor ke liye panel dekhna ho ya direct order karna ho to batayein, main turant help karunga.";
+        }
+
+        // 2. Greetings (Namaste, Hello, Hi, Ram Ram, Pranam)
+        if (preg_match('/^(?:hi|hello|hey|namaste|namaskar|ram ram|radhe radhe|jai shree ram|pranam|salam|sasriakal|kem cho)/iu', $msg)) {
+            return "Namaste ji! 🙏 **{$siteName}** me aapka hardik swagat hai.\n\nMain aapka personal electrical sahayak hu. Main aapko agricultural tubewell, submersible pumps aur industrial motors ke liye best starter recommend kar sakta hu.\n\n👉 Aapki motor kitne **HP** ki hai ya aap kis product ke baare me jaankari chahte hain?";
+        }
+
+        // 3. Owner / Founder / Malik / Director Queries
+        if (preg_match('/malik|owner|founder|director|kiska hai|kiske dwara|banaya|sanchalak|proprietor|who is the owner|who founded|owner name|malik kaun|मालिक|संस्थापक|ओनर|फाउंडर|किसकी कंपनी|किसका है|संचालक/iu', $msg)) {
+            return "👑 **सागर स्टार्टर्स के संस्थापक एवं संचालक (Founder & Owner):**\n\n"
                  . "**श्री प्रमोद कुमार सागर (Mr. Pramod Kumar Sagar)** सागर स्टार्टर्स (sagarstarters.com) के संस्थापक और मुख्य संचालक हैं।\n\n"
-                 . "• **कंपनी**: Sagar Starter's\n"
-                 . "• **स्थान**: अलीपुर मदरा, जखनियाँ, गाजीपुर (उत्तर प्रदेश)\n"
+                 . "• **कंपनी**: Sagar Starter's (ISO Certified Quality Manufacturer)\n"
+                 . "• **यूनिट / हेड ऑफिस**: अलीपुर मदरा, जखनियाँ, गाजीपुर (उत्तर प्रदेश)\n"
                  . "• **विशेषज्ञता**: उच्च गुणवत्ता वाले मोटर स्टार्टर्स, सबमर्सिबल पंप पैनल्स एवं ऑटोमेशन इक्विपमेंट्स निर्माण।\n\n"
-                 . "यदि आप सीधे संपर्क या बिज़नेस इन्क्वायरी करना चाहते हैं, तो आप WhatsApp पर कनेक्ट कर सकते हैं!";
+                 . "सीधे संपर्क या बिज़नेस इंक्वायरी के लिए आप कॉल/WhatsApp (`{$phone}`) पर भी जुड़ सकते हैं!";
         }
 
-        // 2. Address / Location Queries (Hindi + English + Hinglish)
-        if (preg_match('/address|location|kaha par|kaha hai|kahan hai|office|factory|dukan|shop|city|state|ghazipur|jakhanian|store location|pata kya hai|पता|कहा है|कहाँ है|कहाँ पर|दुकान|ऑफिस|स्थान|लोकेशन/iu', $message)) {
-            return "📍 **सागर स्टार्टर्स का पता एवं संपर्क (Address & Location):**\n\n"
+        // 4. Address / Location / Factory Queries
+        if (preg_match('/address|location|kaha par|kaha hai|kahan hai|office|factory|dukan|shop|city|state|ghazipur|jakhanian|store location|pata kya hai|पता|कहा है|कहाँ है|कहाँ पर|दुकान|ऑफिस|स्थान|लोकेशन/iu', $msg)) {
+            return "📍 **सागर स्टार्टर्स का पता एवं संपर्क विवरण:**\n\n"
                  . "• **पता**: {$address}\n"
-                 . "• **हेल्पलाइन / फोन**: `{$phone}`\n"
+                 . "• **हेल्पलाइन / व्हाट्सएप**: `{$phone}`\n"
                  . "• **ईमेल**: `{$email}`\n"
-                 . "• **समय**: सोमवार से शनिवार, सुबह 9:00 AM से शाम 6:00 PM\n\n"
-                 . "आप गूगल मैप्स पर भी **'SAGAR STARTERS'** सर्च करके आसानी से लोकेशन देख सकते हैं!";
+                 . "• **ऑफिस समय**: सोमवार से शनिवार, सुबह 9:00 AM से शाम 6:00 PM\n\n"
+                 . "आप गूगल मैप्स पर भी **'SAGAR STARTERS'** सर्च करके आसानी से हमारी लोकेशन देख सकते हैं!";
         }
 
-        // 3. Payment / COD Methods
-        if (preg_match('/payment|cod|cash on delivery|upi|qr|google pay|phonepe|paytm|advance|paise kaise|भुगतान|कैश ऑन डिलीवरी|पैसे|ऑनलाइन पेमेंट/iu', $message)) {
-            return "💳 **भुगतान के तरीके (Payment Methods):**\n\n"
-                 . "• **Cash on Delivery (COD)**: पूरे भारत में उपलब्ध है (सुरक्षा के लिए नाममात्र एडवांस/शिपिंग चार्ज लगता है)।\n"
-                 . "• **Online Payment**: UPI (PhonePe, Google Pay, Paytm), QR Code स्कैन, डेबिट/क्रेडिट कार्ड और नेट बैंकिंग 100% सुरक्षित रूप से समर्थित हैं।";
+        // 5. Single Phase vs 3 Phase Guidance
+        if (preg_match('/single phase.*3 phase|1 phase.*3 phase|difference|kisme lagta hai|kya antar hai|phase guide/iu', $msg)) {
+            return "💡 **Single Phase vs Three Phase Starter Guide:**\n\n"
+                 . "1. **Single Phase (220V)**:\n"
+                 . "   • यह घरेलू और छोटे कृषि बोरवेल (0.5 HP से 3 HP) के लिए उपयोगी है।\n"
+                 . "   • इसमें Starting Capacitor (120/150 MFD) और Running Capacitor (36/50 MFD) लगे होते हैं।\n\n"
+                 . "2. **Three Phase (415V)**:\n"
+                 . "   • यह 3 HP से 30+ HP तक की भारी ट्यूबवेल, आटा चक्की और इंडस्ट्रियल मोटर्स के लिए उपयोग होता है (DOL और Automatic Star Delta मॉडल उपलब्ध)।\n\n"
+                 . "👉 आपकी मोटर कितने **HP** की है? मुझे बताएं, मैं सबसे सही मॉडल सजेस्ट कर दूंगा!";
         }
 
-        // 4. Delivery & Shipping Timelines
-        if (preg_match('/delivery|shipping|kitne din|deliver|courier|dispatch|pahuch|डिलीवरी|शिपिंग|कितने दिन|कब तक/iu', $message)) {
-            return "🚚 **डिलीवरी एवं शिपिंग जानकारी (Shipping & Delivery):**\n\n"
-                 . "• **ऑल इंडिया डिलीवरी**: हम Delhivery, DTDC एवं एक्सप्रेस कूरियर पार्टनर्स द्वारा पूरे देश में सुरक्षित पार्सल भेजते हैं।\n"
-                 . "• **समय**: आर्डर कन्फर्म होने के **3 से 7 कार्य दिवसों (Business Days)** के भीतर पार्सल आपके पते पर डिलीवर हो जाता है।\n"
-                 . "• हर आर्डर का लाइव ट्रैकिंग नंबर SMS एवं WhatsApp पर प्रदान किया जाता है।";
-        }
-
-        // 5. Warranty & Return Policy
-        if (preg_match('/return|refund|replace|replacement|damage|kharab|warranty|guarantee|वारंटी|गारंटी|खराब|वापस|रिप्लेस/iu', $message)) {
-            return "🛡️ **वारंटी एवं रिप्लेसमेंट नीति (Warranty & Policy):**\n\n"
-                 . "• **100% टेस्टेड क्वालिटी**: हमारे सभी स्टार्टर्स और पैनल्स कड़े क्वालिटी चेक के बाद ही डिस्पैच किए जाते हैं।\n"
-                 . "• **ट्रांजिट रिप्लेसमेंट**: यदि पार्सल डिलीवरी में कोई डैमेज मिलता है, तो तुरंत रिप्लेसमेंट या टेक्निकल सपोर्ट दिया जाता है।\n"
-                 . "• सहायता के लिए संपर्क: `{$phone}`";
-        }
-
-        // 6. Greetings
-        if (preg_match('/^(hi|hello|hey|namaste|kem cho|pranam|salam|sasriakal)/i', $clean)) {
-            return "Namaste! 🙏 Welcome to **{$siteName}**.\n\nMain aapki motor starter, submersible panel selection, live pricing aur bulk order enquiry me help karne ke liye taiyar hu. Aap kis prakaar ke starter ya motor ke baare me jaankari chahte hain?";
-        }
-
-        // 7. Single Phase vs 3 Phase guidance
-        if (preg_match('/single phase.*3 phase|1 phase.*3 phase|difference|kisme lagta hai/i', $clean)) {
-            return "💡 **Single Phase vs 3 Phase Motor Starter Guide:**\n\n"
-                 . "1. **Single Phase (220V)**: Yeh domestic aur choti agricultural submersible pumps (0.5 HP se 3 HP tak) ke liye ideal hota hai. Isme starting aur running capacitor lage hote hain.\n"
-                 . "2. **Three Phase (415V)**: Yeh 3 HP se 30+ HP tak ki heavy-duty tubewell, agricultural aur industrial motors ke liye use hota hai (DOL aur Automatic Star Delta models available).\n\n"
-                 . "👉 Aapki motor kitne **HP** ki hai? Mujhe batayein, main best model recommend karunga!";
-        }
-
-        // 8. Submersible Starters
-        if (preg_match('/submersible|borewell|khet|pump/i', $clean)) {
-            $resp = "⚡ **Sagar Submersible Pump Starters:**\n\n"
-                  . "Hamare sabhi submersible control panels me **Dry Run Auto-Cut**, **Overload Protection**, **Digital Voltmeter & Ammeter**, aur **Surge Protection** inbuilt milta hai.";
+        // 6. Submersible & Borewell Pumps (0.5 HP – 3 HP Single Phase)
+        if (preg_match('/submersible|samarsebal|samar|borewell|khet.*pump|tubewell.*panel|1\s*hp|1\.5\s*hp|2\s*hp|3\s*hp|single\s*phase/iu', $msg) && !preg_match('/5\s*hp|7\.5\s*hp|10\s*hp|star\s*delta/iu', $msg)) {
+            $resp = "⚡ **Sagar Submersible Pump Control Panels (0.5 HP se 3 HP):**\n\n"
+                  . "Single Phase बोरवेल पंप के लिए हमारे पैनल्स में निम्नलिखित विशेषताएं मिलती हैं:\n"
+                  . "• **Dry Run Protection**: पानी खत्म होने पर मोटर अपने आप बंद हो जाती है।\n"
+                  . "• **Overload & Low Voltage Protection**: वोल्टेज कम होने पर भी सेफ स्टार्टिंग।\n"
+                  . "• **Digital Voltmeter & Ammeter**: लाइव करंट और वोल्टेज डिस्प्ले।\n"
+                  . "• **Heavy Duty Capacitors & MCB**: मोटर की लंबी लाइफ के लिए।";
 
             if (!empty($products)) {
-                $resp .= "\n\nYahan hamare best-selling submersible starters hain:\n";
+                $resp .= "\n\n📋 **हमारे बेस्ट-सेलिंग सबमर्सिबल स्टार्टर्स:**\n";
+                foreach ($products as $p) {
+                    $price = $p['sale_price'] > 0 ? $p['sale_price'] : ($p['regular_price'] > 0 ? $p['regular_price'] : $p['price']);
+                    $resp .= "• **{$p['name']}** — `{$curr}" . number_format($price, 2) . "`\n";
+                }
+                $resp .= "\n👉 आप नीचे दिए गए **'विवरण देखें'** या **'व्हाट्सएप ऑर्डर'** बटन से ऑर्डर कर सकते हैं।";
+            }
+            return $resp;
+        }
+
+        // 7. 3-Phase DOL Starters (3 HP – 7.5 HP)
+        if (preg_match('/dol|3\s*phase.*starter|5\s*hp|7\.5\s*hp|three\s*phase\s*starter/iu', $msg) && !preg_match('/star\s*delta|10\s*hp|15\s*hp|20\s*hp/iu', $msg)) {
+            $resp = "⚡ **3-Phase (415V) DOL Motor Starters (3 HP se 7.5 HP):**\n\n"
+                  . "3 HP से 7.5 HP कृषि ट्यूबवेल और मोटर्स के लिए **Sagar Direct-On-Line (DOL) Starter** सबसे विश्वसनीय है:\n"
+                  . "• **Thermal Overload Relay**: मोटर गरम या ओवरलोड होने पर तुरंत ट्रिप।\n"
+                  . "• **Phase Failure Protection**: यदि 3 फेज में से 1 फेज कट जाता है, तो मोटर जलने से बचती है।\n"
+                  . "• **Heavy Copper Contacts**: लम्बे समय तक बिना मेंटेनेंस चलता है।";
+
+            if (!empty($products)) {
+                $resp .= "\n\n📋 **उपलब्ध 3-Phase स्टार्टर्स:**\n";
                 foreach ($products as $p) {
                     $price = $p['sale_price'] > 0 ? $p['sale_price'] : ($p['regular_price'] > 0 ? $p['regular_price'] : $p['price']);
                     $resp .= "• **{$p['name']}** — `{$curr}" . number_format($price, 2) . "`\n";
@@ -493,36 +510,104 @@ class ChatbotService
             return $resp;
         }
 
-        // 9. Star Delta / Heavy Motor
-        if (preg_match('/star delta|delta|heavy|chakki|flour mill|30 hp|20 hp|15 hp/i', $clean)) {
-            return "🏭 **Sagar Automatic Star Delta Starters:**\n\n"
-                 . "Heavy duty industrial aur agricultural motors (7.5 HP se 35 HP) ke liye hamare Star Delta panels equipped hain:\n"
-                 . "• Microcontroller based Electronic Timer\n"
-                 . "• Phase Failure & Reverse Phase Protection\n"
-                 . "• High-grade Copper Busbars & Heavy Contactors\n\n"
-                 . "Niche matching models dekhein ya customized panel ke liye direct WhatsApp par contact karein.";
+        // 8. Automatic Star Delta Starters (7.5 HP – 35 HP Heavy Duty)
+        if (preg_match('/star\s*delta|delta|chakki|flour mill|atta chakki|10\s*hp|12\.5\s*hp|15\s*hp|20\s*hp|25\s*hp|30\s*hp|heavy\s*motor/iu', $msg)) {
+            $resp = "🏭 **Sagar Automatic Star Delta Starters (7.5 HP se 35 HP):**\n\n"
+                  . "आटा चक्की, राइस मिल और भारी कृषि ट्यूबवेल मोटर्स के लिए Star Delta स्टार्टर आवश्यक है:\n"
+                  . "• **Electronic Microcontroller Timer**: स्टार से डेल्टा में स्मूथ ऑटो-ट्रांजिशन।\n"
+                  . "• **High Starting Torque Protection**: स्टार्टिंग में भारी झटका रोके।\n"
+                  . "• **Phase Reversal & Voltage Surge Protection**: 100% कॉपर बसबार और हेवी कॉन्टैक्टर।";
+
+            if (!empty($products)) {
+                $resp .= "\n\n📋 **बेस्ट स्टार डेल्टा मॉडल्स:**\n";
+                foreach ($products as $p) {
+                    $price = $p['sale_price'] > 0 ? $p['sale_price'] : ($p['regular_price'] > 0 ? $p['regular_price'] : $p['price']);
+                    $resp .= "• **{$p['name']}** — `{$curr}" . number_format($price, 2) . "`\n";
+                }
+            }
+            return $resp;
         }
 
-        // 10. Bulk Order / Retailer / Wholesale
-        if (preg_match('/bulk|wholesale|retailer|dealer|discount|kam price|zyada quantity/i', $clean)) {
-            return "📦 **Bulk Purchase & Retailer Special Discounts:**\n\n"
-                 . "Haan! Hum retailers, dealers aur agricultural contractors ke liye **Special Wholesale Pricing** provide karte hain.\n\n"
-                 . "• Har product page par Bulk MOQ tier prices listed hain.\n"
-                 . "• Badi quantity ke customized quotation ke liye aap hamare sales team se direct WhatsApp par connect kar sakte hain.";
+        // 9. Oil Immersed Starters (Tel Wale Starter)
+        if (preg_match('/oil\s*starter|oil\s*type|tel\s*wala|oil\s*immersed/iu', $msg)) {
+            return "🛢️ **Sagar Oil-Immersed Motor Starter (Heavy Duty):**\n\n"
+                 . "यह स्टार्टर विशेष रूप से खेतों और ट्यूबवेल के लिए डिज़ाइन किया गया है जहां वोल्टेज में उतार-चढ़ाव रहता है:\n"
+                 . "• ट्रांसफॉर्मर ऑयल में डूबे कॉन्टैक्ट्स स्पार्किंग और हीटिंग को शून्य कर देते हैं।\n"
+                 . "• सालों-साल बिना किसी खराबी के निर्बाध चलता है।\n"
+                 . "• 1 HP से 10 HP तक के मॉडल्स फैक्ट्री रेट पर उपलब्ध हैं।";
         }
 
-        // 11. General Product match (if products were actively requested)
+        // 10. Voltage Stabilizers & Low Voltage Solutions
+        if (preg_match('/voltage|stabilizer|low\s*voltage|voltage\s*drop|dim\s*light|5\s*kva|10\s*kva|light\s*kam/iu', $msg)) {
+            return "💡 **लो वोल्टेज समाधान (Sagar Automatic Copper Stabilizer):**\n\n"
+                 . "यदि आपके क्षेत्र में 90V – 180V का कम वोल्टेज आता है और मोटर नहीं उठ पा रही है, तो **Sagar 5 KVA / 10 KVA Copper Stabilizer** सबसे उपयुक्त है:\n"
+                 . "• लो वोल्टेज को स्टेप-अप करके मोटर को सही 220V/415V देता है।\n"
+                 . "• 100% प्योर कॉपर वाइंडिंग के साथ आता है जो मोटर को ठंडा रखता है।";
+        }
+
+        // 11. Spare Parts & Components
+        if (preg_match('/contactor|relay|capacitor|meter|coil|switch|mcb|spares|parts|water level|float switch|button|push button/iu', $msg)) {
+            return "🔧 **Sagar Genuine Spare Parts & Components:**\n\n"
+                 . "हमारे पास सभी ओरिजिनल स्पेयर पार्ट्स उपलब्ध हैं:\n"
+                 . "• Heavy Duty Contactors (16A, 25A, 32A, 40A)\n"
+                 . "• Thermal Overload Relays & 220V/415V Relay Coils\n"
+                 . "• Motor Run & Start Capacitors (120/150 MFD, 36/50 MFD)\n"
+                 . "• Digital Volt & Ampere Meters (DGT Dual Display)\n"
+                 . "• Automatic Float Switches (Water Level Controller)\n\n"
+                 . "👉 आप शॉप पेज से सीधे कार्ट में ऐड कर सकते हैं या WhatsApp पर अपनी स्पेयर पार्ट्स लिस्ट भेज सकते हैं!";
+        }
+
+        // 12. Payment & Cash on Delivery (COD)
+        if (preg_match('/payment|cod|cash on delivery|upi|qr|google pay|phonepe|paytm|advance|paise kaise|भुगतान|कैश ऑन डिलीवरी|पैसे|ऑनलाइन पेमेंट/iu', $msg)) {
+            return "💳 **भुगतान के सुरक्षित तरीके (Payment Methods):**\n\n"
+                 . "• **Cash on Delivery (COD)**: पूरे भारत में उपलब्ध है। पार्सल मिलने पर आप डिलीवरी बॉय को नकद भुगतान कर सकते हैं।\n"
+                 . "• **Online Payment**: UPI (PhonePe, Google Pay, Paytm), QR Code स्कैन, डेबिट/क्रेडिट कार्ड और नेट बैंकिंग 100% सुरक्षित रूप से समर्थित हैं।";
+        }
+
+        // 13. Delivery & Shipping Timelines
+        if (preg_match('/delivery|shipping|kitne din|deliver|courier|dispatch|pahuch|डिलीवरी|शिपिंग|कितने दिन|कब तक/iu', $msg)) {
+            return "🚚 **डिलीवरी एवं शिपिंग जानकारी (Shipping & Fast Delivery):**\n\n"
+                 . "• **ऑल इंडिया डिलीवरी**: हम Delhivery, DTDC एवं एक्सप्रेस कूरियर पार्टनर्स द्वारा पूरे देश में सुरक्षित पार्सल भेजते हैं।\n"
+                 . "• **समय**: आर्डर कन्फर्म होने के **3 से 7 कार्य दिवसों (Business Days)** के भीतर पार्सल आपके पते पर सुरक्षित पहुँच जाता है।\n"
+                 . "• पार्सल डिस्पैच होते ही आपको लाइव ट्रैकिंग नंबर SMS एवं WhatsApp पर मिल जाता है।";
+        }
+
+        // 14. Warranty & Return Policy
+        if (preg_match('/return|refund|replace|replacement|damage|kharab|warranty|guarantee|वारंटी|गारंटी|खराब|वापस|रिप्लेस/iu', $msg)) {
+            return "🛡️ **वारंटी एवं क्वालिटी एश्योरेंस (Warranty Promise):**\n\n"
+                 . "• **100% फैक्ट्री टेस्टेड**: हमारे सभी स्टार्टर्स और पैनल्स कड़े लोड टेस्ट के बाद ही पैक किए जाते हैं।\n"
+                 . "• **ट्रांजिट रिप्लेसमेंट**: यदि डिलीवरी के समय पार्सल में कोई डैमेज मिलता है, तो हम तुरंत रिप्लेसमेंट या टेक्निकल सपोर्ट उपलब्ध कराते हैं।\n"
+                 . "• सहायता के लिए संपर्क: `{$phone}`";
+        }
+
+        // 15. Bulk Purchase & Wholesale Rates
+        if (preg_match('/bulk|wholesale|retailer|dealer|discount|kam price|zyada quantity|sasta|rate kam|wholesale rate/iu', $msg)) {
+            return "📦 **थोक खरीद एवं डीलर विशेष डिस्काउंट (Wholesale Rates):**\n\n"
+                 . "जी हाँ! दुकानदारों, डीलरों और कृषि ठेकेदारों के लिए हम **Special Factory Wholesale Rates** प्रदान करते हैं:\n"
+                 . "• 5 या उससे अधिक स्टार्टर्स के आर्डर पर अतिरिक्त डिस्काउंट उपलब्ध है।\n"
+                 . "• कस्टमाइज्ड कोटेशन के लिए आप अपनी क्वांटिटी के साथ सीधे हमारे WhatsApp (`{$phone}`) पर संपर्क कर सकते हैं।";
+        }
+
+        // 16. How to Order
+        if (preg_match('/order kaise|kaise kharide|kaise le|kharidna hai|book karna hai|how to order|buy now/iu', $msg)) {
+            return "🛒 **आर्डर करने के आसान 2 तरीके:**\n\n"
+                 . "1. **वेबसाइट से**: किसी भी प्रोडक्ट के नीचे **'Buy Now'** या **'WhatsApp Order'** बटन दबाएं।\n"
+                 . "2. **व्हाट्सएप से**: आप सीधे हमारे नंबर (`{$phone}`) पर अपना **नाम, पूरा पता, पिनकोड और मॉडल** लिखकर भेज दें, हम तुरंत आर्डर बुक करके पार्सल डिस्पैच करवा देंगे!";
+        }
+
+        // 17. Specific Matched Products Display
         if (!empty($products)) {
             $resp = "Maine aapke sawal ke anuroop yeh best product(s) dhundhe hain:\n\n";
             foreach ($products as $p) {
                 $price = $p['sale_price'] > 0 ? $p['sale_price'] : ($p['regular_price'] > 0 ? $p['regular_price'] : $p['price']);
                 $resp .= "• **{$p['name']}** — `{$curr}" . number_format($price, 2) . "`\n";
             }
-            $resp .= "\nAap niche diye gaye **'View Details'** ya direct **'WhatsApp Order'** button se order kar sakte hain.";
+            $resp .= "\n👉 Aap niche diye gaye **'View Details'** ya direct **'WhatsApp Order'** button se order kar sakte hain.";
             return $resp;
         }
 
-        return "Maine aapka request note kar liya hai. **{$siteName}** par sabhi types ke Motor Starters, Submersible Panels aur Electrical Spares available hain.\n\nKripya mujhe apni motor ka **HP (jaise: 5 HP)** ya **Phase (1-Phase / 3-Phase)** batayein taaki main exact model suggest kar saku, ya specific jaankari ke liye WhatsApp par connect karein.";
+        // 18. Natural Human Sales Fallback
+        return "Ji, main aapka sawal samajh gaya. **{$siteName}** par sabhi prakaar ke Single Phase aur Three Phase Motor Starters, Submersible Panels, Voltage Stabilizers aur Genuine Spare Parts direct factory rate par uplabdh hain.\n\n👉 Aap apni motor ka **HP (jaise 5 HP)** ya **Phase (1-Phase / 3-Phase)** batayein taaki main exact model guide kar saku, ya direct hamare technical expert se **WhatsApp (`{$phone}`)** par jud sakte hain!";
     }
 
     /**
