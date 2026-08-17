@@ -145,8 +145,36 @@ class ChatbotService
             return $orderTracking;
         }
 
-        // 2. Fetch Relevant Products based on user message keywords (RAG context)
-        $matchedProducts = $this->searchRelevantProducts($userMessage);
+        // 2. Multi-turn Context Resolution (RAG + Conversation History)
+        // If current query is short or referential ("link do", "price kya hai", "give correct answer"), extract HP/keywords from history!
+        $contextQuery = $userMessage;
+        if (!empty($history) && is_array($history)) {
+            $historyText = '';
+            foreach (array_slice($history, -4) as $h) {
+                $historyText .= ' ' . ($h['content'] ?? '');
+            }
+
+            // If current message doesn't have an explicit HP but history has HP:
+            if (!preg_match('/(?:^|\s|[^0-9\.])(\d+(?:\.\d+)?)\s*(?:hp|h\.p|एचपी|हॉर्सपावर|हार्सपावर|हॉर्स\s*पावर)/iu', $userMessage)) {
+                if (preg_match('/(?:^|\s|[^0-9\.])(\d+(?:\.\d+)?)\s*(?:hp|h\.p|एचपी|हॉर्सपावर|हार्सपावर|हॉर्स\s*पावर)/iu', $historyText, $hm)) {
+                    $contextQuery .= ' ' . $hm[1] . ' HP';
+                }
+            }
+
+            // If history had product type (star delta, submersible, dol)
+            if (!preg_match('/submersible|star\s*delta|dol/i', $userMessage)) {
+                if (preg_match('/star\s*delta|स्टार\s*डेल्टा/iu', $historyText)) {
+                    $contextQuery .= ' star delta';
+                } elseif (preg_match('/submersible|सबमर्सिबल/iu', $historyText)) {
+                    $contextQuery .= ' submersible';
+                } elseif (preg_match('/dol|डीओएल/iu', $historyText)) {
+                    $contextQuery .= ' dol';
+                }
+            }
+        }
+
+        // Fetch Relevant Products based on context-enriched query
+        $matchedProducts = $this->searchRelevantProducts($contextQuery);
 
         // 3. Determine AI Provider
         $provider = strtolower($this->getSetting('chatbot_provider', 'hybrid'));
@@ -160,7 +188,7 @@ class ChatbotService
                 $providerUsed = 'gemini';
             } catch (Exception $e) {
                 error_log("Gemini API Error: " . $e->getMessage() . " - Falling back to Smart Hybrid Engine");
-                $replyText = $this->smartLocalHybridReply($userMessage, $matchedProducts);
+                $replyText = $this->smartLocalHybridReply($userMessage, $matchedProducts, $history);
                 $providerUsed = 'hybrid_fallback';
             }
         } elseif ($provider === 'openai' && !empty($this->getSetting('chatbot_openai_key'))) {
@@ -169,7 +197,7 @@ class ChatbotService
                 $providerUsed = 'openai';
             } catch (Exception $e) {
                 error_log("OpenAI API Error: " . $e->getMessage() . " - Falling back to Smart Hybrid Engine");
-                $replyText = $this->smartLocalHybridReply($userMessage, $matchedProducts);
+                $replyText = $this->smartLocalHybridReply($userMessage, $matchedProducts, $history);
                 $providerUsed = 'hybrid_fallback';
             }
         } elseif ($provider === 'groq' && !empty($this->getSetting('chatbot_groq_key'))) {
@@ -178,12 +206,12 @@ class ChatbotService
                 $providerUsed = 'groq';
             } catch (Exception $e) {
                 error_log("Groq API Error: " . $e->getMessage() . " - Falling back to Smart Hybrid Engine");
-                $replyText = $this->smartLocalHybridReply($userMessage, $matchedProducts);
+                $replyText = $this->smartLocalHybridReply($userMessage, $matchedProducts, $history);
                 $providerUsed = 'hybrid_fallback';
             }
         } else {
             // Default Smart Local Hybrid Engine (Always Works 100%)
-            $replyText = $this->smartLocalHybridReply($userMessage, $matchedProducts);
+            $replyText = $this->smartLocalHybridReply($userMessage, $matchedProducts, $history);
             $providerUsed = 'hybrid';
         }
 
@@ -440,7 +468,7 @@ class ChatbotService
     /**
      * Smart Local Hybrid NLP Engine (100% Offline / Human-Like Sales Engineer Assistant)
      */
-    private function smartLocalHybridReply(string $message, array $products): string
+    private function smartLocalHybridReply(string $message, array $products, array $history = []): string
     {
         $msg = trim($message);
         $clean = strtolower($msg);
@@ -450,7 +478,45 @@ class ChatbotService
         $email = $this->getSetting('contact_email', 'sagarstarters@gmail.com');
         $address = $this->getSetting('contact_address', 'Alipur Madra, Jakhanian, Ghazipur, Uttar Pradesh');
 
-        // 1. Casual / Polite Greetings & Inquiries
+        // 1. Direct Purchase Link Request (e.g. "मुझे इसे खरीदने का लिंक दीजिए", "Buy link do", "Purchase link")
+        if (preg_match('/link|खरीदने का लिंक|खरीदने के लिए लिंक|खरीदना है|buy link|purchase link|order link|लिंक|link do|link dijiye|direct link|ऑनलाइन लिंक|website link/iu', $msg)) {
+            if (!empty($products)) {
+                $p = $products[0];
+                $price = $p['sale_price'] > 0 ? $p['sale_price'] : ($p['regular_price'] > 0 ? $p['regular_price'] : $p['price']);
+                $siteUrl = defined('SITE_URL') ? rtrim(SITE_URL, '/') : '';
+                $pUrl = !empty($p['slug']) ? $siteUrl . '/product/' . $p['slug'] : $siteUrl . '/product.php?id=' . $p['id'];
+                $waUrl = "https://wa.me/" . preg_replace('/[^0-9]/', '', $phone) . "?text=" . urlencode("Namaste Sagar Starters, mujhe *" . $p['name'] . "* kharidna hai.");
+
+                return "🛒 **{$p['name']} खरीदने के डायरेक्ट लिंक्स:**\n\n"
+                     . "• **कीमत (Price)**: `{$curr}" . number_format($price, 2) . "`\n"
+                     . "• 🔗 **ऑनलाइन वेबसाइट से खरीदें**: [यहाँ क्लिक करके खरीदें]({$pUrl})\n"
+                     . "• 📱 **व्हाट्सएप पर डायरेक्ट बुक करें**: [WhatsApp पर आर्डर करें]({$waUrl})\n\n"
+                     . "✅ **Cash on Delivery (COD)** उपलब्ध है एवं 3 से 7 दिनों में सुरक्षित डिलीवरी हो जाएगी!";
+            }
+        }
+
+        // 2. "Give the correct answer" / "Sahi jawab do"
+        if (preg_match('/give (?:the )?correct answer|sahi jawab|sahi se batao|correct answer please|सही जवाब/iu', $msg)) {
+            if (!empty($products)) {
+                $p = $products[0];
+                $price = $p['sale_price'] > 0 ? $p['sale_price'] : ($p['regular_price'] > 0 ? $p['regular_price'] : $p['price']);
+                return "जी, आपकी आवश्यकता के लिए बिल्कुल सही और उपयुक्त मॉडल **{$p['name']}** है।\n\n"
+                     . "• **कीमत (Price)**: `{$curr}" . number_format($price, 2) . "`\n"
+                     . "• **वारंटी**: 100% फैक्ट्री टेस्टेड एवं हेवी ड्यूटी कंपोनेंट्स।\n\n"
+                     . "👉 आप नीचे दिए गए **'विवरण देखें'** या **'व्हाट्सएप ऑर्डर'** बटन से इसे तुरंत आर्डर कर सकते हैं!";
+            }
+        }
+
+        // 3. Price / Rate Inquiry on active product in context
+        if (preg_match('/price|rate|cost|daam|kimat|kitne ka|kitne me|कीमत|दाम|रेट/iu', $msg) && !empty($products)) {
+            $p = $products[0];
+            $price = $p['sale_price'] > 0 ? $p['sale_price'] : ($p['regular_price'] > 0 ? $p['regular_price'] : $p['price']);
+            return "💰 **{$p['name']}** का वर्तमान फैक्ट्री मूल्य `{$curr}" . number_format($price, 2) . "` है।\n\n"
+                 . "• Cash on Delivery (COD) उपलब्ध है।\n"
+                 . "• थोक (5+ पीस) आर्डर पर विशेष डिस्काउंट भी मिलता है।";
+        }
+
+        // 4. Casual / Polite Greetings & Inquiries
         if (preg_match('/^(?:kaise ho|kya haal hai|how are you|kaisa chal raha hai|sab theek)/iu', $msg)) {
             return "Namaste ji! 🙏 Main bilkul badiya hu, dhanyawad!\n\nAap batayein, aaj main aapki motor starter, submersible panel selection, live factory pricing ya order enquiry me kis tarah sahayata kar sakta hu?";
         }
@@ -463,12 +529,12 @@ class ChatbotService
             return "Ji bilkul! 👍 Agar aapko kisi specific HP ki motor ke liye panel dekhna ho ya direct order karna ho to batayein, main turant help karunga.";
         }
 
-        // 2. Greetings (Namaste, Hello, Hi, Ram Ram, Pranam)
+        // 5. Greetings (Namaste, Hello, Hi, Ram Ram, Pranam)
         if (preg_match('/^(?:hi|hello|hey|namaste|namaskar|ram ram|radhe radhe|jai shree ram|pranam|salam|sasriakal|kem cho)/iu', $msg)) {
             return "Namaste ji! 🙏 **{$siteName}** me aapka hardik swagat hai.\n\nMain aapka personal electrical sahayak hu. Main aapko agricultural tubewell, submersible pumps aur industrial motors ke liye best starter recommend kar sakta hu.\n\n👉 Aapki motor kitne **HP** ki hai ya aap kis product ke baare me jaankari chahte hain?";
         }
 
-        // 3. Owner / Founder / Malik / Director Queries
+        // 6. Owner / Founder / Malik / Director Queries
         if (preg_match('/malik|owner|founder|director|kiska hai|kiske dwara|banaya|sanchalak|proprietor|who is the owner|who founded|owner name|malik kaun|मालिक|संस्थापक|ओनर|फाउंडर|किसकी कंपनी|किसका है|संचालक/iu', $msg)) {
             return "👑 **सागर स्टार्टर्स के संस्थापक एवं संचालक (Founder & Owner):**\n\n"
                  . "**श्री प्रमोद कुमार सागर (Mr. Pramod Kumar Sagar)** सागर स्टार्टर्स (sagarstarters.com) के संस्थापक और मुख्य संचालक हैं।\n\n"
@@ -478,7 +544,7 @@ class ChatbotService
                  . "सीधे संपर्क या बिज़नेस इंक्वायरी के लिए आप कॉल/WhatsApp (`{$phone}`) पर भी जुड़ सकते हैं!";
         }
 
-        // 4. Address / Location / Factory Queries
+        // 7. Address / Location / Factory Queries
         if (preg_match('/address|location|kaha par|kaha hai|kahan hai|office|factory|dukan|shop|city|state|ghazipur|jakhanian|store location|pata kya hai|पता|कहा है|कहाँ है|कहाँ पर|दुकान|ऑफिस|स्थान|लोकेशन/iu', $msg)) {
             return "📍 **सागर स्टार्टर्स का पता एवं संपर्क विवरण:**\n\n"
                  . "• **पता**: {$address}\n"
@@ -488,7 +554,7 @@ class ChatbotService
                  . "आप गूगल मैप्स पर भी **'SAGAR STARTERS'** सर्च करके आसानी से हमारी लोकेशन देख सकते हैं!";
         }
 
-        // 5. Single Phase vs 3 Phase Guidance
+        // 8. Single Phase vs 3 Phase Guidance
         if (preg_match('/single phase.*3 phase|1 phase.*3 phase|difference|kisme lagta hai|kya antar hai|phase guide/iu', $msg)) {
             return "💡 **Single Phase vs Three Phase Starter Guide:**\n\n"
                  . "1. **Single Phase (220V)**:\n"
@@ -499,8 +565,8 @@ class ChatbotService
                  . "👉 आपकी मोटर कितने **HP** की है? मुझे बताएं, मैं सबसे सही मॉडल सजेस्ट कर दूंगा!";
         }
 
-        // 6. Submersible & Borewell Pumps (0.5 HP – 3 HP Single Phase)
-        if (preg_match('/submersible|samarsebal|samar|borewell|khet.*pump|tubewell.*panel|1\s*hp|1\.5\s*hp|2\s*hp|3\s*hp|single\s*phase/iu', $msg) && !preg_match('/5\s*hp|7\.5\s*hp|10\s*hp|star\s*delta/iu', $msg)) {
+        // 9. Submersible & Borewell Pumps (0.5 HP – 3 HP Single Phase)
+        if (preg_match('/submersible|samarsebal|samar|borewell|khet.*pump|tubewell.*panel|1\s*hp|1\.5\s*hp|2\s*hp|3\s*hp|single\s*phase|सिंगल\s*फेज|1\s*हॉर्स|2\s*हॉर्स|3\s*हॉर्स/iu', $msg) && !preg_match('/5\s*hp|7\.5\s*hp|10\s*hp|15\s*hp|20\s*hp|star\s*delta|हॉर्सपावर/iu', $msg)) {
             $resp = "⚡ **Sagar Submersible Pump Control Panels (0.5 HP se 3 HP):**\n\n"
                   . "Single Phase बोरवेल पंप के लिए हमारे पैनल्स में निम्नलिखित विशेषताएं मिलती हैं:\n"
                   . "• **Dry Run Protection**: पानी खत्म होने पर मोटर अपने आप बंद हो जाती है।\n"
@@ -519,12 +585,12 @@ class ChatbotService
             return $resp;
         }
 
-        // 7. 3-Phase DOL Starters (3 HP – 7.5 HP)
-        if (preg_match('/dol|3\s*phase.*starter|5\s*hp|7\.5\s*hp|three\s*phase\s*starter/iu', $msg) && !preg_match('/star\s*delta|10\s*hp|15\s*hp|20\s*hp/iu', $msg)) {
+        // 10. 3-Phase DOL Starters (3 HP – 7.5 HP)
+        if (preg_match('/dol|3\s*phase.*starter|5\s*hp|7\.5\s*hp|three\s*phase\s*starter|5\s*हॉर्स|7\.5\s*हॉर्स/iu', $msg) && !preg_match('/star\s*delta|10\s*hp|15\s*hp|20\s*hp|15\s*हॉर्स/iu', $msg)) {
             $resp = "⚡ **3-Phase (415V) DOL Motor Starters (3 HP se 7.5 HP):**\n\n"
                   . "3 HP से 7.5 HP कृषि ट्यूबवेल और मोटर्स के लिए **Sagar Direct-On-Line (DOL) Starter** सबसे विश्वसनीय है:\n"
                   . "• **Thermal Overload Relay**: मोटर गरम या ओवरलोड होने पर तुरंत ट्रिप।\n"
-                  . "• **Phase Failure Protection**: यदि 3 फेज में से 1 फेज कट जाता है, तो मोटर जलने से बचती है।\n"
+                  . "• **Phase Failure Protection**: यदि 3 फेज में से 1 फेज कट जाता है, तो मोटर जलने से बचती है\n"
                   . "• **Heavy Copper Contacts**: लम्बे समय तक बिना मेंटेनेंस चलता है।";
 
             if (!empty($products)) {
@@ -537,8 +603,8 @@ class ChatbotService
             return $resp;
         }
 
-        // 8. Automatic Star Delta Starters (7.5 HP – 35 HP Heavy Duty)
-        if (preg_match('/star\s*delta|delta|chakki|flour mill|atta chakki|10\s*hp|12\.5\s*hp|15\s*hp|20\s*hp|25\s*hp|30\s*hp|heavy\s*motor/iu', $msg)) {
+        // 11. Automatic Star Delta Starters (7.5 HP – 35 HP Heavy Duty)
+        if (preg_match('/star\s*delta|delta|chakki|flour mill|atta chakki|10\s*hp|12\.5\s*hp|15\s*hp|20\s*hp|25\s*hp|30\s*hp|heavy\s*motor|हॉर्सपावर|हार्सपावर|हॉर्स\s*पावर|स्टार\s*डेल्टा/iu', $msg)) {
             $resp = "🏭 **Sagar Automatic Star Delta Starters (7.5 HP se 35 HP):**\n\n"
                   . "आटा चक्की, राइस मिल और भारी कृषि ट्यूबवेल मोटर्स के लिए Star Delta स्टार्टर आवश्यक है:\n"
                   . "• **Electronic Microcontroller Timer**: स्टार से डेल्टा में स्मूथ ऑटो-ट्रांजिशन।\n"
@@ -555,7 +621,7 @@ class ChatbotService
             return $resp;
         }
 
-        // 9. Oil Immersed Starters (Tel Wale Starter)
+        // 12. Oil Immersed Starters (Tel Wale Starter)
         if (preg_match('/oil\s*starter|oil\s*type|tel\s*wala|oil\s*immersed/iu', $msg)) {
             return "🛢️ **Sagar Oil-Immersed Motor Starter (Heavy Duty):**\n\n"
                  . "यह स्टार्टर विशेष रूप से खेतों और ट्यूबवेल के लिए डिज़ाइन किया गया है जहां वोल्टेज में उतार-चढ़ाव रहता है:\n"
@@ -564,7 +630,7 @@ class ChatbotService
                  . "• 1 HP से 10 HP तक के मॉडल्स फैक्ट्री रेट पर उपलब्ध हैं।";
         }
 
-        // 10. Voltage Stabilizers & Low Voltage Solutions
+        // 13. Voltage Stabilizers & Low Voltage Solutions
         if (preg_match('/voltage|stabilizer|low\s*voltage|voltage\s*drop|dim\s*light|5\s*kva|10\s*kva|light\s*kam/iu', $msg)) {
             return "💡 **लो वोल्टेज समाधान (Sagar Automatic Copper Stabilizer):**\n\n"
                  . "यदि आपके क्षेत्र में 90V – 180V का कम वोल्टेज आता है और मोटर नहीं उठ पा रही है, तो **Sagar 5 KVA / 10 KVA Copper Stabilizer** सबसे उपयुक्त है:\n"
@@ -572,7 +638,7 @@ class ChatbotService
                  . "• 100% प्योर कॉपर वाइंडिंग के साथ आता है जो मोटर को ठंडा रखता है।";
         }
 
-        // 11. Spare Parts & Components
+        // 14. Spare Parts & Components
         if (preg_match('/contactor|relay|capacitor|meter|coil|switch|mcb|spares|parts|water level|float switch|button|push button/iu', $msg)) {
             return "🔧 **Sagar Genuine Spare Parts & Components:**\n\n"
                  . "हमारे पास सभी ओरिजिनल स्पेयर पार्ट्स उपलब्ध हैं:\n"
@@ -584,7 +650,7 @@ class ChatbotService
                  . "👉 आप शॉप पेज से सीधे कार्ट में ऐड कर सकते हैं या WhatsApp पर अपनी स्पेयर पार्ट्स लिस्ट भेज सकते हैं!";
         }
 
-        // 12. Payment & Cash on Delivery (COD)
+        // 15. Payment & Cash on Delivery (COD)
         if (preg_match('/payment|cod|cash on delivery|upi|qr|google pay|phonepe|paytm|advance|paise kaise|भुगतान|कैश ऑन डिलीवरी|पैसे|ऑनलाइन पेमेंट/iu', $msg)) {
             return "💳 **भुगतान के सुरक्षित तरीके (Payment Methods):**\n\n"
                  . "• **Cash on Delivery (COD)**: पूरे भारत में उपलब्ध है। पार्सल मिलने पर आप डिलीवरी बॉय को नकद भुगतान कर सकते हैं।\n"

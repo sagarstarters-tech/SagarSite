@@ -103,9 +103,9 @@
                         <i class="fas fa-robot"></i>
                         <span class="status-dot"></span>
                     </div>
-                    <div class="sagar-header-info">
-                        <h6 class="sagar-header-title" id="sagarHeaderName">${config.botName}</h6>
-                        <span class="sagar-header-subtitle" id="sagarHeaderTitle">${config.botTitle}</span>
+                    <div class="sagar-header-info notranslate" translate="no">
+                        <h6 class="sagar-header-title notranslate" translate="no" id="sagarHeaderName">${config.botName}</h6>
+                        <span class="sagar-header-subtitle notranslate" translate="no" id="sagarHeaderTitle">${config.botTitle}</span>
                     </div>
                 </div>
                 <div class="sagar-header-actions d-flex align-items-center gap-1">
