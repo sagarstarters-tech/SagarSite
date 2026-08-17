@@ -193,6 +193,7 @@ try {
     <?php endif; ?>
 
     <form method="POST" action="manage_ai_chatbot.php">
+        <?php echo csrf_input(); ?>
         <div class="row g-4">
             <!-- Left Column: Core Controls & Personas -->
             <div class="col-lg-7">
@@ -382,6 +383,7 @@ try {
             </div>
             <?php if ($totalLogsCount > 0): ?>
             <form method="POST" onsubmit="return confirm('Are you sure you want to clear all conversation logs?');">
+                <?php echo csrf_input(); ?>
                 <button type="submit" name="clear_chatbot_logs" class="btn btn-outline-danger btn-sm rounded-pill">
                     <i class="fas fa-trash-alt me-1"></i> Clear Logs
                 </button>
@@ -467,7 +469,10 @@ function testConnection(provider) {
         model = document.getElementById('openaiModel').value;
     }
 
+    const csrfToken = document.querySelector('input[name="_csrf_token"]')?.value || '';
+
     const formData = new FormData();
+    formData.append('_csrf_token', csrfToken);
     formData.append('ajax_action', 'test_ai_connection');
     formData.append('provider', provider);
     formData.append('api_key', apiKey);
