@@ -282,82 +282,157 @@ try {
             <div class="col-lg-5">
                 <div class="card border-0 shadow-sm rounded-4 mb-4">
                     <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
-                        <h5 class="fw-bold mb-0 text-dark"><i class="fas fa-server text-primary me-2"></i>AI Provider Engine</h5>
+                        <h5 class="fw-bold mb-0 text-dark"><i class="fas fa-server text-primary me-2"></i>Multi-AI Provider Engines</h5>
                     </div>
                     <div class="card-body p-4">
                         <?php $activeProvider = strtolower($chatbotService->getSetting('chatbot_provider', 'hybrid')); ?>
                         
-                        <div class="mb-4">
-                            <label class="form-label fw-bold text-dark">Active AI Engine</label>
-                            <select name="chatbot_provider" id="providerSelect" class="form-select form-select-lg border-primary fw-semibold" onchange="switchProviderFields(this.value)">
-                                <option value="hybrid" <?php echo $activeProvider === 'hybrid' ? 'selected' : ''; ?>>⚡ Smart Local Hybrid Engine (Built-in / 100% Free & Fast)</option>
-                                <option value="gemini" <?php echo $activeProvider === 'gemini' ? 'selected' : ''; ?>>✨ Google Gemini 2.0 / 1.5 Flash (Recommended)</option>
-                                <option value="groq" <?php echo $activeProvider === 'groq' ? 'selected' : ''; ?>>🚀 Groq Cloud (LLaMA 3.3 70B - Ultra Fast)</option>
-                                <option value="openai" <?php echo $activeProvider === 'openai' ? 'selected' : ''; ?>>🤖 OpenAI ChatGPT (GPT-4o Mini)</option>
-                            </select>
+                        <label class="form-label fw-bold text-dark mb-2">Select Active AI Engine</label>
+                        <div class="d-flex flex-column gap-2 mb-4">
+                            <!-- Provider 1: Smart Local Hybrid -->
+                            <label class="p-3 border rounded-3 d-flex align-items-center justify-content-between cursor-pointer <?php echo $activeProvider === 'hybrid' ? 'border-primary bg-primary bg-opacity-10' : 'bg-light'; ?>" style="cursor: pointer;">
+                                <div class="d-flex align-items-center gap-2">
+                                    <input type="radio" name="chatbot_provider" value="hybrid" class="form-check-input mt-0" <?php echo $activeProvider === 'hybrid' ? 'checked' : ''; ?>>
+                                    <div>
+                                        <div class="fw-bold text-dark"><i class="fas fa-bolt text-warning me-1"></i> Smart Local Engine</div>
+                                        <div class="text-muted small">100% Free & Fast (No API Key Required)</div>
+                                    </div>
+                                </div>
+                                <span class="badge bg-success rounded-pill px-2 py-1 small">Free / Built-in</span>
+                            </label>
+
+                            <!-- Provider 2: Google Gemini -->
+                            <label class="p-3 border rounded-3 d-flex align-items-center justify-content-between cursor-pointer <?php echo $activeProvider === 'gemini' ? 'border-primary bg-primary bg-opacity-10' : 'bg-light'; ?>" style="cursor: pointer;">
+                                <div class="d-flex align-items-center gap-2">
+                                    <input type="radio" name="chatbot_provider" value="gemini" class="form-check-input mt-0" <?php echo $activeProvider === 'gemini' ? 'checked' : ''; ?>>
+                                    <div>
+                                        <div class="fw-bold text-dark"><i class="fab fa-google text-primary me-1"></i> Google Gemini AI</div>
+                                        <div class="text-muted small">Gemini 2.0 / 1.5 Flash (Recommended)</div>
+                                    </div>
+                                </div>
+                                <span class="badge <?php echo !empty($chatbotService->getSetting('chatbot_gemini_key')) ? 'bg-primary' : 'bg-secondary'; ?> rounded-pill px-2 py-1 small">
+                                    <?php echo !empty($chatbotService->getSetting('chatbot_gemini_key')) ? 'Configured' : 'Needs Key'; ?>
+                                </span>
+                            </label>
+
+                            <!-- Provider 3: Groq Cloud -->
+                            <label class="p-3 border rounded-3 d-flex align-items-center justify-content-between cursor-pointer <?php echo $activeProvider === 'groq' ? 'border-primary bg-primary bg-opacity-10' : 'bg-light'; ?>" style="cursor: pointer;">
+                                <div class="d-flex align-items-center gap-2">
+                                    <input type="radio" name="chatbot_provider" value="groq" class="form-check-input mt-0" <?php echo $activeProvider === 'groq' ? 'checked' : ''; ?>>
+                                    <div>
+                                        <div class="fw-bold text-dark"><i class="fas fa-rocket text-danger me-1"></i> Groq Cloud AI</div>
+                                        <div class="text-muted small">LLaMA 3.3 70B (Ultra-Fast)</div>
+                                    </div>
+                                </div>
+                                <span class="badge <?php echo !empty($chatbotService->getSetting('chatbot_groq_key')) ? 'bg-primary' : 'bg-secondary'; ?> rounded-pill px-2 py-1 small">
+                                    <?php echo !empty($chatbotService->getSetting('chatbot_groq_key')) ? 'Configured' : 'Needs Key'; ?>
+                                </span>
+                            </label>
+
+                            <!-- Provider 4: OpenAI ChatGPT -->
+                            <label class="p-3 border rounded-3 d-flex align-items-center justify-content-between cursor-pointer <?php echo $activeProvider === 'openai' ? 'border-primary bg-primary bg-opacity-10' : 'bg-light'; ?>" style="cursor: pointer;">
+                                <div class="d-flex align-items-center gap-2">
+                                    <input type="radio" name="chatbot_provider" value="openai" class="form-check-input mt-0" <?php echo $activeProvider === 'openai' ? 'checked' : ''; ?>>
+                                    <div>
+                                        <div class="fw-bold text-dark"><i class="fas fa-atom text-success me-1"></i> OpenAI ChatGPT</div>
+                                        <div class="text-muted small">GPT-4o Mini / GPT-4o</div>
+                                    </div>
+                                </div>
+                                <span class="badge <?php echo !empty($chatbotService->getSetting('chatbot_openai_key')) ? 'bg-primary' : 'bg-secondary'; ?> rounded-pill px-2 py-1 small">
+                                    <?php echo !empty($chatbotService->getSetting('chatbot_openai_key')) ? 'Configured' : 'Needs Key'; ?>
+                                </span>
+                            </label>
                         </div>
 
-                        <!-- Provider Info Alert -->
-                        <div id="providerInfoBox" class="alert alert-info py-2 px-3 small rounded-3 mb-3">
-                            <i class="fas fa-shield-alt me-1"></i> <strong>Smart Local Engine</strong> requires no API key and provides instant product matches, order tracking, and Hindi/English recommendations.
-                        </div>
-
-                        <!-- Gemini Box -->
-                        <div id="geminiBox" class="provider-box <?php echo $activeProvider !== 'gemini' ? 'd-none' : ''; ?> p-3 bg-light rounded-3 mb-3">
-                            <h6 class="fw-bold text-primary mb-2"><i class="fab fa-google me-1"></i>Google Gemini Settings</h6>
+                        <!-- Provider 1: Google Gemini Configuration Box -->
+                        <div class="p-3 border rounded-3 bg-white mb-3 shadow-sm">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="fw-bold text-primary mb-0"><i class="fab fa-google me-1"></i> 1. Google Gemini API Settings</h6>
+                                <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="badge bg-light text-primary border text-decoration-none small">
+                                    <i class="fas fa-external-link-alt me-1"></i> Get Free API Key
+                                </a>
+                            </div>
                             <div class="mb-2">
-                                <label class="form-label small fw-semibold">Gemini API Key</label>
-                                <input type="password" name="chatbot_gemini_key" id="geminiKey" class="form-control" value="<?php echo htmlspecialchars($chatbotService->getSetting('chatbot_gemini_key')); ?>" placeholder="AIzaSy...">
+                                <label class="form-label small fw-semibold text-muted">Gemini API Key</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="password" name="chatbot_gemini_key" id="geminiKey" class="form-control" value="<?php echo htmlspecialchars($chatbotService->getSetting('chatbot_gemini_key')); ?>" placeholder="Paste AIzaSy... key here">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="toggleKeyVisibility('geminiKey', this)"><i class="fas fa-eye"></i></button>
+                                </div>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label small fw-semibold">Model</label>
-                                <select name="chatbot_gemini_model" id="geminiModel" class="form-select form-select-sm">
-                                    <option value="gemini-1.5-flash" <?php echo $chatbotService->getSetting('chatbot_gemini_model') === 'gemini-1.5-flash' ? 'selected' : ''; ?>>gemini-1.5-flash (Fast & Free Tier)</option>
-                                    <option value="gemini-2.0-flash" <?php echo $chatbotService->getSetting('chatbot_gemini_model') === 'gemini-2.0-flash' ? 'selected' : ''; ?>>gemini-2.0-flash (Latest 2026)</option>
-                                    <option value="gemini-1.5-pro" <?php echo $chatbotService->getSetting('chatbot_gemini_model') === 'gemini-1.5-pro' ? 'selected' : ''; ?>>gemini-1.5-pro</option>
-                                </select>
+                            <div class="row g-2 align-items-center">
+                                <div class="col-sm-7">
+                                    <select name="chatbot_gemini_model" id="geminiModel" class="form-select form-select-sm">
+                                        <option value="gemini-1.5-flash" <?php echo $chatbotService->getSetting('chatbot_gemini_model') === 'gemini-1.5-flash' ? 'selected' : ''; ?>>gemini-1.5-flash (Fast & Free Tier)</option>
+                                        <option value="gemini-2.0-flash" <?php echo $chatbotService->getSetting('chatbot_gemini_model') === 'gemini-2.0-flash' ? 'selected' : ''; ?>>gemini-2.0-flash (Latest 2026)</option>
+                                        <option value="gemini-1.5-pro" <?php echo $chatbotService->getSetting('chatbot_gemini_model') === 'gemini-1.5-pro' ? 'selected' : ''; ?>>gemini-1.5-pro</option>
+                                    </select>
+                                </div>
+                                <div class="col-sm-5 text-end">
+                                    <button type="button" class="btn btn-outline-primary btn-sm rounded-pill w-100" onclick="testConnection('gemini')">
+                                        <i class="fas fa-plug me-1"></i> Test Gemini
+                                    </button>
+                                </div>
                             </div>
-                            <button type="button" class="btn btn-outline-primary btn-sm rounded-pill" onclick="testConnection('gemini')">
-                                <i class="fas fa-plug me-1"></i> Test Gemini Connection
-                            </button>
                         </div>
 
-                        <!-- Groq Box -->
-                        <div id="groqBox" class="provider-box <?php echo $activeProvider !== 'groq' ? 'd-none' : ''; ?> p-3 bg-light rounded-3 mb-3">
-                            <h6 class="fw-bold text-dark mb-2"><i class="fas fa-bolt text-warning me-1"></i>Groq Cloud Settings</h6>
+                        <!-- Provider 2: Groq Cloud Configuration Box -->
+                        <div class="p-3 border rounded-3 bg-white mb-3 shadow-sm">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="fw-bold text-dark mb-0"><i class="fas fa-bolt text-warning me-1"></i> 2. Groq Cloud (LLaMA 3.3) Settings</h6>
+                                <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" class="badge bg-light text-dark border text-decoration-none small">
+                                    <i class="fas fa-external-link-alt me-1"></i> Get Groq Key
+                                </a>
+                            </div>
                             <div class="mb-2">
-                                <label class="form-label small fw-semibold">Groq API Key</label>
-                                <input type="password" name="chatbot_groq_key" id="groqKey" class="form-control" value="<?php echo htmlspecialchars($chatbotService->getSetting('chatbot_groq_key')); ?>" placeholder="gsk_...">
+                                <label class="form-label small fw-semibold text-muted">Groq API Key</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="password" name="chatbot_groq_key" id="groqKey" class="form-control" value="<?php echo htmlspecialchars($chatbotService->getSetting('chatbot_groq_key')); ?>" placeholder="Paste gsk_... key here">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="toggleKeyVisibility('groqKey', this)"><i class="fas fa-eye"></i></button>
+                                </div>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label small fw-semibold">Model</label>
-                                <select name="chatbot_groq_model" id="groqModel" class="form-select form-select-sm">
-                                    <option value="llama-3.3-70b-versatile" selected>llama-3.3-70b-versatile</option>
-                                    <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
-                                </select>
+                            <div class="row g-2 align-items-center">
+                                <div class="col-sm-7">
+                                    <select name="chatbot_groq_model" id="groqModel" class="form-select form-select-sm">
+                                        <option value="llama-3.3-70b-versatile" selected>llama-3.3-70b-versatile</option>
+                                        <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
+                                    </select>
+                                </div>
+                                <div class="col-sm-5 text-end">
+                                    <button type="button" class="btn btn-outline-dark btn-sm rounded-pill w-100" onclick="testConnection('groq')">
+                                        <i class="fas fa-plug me-1"></i> Test Groq
+                                    </button>
+                                </div>
                             </div>
-                            <button type="button" class="btn btn-outline-dark btn-sm rounded-pill" onclick="testConnection('groq')">
-                                <i class="fas fa-plug me-1"></i> Test Groq Connection
-                            </button>
                         </div>
 
-                        <!-- OpenAI Box -->
-                        <div id="openaiBox" class="provider-box <?php echo $activeProvider !== 'openai' ? 'd-none' : ''; ?> p-3 bg-light rounded-3 mb-3">
-                            <h6 class="fw-bold text-success mb-2"><i class="fas fa-atom me-1"></i>OpenAI ChatGPT Settings</h6>
+                        <!-- Provider 3: OpenAI Configuration Box -->
+                        <div class="p-3 border rounded-3 bg-white mb-3 shadow-sm">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="fw-bold text-success mb-0"><i class="fas fa-atom me-1"></i> 3. OpenAI ChatGPT Settings</h6>
+                                <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" class="badge bg-light text-success border text-decoration-none small">
+                                    <i class="fas fa-external-link-alt me-1"></i> Get OpenAI Key
+                                </a>
+                            </div>
                             <div class="mb-2">
-                                <label class="form-label small fw-semibold">OpenAI API Key</label>
-                                <input type="password" name="chatbot_openai_key" id="openaiKey" class="form-control" value="<?php echo htmlspecialchars($chatbotService->getSetting('chatbot_openai_key')); ?>" placeholder="sk-...">
+                                <label class="form-label small fw-semibold text-muted">OpenAI API Key</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="password" name="chatbot_openai_key" id="openaiKey" class="form-control" value="<?php echo htmlspecialchars($chatbotService->getSetting('chatbot_openai_key')); ?>" placeholder="Paste sk-... key here">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="toggleKeyVisibility('openaiKey', this)"><i class="fas fa-eye"></i></button>
+                                </div>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label small fw-semibold">Model</label>
-                                <select name="chatbot_openai_model" id="openaiModel" class="form-select form-select-sm">
-                                    <option value="gpt-4o-mini" <?php echo $chatbotService->getSetting('chatbot_openai_model') === 'gpt-4o-mini' ? 'selected' : ''; ?>>gpt-4o-mini (Cost Effective)</option>
-                                    <option value="gpt-4o" <?php echo $chatbotService->getSetting('chatbot_openai_model') === 'gpt-4o' ? 'selected' : ''; ?>>gpt-4o</option>
-                                </select>
+                            <div class="row g-2 align-items-center">
+                                <div class="col-sm-7">
+                                    <select name="chatbot_openai_model" id="openaiModel" class="form-select form-select-sm">
+                                        <option value="gpt-4o-mini" <?php echo $chatbotService->getSetting('chatbot_openai_model') === 'gpt-4o-mini' ? 'selected' : ''; ?>>gpt-4o-mini</option>
+                                        <option value="gpt-4o" <?php echo $chatbotService->getSetting('chatbot_openai_model') === 'gpt-4o' ? 'selected' : ''; ?>>gpt-4o</option>
+                                    </select>
+                                </div>
+                                <div class="col-sm-5 text-end">
+                                    <button type="button" class="btn btn-outline-success btn-sm rounded-pill w-100" onclick="testConnection('openai')">
+                                        <i class="fas fa-plug me-1"></i> Test OpenAI
+                                    </button>
+                                </div>
                             </div>
-                            <button type="button" class="btn btn-outline-success btn-sm rounded-pill" onclick="testConnection('openai')">
-                                <i class="fas fa-plug me-1"></i> Test OpenAI Connection
-                            </button>
                         </div>
 
                         <!-- Test Status Output Container -->
@@ -429,25 +504,15 @@ try {
 </div>
 
 <script>
-function switchProviderFields(val) {
-    document.querySelectorAll('.provider-box').forEach(el => el.classList.add('d-none'));
-    const infoBox = document.getElementById('providerInfoBox');
-
-    if (val === 'gemini') {
-        document.getElementById('geminiBox').classList.remove('d-none');
-        infoBox.className = "alert alert-primary py-2 px-3 small rounded-3 mb-3";
-        infoBox.innerHTML = "<i class='fab fa-google me-1'></i> <strong>Google Gemini</strong> provides natural multi-lingual reasoning and fast replies using your Gemini API key.";
-    } else if (val === 'groq') {
-        document.getElementById('groqBox').classList.remove('d-none');
-        infoBox.className = "alert alert-warning py-2 px-3 small rounded-3 mb-3";
-        infoBox.innerHTML = "<i class='fas fa-bolt me-1'></i> <strong>Groq Cloud</strong> provides ultra-low latency LLaMA 3.3 generation speed.";
-    } else if (val === 'openai') {
-        document.getElementById('openaiBox').classList.remove('d-none');
-        infoBox.className = "alert alert-success py-2 px-3 small rounded-3 mb-3";
-        infoBox.innerHTML = "<i class='fas fa-atom me-1'></i> <strong>OpenAI ChatGPT</strong> connects directly to GPT-4o-mini using your OpenAI secret key.";
+function toggleKeyVisibility(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    if (input.type === 'password') {
+        input.type = 'text';
+        btn.innerHTML = '<i class="fas fa-eye-slash"></i>';
     } else {
-        infoBox.className = "alert alert-info py-2 px-3 small rounded-3 mb-3";
-        infoBox.innerHTML = "<i class='fas fa-shield-alt me-1'></i> <strong>Smart Local Hybrid Engine</strong> runs directly on your server with zero external API fees and instant live product searches.";
+        input.type = 'password';
+        btn.innerHTML = '<i class="fas fa-eye"></i>';
     }
 }
 
