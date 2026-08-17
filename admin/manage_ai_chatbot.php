@@ -87,8 +87,18 @@ if (isset($_POST['ajax_action']) && $_POST['ajax_action'] === 'test_ai_connectio
                 $mJson = json_decode($mRes, true);
                 if ($mCode === 200 && !empty($mJson['data'])) {
                     $available = array_column($mJson['data'], 'id');
-                    if (!in_array($testModel, $available)) {
-                        $testModel = $available[0];
+                    $textModels = array_values(array_filter($available, function($id) {
+                        return (stripos($id, 'llama') !== false || stripos($id, 'mixtral') !== false || stripos($id, 'gemma') !== false || stripos($id, 'qwen') !== false || stripos($id, 'deepseek') !== false) 
+                            && stripos($id, 'whisper') === false 
+                            && stripos($id, 'orpheus') === false;
+                    }));
+
+                    if (!empty($model) && in_array($model, $available)) {
+                        $testModel = $model;
+                    } elseif (!empty($textModels)) {
+                        $testModel = $textModels[0];
+                    } else {
+                        $testModel = 'llama-3.1-8b-instant';
                     }
                 } elseif ($mCode !== 200) {
                     $mErr = $mJson['error']['message'] ?? ('HTTP ' . $mCode);
