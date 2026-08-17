@@ -341,69 +341,96 @@ class ChatbotService
         $clean = trim($query);
         if (empty($clean)) return [];
 
-        // Check if query is actually seeking products or specifications
-        $productKeywordPattern = '/(?:hp|h\.p|phase|starter|panel|submersible|pump|motor|borewell|contactor|relay|mcb|breaker|stabilizer|voltmeter|ammeter|capacitor|rate|price|kimat|daam|cost|kharidna|buy|purchase|model|watt|kva|spec|dikhao|show|btao|batao|kya rate|kitne ka)|\d+\s*(?:hp|h\.p|kva|watt|v|volt|amp|ampere)/i';
-        $nonProductPattern = '/malik|owner|founder|director|kiska hai|kiske dwara|address|pata|kaha par|kaha hai|kahan hai|office|factory|dukan|location|complaint|shikayat|helpline|support number|delivery time|payment method|refund|return/i';
+        // Check if query is seeking products or specifications
+        $productKeywordPattern = '/(?:hp|h\.p|phase|starter|panel|submersible|pump|motor|borewell|contactor|relay|mcb|breaker|stabilizer|voltmeter|ammeter|capacitor|rate|price|kimat|daam|cost|kharidna|buy|purchase|model|watt|kva|spec|dikhao|show|btao|batao|kya rate|kitne ka|एचपी|फेज|पैनल|स्टार्टर)|\d+\s*(?:hp|h\.p|kva|watt|v|volt|amp|ampere)/iu';
+        $nonProductPattern = '/malik|owner|founder|director|kiska hai|kiske dwara|address|pata|kaha par|kaha hai|kahan hai|office|factory|dukan|location|complaint|shikayat|helpline|support number|delivery time|payment method|refund|return|मालिक|संस्थापक|ओनर|पता|कहाँ/iu';
 
         if (!preg_match($productKeywordPattern, $clean) || preg_match($nonProductPattern, $clean)) {
-            return []; // Do not retrieve products for company/owner/location/policy queries
+            return []; // Strictly do not retrieve products for owner/location/policy queries
         }
 
         try {
-            $tokens = preg_split('/[\s,\+]+/', strtolower($clean));
-            $whereParts = [];
-            $params = [];
+            $allProducts = $this->pdo->query("SELECT p.id, p.name, p.slug, p.price, p.regular_price, p.sale_price, p.bulk_price, p.bulk_min_qty, p.image, p.short_description, p.description, c.name as category_name
+                                              FROM products p
+                                              LEFT JOIN categories c ON c.id = p.category_id")->fetchAll(PDO::FETCH_ASSOC);
 
-            // Detect phase
-            if (preg_match('/1\s*phase|single\s*phase|220\s*v/i', $clean)) {
-                $whereParts[] = "(p.name LIKE ? OR p.description LIKE ? OR c.name LIKE ?)";
-                $params[] = '%1%Phase%';
-                $params[] = '%Single Phase%';
-                $params[] = '%Single Phase%';
-            } elseif (preg_match('/3\s*phase|three\s*phase|415\s*v|star\s*delta/i', $clean)) {
-                $whereParts[] = "(p.name LIKE ? OR p.description LIKE ? OR c.name LIKE ?)";
-                $params[] = '%3%Phase%';
-                $params[] = '%Three Phase%';
-                $params[] = '%Star Delta%';
+            if (empty($allProducts)) return [];
+
+            // Detect requested HP
+            $reqHp = null;
+            if (preg_match('/(?:^|\s|[^0-9\.])(\d+(?:\.\d+)?)\s*(?:hp|h\.p|एचपी)(?:$|\s|[^0-9a-zA-Z])/iu', $clean, $m)) {
+                $reqHp = (float)$m[1];
             }
 
-            // Detect HP
-            if (preg_match('/(\d+(?:\.\d+)?)\s*(?:hp|h\.p)/i', $clean, $m)) {
-                $hpNum = $m[1];
-                $whereParts[] = "(p.name LIKE ? OR p.description LIKE ?)";
-                $params[] = "%{$hpNum}%hp%";
-                $params[] = "%{$hpNum} HP%";
+            // Detect requested Phase and Types
+            $reqSinglePhase = (bool)preg_match('/1\s*phase|single\s*phase|220\s*v|सिंगल\s*फेज/iu', $clean);
+            $reqThreePhase  = (bool)preg_match('/3\s*phase|three\s*phase|415\s*v|star\s*delta|dol|थ्री\s*फेज|तीन\s*फेज/iu', $clean);
+            $reqSubmersible = (bool)preg_match('/submersible|borewell|samarsebal|samar|सबमर्सिबल|बोरवेल/iu', $clean);
+            $reqStarDelta   = (bool)preg_match('/star\s*delta|delta|chakki|स्टार\s*डेल्टा/iu', $clean);
+            $reqDOL         = (bool)preg_match('/\bdol\b/iu', $clean);
+
+            $scored = [];
+            foreach ($allProducts as $p) {
+                $name = strtolower($p['name'] . ' ' . ($p['description'] ?? ''));
+                $score = 0;
+
+                // Extract HP from product name
+                $productHp = null;
+                if (preg_match('/(?:^|\s|[^0-9\.])(\d+(?:\.\d+)?)\s*(?:hp|h\.p)(?:$|\s|[^0-9a-zA-Z])/i', $p['name'], $pm)) {
+                    $productHp = (float)$pm[1];
+                }
+
+                // 1. HP Constraint: If user specified HP, must match exact HP!
+                if ($reqHp !== null) {
+                    if ($productHp !== null && abs($productHp - $reqHp) < 0.01) {
+                        $score += 100;
+                    } else {
+                        // Skip completely if different HP
+                        continue;
+                    }
+                } elseif ($productHp !== null) {
+                    $score += 10;
+                }
+
+                // 2. Phase Constraint & Scoring
+                $pIsSingle = (bool)preg_match('/single\s*phase|1\s*phase/i', $name);
+                $pIsThree  = (bool)preg_match('/3\s*phase|three\s*phase|star\s*delta|dol/i', $name);
+
+                if ($reqSinglePhase) {
+                    if ($pIsSingle) $score += 50;
+                    if ($pIsThree) $score -= 50;
+                }
+                if ($reqThreePhase) {
+                    if ($pIsThree) $score += 50;
+                    if ($pIsSingle) $score -= 50;
+                }
+
+                // 3. Submersible, Star Delta, DOL boosts
+                if ($reqSubmersible && preg_match('/submersible/i', $name)) $score += 30;
+                if ($reqStarDelta && preg_match('/star\s*delta/i', $name)) $score += 35;
+                if ($reqDOL && preg_match('/dol/i', $name)) $score += 35;
+
+                // 4. Token relevance
+                $tokens = preg_split('/[\s,\+]+/', strtolower($clean));
+                foreach ($tokens as $t) {
+                    if (strlen($t) >= 3 && !in_array($t, ['the', 'and', 'for', 'kya', 'hai', 'mujhe', 'chahiye', 'batao', 'price', 'kitna', 'rate', 'show', 'dikhao', 'please', 'tell', 'about', 'starter', 'panel'])) {
+                        if (stripos($name, $t) !== false) {
+                            $score += 15;
+                        }
+                    }
+                }
+
+                if ($score > 0) {
+                    $p['relevance_score'] = $score;
+                    $scored[] = $p;
+                }
             }
 
-            // Keyword token search
-            $meaningfulTokens = array_filter($tokens, function($t) {
-                return strlen($t) >= 3 && !in_array($t, ['the', 'and', 'for', 'kya', 'hai', 'mujhe', 'chahiye', 'batao', 'price', 'kitna', 'rate', 'show', 'dikhao', 'please', 'tell', 'about', 'kaun', 'kisko']);
+            usort($scored, function($a, $b) {
+                return $b['relevance_score'] <=> $a['relevance_score'];
             });
 
-            if (!empty($meaningfulTokens)) {
-                $tokenOr = [];
-                foreach ($meaningfulTokens as $t) {
-                    $tokenOr[] = "p.name LIKE ? OR p.description LIKE ? OR c.name LIKE ?";
-                    $params[] = "%{$t}%";
-                    $params[] = "%{$t}%";
-                    $params[] = "%{$t}%";
-                }
-                $whereParts[] = "(" . implode(" OR ", $tokenOr) . ")";
-            }
-
-            if (empty($whereParts)) {
-                return [];
-            }
-
-            $sql = "SELECT p.id, p.name, p.slug, p.price, p.regular_price, p.sale_price, p.bulk_price, p.bulk_min_qty, p.image, p.short_description, p.description, c.name as category_name
-                    FROM products p
-                    LEFT JOIN categories c ON c.id = p.category_id
-                    WHERE " . implode(" AND ", $whereParts) . "
-                    LIMIT " . (int)$limit;
-
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->execute($params);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            return array_slice($scored, 0, $limit);
         } catch (Exception $e) {
             error_log("searchRelevantProducts error: " . $e->getMessage());
             return [];
