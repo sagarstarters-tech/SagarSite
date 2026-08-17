@@ -3,17 +3,20 @@
  * Admin Panel - AI ChatBot Management
  */
 
-$current_page = 'manage_ai_chatbot.php';
-require_once __DIR__ . '/admin_header.php';
+include_once __DIR__ . '/../includes/session_setup.php';
+include_once __DIR__ . '/../includes/db_connect.php';
+require_once __DIR__ . '/core/AuthMiddleware.php';
+AuthMiddleware::check($conn);
+require_once __DIR__ . '/helpers/csrf.php';
 require_once __DIR__ . '/../classes/ChatbotService.php';
 
-$chatbotService = new ChatbotService($conn);
-$feedback = '';
-$feedbackType = '';
-
-// Handle AJAX Test Connection
+// Handle AJAX Test Connection (Return pure JSON without any HTML wrapper)
 if (isset($_POST['ajax_action']) && $_POST['ajax_action'] === 'test_ai_connection') {
-    header('Content-Type: application/json');
+    while (ob_get_level()) {
+        ob_end_clean();
+    }
+    header('Content-Type: application/json; charset=UTF-8');
+
     $provider = trim($_POST['provider'] ?? 'gemini');
     $apiKey = trim($_POST['api_key'] ?? '');
     $model = trim($_POST['model'] ?? '');
@@ -28,7 +31,8 @@ if (isset($_POST['ajax_action']) && $_POST['ajax_action'] === 'test_ai_connectio
             echo json_encode(['success' => true, 'message' => 'Smart Local Hybrid Engine is active, tested & 100% operational!']);
             exit;
         } elseif ($provider === 'gemini') {
-            $testUrl = "https://generativelanguage.googleapis.com/v1beta/models/" . ($model ?: 'gemini-1.5-flash') . ":generateContent?key=" . urlencode($apiKey);
+            $testModel = $model ?: 'gemini-1.5-flash';
+            $testUrl = "https://generativelanguage.googleapis.com/v1beta/models/{$testModel}:generateContent?key=" . urlencode($apiKey);
             $payload = [
                 'contents' => [['role' => 'user', 'parts' => [['text' => 'Hi, reply with "Gemini Connected Successfully" in 5 words.']]]]
             ];
@@ -38,18 +42,25 @@ if (isset($_POST['ajax_action']) && $_POST['ajax_action'] === 'test_ai_connectio
                 CURLOPT_POSTFIELDS => json_encode($payload),
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
-                CURLOPT_TIMEOUT => 8
+                CURLOPT_TIMEOUT => 12,
+                CURLOPT_SSL_VERIFYPEER => true
             ]);
             $res = curl_exec($ch);
+            $curlErr = curl_error($ch);
             $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
-            $json = json_decode($res, true);
 
+            if (!empty($curlErr)) {
+                echo json_encode(['success' => false, 'message' => 'cURL Error: ' . $curlErr]);
+                exit;
+            }
+
+            $json = json_decode($res, true);
             if ($code === 200 && !empty($json['candidates'][0]['content']['parts'][0]['text'])) {
-                echo json_encode(['success' => true, 'message' => 'Google Gemini Connection Successful: ' . $json['candidates'][0]['content']['parts'][0]['text']]);
+                echo json_encode(['success' => true, 'message' => 'Google Gemini Connection Successful! Response: ' . trim($json['candidates'][0]['content']['parts'][0]['text'])]);
             } else {
-                $err = $json['error']['message'] ?? 'Connection failed with HTTP Code ' . $code;
-                echo json_encode(['success' => false, 'message' => 'Gemini Error: ' . $err]);
+                $err = $json['error']['message'] ?? ('HTTP ' . $code . ' - ' . substr((string)$res, 0, 150));
+                echo json_encode(['success' => false, 'message' => 'Gemini API Error: ' . $err]);
             }
             exit;
         } elseif ($provider === 'openai' || $provider === 'groq') {
@@ -66,26 +77,41 @@ if (isset($_POST['ajax_action']) && $_POST['ajax_action'] === 'test_ai_connectio
                 CURLOPT_POSTFIELDS => json_encode($payload),
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Authorization: Bearer ' . $apiKey],
-                CURLOPT_TIMEOUT => 8
+                CURLOPT_TIMEOUT => 12,
+                CURLOPT_SSL_VERIFYPEER => true
             ]);
             $res = curl_exec($ch);
+            $curlErr = curl_error($ch);
             $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
-            $json = json_decode($res, true);
 
+            if (!empty($curlErr)) {
+                echo json_encode(['success' => false, 'message' => 'cURL Error: ' . $curlErr]);
+                exit;
+            }
+
+            $json = json_decode($res, true);
             if ($code === 200 && !empty($json['choices'][0]['message']['content'])) {
-                echo json_encode(['success' => true, 'message' => strtoupper($provider) . ' Connected Successfully: ' . $json['choices'][0]['message']['content']]);
+                echo json_encode(['success' => true, 'message' => strtoupper($provider) . ' Connected Successfully! Response: ' . trim($json['choices'][0]['message']['content'])]);
             } else {
-                $err = $json['error']['message'] ?? 'Connection failed with HTTP Code ' . $code;
-                echo json_encode(['success' => false, 'message' => strtoupper($provider) . ' Error: ' . $err]);
+                $err = $json['error']['message'] ?? ('HTTP ' . $code . ' - ' . substr((string)$res, 0, 150));
+                echo json_encode(['success' => false, 'message' => strtoupper($provider) . ' API Error: ' . $err]);
             }
             exit;
         }
-    } catch (Exception $e) {
+    } catch (\Throwable $e) {
         echo json_encode(['success' => false, 'message' => 'Test Error: ' . $e->getMessage()]);
         exit;
     }
 }
+
+// Normal HTML page load
+$current_page = 'manage_ai_chatbot.php';
+require_once __DIR__ . '/admin_header.php';
+
+$chatbotService = new ChatbotService($conn);
+$feedback = '';
+$feedbackType = '';
 
 // Handle Form Submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_chatbot_settings'])) {
