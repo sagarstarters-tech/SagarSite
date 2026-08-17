@@ -721,12 +721,13 @@ button.light-text, a.btn.light-text, .btn.light-text,
     color: #ffffff !important;
 }
 button.dark-text, a.btn.dark-text, .btn.dark-text,
-.promo-cta-btn.dark-text, .btn-cta-wa.dark-text, .btn-cta-call.dark-text {
+.promo-cta-btn.dark-text, .btn-cta-call.dark-text {
     color: #1e293b !important;
 }
 
 /* Ensure icons inherit color properly unless specialized */
-.light-text i:not([class*="text-"]), .dark-text i:not([class*="text-"]) {
+.light-text i:not([class*="text-"]):not(.fa-whatsapp):not(.fa-phone):not(.fa-eye), 
+.dark-text i:not([class*="text-"]):not(.fa-whatsapp):not(.fa-phone):not(.fa-eye) {
     color: inherit;
 }
 
@@ -1619,7 +1620,12 @@ body.dark-mode-active .footer-link:hover,
     transform: scale(1.1);
 }
 
-.btn-pro-wa {
+.btn-pro-wa,
+a.btn-pro-wa,
+.product-card .btn-pro-wa,
+.product-card-pro .btn-pro-wa,
+.dark-text .btn-pro-wa,
+.light-text .btn-pro-wa {
     width: 40px;
     height: 40px;
     min-width: 40px;
@@ -1627,19 +1633,47 @@ body.dark-mode-active .footer-link:hover,
     align-items: center;
     justify-content: center;
     border-radius: 10px;
-    background: #25d366;
-    color: #ffffff;
-    text-decoration: none;
-    font-size: 1.15rem;
-    box-shadow: 0 3px 10px rgba(37, 211, 102, 0.3);
+    background: #25d366 !important;
+    background-color: #25d366 !important;
+    color: #ffffff !important;
+    text-decoration: none !important;
+    font-size: 1.25rem !important;
+    box-shadow: 0 3px 10px rgba(37, 211, 102, 0.35);
     transition: all 0.25s ease;
+    border: none !important;
+    cursor: pointer;
 }
 
-.btn-pro-wa:hover {
-    background: #1eb954;
-    color: #ffffff;
+.btn-pro-wa i,
+.btn-pro-wa svg,
+a.btn-pro-wa i,
+.product-card .btn-pro-wa i,
+.product-card-pro .btn-pro-wa i,
+.dark-text .btn-pro-wa i,
+.light-text .btn-pro-wa i {
+    color: #ffffff !important;
+    font-size: 1.3rem !important;
+    line-height: 1 !important;
+    display: inline-block !important;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
+    transition: transform 0.2s ease;
+}
+
+.btn-pro-wa:hover,
+a.btn-pro-wa:hover,
+.dark-text .btn-pro-wa:hover,
+.light-text .btn-pro-wa:hover {
+    background: #1eb954 !important;
+    background-color: #1eb954 !important;
+    color: #ffffff !important;
     transform: scale(1.08);
-    box-shadow: 0 6px 16px rgba(37, 211, 102, 0.4);
+    box-shadow: 0 6px 16px rgba(37, 211, 102, 0.45);
+}
+
+.btn-pro-wa:hover i,
+a.btn-pro-wa:hover i {
+    color: #ffffff !important;
+    transform: scale(1.1);
 }
 
 /* ── Promotional Spotlight Cards ─────────────────────────────────────────── */

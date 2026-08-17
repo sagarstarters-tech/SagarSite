@@ -412,8 +412,8 @@ if ($prods_enabled == '1'):
                                 <a href="<?php echo $p_url; ?>" class="btn-pro-view">
                                     <i class="fas fa-eye"></i> View Details
                                 </a>
-                                <a href="<?php echo $wa_link; ?>" target="_blank" rel="noopener noreferrer" class="btn-pro-wa" title="Order / Enquire on WhatsApp">
-                                    <i class="fab fa-whatsapp"></i>
+                                <a href="<?php echo $wa_link; ?>" target="_blank" rel="noopener noreferrer" class="btn-pro-wa" title="Order / Enquire on WhatsApp" aria-label="Order on WhatsApp">
+                                    <i class="fab fa-whatsapp" style="color: #ffffff !important; font-size: 1.3rem;"></i>
                                 </a>
                             </div>
                         </div>
