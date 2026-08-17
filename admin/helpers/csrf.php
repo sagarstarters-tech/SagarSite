@@ -40,13 +40,63 @@ function csrf_verify(): void
     if (session_status() === PHP_SESSION_NONE) {
         include_once __DIR__ . '/../../includes/session_setup.php';
     }
-    $submitted = $_POST['_csrf_token'] ?? '';
+
+    $submitted = $_POST['_csrf_token'] ?? $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
     $stored    = $_SESSION['csrf_token'] ?? '';
 
-    if (empty($stored) || !hash_equals($stored, $submitted)) {
-        http_response_code(403);
-        die('<h1>403 Forbidden</h1><p>Security session mismatch (CSRF). This often happens if your session timed out or you have multiple tabs open. Please refresh the page and try again.</p>');
+    // If session token was missing, generate one
+    if (empty($stored)) {
+        $stored = csrf_token();
     }
+
+    // 1. Direct valid token match
+    if (!empty($submitted) && hash_equals($stored, $submitted)) {
+        return;
+    }
+
+    // 2. Same-origin fallback for authenticated admin sessions (prevents lockout on cached HTML forms)
+    $referer = $_SERVER['HTTP_REFERER'] ?? '';
+    $host    = $_SERVER['HTTP_HOST'] ?? '';
+    if (!empty($referer) && !empty($host) && isset($_SESSION['user_id']) && ($_SESSION['role'] ?? '') === 'admin') {
+        $refHost = parse_url($referer, PHP_URL_HOST);
+        $cleanHost = preg_replace('/:\d+$/', '', $host);
+        if ($refHost === $cleanHost || $refHost === preg_replace('/^www\./i', '', $cleanHost) || $cleanHost === preg_replace('/^www\./i', '', $refHost)) {
+            // Same origin verified for logged in admin — re-sync token safely
+            $_SESSION['csrf_token'] = csrf_token();
+            return;
+        }
+    }
+
+    // 3. Genuine CSRF mismatch or unauthorized external post
+    http_response_code(403);
+    ?>
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>403 Forbidden - Security Verification</title>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.css" rel="stylesheet"/>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet"/>
+    </head>
+    <body class="bg-light d-flex align-items-center justify-content-center" style="min-height: 100vh; font-family: sans-serif;">
+        <div class="card border-0 shadow-lg rounded-4 p-4 text-center" style="max-width: 480px; width: 90%;">
+            <div class="mb-3 text-warning">
+                <i class="fas fa-shield-alt fa-3x"></i>
+            </div>
+            <h4 class="fw-bold mb-2">Session Verification</h4>
+            <p class="text-muted small mb-4">A security session mismatch occurred (CSRF). This often happens if your session timed out or a form was cached. Please click below to reload safely.</p>
+            <div class="d-flex justify-content-center gap-2">
+                <a href="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? 'index.php'); ?>" class="btn btn-primary rounded-pill px-4">
+                    <i class="fas fa-sync-alt me-2"></i> Reload Page
+                </a>
+                <a href="index.php" class="btn btn-outline-secondary rounded-pill px-4">Dashboard</a>
+            </div>
+        </div>
+    </body>
+    </html>
+    <?php
+    exit;
 }
 
 /**
