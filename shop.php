@@ -270,23 +270,43 @@ if (!empty($global_settings[$setting_key])) {
 
             <div class="row g-4">
                 <?php if($prods && $prods->num_rows > 0): ?>
-                    <?php $delay=100; while($p = $prods->fetch_assoc()): ?>
-                    <div class="col-md-4" data-aos="fade-up" data-aos-delay="<?php echo $delay; $delay+=100; ?>">
+                    <?php 
+                    $wa_phone = !empty($global_settings['whatsapp_number']) ? preg_replace('/[^0-9]/', '', $global_settings['whatsapp_number']) : '919837248000';
+                    $delay=100; 
+                    while($p = $prods->fetch_assoc()): 
+                        $main_img_src = resolve_product_image_url($p['image'] ?? '', $conn, $p['id']);
+                        $p_url = !empty($p['slug']) ? SITE_URL . "/product/" . $p['slug'] : SITE_URL . "/product.php?id=" . $p['id'];
+                        $reg_price = (float)($p['regular_price'] > 0 ? $p['regular_price'] : $p['price']);
+                        $sale_price = (float)($p['sale_price'] ?? 0);
+                        $has_discount = ($sale_price > 0 && $sale_price < $reg_price);
+                        $display_price = $has_discount ? $sale_price : $reg_price;
+                        $discount_percent = $has_discount ? round((($reg_price - $sale_price) / $reg_price) * 100) : 0;
+                        
+                        // WhatsApp Direct Order Text
+                        $wa_msg = urlencode("Hello Sagar Starters! I am interested in ordering: *" . $p['name'] . "* (Price: " . $global_currency . number_format($display_price, 2) . "). Please confirm stock and delivery.");
+                        $wa_link = "https://wa.me/{$wa_phone}?text={$wa_msg}";
+                        
+                        $p_moq = !empty($p['min_order_qty']) ? (int)$p['min_order_qty'] : 1;
+                        $p_bulk_price = !empty($p['bulk_price']) ? (float)$p['bulk_price'] : 0;
+                        $p_bulk_qty = !empty($p['bulk_min_qty']) && (int)$p['bulk_min_qty'] > 0 ? (int)$p['bulk_min_qty'] : 12;
+                        $is_retailer_user = (isset($_SESSION['role']) && $_SESSION['role'] === 'retailer');
+                    ?>
+                    <div class="col-md-4" data-aos="fade-up" data-aos-delay="<?php echo $delay; $delay+=50; ?>">
                         <div class="card product-card h-100 border-0 shadow-sm">
-                            <?php
-                            $main_img_src = resolve_product_image_url($p['image'] ?? '', $conn, $p['id']);
-                            ?>
-                            <img src="<?php echo htmlspecialchars($main_img_src); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="card-img-top" alt="<?php echo htmlspecialchars($p['name']); ?>" loading="lazy" style="object-fit: <?php echo htmlspecialchars($p['image_fit'] ?? 'contain'); ?>; background-color:#fff;">
-                            <div class="card-body d-flex flex-column">
-                                <h5 class="card-title fw-bold mb-1 text-truncate"><?php echo htmlspecialchars($p['name']); ?></h5>
+                            <div class="position-relative overflow-hidden" style="background-color:#fff;">
+                                <?php if ($has_discount): ?>
+                                    <span class="badge bg-danger position-absolute top-0 start-0 m-2 rounded-pill px-2 py-1 shadow-sm" style="font-size: 0.72rem; z-index: 2;">
+                                        <i class="fas fa-tag me-1"></i><?php echo $discount_percent; ?>% OFF
+                                    </span>
+                                <?php endif; ?>
+                                <img src="<?php echo htmlspecialchars($main_img_src); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="card-img-top" alt="<?php echo htmlspecialchars($p['name']); ?>" loading="lazy" style="height: 220px; object-fit: <?php echo htmlspecialchars($p['image_fit'] ?? 'contain'); ?>; background-color:#fff;">
+                            </div>
+                            <div class="card-body d-flex flex-column p-3">
+                                <h5 class="card-title fw-bold mb-1 text-truncate" title="<?php echo htmlspecialchars($p['name']); ?>">
+                                    <a href="<?php echo $p_url; ?>" class="text-reset text-decoration-none"><?php echo htmlspecialchars($p['name']); ?></a>
+                                </h5>
                                 <p class="card-text text-muted small text-truncate mb-2"><?php echo htmlspecialchars(!empty($p['short_description']) ? $p['short_description'] : $p['description']); ?></p>
                                 
-                                <?php 
-                                $p_moq = !empty($p['min_order_qty']) ? (int)$p['min_order_qty'] : 1;
-                                $p_bulk_price = !empty($p['bulk_price']) ? (float)$p['bulk_price'] : 0;
-                                $p_bulk_qty = !empty($p['bulk_min_qty']) && (int)$p['bulk_min_qty'] > 0 ? (int)$p['bulk_min_qty'] : 12;
-                                $is_retailer_user = (isset($_SESSION['role']) && $_SESSION['role'] === 'retailer');
-                                ?>
                                 <?php if ($p_bulk_price > 0): ?>
                                     <div class="mb-2">
                                         <?php if ($is_retailer_user): ?>
@@ -307,19 +327,25 @@ if (!empty($global_settings[$setting_key])) {
                                     </div>
                                 <?php endif; ?>
 
-                                <div class="mt-auto d-flex flex-wrap justify-content-between align-items-center pt-3 border-top gap-2">
-                                    <?php if ($p['sale_price'] > 0): ?>
-                                        <div class="d-flex flex-column">
-                                            <span class="text-muted text-decoration-line-through small" style="line-height:1;"><?php echo $global_currency; ?><?php echo number_format($p['regular_price'], 2); ?></span>
-                                            <span class="fs-5 fw-bold text-danger" style="line-height:1;"><?php echo $global_currency; ?><?php echo number_format($p['sale_price'], 2); ?></span>
-                                        </div>
-                                    <?php else: ?>
-                                        <span class="fs-5 fw-bold primary-blue"><?php echo $global_currency; ?><?php echo number_format($p['regular_price'] > 0 ? $p['regular_price'] : $p['price'], 2); ?></span>
-                                    <?php endif; ?>
-                                    <?php 
-                                        $p_url = !empty($p['slug']) ? SITE_URL . "/product/" . $p['slug'] : SITE_URL . "/product.php?id=" . $p['id'];
-                                    ?>
-                                    <a href="<?php echo $p_url; ?>" class="btn btn-outline-primary btn-custom btn-sm">View</a>
+                                <div class="mt-auto pt-3 border-top">
+                                    <div class="d-flex align-items-baseline mb-2">
+                                        <?php if ($has_discount): ?>
+                                            <span class="text-muted text-decoration-line-through small me-2"><?php echo $global_currency; ?><?php echo number_format($reg_price, 2); ?></span>
+                                            <span class="fs-5 fw-bold text-danger"><?php echo $global_currency; ?><?php echo number_format($sale_price, 2); ?></span>
+                                        <?php else: ?>
+                                            <span class="fs-5 fw-bold primary-blue"><?php echo $global_currency; ?><?php echo number_format($reg_price, 2); ?></span>
+                                        <?php endif; ?>
+                                    </div>
+
+                                    <!-- Actions Footer -->
+                                    <div class="product-actions-footer d-flex gap-2 align-items-center">
+                                        <a href="<?php echo $p_url; ?>" class="btn-pro-view flex-grow-1">
+                                            <i class="fas fa-eye"></i> View Details
+                                        </a>
+                                        <a href="<?php echo $wa_link; ?>" target="_blank" rel="noopener noreferrer" class="btn-pro-wa" title="Order / Enquire on WhatsApp" aria-label="Order on WhatsApp">
+                                            <i class="fab fa-whatsapp" style="color: #ffffff !important; font-size: 1.3rem;"></i>
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         </div>

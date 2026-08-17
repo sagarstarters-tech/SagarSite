@@ -645,22 +645,43 @@ if (!empty($global_settings['hero_banner_product'])) {
     <div class="mt-5 pt-5 border-top" data-aos="fade-up">
         <h3 class="montserrat fw-bold text-center mb-5">Related Products</h3>
         <div class="row g-4">
-            <?php $delay=100; while($p = $related->fetch_assoc()): ?>
+            <?php 
+            $wa_phone = !empty($global_settings['whatsapp_number']) ? preg_replace('/[^0-9]/', '', $global_settings['whatsapp_number']) : '919837248000';
+            $delay=100; 
+            while($p = $related->fetch_assoc()): 
+                $rel_reg_price = (float)($p['regular_price'] > 0 ? $p['regular_price'] : $p['price']);
+                $rel_sale_price = (float)($p['sale_price'] ?? 0);
+                $rel_has_discount = ($rel_sale_price > 0 && $rel_sale_price < $rel_reg_price);
+                $rel_display_price = $rel_has_discount ? $rel_sale_price : $rel_reg_price;
+                $rel_url = !empty($p['slug']) ? SITE_URL . "/product/" . $p['slug'] : SITE_URL . "/product.php?id=" . $p['id'];
+                
+                $rel_wa_msg = urlencode("Hello Sagar Starters! I am interested in ordering: *" . $p['name'] . "* (Price: " . $global_currency . number_format($rel_display_price, 2) . "). Please confirm stock and delivery.");
+                $rel_wa_link = "https://wa.me/{$wa_phone}?text={$rel_wa_msg}";
+            ?>
             <div class="col-md-3" data-aos="zoom-in" data-aos-delay="<?php echo $delay; $delay+=100; ?>">
                 <div class="card product-card h-100 border-0 shadow-sm">
-                    <img src="<?php echo htmlspecialchars(resolve_product_image_url($p['image'] ?? '', $conn, $p['id'])); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="card-img-top" alt="<?php echo htmlspecialchars($p['name']); ?>" loading="lazy" style="object-fit: <?php echo htmlspecialchars($p['image_fit'] ?? 'contain'); ?>; background-color:#fff;">
-                    <div class="card-body">
-                        <h6 class="card-title fw-bold text-truncate"><?php echo htmlspecialchars($p['name']); ?></h6>
-                        <div class="d-flex flex-wrap justify-content-between align-items-center mt-3 gap-2">
-                            <?php if ($p['sale_price'] > 0): ?>
-                                <div>
-                                    <span class="text-muted text-decoration-line-through small me-1"><?php echo $global_currency; ?><?php echo number_format($p['regular_price'], 2); ?></span>
-                                    <span class="fw-bold text-danger"><?php echo $global_currency; ?><?php echo number_format($p['sale_price'], 2); ?></span>
-                                </div>
-                            <?php else: ?>
-                                <span class="fw-bold primary-blue"><?php echo $global_currency; ?><?php echo number_format($p['regular_price'] > 0 ? $p['regular_price'] : $p['price'], 2); ?></span>
-                            <?php endif; ?>
-                            <a href="<?php echo SITE_URL; ?>/product/<?php echo $p['slug']; ?>" class="btn btn-outline-primary btn-sm btn-custom">View</a>
+                    <img src="<?php echo htmlspecialchars(resolve_product_image_url($p['image'] ?? '', $conn, $p['id'])); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="card-img-top" alt="<?php echo htmlspecialchars($p['name']); ?>" loading="lazy" style="height: 180px; object-fit: <?php echo htmlspecialchars($p['image_fit'] ?? 'contain'); ?>; background-color:#fff;">
+                    <div class="card-body d-flex flex-column p-3">
+                        <h6 class="card-title fw-bold text-truncate mb-2" title="<?php echo htmlspecialchars($p['name']); ?>">
+                            <a href="<?php echo $rel_url; ?>" class="text-reset text-decoration-none"><?php echo htmlspecialchars($p['name']); ?></a>
+                        </h6>
+                        <div class="mt-auto pt-2 border-top">
+                            <div class="d-flex align-items-baseline mb-2">
+                                <?php if ($rel_has_discount): ?>
+                                    <span class="text-muted text-decoration-line-through small me-1"><?php echo $global_currency; ?><?php echo number_format($rel_reg_price, 2); ?></span>
+                                    <span class="fw-bold text-danger"><?php echo $global_currency; ?><?php echo number_format($rel_sale_price, 2); ?></span>
+                                <?php else: ?>
+                                    <span class="fw-bold primary-blue"><?php echo $global_currency; ?><?php echo number_format($rel_reg_price, 2); ?></span>
+                                <?php endif; ?>
+                            </div>
+                            <div class="product-actions-footer d-flex gap-2 align-items-center">
+                                <a href="<?php echo $rel_url; ?>" class="btn-pro-view flex-grow-1" style="font-size: 0.8rem; padding: 7px 10px;">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                                <a href="<?php echo $rel_wa_link; ?>" target="_blank" rel="noopener noreferrer" class="btn-pro-wa" title="Order / Enquire on WhatsApp" aria-label="Order on WhatsApp" style="width: 36px; height: 36px; min-width: 36px;">
+                                    <i class="fab fa-whatsapp" style="color: #ffffff !important; font-size: 1.15rem;"></i>
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
