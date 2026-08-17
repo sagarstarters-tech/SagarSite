@@ -341,8 +341,15 @@ class ChatbotService
         $clean = trim($query);
         if (empty($clean)) return [];
 
+        // Check if query is actually seeking products or specifications
+        $productKeywordPattern = '/(?:hp|h\.p|phase|starter|panel|submersible|pump|motor|borewell|contactor|relay|mcb|breaker|stabilizer|voltmeter|ammeter|capacitor|rate|price|kimat|daam|cost|kharidna|buy|purchase|model|watt|kva|spec|dikhao|show|btao|batao|kya rate|kitne ka)|\d+\s*(?:hp|h\.p|kva|watt|v|volt|amp|ampere)/i';
+        $nonProductPattern = '/malik|owner|founder|director|kiska hai|kiske dwara|address|pata|kaha par|kaha hai|kahan hai|office|factory|dukan|location|complaint|shikayat|helpline|support number|delivery time|payment method|refund|return/i';
+
+        if (!preg_match($productKeywordPattern, $clean) || preg_match($nonProductPattern, $clean)) {
+            return []; // Do not retrieve products for company/owner/location/policy queries
+        }
+
         try {
-            // Extract tokens and HP / Phase keywords
             $tokens = preg_split('/[\s,\+]+/', strtolower($clean));
             $whereParts = [];
             $params = [];
@@ -370,7 +377,7 @@ class ChatbotService
 
             // Keyword token search
             $meaningfulTokens = array_filter($tokens, function($t) {
-                return strlen($t) >= 3 && !in_array($t, ['the', 'and', 'for', 'kya', 'hai', 'mujhe', 'chahiye', 'batao', 'price', 'kitna', 'rate', 'show', 'dikhao', 'please', 'tell', 'about']);
+                return strlen($t) >= 3 && !in_array($t, ['the', 'and', 'for', 'kya', 'hai', 'mujhe', 'chahiye', 'batao', 'price', 'kitna', 'rate', 'show', 'dikhao', 'please', 'tell', 'about', 'kaun', 'kisko']);
             });
 
             if (!empty($meaningfulTokens)) {
@@ -384,32 +391,19 @@ class ChatbotService
                 $whereParts[] = "(" . implode(" OR ", $tokenOr) . ")";
             }
 
-            $sql = "SELECT p.id, p.name, p.slug, p.price, p.regular_price, p.sale_price, p.bulk_price, p.bulk_min_qty, p.image, p.short_description, p.description, c.name as category_name
-                    FROM products p
-                    LEFT JOIN categories c ON c.id = p.category_id ";
-
-            if (!empty($whereParts)) {
-                $sql .= "WHERE " . implode(" AND ", $whereParts);
-            } else {
-                $sql .= "ORDER BY p.is_trending DESC, p.id DESC";
+            if (empty($whereParts)) {
+                return [];
             }
 
-            $sql .= " LIMIT " . (int)$limit;
+            $sql = "SELECT p.id, p.name, p.slug, p.price, p.regular_price, p.sale_price, p.bulk_price, p.bulk_min_qty, p.image, p.short_description, p.description, c.name as category_name
+                    FROM products p
+                    LEFT JOIN categories c ON c.id = p.category_id
+                    WHERE " . implode(" AND ", $whereParts) . "
+                    LIMIT " . (int)$limit;
 
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute($params);
-            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            // If specific match yielded nothing, fetch top trending/popular products as fallback
-            if (empty($results)) {
-                $fallbackStmt = $this->pdo->query("SELECT p.id, p.name, p.slug, p.price, p.regular_price, p.sale_price, p.bulk_price, p.bulk_min_qty, p.image, p.short_description, p.description, c.name as category_name
-                                                  FROM products p
-                                                  LEFT JOIN categories c ON c.id = p.category_id
-                                                  ORDER BY p.is_trending DESC, p.id DESC LIMIT " . (int)$limit);
-                $results = $fallbackStmt->fetchAll(PDO::FETCH_ASSOC);
-            }
-
-            return $results;
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
             error_log("searchRelevantProducts error: " . $e->getMessage());
             return [];
@@ -424,13 +418,59 @@ class ChatbotService
         $clean = strtolower($message);
         $curr = $this->getSetting('currency_symbol', '₹');
         $siteName = $this->getSetting('site_name', "Sagar Starter's");
+        $phone = $this->getSetting('contact_phone', '+91 8573934013');
+        $email = $this->getSetting('contact_email', 'sagarstarters@gmail.com');
+        $address = $this->getSetting('contact_address', 'Alipur Madra, Jakhanian, Ghazipur, Uttar Pradesh');
 
-        // 1. Greetings
+        // 1. Owner / Founder / Malik Queries (Hindi + English + Hinglish)
+        if (preg_match('/malik|owner|founder|director|kiska hai|kiske dwara|banaya|sanchalak|proprietor|who is the owner|who founded|owner name|malik kaun|मालिक|संस्थापक|ओनर|फाउंडर|किसकी कंपनी|किसका है|संचालक/iu', $message)) {
+            return "👑 **सागर स्टार्टर्स के संस्थापक एवं मालिक (Founder & Owner):**\n\n"
+                 . "**श्री प्रमोद कुमार सागर (Mr. Pramod Kumar Sagar)** सागर स्टार्टर्स (sagarstarters.com) के संस्थापक और मुख्य संचालक हैं।\n\n"
+                 . "• **कंपनी**: Sagar Starter's\n"
+                 . "• **स्थान**: अलीपुर मदरा, जखनियाँ, गाजीपुर (उत्तर प्रदेश)\n"
+                 . "• **विशेषज्ञता**: उच्च गुणवत्ता वाले मोटर स्टार्टर्स, सबमर्सिबल पंप पैनल्स एवं ऑटोमेशन इक्विपमेंट्स निर्माण।\n\n"
+                 . "यदि आप सीधे संपर्क या बिज़नेस इन्क्वायरी करना चाहते हैं, तो आप WhatsApp पर कनेक्ट कर सकते हैं!";
+        }
+
+        // 2. Address / Location Queries (Hindi + English + Hinglish)
+        if (preg_match('/address|location|kaha par|kaha hai|kahan hai|office|factory|dukan|shop|city|state|ghazipur|jakhanian|store location|pata kya hai|पता|कहा है|कहाँ है|कहाँ पर|दुकान|ऑफिस|स्थान|लोकेशन/iu', $message)) {
+            return "📍 **सागर स्टार्टर्स का पता एवं संपर्क (Address & Location):**\n\n"
+                 . "• **पता**: {$address}\n"
+                 . "• **हेल्पलाइन / फोन**: `{$phone}`\n"
+                 . "• **ईमेल**: `{$email}`\n"
+                 . "• **समय**: सोमवार से शनिवार, सुबह 9:00 AM से शाम 6:00 PM\n\n"
+                 . "आप गूगल मैप्स पर भी **'SAGAR STARTERS'** सर्च करके आसानी से लोकेशन देख सकते हैं!";
+        }
+
+        // 3. Payment / COD Methods
+        if (preg_match('/payment|cod|cash on delivery|upi|qr|google pay|phonepe|paytm|advance|paise kaise|भुगतान|कैश ऑन डिलीवरी|पैसे|ऑनलाइन पेमेंट/iu', $message)) {
+            return "💳 **भुगतान के तरीके (Payment Methods):**\n\n"
+                 . "• **Cash on Delivery (COD)**: पूरे भारत में उपलब्ध है (सुरक्षा के लिए नाममात्र एडवांस/शिपिंग चार्ज लगता है)।\n"
+                 . "• **Online Payment**: UPI (PhonePe, Google Pay, Paytm), QR Code स्कैन, डेबिट/क्रेडिट कार्ड और नेट बैंकिंग 100% सुरक्षित रूप से समर्थित हैं।";
+        }
+
+        // 4. Delivery & Shipping Timelines
+        if (preg_match('/delivery|shipping|kitne din|deliver|courier|dispatch|pahuch|डिलीवरी|शिपिंग|कितने दिन|कब तक/iu', $message)) {
+            return "🚚 **डिलीवरी एवं शिपिंग जानकारी (Shipping & Delivery):**\n\n"
+                 . "• **ऑल इंडिया डिलीवरी**: हम Delhivery, DTDC एवं एक्सप्रेस कूरियर पार्टनर्स द्वारा पूरे देश में सुरक्षित पार्सल भेजते हैं।\n"
+                 . "• **समय**: आर्डर कन्फर्म होने के **3 से 7 कार्य दिवसों (Business Days)** के भीतर पार्सल आपके पते पर डिलीवर हो जाता है।\n"
+                 . "• हर आर्डर का लाइव ट्रैकिंग नंबर SMS एवं WhatsApp पर प्रदान किया जाता है।";
+        }
+
+        // 5. Warranty & Return Policy
+        if (preg_match('/return|refund|replace|replacement|damage|kharab|warranty|guarantee|वारंटी|गारंटी|खराब|वापस|रिप्लेस/iu', $message)) {
+            return "🛡️ **वारंटी एवं रिप्लेसमेंट नीति (Warranty & Policy):**\n\n"
+                 . "• **100% टेस्टेड क्वालिटी**: हमारे सभी स्टार्टर्स और पैनल्स कड़े क्वालिटी चेक के बाद ही डिस्पैच किए जाते हैं।\n"
+                 . "• **ट्रांजिट रिप्लेसमेंट**: यदि पार्सल डिलीवरी में कोई डैमेज मिलता है, तो तुरंत रिप्लेसमेंट या टेक्निकल सपोर्ट दिया जाता है।\n"
+                 . "• सहायता के लिए संपर्क: `{$phone}`";
+        }
+
+        // 6. Greetings
         if (preg_match('/^(hi|hello|hey|namaste|kem cho|pranam|salam|sasriakal)/i', $clean)) {
             return "Namaste! 🙏 Welcome to **{$siteName}**.\n\nMain aapki motor starter, submersible panel selection, live pricing aur bulk order enquiry me help karne ke liye taiyar hu. Aap kis prakaar ke starter ya motor ke baare me jaankari chahte hain?";
         }
 
-        // 2. Single Phase vs 3 Phase guidance
+        // 7. Single Phase vs 3 Phase guidance
         if (preg_match('/single phase.*3 phase|1 phase.*3 phase|difference|kisme lagta hai/i', $clean)) {
             return "💡 **Single Phase vs 3 Phase Motor Starter Guide:**\n\n"
                  . "1. **Single Phase (220V)**: Yeh domestic aur choti agricultural submersible pumps (0.5 HP se 3 HP tak) ke liye ideal hota hai. Isme starting aur running capacitor lage hote hain.\n"
@@ -438,7 +478,7 @@ class ChatbotService
                  . "👉 Aapki motor kitne **HP** ki hai? Mujhe batayein, main best model recommend karunga!";
         }
 
-        // 3. Submersible Starters
+        // 8. Submersible Starters
         if (preg_match('/submersible|borewell|khet|pump/i', $clean)) {
             $resp = "⚡ **Sagar Submersible Pump Starters:**\n\n"
                   . "Hamare sabhi submersible control panels me **Dry Run Auto-Cut**, **Overload Protection**, **Digital Voltmeter & Ammeter**, aur **Surge Protection** inbuilt milta hai.";
@@ -453,7 +493,7 @@ class ChatbotService
             return $resp;
         }
 
-        // 4. Star Delta / Heavy Motor
+        // 9. Star Delta / Heavy Motor
         if (preg_match('/star delta|delta|heavy|chakki|flour mill|30 hp|20 hp|15 hp/i', $clean)) {
             return "🏭 **Sagar Automatic Star Delta Starters:**\n\n"
                  . "Heavy duty industrial aur agricultural motors (7.5 HP se 35 HP) ke liye hamare Star Delta panels equipped hain:\n"
@@ -463,7 +503,7 @@ class ChatbotService
                  . "Niche matching models dekhein ya customized panel ke liye direct WhatsApp par contact karein.";
         }
 
-        // 5. Bulk Order / Retailer / Wholesale
+        // 10. Bulk Order / Retailer / Wholesale
         if (preg_match('/bulk|wholesale|retailer|dealer|discount|kam price|zyada quantity/i', $clean)) {
             return "📦 **Bulk Purchase & Retailer Special Discounts:**\n\n"
                  . "Haan! Hum retailers, dealers aur agricultural contractors ke liye **Special Wholesale Pricing** provide karte hain.\n\n"
@@ -471,21 +511,7 @@ class ChatbotService
                  . "• Badi quantity ke customized quotation ke liye aap hamare sales team se direct WhatsApp par connect kar sakte hain.";
         }
 
-        // 6. Warranty / Support / Contact
-        if (preg_match('/warranty|guarantee|contact|phone|mobile|address|service|repair/i', $clean)) {
-            $phone = $this->getSetting('contact_phone', '+91 9837248000');
-            $email = $this->getSetting('contact_email', 'sagarstarters@gmail.com');
-            $address = $this->getSetting('contact_address', 'Industrial Area, India');
-
-            return "🛡️ **Warranty & Technical Support:**\n\n"
-                 . "• **Warranty**: 100% Brand Tested quality with manufacturer guarantee.\n"
-                 . "• **Phone Support**: `{$phone}`\n"
-                 . "• **Email**: `{$email}`\n"
-                 . "• **Location**: {$address}\n\n"
-                 . "Technical help ke liye aap hume call ya WhatsApp par instant message bhej sakte hain!";
-        }
-
-        // 7. General Product match or fallback
+        // 11. General Product match (if products were actively requested)
         if (!empty($products)) {
             $resp = "Maine aapke sawal ke anuroop yeh best product(s) dhundhe hain:\n\n";
             foreach ($products as $p) {
@@ -496,7 +522,7 @@ class ChatbotService
             return $resp;
         }
 
-        return "Maine aapka request note kar liya hai. **{$siteName}** par sabhi types ke Motor Starters, Submersible Panels aur Spare Parts available hain.\n\nKripya mujhe apni motor ka **HP (e.g. 5 HP)** ya **Phase (1-Phase / 3-Phase)** batayein taaki main exact model suggest kar saku.";
+        return "Maine aapka request note kar liya hai. **{$siteName}** par sabhi types ke Motor Starters, Submersible Panels aur Electrical Spares available hain.\n\nKripya mujhe apni motor ka **HP (jaise: 5 HP)** ya **Phase (1-Phase / 3-Phase)** batayein taaki main exact model suggest kar saku, ya specific jaankari ke liye WhatsApp par connect karein.";
     }
 
     /**
@@ -666,12 +692,17 @@ class ChatbotService
         $phone = $this->getSetting('contact_phone', '+91 9837248000');
 
         $context = $basePrompt . "\n\n"
-                 . "STORE INFORMATION:\n"
-                 . "- Store Name: {$siteName}\n"
-                 . "- Currency: {$curr}\n"
+                 . "SAGAR STARTERS VERIFIED STORE KNOWLEDGE:\n"
+                 . "- Store / Brand Name: {$siteName} (sagarstarters.com)\n"
+                 . "- Founder & Owner: Shri Pramod Kumar Sagar (Mr. Pramod Kumar Sagar)\n"
+                 . "- Head Office & Factory Location: Alipur Madra, Jakhanian, Ghazipur, Uttar Pradesh, India\n"
                  . "- Official Contact & WhatsApp: {$phone}\n"
-                 . "- Speciality: Motor Starters, Submersible Pump Control Panels, Star Delta Panels, DOL Starters, Circuit Breakers.\n"
-                 . "- Order Tracking: Customers can track orders directly by providing their Order ID or Phone number.\n\n";
+                 . "- Official Email: sagarstarters@gmail.com\n"
+                 . "- Currency: {$curr}\n"
+                 . "- Speciality: Motor Starters (DOL, Star Delta, 1-Phase, 3-Phase), Submersible Pump Control Panels, Automatic Star Delta Starters, Voltage Stabilizers, MCB Breakers, Meters, and Spares.\n"
+                 . "- Order Tracking: Customers can track orders directly by providing their Order ID or Phone number.\n"
+                 . "- Shipping & Delivery: Pan-India fast delivery in 3 to 7 business days.\n"
+                 . "- Payment Methods: Cash on Delivery (COD) and 100% Secure Online Payments (UPI, PhonePe, Google Pay, Cards, NetBanking).\n\n";
 
         if (!empty($products)) {
             $context .= "MATCHED LIVE PRODUCTS IN DATABASE FOR THIS QUERY:\n";
