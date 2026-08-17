@@ -274,8 +274,8 @@ class ChatbotService
         $orderId = null;
         $phone = null;
 
-        // 1. Look for order ID formats: ORD-12345, #12345, #5, or order 5
-        if (preg_match('/(?:ORD[-_]?\s*(\d+))|(?:\#\s*(\d+))|(?:order\s*(?:id|no|number|#)?\s*[:=]?\s*(\d+))/i', $cleanMsg, $matches)) {
+        // 1. Look for order ID formats: ORD-12345, #12345, #5, order 5, ऑर्डर 5, ऑर्डर नंबर 5
+        if (preg_match('/(?:ORD[-_]?\s*(\d+))|(?:\#\s*(\d+))|(?:(?:order|ऑर्डर|आर्डर)\s*(?:id|no|number|num|\#|नंबर|संख्या)?\s*[:=]?\s*(\d+))/iu', $cleanMsg, $matches)) {
             $orderId = !empty($matches[1]) ? $matches[1] : (!empty($matches[2]) ? $matches[2] : (!empty($matches[3]) ? $matches[3] : null));
         }
 
@@ -284,14 +284,35 @@ class ChatbotService
             $phone = $pMatches[1];
         }
 
-        // 3. User says "Track my order" without ID
-        if (!$orderId && !$phone && preg_match('/track|order status|mera order|kaha pahucha|order track/i', $cleanMsg)) {
-            return [
-                'success'       => true,
-                'reply'         => "📦 **Order Tracking Service**\n\nApna order status jaan ne ke liye kripya apna **Order Number (jaise: #1234 ya ORD-1234)** ya registered **10-digit Mobile Number** yahan type karein.",
-                'products'      => [],
-                'quick_replies' => ['Track #1001', 'Shop Products', 'WhatsApp Support']
-            ];
+        // 3. User says "Track my order" or asks in Hindi "क्या मेरा कोई ऑर्डर है", "ऑर्डर जांच करें", "मेरा पार्सल कहां है"
+        $isOrderQuery = (bool)preg_match('/track|order|status|mera order|kaha pahucha|order track|check order|my order|where is my parcel|ऑर्डर|आर्डर|जांच|मेरा ऑर्डर|कोई ऑर्डर|पार्सल|स्टेटस|पार्सल कहा है|कूरियर|आर्डर की स्थिति/iu', $cleanMsg);
+
+        if (!$orderId && !$phone && $isOrderQuery) {
+            // Check if logged in user has an order in session
+            $sessionUserId = $_SESSION['user_id'] ?? null;
+            if ($sessionUserId) {
+                try {
+                    $stmt = $this->pdo->prepare("SELECT o.*, u.phone as user_phone, u.name as user_name, ot.tracking_number as ot_tracking, ot.estimated_delivery_date, cc.name as courier_company_name FROM orders o LEFT JOIN users u ON u.id = o.user_id LEFT JOIN order_tracking ot ON ot.order_id = o.id LEFT JOIN courier_companies cc ON cc.id = ot.courier_id WHERE o.user_id = ? ORDER BY o.id DESC LIMIT 1");
+                    $stmt->execute([(int)$sessionUserId]);
+                    $sessionOrder = $stmt->fetch(PDO::FETCH_ASSOC);
+                    if ($sessionOrder) {
+                        $orderId = (int)$sessionOrder['id'];
+                    }
+                } catch (Exception $e) {
+                    error_log("Session order check error: " . $e->getMessage());
+                }
+            }
+
+            if (!$orderId) {
+                return [
+                    'success'       => true,
+                    'reply'         => "📦 **ऑर्डर स्टेटस एवं पार्सल ट्रैकिंग (Order Tracking):**\n\n"
+                                     . "अपने आर्डर की लाइव स्थिति जानने के लिए कृपया अपना **Order Number (जैसे: `#1021` या `ORD-1021`)** अथवा रजिस्टर्ड **10-Digit Mobile Number** यहाँ लिखकर भेजें।\n\n"
+                                     . "मैं तुरंत डेटाबेस से आपके पार्सल का लाइव स्टेटस, कूरियर कंपनी और ट्रैकिंग नंबर निकाल दूंगा!",
+                    'products'      => [],
+                    'quick_replies' => ['#1001', 'Shop Products', 'WhatsApp Support']
+                ];
+            }
         }
 
         if ($orderId || $phone) {
