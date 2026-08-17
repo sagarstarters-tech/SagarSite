@@ -423,8 +423,11 @@ try {
                             <div class="row g-2 align-items-center">
                                 <div class="col-sm-7">
                                     <select name="chatbot_groq_model" id="groqModel" class="form-select form-select-sm">
-                                        <option value="llama-3.3-70b-versatile" selected>llama-3.3-70b-versatile</option>
-                                        <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
+                                        <option value="llama-3.1-8b-instant" <?php echo ($chatbotService->getSetting('chatbot_groq_model') === 'llama-3.1-8b-instant' || empty($chatbotService->getSetting('chatbot_groq_model'))) ? 'selected' : ''; ?>>⚡ llama-3.1-8b-instant (Fastest)</option>
+                                        <option value="llama-3.3-70b-versatile" <?php echo $chatbotService->getSetting('chatbot_groq_model') === 'llama-3.3-70b-versatile' ? 'selected' : ''; ?>>🚀 llama-3.3-70b-versatile</option>
+                                        <option value="llama-3.1-70b-versatile" <?php echo $chatbotService->getSetting('chatbot_groq_model') === 'llama-3.1-70b-versatile' ? 'selected' : ''; ?>>🌟 llama-3.1-70b-versatile</option>
+                                        <option value="gemma2-9b-it" <?php echo $chatbotService->getSetting('chatbot_groq_model') === 'gemma2-9b-it' ? 'selected' : ''; ?>>✨ gemma2-9b-it</option>
+                                        <option value="mixtral-8x7b-32768" <?php echo $chatbotService->getSetting('chatbot_groq_model') === 'mixtral-8x7b-32768' ? 'selected' : ''; ?>>mixtral-8x7b-32768</option>
                                     </select>
                                 </div>
                                 <div class="col-sm-5 text-end">

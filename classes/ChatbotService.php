@@ -636,7 +636,7 @@ class ChatbotService
     private function callGroqAPI(string $userMessage, array $history, array $products): string
     {
         $apiKey = $this->getSetting('chatbot_groq_key');
-        $model = $this->getSetting('chatbot_groq_model', 'llama-3.3-70b-versatile');
+        $model = $this->getSetting('chatbot_groq_model', 'llama-3.1-8b-instant');
         $url = "https://api.groq.com/openai/v1/chat/completions";
 
         $systemInstruction = $this->buildSystemContext($products);
