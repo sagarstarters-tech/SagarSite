@@ -44,12 +44,13 @@ try {
         $waPhone = !empty($chatbotService->getSetting('whatsapp_number')) ? preg_replace('/[^0-9]/', '', $chatbotService->getSetting('whatsapp_number')) : '919837248000';
 
         echo json_encode([
-            'success'       => true,
-            'bot_name'      => $botName,
-            'bot_title'     => $botTitle,
-            'welcome_msg'   => $welcomeMsg,
-            'quick_replies' => $quickReplies,
-            'wa_phone'      => $waPhone
+            'success'           => true,
+            'bot_name'          => $botName,
+            'bot_title'         => $botTitle,
+            'welcome_msg'       => $welcomeMsg,
+            'quick_replies'     => $quickReplies,
+            'wa_phone'          => $waPhone,
+            'response_delay_ms' => (int)$chatbotService->getSetting('chatbot_response_delay', '800')
         ]);
         exit;
     }

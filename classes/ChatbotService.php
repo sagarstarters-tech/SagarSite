@@ -68,7 +68,8 @@ class ChatbotService
                 'chatbot_whatsapp_number' => '919837248000',
                 'chatbot_position'        => 'bottom-right',
                 'chatbot_theme_color'     => '#007aff',
-                'chatbot_quick_prompts'   => "5HP Submersible Starter,Single Phase vs 3 Phase,Track My Order,Bulk Purchase Discount,Talk to Expert on WhatsApp"
+                'chatbot_quick_prompts'   => "5HP Submersible Starter,Single Phase vs 3 Phase,Track My Order,Bulk Purchase Discount,Talk to Expert on WhatsApp",
+                'chatbot_response_delay'  => '800'
             ];
 
             $stmt = $this->pdo->prepare("INSERT INTO settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_key=setting_key");
@@ -230,8 +231,9 @@ class ChatbotService
             'reply'         => $replyText,
             'products'      => array_slice($formattedProducts, 0, 4),
             'quick_replies' => $this->getDynamicQuickReplies($userMessage, count($formattedProducts)),
-            'provider'      => $providerUsed,
-            'response_ms'   => $responseTime
+            'provider'          => $providerUsed,
+            'response_ms'       => $responseTime,
+            'response_delay_ms' => (int)$this->getSetting('chatbot_response_delay', '800')
         ];
     }
 

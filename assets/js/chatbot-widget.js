@@ -14,7 +14,8 @@
         quickReplies: ['5HP Submersible Starter', 'Single Phase vs 3 Phase', 'Track My Order', 'Bulk Purchase Discount'],
         waPhone: '919837248000',
         position: 'bottom-right',
-        soundEnabled: localStorage.getItem('sagar_chat_sound') !== '0'
+        soundEnabled: localStorage.getItem('sagar_chat_sound') !== '0',
+        responseDelay: 800
     };
 
     let chatHistory = [];
@@ -259,6 +260,8 @@
         showTypingIndicator();
         scrollToBottom();
 
+        const sendTime = Date.now();
+
         // Send API Request
         fetch(config.apiEndpoint, {
             method: 'POST',
@@ -272,15 +275,21 @@
         })
         .then(r => r.json())
         .then(data => {
-            hideTypingIndicator();
-            isWaitingResponse = false;
+            const elapsed = Date.now() - sendTime;
+            const targetDelay = (data && typeof data.response_delay_ms !== 'undefined') ? Number(data.response_delay_ms) : (config.responseDelay || 800);
+            const remainingDelay = Math.max(0, targetDelay - elapsed);
 
-            const reply = data.reply || "Kshama karein, response me error aaya. Kripya dobara try karein.";
-            const products = data.products || [];
-            const suggestions = data.quick_replies || config.quickReplies;
+            setTimeout(() => {
+                hideTypingIndicator();
+                isWaitingResponse = false;
 
-            appendBotMessage(reply, products, suggestions);
-            playNotificationSound();
+                const reply = data.reply || "Kshama karein, response me error aaya. Kripya dobara try karein.";
+                const products = data.products || [];
+                const suggestions = data.quick_replies || config.quickReplies;
+
+                appendBotMessage(reply, products, suggestions);
+                playNotificationSound();
+            }, remainingDelay);
         })
         .catch(err => {
             hideTypingIndicator();

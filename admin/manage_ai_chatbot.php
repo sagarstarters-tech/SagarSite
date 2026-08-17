@@ -105,7 +105,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_chatbot_settings
         'chatbot_whatsapp_number' => trim($_POST['chatbot_whatsapp_number'] ?? '919837248000'),
         'chatbot_position'        => trim($_POST['chatbot_position'] ?? 'bottom-right'),
         'chatbot_theme_color'     => trim($_POST['chatbot_theme_color'] ?? '#007aff'),
-        'chatbot_quick_prompts'   => trim($_POST['chatbot_quick_prompts'] ?? '')
+        'chatbot_quick_prompts'   => trim($_POST['chatbot_quick_prompts'] ?? ''),
+        'chatbot_response_delay'  => trim($_POST['chatbot_response_delay'] ?? '800')
     ];
 
     try {
@@ -231,6 +232,17 @@ try {
                                 <select name="chatbot_position" class="form-select">
                                     <option value="bottom-right" <?php echo $chatbotService->getSetting('chatbot_position') === 'bottom-right' ? 'selected' : ''; ?>>Bottom Right (Default)</option>
                                     <option value="bottom-left" <?php echo $chatbotService->getSetting('chatbot_position') === 'bottom-left' ? 'selected' : ''; ?>>Bottom Left</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold small text-muted"><i class="fas fa-stopwatch text-primary me-1"></i> AI Response Typing Time (Speed)</label>
+                                <select name="chatbot_response_delay" class="form-select">
+                                    <option value="0" <?php echo $chatbotService->getSetting('chatbot_response_delay') === '0' ? 'selected' : ''; ?>>⚡ Instant (0 ms - No Delay)</option>
+                                    <option value="500" <?php echo $chatbotService->getSetting('chatbot_response_delay') === '500' ? 'selected' : ''; ?>>🚀 Fast (0.5 Second)</option>
+                                    <option value="800" <?php echo ($chatbotService->getSetting('chatbot_response_delay') === '800' || empty($chatbotService->getSetting('chatbot_response_delay'))) ? 'selected' : ''; ?>>✨ Realistic (0.8 Second - Recommended)</option>
+                                    <option value="1200" <?php echo $chatbotService->getSetting('chatbot_response_delay') === '1200' ? 'selected' : ''; ?>>💬 Natural Human-like (1.2 Seconds)</option>
+                                    <option value="2000" <?php echo $chatbotService->getSetting('chatbot_response_delay') === '2000' ? 'selected' : ''; ?>>⏳ Relaxed (2.0 Seconds)</option>
+                                    <option value="3000" <?php echo $chatbotService->getSetting('chatbot_response_delay') === '3000' ? 'selected' : ''; ?>>🐢 Deliberate (3.0 Seconds)</option>
                                 </select>
                             </div>
                         </div>
