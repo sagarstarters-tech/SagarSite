@@ -265,26 +265,29 @@ if (!empty($global_settings['hero_banner_product'])) {
         <!-- Product Details -->
         <div class="col-md-6 px-lg-5" data-aos="fade-left" data-aos-delay="200">
             <h1 class="display-5 fw-bold montserrat product-main-title" data-aos="fade-down" data-aos-delay="300"><?php echo htmlspecialchars($product['name']); ?></h1>
-            <?php if(isset($product['review_count']) && $product['review_count'] > 0): ?>
+            <?php 
+            $prod_rev_cnt = isset($product['review_count']) ? (int)$product['review_count'] : 0;
+            $prod_avg_rat = isset($product['average_rating']) ? floatval($product['average_rating']) : 0.0;
+            if ($prod_rev_cnt > 0 && $prod_avg_rat > 0): 
+            ?>
             <div class="mb-3 d-flex align-items-center" data-aos="fade-in" data-aos-delay="400">
-                <div class="text-warning me-2">
+                <div class="text-warning me-2" style="font-size: 0.95rem;">
                     <?php 
-                    $rating = floatval($product['average_rating']);
                     for($i=1; $i<=5; $i++) {
-                        if($rating >= $i) echo '<i class="fas fa-star"></i>';
-                        elseif($rating >= $i - 0.5) echo '<i class="fas fa-star-half-alt"></i>';
-                        else echo '<i class="far fa-star"></i>';
+                        if($prod_avg_rat >= $i) echo '<i class="fas fa-star"></i>';
+                        elseif($prod_avg_rat >= $i - 0.5) echo '<i class="fas fa-star-half-alt"></i>';
+                        else echo '<i class="far fa-star" style="color: #cbd5e1 !important;"></i>';
                     }
                     ?>
                 </div>
-                <span class="text-muted small"><a href="#product-reviews" class="text-decoration-none text-muted">(<?php echo $product['review_count']; ?> customer reviews)</a></span>
+                <span class="text-muted small"><a href="#product-reviews" class="text-decoration-none text-muted fw-semibold"><?php echo number_format($prod_avg_rat, 1); ?> (<?php echo $prod_rev_cnt; ?> customer review<?php echo $prod_rev_cnt > 1 ? 's' : ''; ?>)</a></span>
             </div>
             <?php else: ?>
             <div class="mb-3 d-flex align-items-center">
-                <div class="text-warning me-2">
+                <div class="me-2" style="color: #cbd5e1; font-size: 0.95rem;">
                     <i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i>
                 </div>
-                <span class="text-muted small"><a href="#product-reviews" class="text-decoration-none text-muted">Be the first to review!</a></span>
+                <span class="text-muted small"><a href="#product-reviews" class="text-decoration-none text-muted">No reviews yet — <span class="text-primary fw-semibold">Be the first to review!</span></a></span>
             </div>
             <?php endif; ?>
             <div class="mb-3 d-flex align-items-center flex-wrap">

@@ -326,8 +326,9 @@ if ($prods_enabled == '1'):
                     $has_discount = ($sale_price > 0 && $sale_price < $reg_price);
                     $display_price = $has_discount ? $sale_price : $reg_price;
                     $discount_percent = $has_discount ? round((($reg_price - $sale_price) / $reg_price) * 100) : 0;
-                    $rating_val = !empty($p['average_rating']) ? number_format((float)$p['average_rating'], 1) : '4.8';
-                    $reviews_cnt = !empty($p['review_count']) ? (int)$p['review_count'] : 24;
+                    $avg_rating = isset($p['average_rating']) ? (float)$p['average_rating'] : 0.0;
+                    $reviews_cnt = isset($p['review_count']) ? (int)$p['review_count'] : 0;
+                    $has_reviews = ($reviews_cnt > 0 && $avg_rating > 0);
                     
                     // WhatsApp Direct Order Text
                     $wa_msg = urlencode("Hello Sagar Starters! I am interested in ordering: *" . $p['name'] . "* (Price: " . $global_currency . number_format($display_price, 2) . "). Please confirm stock and delivery.");
@@ -374,16 +375,31 @@ if ($prods_enabled == '1'):
                                 <?php echo htmlspecialchars($p['name']); ?>
                             </a>
 
-                            <!-- Rating Row -->
+                            <!-- Rating Row (100% Genuine, No Fake Rating) -->
                             <div class="product-rating-row">
-                                <div class="rating-stars">
-                                    <i class="fas fa-star"></i>
-                                    <i class="fas fa-star"></i>
-                                    <i class="fas fa-star"></i>
-                                    <i class="fas fa-star"></i>
-                                    <i class="fas fa-star-half-alt"></i>
-                                </div>
-                                <span class="rating-score-text"><?php echo $rating_val; ?> (<?php echo $reviews_cnt; ?>)</span>
+                                <?php if ($has_reviews): ?>
+                                    <div class="rating-stars">
+                                        <?php for ($i = 1; $i <= 5; $i++): ?>
+                                            <?php if ($avg_rating >= $i): ?>
+                                                <i class="fas fa-star"></i>
+                                            <?php elseif ($avg_rating >= $i - 0.5): ?>
+                                                <i class="fas fa-star-half-alt"></i>
+                                            <?php else: ?>
+                                                <i class="far fa-star" style="color: #cbd5e1 !important;"></i>
+                                            <?php endif; ?>
+                                        <?php endfor; ?>
+                                    </div>
+                                    <span class="rating-score-text"><?php echo number_format($avg_rating, 1); ?> (<?php echo $reviews_cnt; ?>)</span>
+                                <?php else: ?>
+                                    <div class="rating-stars" style="color: #cbd5e1 !important;">
+                                        <i class="far fa-star"></i>
+                                        <i class="far fa-star"></i>
+                                        <i class="far fa-star"></i>
+                                        <i class="far fa-star"></i>
+                                        <i class="far fa-star"></i>
+                                    </div>
+                                    <span class="rating-score-text text-muted" style="font-weight: 500; font-size: 0.72rem;">No reviews yet</span>
+                                <?php endif; ?>
                             </div>
 
                             <!-- Pricing Wrap -->
