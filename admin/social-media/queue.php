@@ -106,6 +106,79 @@ $statusBadges = [
 ];
 ?>
 <link href="<?php echo SITE_URL; ?>/admin/social-media/assets/social-media.css" rel="stylesheet">
+<style>
+/* Search & Refresh Buttons High Contrast Styles */
+.queue-btn-search {
+    background-color: #2563eb !important;
+    border: 1px solid #2563eb !important;
+    color: #ffffff !important;
+    height: 38px !important;
+    min-width: 42px !important;
+    padding: 0 14px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 0 2px 5px rgba(37, 99, 235, 0.2) !important;
+    cursor: pointer !important;
+}
+.queue-btn-search i {
+    color: #ffffff !important;
+    font-size: 0.95rem !important;
+}
+.queue-btn-search:hover {
+    background-color: #1d4ed8 !important;
+    border-color: #1d4ed8 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(29, 78, 216, 0.35) !important;
+    transform: translateY(-1px) !important;
+}
+
+.queue-btn-refresh {
+    background-color: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #1e293b !important;
+    font-weight: 600 !important;
+    font-size: 0.875rem !important;
+    height: 38px !important;
+    padding: 0 14px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 7px !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+    cursor: pointer !important;
+    white-space: nowrap !important;
+}
+.queue-btn-refresh i {
+    color: #2563eb !important;
+    font-size: 0.95rem !important;
+    transition: transform 0.3s ease !important;
+}
+.queue-btn-refresh:hover {
+    background-color: #eff6ff !important;
+    border-color: #3b82f6 !important;
+    color: #1d4ed8 !important;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.18) !important;
+    transform: translateY(-1px) !important;
+}
+.queue-btn-refresh:hover i {
+    color: #1d4ed8 !important;
+}
+.queue-timer-badge {
+    background-color: #eff6ff !important;
+    color: #2563eb !important;
+    border: 1px solid #bfdbfe !important;
+    padding: 2px 7px !important;
+    border-radius: 6px !important;
+    font-size: 0.75rem !important;
+    font-weight: 700 !important;
+    font-family: monospace !important;
+    line-height: 1.2 !important;
+    display: inline-block !important;
+}
+</style>
 
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -239,7 +312,7 @@ $statusBadges = [
                     <?php endif; ?>
                 </div>
 
-                <div class="d-flex gap-2 align-items-center">
+                <div class="d-flex gap-2 align-items-center flex-wrap">
                     <select name="platform" class="form-select rounded-3" style="width: 160px;" onchange="this.form.submit()">
                         <option value="">All Platforms</option>
                         <?php foreach ($platformIcons as $pKey => $pMeta): ?>
@@ -250,10 +323,13 @@ $statusBadges = [
                     </select>
                     <input type="text" name="search" id="queueSearchInput" class="form-control rounded-3" 
                            placeholder="Search product or content..." value="<?php echo htmlspecialchars($searchQuery); ?>" style="width: 220px;">
-                    <button type="submit" class="btn btn-light border rounded-3" title="Search"><i class="fas fa-search"></i></button>
-                    <button type="button" class="btn btn-light border rounded-3 shadow-sm px-3 d-flex align-items-center gap-1" onclick="safelyRefreshQueuePage(true)" title="Refresh Queue (Auto-refreshes every 30s)">
-                        <i class="fas fa-sync-alt text-primary" id="queueRefreshIcon"></i>
-                        <span id="queueAutoRefreshTimer" class="small text-dark font-monospace fw-semibold ms-1" style="font-size: 11px;">30s</span>
+                    <button type="submit" class="btn queue-btn-search rounded-3" title="Search">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    <button type="button" class="btn queue-btn-refresh rounded-3 shadow-sm" onclick="safelyRefreshQueuePage(true)" title="Refresh Queue (Auto-refreshes every 30s)">
+                        <i class="fas fa-sync-alt" id="queueRefreshIcon"></i>
+                        <span class="d-none d-sm-inline">Refresh</span>
+                        <span id="queueAutoRefreshTimer" class="queue-timer-badge">30s</span>
                     </button>
                 </div>
             </form>
