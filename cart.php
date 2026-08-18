@@ -110,6 +110,9 @@ if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
                                         <?php elseif (!empty($item['is_bulk_applied'])): ?>
                                             <small class="d-block text-success fw-bold" style="font-size: 0.72rem;"><i class="fas fa-layer-group me-1"></i>Bulk Price</small>
                                         <?php endif; ?>
+                                        <?php if (!empty($item['is_bulk_applied']) && isset($item['bulk_cod_available']) && (int)$item['bulk_cod_available'] === 0): ?>
+                                            <small class="d-block text-danger fw-semibold" style="font-size: 0.72rem;"><i class="fas fa-ban me-1"></i>Prepaid Only (Bulk)</small>
+                                        <?php endif; ?>
                                     </td>
                                     <td>
                                         <?php if($item['product_type'] !== 'physical'): ?>

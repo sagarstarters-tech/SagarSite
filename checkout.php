@@ -87,8 +87,10 @@ if (!empty($_SESSION['cart'])) {
             $effective_min_qty = $is_retailer_user ? 2 : $bulk_min_qty;
 
             $base_price = (float)$row['price'];
+            $is_bulk_applied = false;
             if ($bulk_price > 0 && $qty >= $effective_min_qty && $bulk_price < $base_price) {
                 $effective_price = $bulk_price;
+                $is_bulk_applied = true;
                 if ($row['bulk_shipping_cost'] !== null && $row['bulk_shipping_cost'] !== '') {
                     $row['shipping_cost'] = floatval($row['bulk_shipping_cost']);
                 }
@@ -100,6 +102,7 @@ if (!empty($_SESSION['cart'])) {
             $subtotal += $total;
             $row['qty'] = $qty;
             $row['price'] = $effective_price;
+            $row['is_bulk_applied'] = $is_bulk_applied;
             $cart_items[] = $row;
             
             if ($row['product_type'] === 'physical') {
@@ -108,6 +111,14 @@ if (!empty($_SESSION['cart'])) {
 
             if ($row['cod_available'] == 0) {
                 $cod_allowed_for_all = false;
+                if (!isset($cod_disabled_reason)) $cod_disabled_reason = 'standard';
+            }
+
+            // Bulk order COD check: If bulk rate/quantity applies and bulk COD is disabled
+            $bulk_cod_available = isset($row['bulk_cod_available']) ? (int)$row['bulk_cod_available'] : 1;
+            if ($is_bulk_applied && $bulk_cod_available == 0) {
+                $cod_allowed_for_all = false;
+                $cod_disabled_reason = 'bulk';
             }
         } else {
             unset($_SESSION['cart'][$row['id']]); // Remove out of stock items
@@ -216,6 +227,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Recalculate COD charge server-side for security (prevents API manipulation)
         $final_cod_charge = 0;
         if ($payment_method === 'cod') {
+            if (!$cod_allowed_for_all) {
+                throw new Exception("Cash on Delivery is not available for this order (bulk wholesale or restricted items in cart).");
+            }
+            if ($cod_is_blacklisted) {
+                throw new Exception("Cash on Delivery is restricted for your account.");
+            }
             $server_cod = $codService->calculateCodCharge($cart_items, $subtotal);
             $final_cod_charge = $server_cod['cod_charge'];
             $grand_total += $final_cod_charge; // Add COD charge to grand total
@@ -574,7 +591,12 @@ include 'includes/header.php';
                         <div class="mb-4">
                             <div class="alert alert-warning py-3 border-0 border-start border-warning border-4">
                                 <i class="fas fa-exclamation-triangle me-2"></i>
-                                <strong>COD Not Available:</strong> Cash on Delivery is not available for one or more items in your cart.
+                                <strong>COD Not Available:</strong> 
+                                <?php if (isset($cod_disabled_reason) && $cod_disabled_reason === 'bulk'): ?>
+                                    Cash on Delivery is disabled for bulk wholesale items in your cart. Please choose an online payment method.
+                                <?php else: ?>
+                                    Cash on Delivery is not available for one or more items in your cart.
+                                <?php endif; ?>
                             </div>
                         </div>
                         <?php endif; ?>

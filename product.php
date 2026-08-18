@@ -338,6 +338,10 @@ if (!empty($global_settings['hero_banner_product'])) {
                         $bulk_shipping_badge = '<span class="badge rounded-pill px-2 py-1 small fw-bold ms-1" style="background-color: #0284c7; color: #ffffff;"><i class="fas fa-truck me-1"></i>Shipping: ' . $global_currency . number_format($b_ship, 2) . '</span>';
                     }
                 }
+                $bulk_cod_badge = '';
+                if (isset($product['bulk_cod_available']) && (int)$product['bulk_cod_available'] === 0) {
+                    $bulk_cod_badge = '<span class="badge rounded-pill px-2 py-1 small fw-bold ms-1" style="background-color: #fee2e2; color: #dc2626; border: 1px solid #fecaca;"><i class="fas fa-ban me-1"></i>Prepaid Only (Bulk)</span>';
+                }
                 ?>
                 <?php if ($is_retailer_user): ?>
                 <div id="bulkOfferCard" class="card rounded-3 mb-4 p-3 shadow-none transition-all" style="background-color: #f0fdf4; border: 1.5px solid #86efac;">
@@ -346,6 +350,7 @@ if (!empty($global_settings['hero_banner_product'])) {
                             <span class="badge rounded-pill px-3 py-2 fw-bold" style="background-color: #16a34a; color: #ffffff;"><i class="fas fa-store me-1"></i> Retailer Privilege</span>
                             <span class="fw-bold" style="color: #1e293b;">Buy <span class="fw-bolder" style="color: #15803d;">2+ units</span> for only <span class="fs-5 fw-bolder px-2 py-1 rounded" style="background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0;"><?php echo $global_currency . number_format($bulk_price, 2); ?></span> / unit</span>
                             <?php echo $bulk_shipping_badge; ?>
+                            <?php echo $bulk_cod_badge; ?>
                         </div>
                         <span class="badge rounded-pill px-2 py-1 small fw-bold" style="background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0;"><i class="fas fa-arrow-down me-1"></i>Save <?php echo $global_currency . number_format($current_unit_price - $bulk_price, 2); ?>/unit</span>
                     </div>
@@ -357,6 +362,7 @@ if (!empty($global_settings['hero_banner_product'])) {
                             <span class="badge rounded-pill px-3 py-2 fw-bold" style="background-color: #0284c7; color: #ffffff;"><i class="fas fa-layer-group me-1"></i> Bulk Wholesale Offer</span>
                             <span class="fw-bold" style="color: #1e293b;">Buy <span class="fw-bolder" style="color: #0369a1;"><?php echo $bulk_min_qty; ?>+ units</span> for only <span class="fs-5 fw-bolder px-2 py-1 rounded" style="background-color: #e0f2fe; color: #075985; border: 1px solid #bae6fd;"><?php echo $global_currency . number_format($bulk_price, 2); ?></span> / unit</span>
                             <?php echo $bulk_shipping_badge; ?>
+                            <?php echo $bulk_cod_badge; ?>
                         </div>
                         <span class="badge rounded-pill px-2 py-1 small fw-bold" style="background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0;"><i class="fas fa-arrow-down me-1"></i>Save <?php echo $global_currency . number_format($current_unit_price - $bulk_price, 2); ?>/unit</span>
                     </div>

@@ -102,6 +102,10 @@ $check_bulk_ship = $conn->query("SHOW COLUMNS FROM products LIKE 'bulk_shipping_
 if ($check_bulk_ship && $check_bulk_ship->num_rows == 0) {
     $conn->query("ALTER TABLE products ADD COLUMN bulk_shipping_cost DECIMAL(10,2) DEFAULT NULL COMMENT 'Bulk Shipping Cost' AFTER bulk_min_qty");
 }
+$check_bulk_cod = $conn->query("SHOW COLUMNS FROM products LIKE 'bulk_cod_available'");
+if ($check_bulk_cod && $check_bulk_cod->num_rows == 0) {
+    $conn->query("ALTER TABLE products ADD COLUMN bulk_cod_available TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Allow COD for Bulk Orders (1=Yes, 0=No)' AFTER bulk_shipping_cost");
+}
 
 // Migration for Gallery Position
 $check_pos = $conn->query("SHOW COLUMNS FROM product_images LIKE 'position'");
@@ -161,6 +165,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $bulk_shipping_cost_raw = $_POST['bulk_shipping_cost'] ?? '';
         $bulk_shipping_cost = ($bulk_shipping_cost_raw !== '' && $bulk_shipping_cost_raw !== null) ? floatval($bulk_shipping_cost_raw) : null;
         $bulk_shipping_cost_sql = ($bulk_shipping_cost !== null && $bulk_shipping_cost >= 0) ? $bulk_shipping_cost : 'NULL';
+        $bulk_cod_available = isset($_POST['bulk_cod_available']) ? 1 : 0;
 
         $meta_desc = $conn->real_escape_string($_POST['meta_description'] ?? '');
         $image_fit = $conn->real_escape_string($_POST['image_fit'] ?? 'contain');
@@ -207,7 +212,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Use NULL in SQL when no image is uploaded, not empty string
         $image_sql = ($image !== null) ? "'" . $conn->real_escape_string($image) . "'" : "NULL";
-        $sql = "INSERT INTO products (name, slug, short_description, description, features, meta_description, category_id, product_type, download_file, download_url, download_limit, download_expiry_days, regular_price, sale_price, bulk_price, bulk_min_qty, bulk_shipping_cost, price, sku, brand, stock, min_order_qty, shipping_cost, weight, length, width, height, cod_available, is_trending, cod_charge, image, image_fit) VALUES ('$name', '$slug', '$short_desc', '$desc', '$features', '$meta_desc', $cat_id, '$product_type', '$download_file', '$download_url', $download_limit, $download_expiry, $regular_price, $sale_price, $bulk_price_sql, $bulk_min_qty_sql, $bulk_shipping_cost_sql, $price, '$sku', '$brand', $stock, $min_order_qty, $shipping_cost, $weight, $length, $width, $height, $cod_available, $is_trending, $cod_charge_sql, $image_sql, '$image_fit')";
+        $sql = "INSERT INTO products (name, slug, short_description, description, features, meta_description, category_id, product_type, download_file, download_url, download_limit, download_expiry_days, regular_price, sale_price, bulk_price, bulk_min_qty, bulk_shipping_cost, bulk_cod_available, price, sku, brand, stock, min_order_qty, shipping_cost, weight, length, width, height, cod_available, is_trending, cod_charge, image, image_fit) VALUES ('$name', '$slug', '$short_desc', '$desc', '$features', '$meta_desc', $cat_id, '$product_type', '$download_file', '$download_url', $download_limit, $download_expiry, $regular_price, $sale_price, $bulk_price_sql, $bulk_min_qty_sql, $bulk_shipping_cost_sql, $bulk_cod_available, $price, '$sku', '$brand', $stock, $min_order_qty, $shipping_cost, $weight, $length, $width, $height, $cod_available, $is_trending, $cod_charge_sql, $image_sql, '$image_fit')";
 
         if ($conn->query($sql)) {
             $product_id = $conn->insert_id;
@@ -292,6 +297,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $bulk_shipping_cost_raw = $_POST['bulk_shipping_cost'] ?? '';
         $bulk_shipping_cost = ($bulk_shipping_cost_raw !== '' && $bulk_shipping_cost_raw !== null) ? floatval($bulk_shipping_cost_raw) : null;
         $bulk_shipping_cost_sql = ($bulk_shipping_cost !== null && $bulk_shipping_cost >= 0) ? $bulk_shipping_cost : 'NULL';
+        $bulk_cod_available = isset($_POST['bulk_cod_available']) ? 1 : 0;
 
         $meta_desc = $conn->real_escape_string($_POST['meta_description'] ?? '');
         $image_fit = $conn->real_escape_string($_POST['image_fit'] ?? 'contain');
@@ -358,7 +364,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        $sql = "UPDATE products SET name='$name', slug='$slug', short_description='$short_desc', description='$desc', features='$features', meta_description='$meta_desc', category_id=$cat_id, product_type='$product_type', download_url='$download_url', download_limit=$download_limit, download_expiry_days=$download_expiry, regular_price=$regular_price, sale_price=$sale_price, bulk_price=$bulk_price_sql, bulk_min_qty=$bulk_min_qty_sql, bulk_shipping_cost=$bulk_shipping_cost_sql, price=$price, sku='$sku', brand='$brand', stock=$stock, min_order_qty=$min_order_qty, shipping_cost=$shipping_cost, weight=$weight, length=$length, width=$width, height=$height, cod_available=$cod_available, is_trending=$is_trending, cod_charge=$cod_charge_sql, image_fit='$image_fit' $image_query $dl_file_query WHERE id=$id";
+        $sql = "UPDATE products SET name='$name', slug='$slug', short_description='$short_desc', description='$desc', features='$features', meta_description='$meta_desc', category_id=$cat_id, product_type='$product_type', download_url='$download_url', download_limit=$download_limit, download_expiry_days=$download_expiry, regular_price=$regular_price, sale_price=$sale_price, bulk_price=$bulk_price_sql, bulk_min_qty=$bulk_min_qty_sql, bulk_shipping_cost=$bulk_shipping_cost_sql, bulk_cod_available=$bulk_cod_available, price=$price, sku='$sku', brand='$brand', stock=$stock, min_order_qty=$min_order_qty, shipping_cost=$shipping_cost, weight=$weight, length=$length, width=$width, height=$height, cod_available=$cod_available, is_trending=$is_trending, cod_charge=$cod_charge_sql, image_fit='$image_fit' $image_query $dl_file_query WHERE id=$id";
 
 
 
@@ -681,6 +687,7 @@ if ($seo_q) {
                                         data-bulk-price="<?php echo htmlspecialchars($p['bulk_price'] ?? ''); ?>"
                                         data-bulk-min-qty="<?php echo htmlspecialchars($p['bulk_min_qty'] ?? ''); ?>"
                                         data-bulk-shipping-cost="<?php echo htmlspecialchars($p['bulk_shipping_cost'] ?? ''); ?>"
+                                        data-bulk-cod-available="<?php echo isset($p['bulk_cod_available']) ? (int)$p['bulk_cod_available'] : 1; ?>"
                                         data-min-order-qty="<?php echo (int)($p['min_order_qty'] ?? 1); ?>"
                                         data-sku="<?php echo htmlspecialchars($p['sku'] ?? ''); ?>"
                                         data-brand="<?php echo htmlspecialchars($p['brand'] ?? ''); ?>"
@@ -915,6 +922,19 @@ if ($seo_q) {
                                 <label class="form-label fw-bold small"><i class="fas fa-truck me-1 text-warning"></i>Bulk Shipping Cost (<?php echo $global_currency; ?>)</label>
                                 <input type="number" step="0.01" min="0" name="bulk_shipping_cost" id="edit_p_bulk_shipping_cost" class="form-control" placeholder="e.g. 0.00 (Optional)">
                                 <div class="form-text mt-1 small">Special shipping for bulk orders (Blank = Standard).</div>
+                            </div>
+                        </div>
+                        <div class="row g-2 align-items-center mt-2 pt-2 border-top">
+                            <div class="col-md-12">
+                                <div class="form-check form-switch ps-0">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <label class="form-check-label fw-bold small mb-0 text-dark" for="edit_p_bulk_cod_available">
+                                            <i class="fas fa-hand-holding-usd me-1 text-primary"></i>Allow Cash on Delivery (COD) for Bulk Orders
+                                        </label>
+                                        <input class="form-check-input ms-0" type="checkbox" name="bulk_cod_available" id="edit_p_bulk_cod_available" value="1">
+                                    </div>
+                                    <div class="form-text mt-1 small">If disabled, COD will be blocked at checkout when bulk quantity/pricing applies to this product.</div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1171,6 +1191,19 @@ if ($seo_q) {
                                 <div class="form-text mt-1 small">Special shipping for bulk orders (Blank = Standard).</div>
                             </div>
                         </div>
+                        <div class="row g-2 align-items-center mt-2 pt-2 border-top">
+                            <div class="col-md-12">
+                                <div class="form-check form-switch ps-0">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <label class="form-check-label fw-bold small mb-0 text-dark" for="add_p_bulk_cod_available">
+                                            <i class="fas fa-hand-holding-usd me-1 text-primary"></i>Allow Cash on Delivery (COD) for Bulk Orders
+                                        </label>
+                                        <input class="form-check-input ms-0" type="checkbox" name="bulk_cod_available" id="add_p_bulk_cod_available" value="1" checked>
+                                    </div>
+                                    <div class="form-text mt-1 small">If disabled, COD will be blocked at checkout when bulk quantity/pricing applies to this product.</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -1283,6 +1316,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('edit_p_bulk_price').value = this.dataset.bulkPrice || '';
             document.getElementById('edit_p_bulk_min_qty').value = this.dataset.bulkMinQty || '';
             document.getElementById('edit_p_bulk_shipping_cost').value = this.dataset.bulkShippingCost || '';
+            document.getElementById('edit_p_bulk_cod_available').checked = (this.dataset.bulkCodAvailable !== undefined ? this.dataset.bulkCodAvailable == 1 : true);
             document.getElementById('edit_p_min_order_qty').value = this.dataset.minOrderQty || '1';
             document.getElementById('edit_p_sku').value = this.dataset.sku;
             document.getElementById('edit_p_brand').value = this.dataset.brand;
