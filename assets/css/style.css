@@ -2199,3 +2199,311 @@ body.dark-mode-active .product-pricing-wrap {
         justify-content: center;
     }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   ICON DIMENSION STABILITY (Zero Cumulative Layout Shift)
+   ══════════════════════════════════════════════════════════════ */
+.fa, .fas, .far, .fab, .fa-solid, .fa-regular, .fa-brands {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    line-height: 1;
+    vertical-align: -0.125em;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BOTTOM NAVIGATION BAR (Merged for Instant Load)
+   ══════════════════════════════════════════════════════════════ */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 65px;
+    background-color: #ffffff;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.05);
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    z-index: 1050;
+    padding-bottom: env(safe-area-inset-bottom);
+    transition: all 0.3s ease-in-out;
+}
+
+.bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none !important;
+    color: #a0a0ab;
+    flex: 1;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+    transition: color 0.3s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.bottom-nav-item i {
+    font-size: 20px;
+    margin-bottom: 4px;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), color 0.3s ease;
+}
+
+.bottom-nav-item span {
+    font-size: 11px;
+    font-weight: 500;
+    font-family: inherit;
+    transition: opacity 0.3s ease, font-weight 0.3s ease;
+}
+
+.bottom-nav-item.active {
+    color: #007aff;
+}
+
+.bottom-nav-item.active i {
+    transform: translateY(-2px) scale(1.15);
+    color: #007aff;
+}
+
+.bottom-nav-item.active span {
+    font-weight: 600;
+}
+
+.bottom-nav-item::after {
+    content: '';
+    position: absolute;
+    bottom: 8px;
+    width: 4px;
+    height: 4px;
+    background-color: #007aff;
+    border-radius: 50%;
+    opacity: 0;
+    transform: scale(0);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+}
+
+.bottom-nav-item.active::after {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.bottom-nav-item .ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(0, 122, 255, 0.2);
+    transform: scale(0);
+    animation: ripple-animation 0.6s linear;
+    pointer-events: none;
+}
+
+body {
+    padding-bottom: 75px;
+}
+
+@media (min-width: 768px) {
+    .bottom-nav {
+        display: none !important;
+    }
+    body {
+        padding-bottom: 0 !important;
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   HOMEPAGE FEATURES SECTION (Merged for Instant Load)
+   ══════════════════════════════════════════════════════════════ */
+.feature-section {
+    padding: 60px 0;
+    background-color: #f8f9fa;
+}
+
+.feature-block {
+    text-align: center;
+    padding: 30px 20px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.feature-block:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.feature-icon-wrapper {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background-color: rgba(0, 115, 204, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.feature-icon-font {
+    font-size: 30px;
+    color: var(--primary, #0d6efd);
+}
+
+.feature-icon-img {
+    max-width: 40px;
+    max-height: 40px;
+    object-fit: contain;
+}
+
+.feature-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: #222;
+    font-family: 'Montserrat', sans-serif;
+}
+
+.feature-desc {
+    font-size: 0.95rem;
+    color: #6c757d;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.feature-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+}
+
+@media (min-width: 768px) {
+    .feature-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 30px;
+    }
+}
+
+@media (min-width: 992px) {
+    .feature-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 24px;
+    }
+}
+
+@media (min-width: 1200px) {
+    .feature-grid {
+        gap: 30px;
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PRODUCT SHARE SECTION (Merged for Instant Load)
+   ══════════════════════════════════════════════════════════════ */
+.product-share-wrapper {
+    margin-top: 1.5rem;
+}
+
+.share-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 45px;
+    height: 45px;
+    font-size: 1.25rem;
+    color: #fff !important;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    background-color: #6c757d;
+    text-decoration: none !important;
+}
+
+.share-btn i {
+    color: #fff !important;
+}
+
+.share-btn:hover,
+.share-btn:focus,
+.share-btn:active {
+    color: #fff !important;
+    text-decoration: none !important;
+}
+
+.share-btn-rounded {
+    border-radius: 8px;
+}
+
+.share-btn-circle {
+    border-radius: 50%;
+}
+
+.share-btn-square {
+    border-radius: 0;
+}
+
+.share-whatsapp {
+    background-color: #25D366;
+}
+
+.share-facebook {
+    background-color: #1877F2;
+}
+
+.share-telegram {
+    background-color: #0088cc;
+}
+
+.share-copylink {
+    background-color: #495057;
+}
+
+.share-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    opacity: 0.9;
+}
+
+.share-btn:active {
+    transform: translateY(0);
+}
+
+.copy-tooltip {
+    position: absolute;
+    top: -40px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333;
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 10;
+}
+
+.copy-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #333 transparent transparent transparent;
+}
+
+.copy-tooltip.show {
+    opacity: 1;
+    visibility: visible;
+    top: -45px;
+}

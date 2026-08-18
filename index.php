@@ -168,6 +168,7 @@ if ($cats_enabled == '1'):
                              class="category-stage-img" 
                              alt="<?php echo htmlspecialchars($c['name']); ?>" 
                              loading="lazy" 
+                             decoding="async"
                              width="260" 
                              height="180" 
                              onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';">
@@ -354,6 +355,7 @@ if ($prods_enabled == '1'):
                                  onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" 
                                  alt="<?php echo htmlspecialchars($p['name']); ?>" 
                                  loading="lazy" 
+                                 decoding="async"
                                  width="300" 
                                  height="300">
                         </div>

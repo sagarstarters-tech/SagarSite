@@ -66,7 +66,6 @@ $productSchema = $seoService->generateProductSchema($product);
 <script type="application/ld+json">
 <?php echo $productSchema; ?>
 </script>
-<link href="<?php echo ASSETS_URL; ?>/css/share-style.css" rel="stylesheet">
 
 <?php 
 $hero_bg_style = "";
@@ -692,6 +691,6 @@ if (!empty($global_settings['hero_banner_product'])) {
     <?php endif; ?>
 </div>
 
-<script src="<?php echo ASSETS_URL; ?>/js/share-script.js"></script>
+<script src="<?php echo ASSETS_URL; ?>/js/share-script.js" defer></script>
 <?php include 'includes/footer.php'; ?>
 

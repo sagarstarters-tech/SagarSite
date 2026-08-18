@@ -105,18 +105,31 @@ if (!function_exists('get_store_whatsapp_number')) {
 }
 
 if (!defined('DISABLE_AUTO_REMINDER_TRIGGER')) {
-    try {
-        $lastRunTs = 0;
-        $ac_res = $conn->query("SELECT setting_value FROM abandoned_cart_settings WHERE setting_key = 'last_auto_run' LIMIT 1");
-        if ($ac_res && $ac_row = $ac_res->fetch_assoc()) {
-            $lastRunTs = intval($ac_row['setting_value']);
-        }
-        if ((time() - $lastRunTs) >= 60) { // 60 seconds throttle
-            $conn->query("INSERT INTO abandoned_cart_settings (setting_key, setting_value) VALUES ('last_auto_run', '" . time() . "') ON DUPLICATE KEY UPDATE setting_value = '" . time() . "'");
+    if (php_sapi_name() === 'cli' || !empty($_GET['run_cron'])) {
+        try {
             require_once __DIR__ . '/AbandonedCartService.php';
             (new AbandonedCartService($conn))->processAutoReminders();
-        }
-    } catch (\Throwable $e) {}
+        } catch (\Throwable $e) {}
+    } else {
+        // Run safely in background shutdown after web response is delivered to user
+        register_shutdown_function(function() use ($conn) {
+            if (function_exists('fastcgi_finish_request')) {
+                fastcgi_finish_request(); // Delivers web page to user instantly with 0 delay
+            }
+            try {
+                $lastRunTs = 0;
+                $ac_res = $conn->query("SELECT setting_value FROM abandoned_cart_settings WHERE setting_key = 'last_auto_run' LIMIT 1");
+                if ($ac_res && $ac_row = $ac_res->fetch_assoc()) {
+                    $lastRunTs = intval($ac_row['setting_value']);
+                }
+                if ((time() - $lastRunTs) >= 300) { // 5-minute throttle for web requests
+                    $conn->query("INSERT INTO abandoned_cart_settings (setting_key, setting_value) VALUES ('last_auto_run', '" . time() . "') ON DUPLICATE KEY UPDATE setting_value = '" . time() . "'");
+                    require_once __DIR__ . '/AbandonedCartService.php';
+                    (new AbandonedCartService($conn))->processAutoReminders();
+                }
+            } catch (\Throwable $e) {}
+        });
+    }
 }
 
 

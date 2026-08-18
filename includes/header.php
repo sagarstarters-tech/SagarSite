@@ -312,33 +312,31 @@ if (isset($product['slug'])) {
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="dns-prefetch" href="https://code.jquery.com">
 
     <!-- LCP Critical Image Preload (first hero slide = LCP element) -->
     <?php if (!empty($_lcp_hero_img_url) && strpos($_lcp_hero_img_url, 'placeholder') === false): ?>
     <link rel="preload" as="image" href="<?php echo htmlspecialchars($_lcp_hero_img_url); ?>" fetchpriority="high">
     <?php endif; ?>
 
-    <!-- Preload hero slider CSS (used above fold) -->
+    <!-- Google Fonts with font-display:swap -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght@300;400;500;600&display=swap">
+
+    <!-- MDBootstrap Core UI CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.css">
+
+    <!-- Font Awesome — non-render-blocking with layout stability -->
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"></noscript>
+    <style>
+        .fa, .fas, .far, .fab, .fa-solid, .fa-regular, .fa-brands { display: inline-block; width: 1em; height: 1em; line-height: 1; vertical-align: -0.125em; }
+    </style>
+
+    <!-- Preload hero slider CSS (above fold) -->
     <link rel="preload" href="<?php echo ASSETS_URL; ?>/css/hero-slider-style.css?v=1.5" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link href="<?php echo ASSETS_URL; ?>/css/hero-slider-style.css?v=1.5" rel="stylesheet"></noscript>
 
-    <!-- Google Fonts with font-display:swap (non-render-blocking) -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght@300;400;500;600&display=swap" media="print" onload="this.media='all'">
-    <noscript><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet"></noscript>
-
-    <!-- MDBootstrap CSS (preload for faster render) -->
-    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.css" rel="stylesheet" media="print" onload="this.media='all'">
-    <noscript><link href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.css" rel="stylesheet"></noscript>
-
-    <!-- Font Awesome — async load (non-render-blocking) -->
-    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" media="print" onload="this.media='all'">
-    <noscript><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"></noscript>
-
-    <!-- Custom CSS -->
-    <link href="<?php echo ASSETS_URL; ?>/css/style.css?v=<?php echo file_exists(__DIR__ . '/../assets/css/style.css') ? filemtime(__DIR__ . '/../assets/css/style.css') : '1.7'; ?>" rel="stylesheet">
+    <!-- Custom Theme & App CSS -->
+    <link href="<?php echo ASSETS_URL; ?>/css/style.css?v=<?php echo file_exists(__DIR__ . '/../assets/css/style.css') ? filemtime(__DIR__ . '/../assets/css/style.css') : '2.0'; ?>" rel="stylesheet">
     <!-- Theme Customizer CSS Variables -->
     <?php
     require_once __DIR__ . '/ThemeService.php';

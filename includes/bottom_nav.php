@@ -1,6 +1,3 @@
-<!-- Bottom Navigation UI Custom CSS -->
-<link rel="stylesheet" href="<?php echo ASSETS_URL; ?>/css/bottom-nav.css">
-
 <!-- The Navigation Bar itself -->
 <nav class="bottom-nav">
     <a href="<?php echo SITE_URL; ?>/index.php" class="bottom-nav-item">
@@ -26,4 +23,4 @@
 </nav>
 
 <!-- JS for Active State and Android Ripple effect -->
-<script src="<?php echo ASSETS_URL; ?>/js/bottom-nav.js"></script>
+<script src="<?php echo ASSETS_URL; ?>/js/bottom-nav.js" defer></script>

@@ -139,9 +139,11 @@ class ThemeService
     // ── Inject Google Fonts <link> based on font choice ──────
     private static function googleFontLink(string $font): string
     {
+        // Poppins and Montserrat are already loaded in header.php
+        if (in_array($font, ['Poppins', 'Montserrat'], true)) {
+            return '';
+        }
         $safeFonts = [
-            'Poppins'    => 'Poppins:wght@300;400;500;600;700',
-            'Montserrat' => 'Montserrat:wght@400;600;700',
             'Roboto'     => 'Roboto:wght@300;400;500;700',
             'Open Sans'  => 'Open+Sans:wght@300;400;600;700',
             'Lato'       => 'Lato:wght@300;400;700',

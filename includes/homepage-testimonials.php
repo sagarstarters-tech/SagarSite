@@ -43,8 +43,9 @@ if ($testimonials_q && $testimonials_q->num_rows > 0):
         <p class="text-muted mt-3"><?php echo htmlspecialchars($section_subtitle); ?></p>
     </div>
 
-    <!-- Swiper CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    <!-- Swiper CSS (Non-blocking preload) -->
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"></noscript>
     
     <style>
         .testimonial-slider {
@@ -196,11 +197,25 @@ if ($testimonials_q && $testimonials_q->num_rows > 0):
     </div>
 </div>
 
-<!-- Swiper JS -->
-<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+<!-- Swiper JS - Loaded on-demand when scrolled near viewport -->
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        var testSwiper = new Swiper('.testimonial-slider', {
+(function() {
+    function initTestimonialsSwiper() {
+        if (typeof Swiper === 'undefined') {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js';
+            script.async = true;
+            script.onload = function() {
+                startSwiper();
+            };
+            document.body.appendChild(script);
+        } else {
+            startSwiper();
+        }
+    }
+
+    function startSwiper() {
+        new Swiper('.testimonial-slider', {
             slidesPerView: 1,
             spaceBetween: 20,
             autoplay: {
@@ -226,7 +241,23 @@ if ($testimonials_q && $testimonials_q->num_rows > 0):
                 },
             }
         });
-    });
+    }
+
+    if ('IntersectionObserver' in window) {
+        const sliderEl = document.querySelector('.testimonial-slider');
+        if (sliderEl) {
+            const observer = new IntersectionObserver(function(entries, obs) {
+                if (entries[0].isIntersecting) {
+                    initTestimonialsSwiper();
+                    obs.disconnect();
+                }
+            }, { rootMargin: '300px' });
+            observer.observe(sliderEl);
+        }
+    } else {
+        window.addEventListener('load', initTestimonialsSwiper);
+    }
+})();
 </script>
 
 <?php endif; ?>

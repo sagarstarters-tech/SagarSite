@@ -8,8 +8,6 @@ if ($features_enabled == '1') {
     
     if ($features_query && $features_query->num_rows > 0) {
         ?>
-        <link href="<?php echo ASSETS_URL; ?>/css/feature-style.css" rel="stylesheet">
-        
         <section class="feature-section mt-5 border-top">
             <div class="container">
                 <div class="feature-grid">

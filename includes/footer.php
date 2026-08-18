@@ -134,12 +134,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['subscribe_email'])) {
   </div>
 </footer>
 
-<!-- jQuery — loaded at end of body, deferred (non-render-blocking) -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js" defer></script>
 <!-- MDB JS -->
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.js" defer></script>
 
-<!-- Custom JS -->
+<!-- Custom JS (Vanilla JS, 0 dependencies) -->
 <script src="<?php echo ASSETS_URL; ?>/js/main.js" defer></script>
 <!-- Animations Custom JS -->
 <script src="<?php echo ASSETS_URL; ?>/js/animations.js" defer></script>
@@ -214,7 +212,7 @@ window.WA_WIDGET_CONFIG = {
     prefillMessage: " . json_encode($wa_widget['chat_widget_message'] ?: 'Hello, I have a question about your products.') . "
 };
 </script>";
-    echo '<script src="' . SITE_URL . '/whatsapp-script.js"></script>';
+    echo '<script src="' . SITE_URL . '/whatsapp-script.js" defer></script>';
 }
 ?>
 
