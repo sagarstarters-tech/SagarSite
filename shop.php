@@ -290,6 +290,10 @@ if (!empty($global_settings[$setting_key])) {
                         $p_bulk_price = !empty($p['bulk_price']) ? (float)$p['bulk_price'] : 0;
                         $p_bulk_qty = !empty($p['bulk_min_qty']) && (int)$p['bulk_min_qty'] > 0 ? (int)$p['bulk_min_qty'] : 12;
                         $is_retailer_user = (isset($_SESSION['role']) && $_SESSION['role'] === 'retailer');
+
+                        $avg_rating = isset($p['average_rating']) ? (float)$p['average_rating'] : 0.0;
+                        $reviews_cnt = isset($p['review_count']) ? (int)$p['review_count'] : 0;
+                        $has_reviews = ($reviews_cnt > 0 && $avg_rating > 0);
                     ?>
                     <div class="col-md-4" data-aos="fade-up" data-aos-delay="<?php echo $delay; $delay+=50; ?>">
                         <div class="card product-card h-100 border-0 shadow-sm">
@@ -306,6 +310,33 @@ if (!empty($global_settings[$setting_key])) {
                                     <a href="<?php echo $p_url; ?>" class="text-reset text-decoration-none"><?php echo htmlspecialchars($p['name']); ?></a>
                                 </h5>
                                 <p class="card-text text-muted small text-truncate mb-2"><?php echo htmlspecialchars(!empty($p['short_description']) ? $p['short_description'] : $p['description']); ?></p>
+                                
+                                <!-- Rating Row (100% Genuine, Matching Homepage) -->
+                                <div class="product-rating-row mb-2">
+                                    <?php if ($has_reviews): ?>
+                                        <div class="rating-stars">
+                                            <?php for ($i = 1; $i <= 5; $i++): ?>
+                                                <?php if ($avg_rating >= $i): ?>
+                                                    <i class="fas fa-star"></i>
+                                                <?php elseif ($avg_rating >= $i - 0.5): ?>
+                                                    <i class="fas fa-star-half-alt"></i>
+                                                <?php else: ?>
+                                                    <i class="far fa-star" style="color: #cbd5e1 !important;"></i>
+                                                <?php endif; ?>
+                                            <?php endfor; ?>
+                                        </div>
+                                        <span class="rating-score-text"><?php echo number_format($avg_rating, 1); ?> (<?php echo $reviews_cnt; ?>)</span>
+                                    <?php else: ?>
+                                        <div class="rating-stars" style="color: #cbd5e1 !important;">
+                                            <i class="far fa-star"></i>
+                                            <i class="far fa-star"></i>
+                                            <i class="far fa-star"></i>
+                                            <i class="far fa-star"></i>
+                                            <i class="far fa-star"></i>
+                                        </div>
+                                        <span class="rating-score-text text-muted" style="font-weight: 500; font-size: 0.72rem;">No reviews yet</span>
+                                    <?php endif; ?>
+                                </div>
                                 
                                 <?php if ($p_bulk_price > 0): ?>
                                     <div class="mb-2">
