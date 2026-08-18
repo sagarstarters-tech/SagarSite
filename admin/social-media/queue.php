@@ -251,9 +251,9 @@ $statusBadges = [
                     <input type="text" name="search" id="queueSearchInput" class="form-control rounded-3" 
                            placeholder="Search product or content..." value="<?php echo htmlspecialchars($searchQuery); ?>" style="width: 220px;">
                     <button type="submit" class="btn btn-light border rounded-3" title="Search"><i class="fas fa-search"></i></button>
-                    <button type="button" class="btn btn-white border rounded-3 shadow-sm px-3 d-flex align-items-center gap-1" onclick="safelyRefreshQueuePage(true)" title="Refresh Queue (Auto-refreshes every 30s)">
-                        <i class="fas fa-sync-alt text-muted" id="queueRefreshIcon"></i>
-                        <span id="queueAutoRefreshTimer" class="small text-muted font-monospace ms-1" style="font-size: 11px;">30s</span>
+                    <button type="button" class="btn btn-light border rounded-3 shadow-sm px-3 d-flex align-items-center gap-1" onclick="safelyRefreshQueuePage(true)" title="Refresh Queue (Auto-refreshes every 30s)">
+                        <i class="fas fa-sync-alt text-primary" id="queueRefreshIcon"></i>
+                        <span id="queueAutoRefreshTimer" class="small text-dark font-monospace fw-semibold ms-1" style="font-size: 11px;">30s</span>
                     </button>
                 </div>
             </form>

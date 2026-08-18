@@ -357,6 +357,49 @@ button.ac-btn-white:hover {
 .ac-btn-white:hover * {
     color: #2563eb !important;
 }
+
+/* Refresh Button Styling */
+.ac-btn-refresh,
+button.ac-btn-refresh {
+    background-color: #ffffff !important;
+    color: #1e293b !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 10px !important;
+    padding: 7px 14px !important;
+    font-size: 0.875rem !important;
+    font-weight: 600 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 7px !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+    white-space: nowrap !important;
+    height: 38px !important;
+    cursor: pointer !important;
+}
+.ac-btn-refresh i,
+button.ac-btn-refresh i {
+    color: #2563eb !important;
+    font-size: 0.95rem !important;
+    transition: transform 0.3s ease !important;
+}
+.ac-btn-refresh:hover,
+button.ac-btn-refresh:hover {
+    background-color: #eff6ff !important;
+    border-color: #3b82f6 !important;
+    color: #1d4ed8 !important;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.18) !important;
+    transform: translateY(-1px) !important;
+}
+.ac-btn-refresh:hover i,
+button.ac-btn-refresh:hover i {
+    color: #1d4ed8 !important;
+}
+.ac-btn-refresh:active,
+button.ac-btn-refresh:active {
+    transform: translateY(0) !important;
+}
 </style>
 
 <div class="container-fluid py-4 ac-dashboard-wrapper">
@@ -655,13 +698,14 @@ button.ac-btn-white:hover {
         </div>
 
         <!-- Search & Refresh Bar -->
-        <div class="d-flex align-items-center gap-2 flex-grow-1 flex-md-grow-0" style="max-width: 400px;">
+        <div class="d-flex align-items-center gap-2 flex-grow-1 flex-md-grow-0" style="max-width: 420px;">
             <div class="input-group">
                 <span class="input-group-text bg-white border-end-0 text-muted rounded-start-3"><i class="fas fa-search"></i></span>
                 <input type="text" class="form-control border-start-0 ps-0 rounded-end-3" id="searchKeyword" placeholder="Search customer name or phone..." onkeypress="if(event.key==='Enter') loadCarts(1)">
             </div>
-            <button class="btn btn-white border rounded-3 p-2 px-3 shadow-sm" onclick="refreshTableAndStats()" title="Refresh list (Auto-refreshes every 60s)">
-                <i class="fas fa-sync-alt text-muted" id="refreshSpinIcon"></i>
+            <button type="button" class="btn ac-btn-refresh shadow-sm" onclick="refreshTableAndStats()" title="Refresh list (Auto-refreshes every 60s)">
+                <i class="fas fa-sync-alt" id="refreshSpinIcon"></i>
+                <span class="d-none d-sm-inline">Refresh</span>
             </button>
         </div>
     </div>
