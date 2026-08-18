@@ -139,7 +139,7 @@ $total_pages = ceil($total_results / $limit);
 $count_stmt->close();
 
 // 4. Fetch Products
-$sql = "SELECT * FROM products $whereSql $orderSql LIMIT ? OFFSET ?";
+$sql = "SELECT products.*, (SELECT name FROM categories WHERE id = products.category_id) as category_name FROM products $whereSql $orderSql LIMIT ? OFFSET ?";
 $stmt = $conn->prepare($sql);
 $stmt_types = $types . "ii";
 $stmt_params = array_merge($params, [$limit, $offset]);
@@ -178,65 +178,56 @@ if (!empty($global_settings[$setting_key])) {
         <!-- Sidebar Filters -->
         <div class="col-lg-3 mb-4" data-aos="fade-right">
             <form method="GET" action="<?php echo SITE_URL; ?>/shop.php" class="card product-card p-3 shadow-sm border-0">
-                <h5 class="fw-bold mb-3">Search</h5>
+                <h5 class="fw-bold mb-3"><i class="fas fa-search me-2"></i>Search</h5>
                 <div class="input-group mb-4">
-                    <input type="text" name="search" class="form-control" placeholder="Search products..." value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>">
+                    <input type="text" name="search" class="form-control" placeholder="Search products..." value="<?php echo htmlspecialchars($_GET['search'] ?? ''); ?>">
                     <button class="btn btn-primary" type="submit"><i class="fas fa-search"></i></button>
                 </div>
 
-                <h5 class="fw-bold mb-3">Categories</h5>
-                <ul class="list-unstyled mb-4">
-                    <li class="mb-1">
-                        <a href="<?php echo SITE_URL; ?>/shop.php" class="category-link <?php echo (!$cat_id || $is_cat_conflict) ? 'active fw-bold' : ''; ?>">All Categories</a>
-                    </li>
-                    <?php while($c = $cats->fetch_assoc()): 
-                        $is_active_cat = ($cat_id == $c['id'] && !$is_cat_conflict);
-                    ?>
-                    <li class="mb-1">
-                        <a href="<?php echo SITE_URL; ?>/shop.php?category=<?php echo $c['id']; ?>" class="category-link <?php echo $is_active_cat ? 'active fw-bold' : ''; ?>">
-                            <?php echo htmlspecialchars($c['name']); ?>
+                <h5 class="fw-bold mb-3"><i class="fas fa-list me-2"></i>Categories</h5>
+                <div class="list-group list-group-flush mb-4">
+                    <a href="<?php echo SITE_URL; ?>/shop.php" class="list-group-item list-group-item-action border-0 px-0 <?php echo empty($_GET['category']) ? 'fw-bold text-primary' : ''; ?>">All Categories</a>
+                    <?php while($cat = $cats->fetch_assoc()): ?>
+                        <a href="<?php echo SITE_URL; ?>/shop.php?category=<?php echo $cat['id']; ?>" class="list-group-item list-group-item-action border-0 px-0 <?php echo (isset($_GET['category']) && $_GET['category'] == $cat['id']) ? 'fw-bold text-primary' : ''; ?>">
+                            <?php echo htmlspecialchars($cat['name']); ?>
                         </a>
-                    </li>
                     <?php endwhile; ?>
-                </ul>
+                </div>
 
-                <h5 class="fw-bold mb-3">Sort By</h5>
-                <select name="sort" class="form-select form-control mb-3" onchange="this.form.submit()">
-                    <option value="newest" <?php echo (!isset($_GET['sort']) || $_GET['sort'] == 'newest') ? 'selected' : ''; ?>>Newest First</option>
-                    <option value="price_asc" <?php echo (isset($_GET['sort']) && $_GET['sort'] == 'price_asc') ? 'selected' : ''; ?>>Price: Low to High</option>
-                    <option value="price_desc" <?php echo (isset($_GET['sort']) && $_GET['sort'] == 'price_desc') ? 'selected' : ''; ?>>Price: High to Low</option>
+                <h5 class="fw-bold mb-3"><i class="fas fa-sort me-2"></i>Sort By</h5>
+                <select name="sort" class="form-select mb-3" onchange="this.form.submit()">
+                    <option value="newest" <?php echo $sort_key === 'newest' ? 'selected' : ''; ?>>Newest Arrivals</option>
+                    <option value="price_asc" <?php echo $sort_key === 'price_asc' ? 'selected' : ''; ?>>Price: Low to High</option>
+                    <option value="price_desc" <?php echo $sort_key === 'price_desc' ? 'selected' : ''; ?>>Price: High to Low</option>
                 </select>
-                
-                <?php if(isset($_GET['phase'])): ?>
+
+                <!-- Hidden inputs to preserve other filters on submit -->
+                <?php if (isset($_GET['category'])): ?>
+                    <input type="hidden" name="category" value="<?php echo htmlspecialchars($_GET['category']); ?>">
+                <?php endif; ?>
+                <?php if (isset($_GET['phase'])): ?>
                     <input type="hidden" name="phase" value="<?php echo htmlspecialchars($_GET['phase']); ?>">
                 <?php endif; ?>
-                <?php if(isset($_GET['hp'])): ?>
+                <?php if (isset($_GET['hp'])): ?>
                     <input type="hidden" name="hp" value="<?php echo htmlspecialchars($_GET['hp']); ?>">
                 <?php endif; ?>
-                <?php if(isset($_GET['app'])): ?>
+                <?php if (isset($_GET['app'])): ?>
                     <input type="hidden" name="app" value="<?php echo htmlspecialchars($_GET['app']); ?>">
                 <?php endif; ?>
-                <?php if($cat_id && !$is_cat_conflict): ?>
-                    <input type="hidden" name="category" value="<?php echo $cat_id; ?>">
-                <?php endif; ?>
-                <?php if(isset($_GET['category_slug']) && !$is_cat_conflict): ?>
-                    <input type="hidden" name="category_slug" value="<?php echo htmlspecialchars($_GET['category_slug']); ?>">
-                <?php endif; ?>
-                
-                <?php if(isset($_GET['search']) || isset($_GET['phase']) || isset($_GET['hp']) || isset($_GET['app']) || ($cat_id && !$is_cat_conflict) || (isset($_GET['sort']) && $_GET['sort'] != 'newest')): ?>
-                    <a href="<?php echo SITE_URL; ?>/shop.php" class="btn btn-outline-secondary w-100 mt-2">Clear Filters</a>
+                <?php if (isset($_GET['trending'])): ?>
+                    <input type="hidden" name="trending" value="<?php echo htmlspecialchars($_GET['trending']); ?>">
                 <?php endif; ?>
             </form>
         </div>
 
-        <!-- Product Grid -->
+        <!-- Products Grid -->
         <div class="col-lg-9">
             <?php 
-            $has_active_filters = (!empty($_GET['search']) || $phase_label !== '' || $hp_label !== '' || $app_label !== '' || ($cat_id && !$is_cat_conflict) || (isset($_GET['trending']) && $_GET['trending'] == 1));
+            $has_active_filters = (!empty($_GET['category']) && !$is_cat_conflict) || !empty($_GET['phase']) || !empty($_GET['hp']) || !empty($_GET['app']) || !empty($_GET['search']);
             if ($has_active_filters): 
             ?>
-            <div class="d-flex flex-wrap align-items-center gap-2 mb-4 p-3 bg-white rounded-3 shadow-sm border">
-                <span class="text-muted small fw-bold"><i class="fas fa-filter text-primary me-1"></i> Active Filters:</span>
+            <div class="d-flex align-items-center gap-2 flex-wrap mb-4 p-3 bg-light rounded-3 border">
+                <span class="text-muted small fw-bold"><i class="fas fa-filter me-1 text-primary"></i> Active Filters:</span>
                 <?php if ($phase_label): ?>
                     <span class="badge bg-primary text-white px-3 py-2 rounded-pill">
                         <i class="fas fa-bolt me-1"></i> <?php echo htmlspecialchars($phase_label); ?>
@@ -296,23 +287,54 @@ if (!empty($global_settings[$setting_key])) {
                         $has_reviews = ($reviews_cnt > 0 && $avg_rating > 0);
                     ?>
                     <div class="col-md-4" data-aos="fade-up" data-aos-delay="<?php echo $delay; $delay+=50; ?>">
-                        <div class="card product-card h-100 border-0 shadow-sm">
-                            <div class="position-relative overflow-hidden" style="background-color:#fff;">
+                        <div class="product-card-pro">
+                            <!-- Media Stage -->
+                            <div class="product-media-stage">
                                 <?php if ($has_discount): ?>
-                                    <span class="badge bg-danger position-absolute top-0 start-0 m-2 rounded-pill px-2 py-1 shadow-sm" style="font-size: 0.72rem; z-index: 2;">
+                                    <span class="product-badge-discount">
                                         <i class="fas fa-tag me-1"></i><?php echo $discount_percent; ?>% OFF
                                     </span>
+                                <?php elseif (!empty($p['is_trending'])): ?>
+                                    <span class="product-badge-trending">
+                                        <i class="fas fa-fire me-1"></i>TOP PICK
+                                    </span>
                                 <?php endif; ?>
-                                <img src="<?php echo htmlspecialchars($main_img_src); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="card-img-top" alt="<?php echo htmlspecialchars($p['name']); ?>" loading="lazy" width="300" height="220" decoding="async" style="height: 220px; object-fit: <?php echo htmlspecialchars($p['image_fit'] ?? 'contain'); ?>; background-color:#fff;">
+
+                                <?php if (isset($p['stock']) && (int)$p['stock'] <= 0): ?>
+                                    <span class="product-badge-stock" style="background-color: rgba(239, 68, 68, 0.12); color: #dc2626; border-color: rgba(239, 68, 68, 0.25);">
+                                        <span class="stock-dot" style="background-color: #dc2626;"></span> Out of Stock
+                                    </span>
+                                <?php else: ?>
+                                    <span class="product-badge-stock">
+                                        <span class="stock-dot"></span> In Stock
+                                    </span>
+                                <?php endif; ?>
+
+                                <img src="<?php echo htmlspecialchars($main_img_src); ?>" 
+                                     onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" 
+                                     alt="<?php echo htmlspecialchars($p['name']); ?>" 
+                                     loading="lazy" 
+                                     decoding="async" 
+                                     width="300" 
+                                     height="300">
                             </div>
-                            <div class="card-body d-flex flex-column p-3">
-                                <h5 class="card-title fw-bold mb-1 text-truncate" title="<?php echo htmlspecialchars($p['name']); ?>">
-                                    <a href="<?php echo $p_url; ?>" class="text-reset text-decoration-none"><?php echo htmlspecialchars($p['name']); ?></a>
-                                </h5>
-                                <p class="card-text text-muted small text-truncate mb-2"><?php echo htmlspecialchars(!empty($p['short_description']) ? $p['short_description'] : $p['description']); ?></p>
-                                
+
+                            <!-- Details Body -->
+                            <div class="product-card-pro-body">
+                                <?php if (!empty($p['category_name'])): ?>
+                                    <a href="<?php echo SITE_URL; ?>/shop.php?category=<?php echo (int)$p['category_id']; ?>" class="product-category-tag">
+                                        <?php echo htmlspecialchars($p['category_name']); ?>
+                                    </a>
+                                <?php else: ?>
+                                    <span class="product-category-tag">Motor Starter</span>
+                                <?php endif; ?>
+
+                                <a href="<?php echo $p_url; ?>" class="product-pro-title" title="<?php echo htmlspecialchars($p['name']); ?>">
+                                    <?php echo htmlspecialchars($p['name']); ?>
+                                </a>
+
                                 <!-- Rating Row (100% Genuine, Matching Homepage) -->
-                                <div class="product-rating-row mb-2">
+                                <div class="product-rating-row">
                                     <?php if ($has_reviews): ?>
                                         <div class="rating-stars">
                                             <?php for ($i = 1; $i <= 5; $i++): ?>
@@ -337,46 +359,44 @@ if (!empty($global_settings[$setting_key])) {
                                         <span class="rating-score-text text-muted" style="font-weight: 500; font-size: 0.72rem;">No reviews yet</span>
                                     <?php endif; ?>
                                 </div>
-                                
-                                <?php if ($p_bulk_price > 0): ?>
-                                    <div class="mb-2">
-                                        <?php if ($is_retailer_user): ?>
-                                            <span class="d-inline-flex align-items-center gap-1 px-2 py-1 rounded-pill" style="background-color: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; font-size: 0.75rem; font-weight: 600;">
-                                                <i class="fas fa-store"></i> Retailer: <?php echo $global_currency . number_format($p_bulk_price, 2); ?> (2+ pcs)
-                                            </span>
-                                        <?php else: ?>
-                                            <span class="d-inline-flex align-items-center gap-1 px-2 py-1 rounded-pill" style="background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-size: 0.75rem; font-weight: 600;">
-                                                <i class="fas fa-layer-group"></i> Bulk: <?php echo $global_currency . number_format($p_bulk_price, 2); ?> (<?php echo $p_bulk_qty; ?>+ pcs)
+
+                                <!-- Pricing Wrap -->
+                                <div class="product-pricing-wrap">
+                                    <div class="d-flex align-items-baseline justify-content-between w-100 flex-wrap gap-1">
+                                        <div class="d-flex align-items-baseline">
+                                            <?php if ($has_discount): ?>
+                                                <span class="price-regular-cut"><?php echo $global_currency; ?><?php echo number_format($reg_price, 2); ?></span>
+                                                <span class="price-sale-bold text-danger"><?php echo $global_currency; ?><?php echo number_format($sale_price, 2); ?></span>
+                                            <?php else: ?>
+                                                <span class="price-sale-bold"><?php echo $global_currency; ?><?php echo number_format($reg_price, 2); ?></span>
+                                            <?php endif; ?>
+                                        </div>
+                                        <?php if ($p_bulk_price > 0): ?>
+                                            <?php if ($is_retailer_user): ?>
+                                                <span class="d-inline-flex align-items-center gap-1 px-2 py-1 rounded-pill" style="background-color: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; font-size: 0.72rem; font-weight: 600;">
+                                                    <i class="fas fa-store"></i>Retailer: <?php echo $global_currency . number_format($p_bulk_price, 2); ?> (2+)
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="d-inline-flex align-items-center gap-1 px-2 py-1 rounded-pill" style="background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-size: 0.72rem; font-weight: 600;">
+                                                    <i class="fas fa-layer-group"></i>Bulk: <?php echo $global_currency . number_format($p_bulk_price, 2); ?> (<?php echo $p_bulk_qty; ?>+)
+                                                </span>
+                                            <?php endif; ?>
+                                        <?php elseif ($p_moq > 1): ?>
+                                            <span class="d-inline-flex align-items-center gap-1 px-2 py-1 rounded-pill" style="background-color: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; font-size: 0.72rem; font-weight: 600;">
+                                                <i class="fas fa-boxes"></i>MOQ: <?php echo $p_moq; ?> Units
                                             </span>
                                         <?php endif; ?>
                                     </div>
-                                <?php elseif ($p_moq > 1): ?>
-                                    <div class="mb-2">
-                                        <span class="d-inline-flex align-items-center gap-1 px-2 py-1 rounded-pill" style="background-color: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; font-size: 0.75rem; font-weight: 600;">
-                                            <i class="fas fa-boxes"></i> MOQ: <?php echo $p_moq; ?> Units
-                                        </span>
-                                    </div>
-                                <?php endif; ?>
+                                </div>
 
-                                <div class="mt-auto pt-3 border-top">
-                                    <div class="d-flex align-items-baseline mb-2">
-                                        <?php if ($has_discount): ?>
-                                            <span class="text-muted text-decoration-line-through small me-2"><?php echo $global_currency; ?><?php echo number_format($reg_price, 2); ?></span>
-                                            <span class="fs-5 fw-bold text-danger"><?php echo $global_currency; ?><?php echo number_format($sale_price, 2); ?></span>
-                                        <?php else: ?>
-                                            <span class="fs-5 fw-bold primary-blue"><?php echo $global_currency; ?><?php echo number_format($reg_price, 2); ?></span>
-                                        <?php endif; ?>
-                                    </div>
-
-                                    <!-- Actions Footer -->
-                                    <div class="product-actions-footer d-flex gap-2 align-items-center">
-                                        <a href="<?php echo $p_url; ?>" class="btn-pro-view flex-grow-1">
-                                            <i class="fas fa-eye"></i> View Details
-                                        </a>
-                                        <a href="<?php echo $wa_link; ?>" target="_blank" rel="noopener noreferrer" class="btn-pro-wa" title="Order / Enquire on WhatsApp" aria-label="Order on WhatsApp">
-                                            <i class="fab fa-whatsapp" style="color: #ffffff !important; font-size: 1.3rem;"></i>
-                                        </a>
-                                    </div>
+                                <!-- Actions Footer -->
+                                <div class="product-actions-footer">
+                                    <a href="<?php echo $p_url; ?>" class="btn-pro-view">
+                                        <i class="fas fa-eye"></i> View Details
+                                    </a>
+                                    <a href="<?php echo $wa_link; ?>" target="_blank" rel="noopener noreferrer" class="btn-pro-wa" title="Order / Enquire on WhatsApp" aria-label="Order on WhatsApp">
+                                        <i class="fab fa-whatsapp" style="color: #ffffff !important; font-size: 1.3rem;"></i>
+                                    </a>
                                 </div>
                             </div>
                         </div>
