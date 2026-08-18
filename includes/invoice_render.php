@@ -500,7 +500,7 @@ function renderInvoiceHTML(array $data, bool $showActions = true, bool $isAdmin 
                         foreach ($items as $item):
                             $sr++;
                             $lineTotal = $item['quantity'] * $item['price'];
-                            $lineShipping = ($item['product_type'] === 'physical') ? ($item['shipping_cost'] * $item['quantity']) : 0;
+                            $lineShipping = ($item['product_type'] === 'physical') ? (float)$item['shipping_cost'] : 0;
                         ?>
                         <tr>
                             <td style="padding-left:40px; color:#95a5a6; font-weight:600;"><?php echo $sr; ?></td>

@@ -78,7 +78,7 @@ class InvoiceService
         while ($item = $items_result->fetch_assoc()) {
             $subtotal += $item['quantity'] * $item['price'];
             if ($item['product_type'] === 'physical') {
-                $shipping_total += $item['shipping_cost'] * $item['quantity'];
+                $shipping_total += (float)$item['shipping_cost'];
             }
         }
         $items_stmt->close();

@@ -66,9 +66,9 @@ class ShippingService {
         $shippingCost = 0;
         
         foreach ($cartItems as $item) {
-            // Requirement 7: Ignore shipping for Virtual/Downloadable
+            // Ignore shipping for Virtual/Downloadable, flat per physical product line (Amazon/Flipkart model)
             if (isset($item['product_type']) && $item['product_type'] === 'physical') {
-                $shippingCost += (float) ($item['shipping_cost'] ?? 0) * (int) ($item['qty'] ?? 1);
+                $shippingCost += (float) ($item['shipping_cost'] ?? 0);
             }
         }
 

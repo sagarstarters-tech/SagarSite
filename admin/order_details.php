@@ -95,7 +95,7 @@ $stageIndex = $info['progress_stage_index'];
                                 
                                 $item_shipping = 0;
                                 if ($item['product_type'] === 'physical') {
-                                    $item_shipping = $item['shipping_cost'] * $item['quantity'];
+                                    $item_shipping = (float)$item['shipping_cost'];
                                 }
                                 $total_shipping += $item_shipping;
                             ?>
