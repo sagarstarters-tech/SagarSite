@@ -35,8 +35,10 @@ if ($merchantTransactionId !== 'Unknown') {
 }
 ?>
 <div class="container mt-5 pt-5 mb-5 text-center px-3">
-    <div class="card shadow-sm border-0 p-4 p-md-5 mx-auto" style="max-width: 600px;">
-        <i class="fas fa-times-circle fa-5x text-danger mb-4"></i>
+    <div class="card shadow-sm border-0 p-4 p-md-5 mx-auto text-center" style="max-width: 600px;">
+        <div class="mb-4 d-flex justify-content-center align-items-center">
+            <i class="fas fa-times-circle fa-5x text-danger"></i>
+        </div>
         <h2 class="fw-bold mb-3">Payment Failed</h2>
         <p class="text-muted fs-5 mb-4">We couldn't process your payment. Please try again or choose another payment method.</p>
         

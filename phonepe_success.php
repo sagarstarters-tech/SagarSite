@@ -140,8 +140,10 @@ if (strtoupper($code) === 'PAYMENT_SUCCESS' || strtoupper($code) === 'SUCCESS') 
 
     ?>
     <div class="container mt-5 pt-5 mb-5 text-center px-3">
-    <div class="card shadow-sm border-0 p-4 p-md-5 mx-auto" style="max-width: 600px;">
-            <i class="fas fa-check-circle fa-5x text-success mb-4"></i>
+    <div class="card shadow-sm border-0 p-4 p-md-5 mx-auto text-center" style="max-width: 600px;">
+            <div class="mb-4 d-flex justify-content-center align-items-center">
+                <i class="fas fa-check-circle fa-5x text-success"></i>
+            </div>
             <?php if ($is_partial_cod_order): ?>
             <h2 class="fw-bold mb-2">Advance Payment Successful!</h2>
             <p class="text-muted fs-6 mb-4">Your advance payment was received. Your COD order is now confirmed.</p>
