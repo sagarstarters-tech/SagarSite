@@ -565,9 +565,9 @@ if (isset($product['slug'])) {
                        <li class="px-3 py-2 border-bottom mb-1">
                            <span class="d-block fw-bold text-dark text-truncate" style="max-width: 180px;"><?php echo htmlspecialchars($_SESSION['name'] ?? 'Account'); ?></span>
                            <?php if(isset($_SESSION['role']) && $_SESSION['role'] === 'retailer'): ?>
-                               <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-0 small" style="font-size: 0.72rem;"><i class="fas fa-store me-1"></i>Retailer</span>
+                               <span class="badge px-2 py-0 small" style="font-size: 0.72rem; background-color: rgba(25, 135, 84, 0.12) !important; color: #198754 !important; border: 1px solid rgba(25, 135, 84, 0.25) !important;"><i class="fas fa-store me-1"></i>Retailer</span>
                            <?php elseif(isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
-                               <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-0 small" style="font-size: 0.72rem;"><i class="fas fa-user-shield me-1"></i>Admin</span>
+                               <span class="badge px-2 py-0 small" style="font-size: 0.72rem; background-color: rgba(13, 110, 253, 0.12) !important; color: #0d6efd !important; border: 1px solid rgba(13, 110, 253, 0.25) !important;"><i class="fas fa-user-shield me-1"></i>Admin</span>
                            <?php endif; ?>
                        </li>
                        <li><a class="dropdown-item" href="<?php echo $clean_site_url; ?>/user/profile.php">My Profile</a></li>

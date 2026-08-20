@@ -172,19 +172,19 @@ include '../includes/header.php';
                     <h4 class="fw-bold mb-1"><?php echo htmlspecialchars($user['name']); ?></h4>
                     <?php if (($user['role'] ?? '') === 'retailer'): ?>
                         <div class="mb-2">
-                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-1 rounded-pill fw-bold">
+                            <span class="badge px-3 py-1 rounded-pill fw-bold" style="background-color: rgba(25, 135, 84, 0.12) !important; color: #198754 !important; border: 1px solid rgba(25, 135, 84, 0.25) !important;">
                                 <i class="fas fa-store me-1"></i> Verified Retailer
                             </span>
                         </div>
                     <?php elseif (($user['role'] ?? '') === 'admin'): ?>
                         <div class="mb-2">
-                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-1 rounded-pill">
+                            <span class="badge px-3 py-1 rounded-pill fw-semibold" style="background-color: rgba(13, 110, 253, 0.12) !important; color: #0d6efd !important; border: 1px solid rgba(13, 110, 253, 0.25) !important;">
                                 <i class="fas fa-user-shield me-1"></i> Administrator
                             </span>
                         </div>
                     <?php else: ?>
                         <div class="mb-2">
-                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-3 py-1 rounded-pill">
+                            <span class="badge px-3 py-1 rounded-pill fw-semibold" style="background-color: rgba(108, 117, 125, 0.12) !important; color: #495057 !important; border: 1px solid rgba(108, 117, 125, 0.25) !important;">
                                 <i class="fas fa-user me-1"></i> Customer
                             </span>
                         </div>
