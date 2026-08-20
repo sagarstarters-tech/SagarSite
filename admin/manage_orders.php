@@ -144,6 +144,49 @@ $wa_enabled = ($wa_settings && $wa_settings['is_enabled'] == 1);
     background-color: #fef2f2 !important;
     color: #991b1b !important;
 }
+.mo-btn-refresh {
+    background-color: #ffffff !important;
+    color: #1e293b !important;
+    border: 1px solid #ffffff !important;
+    font-weight: 600 !important;
+    font-size: 0.875rem !important;
+    padding: 8px 14px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 7px !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15) !important;
+    cursor: pointer !important;
+    white-space: nowrap !important;
+}
+.mo-btn-refresh i {
+    color: #2563eb !important;
+    font-size: 0.95rem !important;
+    transition: transform 0.3s ease !important;
+}
+.mo-btn-refresh:hover {
+    background-color: #eff6ff !important;
+    border-color: #ffffff !important;
+    color: #1d4ed8 !important;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2) !important;
+    transform: translateY(-1px) !important;
+}
+.mo-btn-refresh:hover i {
+    color: #1d4ed8 !important;
+}
+.order-timer-badge {
+    background-color: #eff6ff !important;
+    color: #2563eb !important;
+    border: 1px solid #bfdbfe !important;
+    padding: 2px 7px !important;
+    border-radius: 6px !important;
+    font-size: 0.75rem !important;
+    font-weight: 700 !important;
+    font-family: monospace !important;
+    line-height: 1.2 !important;
+    display: inline-block !important;
+}
 </style>
 
 <div class="container-fluid py-3">
@@ -160,7 +203,12 @@ $wa_enabled = ($wa_settings && $wa_settings['is_enabled'] == 1);
                 </div>
                 <h3 class="fw-bold mb-0 text-white">Orders Management Hub</h3>
             </div>
-            <div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <button type="button" id="orderRefreshBtn" class="btn mo-btn-refresh rounded-3" onclick="safelyRefreshOrdersPage(true)" title="Refresh Orders (Auto-refreshes every 30m)">
+                    <i class="fas fa-sync-alt" id="orderRefreshIcon"></i>
+                    <span>Refresh</span>
+                    <span id="orderAutoRefreshTimer" class="order-timer-badge">30m 00s</span>
+                </button>
                 <?php if ($total_orders > 0): ?>
                     <form method="POST" class="m-0" onsubmit="return confirm('WARNING: This will permanently delete ALL orders and their associated items from the database. This action cannot be undone. Are you absolutely sure?');">
                         <?php echo csrf_input(); ?>
@@ -444,5 +492,105 @@ function openWhatsAppModal(orderId) {
 }
 </script>
 <?php endif; ?>
+
+<!-- Safe Auto-Refresh & 30-Minute Countdown Script -->
+<script>
+(function() {
+    const REFRESH_INTERVAL_SECONDS = 30 * 60; // 30 minutes = 1800 seconds
+    let refreshTargetTime = Date.now() + (REFRESH_INTERVAL_SECONDS * 1000);
+    let isRefreshing = false;
+    let lastUserActivityTime = Date.now();
+    let isFormSubmitting = false;
+
+    // Track user active typing and interaction
+    ['keydown', 'input', 'mousedown'].forEach(evt => {
+        document.addEventListener(evt, () => {
+            lastUserActivityTime = Date.now();
+        }, { passive: true });
+    });
+
+    // Track form submissions to prevent auto-refresh during actions
+    document.querySelectorAll('form').forEach(f => {
+        f.addEventListener('submit', () => {
+            isFormSubmitting = true;
+        });
+    });
+
+    // Helper to check if user is busy with active tasks
+    function isUserBusyWithOrders() {
+        if (isFormSubmitting) return true;
+
+        // 1. Any active/open modal (WhatsApp modal, delete confirms, etc.)
+        const openModal = document.querySelector('.modal.show, .modal-backdrop');
+        if (openModal) return true;
+
+        // 2. Active input / textarea / select focus
+        const activeEl = document.activeElement;
+        if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT')) {
+            return true;
+        }
+
+        // 3. User typed or interacted in the last 10 seconds
+        if (Date.now() - lastUserActivityTime < 10000) {
+            return true;
+        }
+
+        return false;
+    }
+
+    // Global safe refresh function (Manual click forces refresh; auto timer skips if user is busy)
+    window.safelyRefreshOrdersPage = function(forceManual = false) {
+        if (isRefreshing) return;
+
+        if (!forceManual && isUserBusyWithOrders()) {
+            console.log('[Orders] Skipping auto-refresh: User is active or modal is open.');
+            refreshTargetTime = Date.now() + (REFRESH_INTERVAL_SECONDS * 1000);
+            return;
+        }
+
+        isRefreshing = true;
+        const icon = document.getElementById('orderRefreshIcon');
+        const timerElem = document.getElementById('orderAutoRefreshTimer');
+        const btn = document.getElementById('orderRefreshBtn');
+        if (btn) btn.disabled = true;
+        if (icon) icon.classList.add('fa-spin');
+        if (timerElem) timerElem.textContent = '...';
+
+        setTimeout(() => {
+            window.location.reload();
+        }, 400);
+    };
+
+    // Live 30-minute countdown timer
+    setInterval(function() {
+        if (isRefreshing) return;
+
+        const timerElem = document.getElementById('orderAutoRefreshTimer');
+
+        if (isUserBusyWithOrders()) {
+            // Postpone countdown when user is busy
+            refreshTargetTime = Date.now() + (REFRESH_INTERVAL_SECONDS * 1000);
+            if (timerElem && timerElem.textContent !== 'Paused') {
+                timerElem.textContent = 'Paused';
+            }
+            return;
+        }
+
+        const remainingMs = refreshTargetTime - Date.now();
+        const remainingSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
+
+        if (remainingSeconds <= 0) {
+            refreshTargetTime = Date.now() + (REFRESH_INTERVAL_SECONDS * 1000);
+            if (timerElem) timerElem.textContent = '...';
+            safelyRefreshOrdersPage(false);
+        } else {
+            const mins = Math.floor(remainingSeconds / 60);
+            const secs = remainingSeconds % 60;
+            const formatted = `${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
+            if (timerElem) timerElem.textContent = formatted;
+        }
+    }, 1000);
+})();
+</script>
 
 <?php include 'admin_footer.php'; ?>
