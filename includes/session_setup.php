@@ -80,38 +80,56 @@ if (!function_exists('resolve_profile_photo_url')) {
     function resolve_profile_photo_url($photo, $role = '') {
         $photo = trim((string)$photo);
         if (empty($photo)) return '';
-        
+
         // 1. Full HTTP / HTTPS URL (e.g. Google avatar)
         if (strpos($photo, 'http://') === 0 || strpos($photo, 'https://') === 0) {
             return $photo;
         }
-        
-        $base_path = defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__);
-        $site_url = defined('SITE_URL') ? rtrim(SITE_URL, '/') : '';
-        $site_url = preg_replace('#/(includes|admin|api|user|auth|cron|shipping_module_src|wapi)$#i', '', $site_url);
-        $assets_url = defined('ASSETS_URL') ? rtrim(ASSETS_URL, '/') : ($site_url . '/assets');
-        $assets_url = preg_replace('#/includes/assets$#i', '/assets', $assets_url);
-        
+
+        // 2. Dynamically detect the correct base URL
+        //    This prevents stale constants (e.g. SITE_URL set from a different script context)
+        //    from causing incorrect URLs in AJAX responses.
+        $is_https = (isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] === 'on' || $_SERVER['HTTPS'] === '1'))
+                  || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+        $proto = $is_https ? 'https' : 'http';
+        $http_host = $_SERVER['HTTP_HOST'] ?? '';
+
+        if (!empty($http_host) && $http_host !== 'localhost' && strpos($http_host, '127.0.0.1') === false) {
+            // Live server: use protocol + host directly (no subfolder)
+            $assets_url = $proto . '://' . rtrim($http_host, '/') . '/assets';
+            $site_url   = $proto . '://' . rtrim($http_host, '/');
+        } else {
+            // Local / CLI: fall back to SITE_URL constant or ASSETS_URL constant
+            $site_url   = defined('SITE_URL')   ? rtrim(SITE_URL,   '/') : '';
+            $site_url   = preg_replace('#/(includes|admin|api|user|auth|cron|shipping_module_src|wapi)$#i', '', $site_url);
+            $assets_url = defined('ASSETS_URL') ? rtrim(ASSETS_URL, '/') : ($site_url . '/assets');
+            $assets_url = preg_replace('#/includes/assets$#i', '/assets', $assets_url);
+        }
+
+        $base_path   = defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__);
         $clean_photo = ltrim($photo, '/');
-        $basename = basename($clean_photo);
-        
-        // 2. Check in assets/images/
+        $basename    = basename($clean_photo);
+
+        // 3. Check in assets/images/ (server-side confirm) → return URL
         if (file_exists($base_path . '/assets/images/' . $basename)) {
             return $assets_url . '/images/' . $basename;
         }
         if (file_exists($base_path . '/assets/images/' . $clean_photo)) {
             return $assets_url . '/images/' . $clean_photo;
         }
-        
-        // 3. Check in uploads/
+
+        // 4. Check in uploads/
         if (file_exists($base_path . '/uploads/media/images/' . $basename)) {
             return $site_url . '/uploads/media/images/' . $basename;
         }
         if (file_exists($base_path . '/uploads/' . $clean_photo)) {
             return $site_url . '/uploads/' . $clean_photo;
         }
-        
-        return '';
+
+        // 5. Fallback: build assets URL directly without file_exists check
+        //    (handles production where files exist but BASE_PATH mapping differs)
+        //    The browser's onerror handler will catch any 404.
+        return $assets_url . '/images/' . $basename;
     }
 }
 

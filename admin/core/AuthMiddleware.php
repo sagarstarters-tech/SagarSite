@@ -36,18 +36,16 @@ class AuthMiddleware
             csrf_verify();
         }
 
-        // Fallback: fetch profile photo if missing or empty from session
-        if ((!isset($_SESSION['profile_photo']) || empty($_SESSION['profile_photo'])) && $conn !== null) {
+        // Always sync profile photo from DB to ensure latest image shows in navbar
+        if ($conn !== null) {
             $uid = intval($_SESSION['user_id']);
-            $stmt = $conn->prepare("SELECT profile_photo FROM users WHERE id = ?");
+            $stmt = $conn->prepare("SELECT profile_photo, google_avatar FROM users WHERE id = ?");
             if ($stmt) {
                 $stmt->bind_param('i', $uid);
                 $stmt->execute();
                 $res = $stmt->get_result()->fetch_assoc();
-                $_SESSION['profile_photo'] = trim($res['profile_photo'] ?? '');
+                $_SESSION['profile_photo'] = trim($res['profile_photo'] ?: ($res['google_avatar'] ?? ''));
                 $stmt->close();
-            } else {
-                $_SESSION['profile_photo'] = '';
             }
         }
     }

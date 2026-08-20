@@ -7,14 +7,20 @@ ob_start();
 include_once __DIR__ . '/session_setup.php';
 include_once __DIR__ . '/db_connect.php';
 
-// Auto-detect base URLs for JS use
+// Auto-detect base URLs for JS use (always use HTTP_HOST on live servers)
 $proto = (isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] === 'on' || $_SERVER['HTTPS'] === '1')) || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ? 'https' : 'http';
 $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
 
-$detected_site_url = defined('SITE_URL') && !empty(SITE_URL) ? rtrim(SITE_URL, '/') : "$proto://$host";
-$detected_site_url = preg_replace('#/(includes|admin|api|user|auth)$#i', '', $detected_site_url);
-
-$detected_assets_url = defined('ASSETS_URL') && !empty(ASSETS_URL) ? ASSETS_URL : $detected_site_url . '/assets';
+if ($host !== 'localhost' && strpos($host, '127.0.0.1') === false) {
+    // Live server: always use detected protocol + host (no subfolder)
+    $detected_site_url   = $proto . '://' . rtrim($host, '/');
+    $detected_assets_url = $detected_site_url . '/assets';
+} else {
+    // Local XAMPP fallback
+    $detected_site_url = defined('SITE_URL') && !empty(SITE_URL) ? rtrim(SITE_URL, '/') : "$proto://$host";
+    $detected_site_url = preg_replace('#/(includes|admin|api|user|auth)$#i', '', $detected_site_url);
+    $detected_assets_url = defined('ASSETS_URL') && !empty(ASSETS_URL) ? rtrim(ASSETS_URL, '/') : $detected_site_url . '/assets';
+}
 
 // Sync latest user profile data from DB
 if (isset($_SESSION['user_id'])) {
