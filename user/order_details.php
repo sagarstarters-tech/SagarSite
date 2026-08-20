@@ -39,9 +39,9 @@ $order = $order_q->fetch_assoc();
 
 // Fetch order items
 $stmt = $conn->prepare("
-    SELECT oi.*, p.name as product_name, p.image as product_image, p.product_type 
+    SELECT oi.*, p.name as product_name, p.image as product_image, p.product_type, p.image_fit 
     FROM order_items oi 
-    JOIN products p ON oi.product_id = p.id 
+    LEFT JOIN products p ON oi.product_id = p.id 
     WHERE oi.order_id = ?
 ");
 $stmt->bind_param("i", $order_id);
@@ -143,11 +143,19 @@ $stageIndex = $info['progress_stage_index'];
                                     }
                                     $stmt->close();
                                 ?>
-                                <tr>
-                                    <td class="ps-4">
-                                        <div class="d-flex align-items-center">
-                                            <img src="../assets/images/<?php echo $item['product_image']; ?>" class="product-thumb me-3 border" alt="">
-                                            <div>
+                                <?php
+                                $item_img_src = resolve_product_image_url($item['product_image'] ?? '', $conn, $item['product_id'] ?? null, $item['product_name'] ?? '');
+                                $item_fit = htmlspecialchars($item['image_fit'] ?? 'contain');
+                            ?>
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="d-flex align-items-center">
+                                        <img src="<?php echo htmlspecialchars($item_img_src); ?>" 
+                                             onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" 
+                                             class="product-thumb me-3 border" 
+                                             style="object-fit: <?php echo $item_fit; ?>;"
+                                             alt="<?php echo htmlspecialchars($item['product_name'] ?? ''); ?>">
+                                        <div>
                                                 <h6 class="mb-0 fw-bold"><?php echo htmlspecialchars($item['product_name']); ?></h6>
                                                 <small class="text-muted">ID: #<?php echo $item['product_id']; ?></small>
                                                 <?php if ($dl_token): ?>
