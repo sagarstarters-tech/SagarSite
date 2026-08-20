@@ -44,14 +44,15 @@ if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
     }
 }
 
-// Fallback: If profile_photo is not in session or empty, fetch it from DB
-if (isset($_SESSION['user_id']) && (empty($_SESSION['profile_photo']) || !isset($_SESSION['profile_photo']))) {
+// Sync latest user profile data from DB
+if (isset($_SESSION['user_id'])) {
     $uid = intval($_SESSION['user_id']);
-    $usr_q = $conn->query("SELECT profile_photo, google_avatar FROM users WHERE id=$uid");
+    $usr_q = $conn->query("SELECT name, role, profile_photo, google_avatar FROM users WHERE id=$uid");
     if ($usr_q && $usr_q->num_rows > 0) {
         $u_row = $usr_q->fetch_assoc();
-        $db_photo = trim($u_row['profile_photo'] ?: ($u_row['google_avatar'] ?? ''));
-        $_SESSION['profile_photo'] = $db_photo;
+        $_SESSION['name'] = $u_row['name'];
+        $_SESSION['role'] = $u_row['role'];
+        $_SESSION['profile_photo'] = trim($u_row['profile_photo'] ?: ($u_row['google_avatar'] ?? ''));
     }
 }
 require_once __DIR__ . '/SeoService.php';

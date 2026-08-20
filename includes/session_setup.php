@@ -88,7 +88,9 @@ if (!function_exists('resolve_profile_photo_url')) {
         
         $base_path = defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__);
         $site_url = defined('SITE_URL') ? rtrim(SITE_URL, '/') : '';
+        $site_url = preg_replace('#/(includes|admin|api|user|auth|cron|shipping_module_src|wapi)$#i', '', $site_url);
         $assets_url = defined('ASSETS_URL') ? rtrim(ASSETS_URL, '/') : ($site_url . '/assets');
+        $assets_url = preg_replace('#/includes/assets$#i', '/assets', $assets_url);
         
         $clean_photo = ltrim($photo, '/');
         $basename = basename($clean_photo);
