@@ -1961,6 +1961,7 @@ function renderUnusedTab(files) {
         const cleanUrl = f.file_url.replace(/^\/+/, '');
         const thumbSrc = (cleanUrl.startsWith('http') ? cleanUrl : '../' + cleanUrl);
         const isImg = f.file_type === 'image';
+        const sizeStr = formatSize(f.file_size);
         const thumbHtml = isImg
             ? `<img src="${escHtml(thumbSrc)}" alt="" onerror="this.onerror=null;this.src='../assets/images/placeholder.svg'">`
             : `<i class="fas fa-video" style="font-size:1.4rem;color:#764ba2;"></i>`;
@@ -1995,6 +1996,7 @@ function renderDupGroupTab(containerId, groups, label) {
             const cleanUrl = f.file_url.replace(/^\/+/, '');
             const thumbSrc = (cleanUrl.startsWith('http') ? cleanUrl : '../' + cleanUrl);
             const isImg = f.file_type === 'image';
+            const sizeStr = formatSize(f.file_size);
             const thumbHtml = isImg
                 ? `<img src="${escHtml(thumbSrc)}" alt="" onerror="this.onerror=null;this.src='../assets/images/placeholder.svg'">`
                 : `<i class="fas fa-video" style="font-size:1.4rem;color:#764ba2;"></i>`;
