@@ -79,6 +79,7 @@ if (!function_exists('verify_csrf_token')) {
 if (!function_exists('resolve_profile_photo_url')) {
     function resolve_profile_photo_url($photo, $role = '') {
         $photo = trim((string)$photo);
+        if (empty($photo)) return '';
         
         // 1. Full HTTP / HTTPS URL (e.g. Google avatar)
         if (strpos($photo, 'http://') === 0 || strpos($photo, 'https://') === 0) {
@@ -86,25 +87,31 @@ if (!function_exists('resolve_profile_photo_url')) {
         }
         
         $base_path = defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__);
-        
-        // Derive clean relative site URL (e.g. "" or "/SagarSite") for 100% domain & protocol independence
         $site_url = defined('SITE_URL') ? rtrim(SITE_URL, '/') : '';
-        $clean_site_url = preg_replace('#^https?://[^/]+#i', '', $site_url);
+        $assets_url = defined('ASSETS_URL') ? rtrim(ASSETS_URL, '/') : ($site_url . '/assets');
         
-        // 2. Check if specific filename exists in assets/images
-        if (!empty($photo)) {
-            $clean_photo = ltrim($photo, '/');
-            if (strpos($clean_photo, 'assets/images/') === 0) {
-                $clean_photo = substr($clean_photo, 14);
-            }
-            if (file_exists($base_path . '/assets/images/' . $clean_photo)) {
-                return $clean_site_url . '/assets/images/' . $clean_photo;
-            }
+        $clean_photo = ltrim($photo, '/');
+        $basename = basename($clean_photo);
+        
+        // 2. Check in assets/images/
+        if (file_exists($base_path . '/assets/images/' . $basename)) {
+            return $assets_url . '/images/' . $basename;
+        }
+        if (file_exists($base_path . '/assets/images/' . $clean_photo)) {
+            return $assets_url . '/images/' . $clean_photo;
         }
         
-        // 3. Fallback to default profile photo if available
+        // 3. Check in uploads/
+        if (file_exists($base_path . '/uploads/media/images/' . $basename)) {
+            return $site_url . '/uploads/media/images/' . $basename;
+        }
+        if (file_exists($base_path . '/uploads/' . $clean_photo)) {
+            return $site_url . '/uploads/' . $clean_photo;
+        }
+        
+        // 4. Fallback to default profile photo if available
         if (file_exists($base_path . '/assets/images/profile_69c14f73c250a.png')) {
-            return $clean_site_url . '/assets/images/profile_69c14f73c250a.png';
+            return $assets_url . '/images/profile_69c14f73c250a.png';
         }
         
         return '';
@@ -130,7 +137,7 @@ if (!function_exists('resolve_image_url')) {
             return $img;
         }
         
-        // Static per-request cache to avoid redundant disk I/O (glob is expensive)
+        // Static per-request cache
         static $resolve_cache = [];
         $cache_key = $img;
         if (isset($resolve_cache[$cache_key])) {
@@ -138,43 +145,67 @@ if (!function_exists('resolve_image_url')) {
         }
         
         $clean = ltrim($img, '/');
-        if (strpos($clean, 'assets/images/') === 0) {
-            $clean = substr($clean, 14);
-        } elseif (strpos($clean, 'uploads/images/') === 0) {
-            $clean = substr($clean, 15);
-        } elseif (strpos($clean, 'uploads/') === 0) {
-            $clean = substr($clean, 8);
+        $basename = basename($clean);
+        
+        // Strip common prefix wrappers for relative lookup
+        $rel_path = $clean;
+        if (strpos($rel_path, 'assets/images/') === 0) {
+            $rel_path = substr($rel_path, 14);
+        } elseif (strpos($rel_path, 'uploads/media/images/') === 0) {
+            $rel_path = substr($rel_path, 21);
+        } elseif (strpos($rel_path, 'uploads/images/') === 0) {
+            $rel_path = substr($rel_path, 15);
+        } elseif (strpos($rel_path, 'uploads/') === 0) {
+            $rel_path = substr($rel_path, 8);
         }
         
         // 1. Check in /uploads/
-        if (file_exists($base_path . '/uploads/' . $clean)) {
-            return $resolve_cache[$cache_key] = $site_url . '/uploads/' . $clean;
+        if (file_exists($base_path . '/uploads/' . $rel_path)) {
+            return $resolve_cache[$cache_key] = $site_url . '/uploads/' . $rel_path;
+        }
+        if (file_exists($base_path . '/uploads/media/images/' . $basename)) {
+            return $resolve_cache[$cache_key] = $site_url . '/uploads/media/images/' . $basename;
+        }
+        if (file_exists($base_path . '/uploads/images/' . $basename)) {
+            return $resolve_cache[$cache_key] = $site_url . '/uploads/images/' . $basename;
+        }
+
+        // 2. Check in /assets/images/ (root and subdirectories)
+        if (file_exists($base_path . '/assets/images/' . $rel_path)) {
+            return $resolve_cache[$cache_key] = $assets_url . '/images/' . $rel_path;
+        }
+        if (file_exists($base_path . '/assets/images/' . $basename)) {
+            return $resolve_cache[$cache_key] = $assets_url . '/images/' . $basename;
+        }
+        if (file_exists($base_path . '/assets/images/slider/' . $basename)) {
+            return $resolve_cache[$cache_key] = $assets_url . '/images/slider/' . $basename;
+        }
+        if (file_exists($base_path . '/assets/images/features/' . $basename)) {
+            return $resolve_cache[$cache_key] = $assets_url . '/images/features/' . $basename;
+        }
+        if (file_exists($base_path . '/assets/images/testimonials/' . $basename)) {
+            return $resolve_cache[$cache_key] = $assets_url . '/images/testimonials/' . $basename;
         }
         
-        // 2. Check in /assets/images/
-        if (file_exists($base_path . '/assets/images/' . $clean)) {
-            return $resolve_cache[$cache_key] = $assets_url . '/images/' . $clean;
-        }
-        
-        // 3. Auto-heal: search for matching file with different extension (e.g. .webp instead of .jpg)
-        $name_no_ext = pathinfo($clean, PATHINFO_FILENAME);
+        // 3. Auto-heal: search for matching file with different extension or location
+        $name_no_ext = pathinfo($basename, PATHINFO_FILENAME);
         if (!empty($name_no_ext)) {
-            $matches = glob($base_path . '/assets/images/' . $name_no_ext . '.*');
-            if (!empty($matches)) {
-                return $resolve_cache[$cache_key] = $assets_url . '/images/' . basename($matches[0]);
-            }
-            $upload_matches = glob($base_path . '/uploads/' . $name_no_ext . '.*');
-            if (!empty($upload_matches)) {
-                return $resolve_cache[$cache_key] = $site_url . '/uploads/' . basename($upload_matches[0]);
+            foreach (['/assets/images/', '/assets/images/slider/', '/assets/images/features/', '/uploads/media/images/', '/uploads/images/'] as $dir) {
+                $matches = glob($base_path . $dir . $name_no_ext . '.*');
+                if (!empty($matches)) {
+                    $found_basename = basename($matches[0]);
+                    $sub = trim($dir, '/');
+                    return $resolve_cache[$cache_key] = $site_url . '/' . $sub . '/' . $found_basename;
+                }
             }
         }
         
-        // 4. Smart fallback for slides and banners if specific file missing
-        if (strpos($clean, 'slide_') === 0 || strpos($clean, 'banner_') === 0) {
-            $banner_files = glob($base_path . '/assets/images/banner_*.webp');
-            if (!empty($banner_files)) {
-                $idx = abs(crc32($clean)) % count($banner_files);
-                return $resolve_cache[$cache_key] = $assets_url . '/images/' . basename($banner_files[$idx]);
+        // 4. Smart fallback for slides and hero banners if specific file missing
+        if (strpos($basename, 'slide_') === 0 || strpos($basename, 'banner_') === 0) {
+            $slider_files = glob($base_path . '/assets/images/slider/slide_*.webp');
+            if (!empty($slider_files)) {
+                $idx = abs(crc32($basename)) % count($slider_files);
+                return $resolve_cache[$cache_key] = $assets_url . '/images/slider/' . basename($slider_files[$idx]);
             }
             $hero_files = glob($base_path . '/assets/images/hero_*.webp');
             if (!empty($hero_files)) {
@@ -182,7 +213,7 @@ if (!function_exists('resolve_image_url')) {
             }
         }
 
-        // 5. Return safe fallback placeholder instead of broken 404 URL
+        // 5. Return safe fallback placeholder
         return $resolve_cache[$cache_key] = $placeholder;
     }
 }

@@ -10,13 +10,23 @@
 Thumbs.db
 .DS_Store
 
-# Prevent Git from tracking or modifying user-uploaded images in assets/images/
+# Allow essential site icons, slider images, and default media in assets/images/
 /assets/images/*
 !/assets/images/.gitkeep
-!/assets/images/placeholder.svg
-!/assets/images/placeholder.png
-!/assets/images/no-image.png
-!/assets/images/google-icon.svg
+!/assets/images/*.svg
+!/assets/images/feature_*
+!/assets/images/hero_*
+!/assets/images/logo*
+!/assets/images/profile_*
+!/assets/images/favicon*
+!/assets/images/placeholder*
+!/assets/images/no-image*
+!/assets/images/slider/
+!/assets/images/slider/*
+!/assets/images/features/
+!/assets/images/features/*
+!/assets/images/testimonials/
+!/assets/images/testimonials/*
 
 # User Uploads Directory Protection (NEVER tracked by git → deploy-safe)
 # The uploads/ directory is intentionally excluded from git so that

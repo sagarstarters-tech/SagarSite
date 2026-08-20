@@ -47,47 +47,74 @@ if ($mutating) {
 //  HELPER: Build set of all used file basenames (bulk, fast)
 //  Returns array: ['basename.jpg' => true, ...]
 // ════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════
+//  HELPER: Build set of all used file basenames (bulk, fast)
+//  Returns array: ['basename.jpg' => true, ...]
+// ════════════════════════════════════════════════════════════
 function get_all_used_basenames(mysqli $db)
 {
     $used = [];
 
-    // Core tables always present
-    $core_tables = [
-        ['table' => 'products',       'col' => 'image'],
-        ['table' => 'product_images', 'col' => 'image'],
-        ['table' => 'banners',        'col' => 'image'],
-        ['table' => 'categories',     'col' => 'image'],
+    // All entity tables and candidate image columns
+    $table_col_map = [
+        'products'          => ['image'],
+        'product_images'    => ['image'],
+        'banners'           => ['image'],
+        'categories'        => ['image'],
+        'hero_slides'       => ['media_path', 'image'],
+        'homepage_features' => ['icon_value', 'image'],
+        'testimonials'      => ['image', 'avatar', 'photo'],
+        'users'             => ['profile_photo'],
+        'admins'            => ['profile_photo'],
+        'admin_users'       => ['profile_photo'],
+        'sliders'           => ['image', 'media_path'],
+        'slides'            => ['image', 'media_path'],
+        'seo_metadata'      => ['og_image', 'twitter_image'],
     ];
 
-    // Optional tables – check existence + column before querying
-    $optional = [
-        ['table' => 'hero_slides',        'col' => 'image'],
-        ['table' => 'sliders',            'col' => 'image'],
-        ['table' => 'testimonials',       'col' => 'image'],
-        ['table' => 'homepage_features',  'col' => 'image'],
-        ['table' => 'slides',             'col' => 'image'],
-    ];
+    foreach ($table_col_map as $tbl => $cols) {
+        $texists = $db->query("SHOW TABLES LIKE '$tbl'");
+        if (!$texists || $texists->num_rows === 0) continue;
 
-    $all_tables = $core_tables;
-    foreach ($optional as $ot) {
-        $tbl  = $db->real_escape_string($ot['table']);
-        $col  = $db->real_escape_string($ot['col']);
+        foreach ($cols as $col) {
+            $cexists = $db->query("SHOW COLUMNS FROM `$tbl` LIKE '$col'");
+            if (!$cexists || $cexists->num_rows === 0) continue;
+
+            $r = $db->query("SELECT DISTINCT `$col` FROM `$tbl` WHERE `$col` IS NOT NULL AND `$col` != ''");
+            if ($r) {
+                while ($row = $r->fetch_assoc()) {
+                    $val = trim($row[$col]);
+                    $bn = basename($val);
+                    if ($bn && strpos($bn, '.') !== false) {
+                        $used[$bn] = true;
+                    }
+                }
+            }
+        }
+    }
+
+    // Key-value settings tables (settings, site_settings, seo_settings)
+    $settings_tables = [
+        ['tbl' => 'settings',      'col' => 'setting_value'],
+        ['tbl' => 'site_settings', 'col' => 'value'],
+        ['tbl' => 'seo_settings',  'col' => 'setting_value'],
+    ];
+    foreach ($settings_tables as $st) {
+        $tbl = $st['tbl'];
+        $col = $st['col'];
         $texists = $db->query("SHOW TABLES LIKE '$tbl'");
         if (!$texists || $texists->num_rows === 0) continue;
         $cexists = $db->query("SHOW COLUMNS FROM `$tbl` LIKE '$col'");
         if (!$cexists || $cexists->num_rows === 0) continue;
-        $all_tables[] = $ot;
-    }
 
-    // Also check site_settings (value column, LIKE search)
-    $st = $db->query("SHOW TABLES LIKE 'site_settings'");
-    if ($st && $st->num_rows > 0) {
-        // We'll handle this separately via LIKE – too broad for exact match
-        // Just collect values that look like filenames
-        $sr = $db->query("SELECT `value` FROM site_settings WHERE `value` LIKE '%.%' AND `value` NOT LIKE 'http%'");
-        if ($sr) {
-            while ($row = $sr->fetch_assoc()) {
-                $bn = basename(trim($row['value']));
+        $r = $db->query("SELECT `$col` FROM `$tbl` WHERE `$col` IS NOT NULL AND `$col` != ''");
+        if ($r) {
+            while ($row = $r->fetch_assoc()) {
+                $val = trim($row[$col]);
+                if (preg_match('/([a-zA-Z0-9_\-\.]+\.(png|jpe?g|webp|svg|gif|ico))/i', $val, $m)) {
+                    $used[basename($m[1])] = true;
+                }
+                $bn = basename($val);
                 if ($bn && strpos($bn, '.') !== false) {
                     $used[$bn] = true;
                 }
@@ -95,15 +122,18 @@ function get_all_used_basenames(mysqli $db)
         }
     }
 
-    // Run bulk queries for each table
-    foreach ($all_tables as $ut) {
-        $tbl = $ut['table'];
-        $col = $ut['col'];
-        $r = $db->query("SELECT DISTINCT `$col` FROM `$tbl` WHERE `$col` IS NOT NULL AND `$col` != ''");
-        if (!$r) continue;
-        while ($row = $r->fetch_assoc()) {
-            $bn = basename($row[$col]);
-            if ($bn) $used[$bn] = true;
+    // Pages content search (extract embedded images)
+    $pt = $db->query("SHOW TABLES LIKE 'pages'");
+    if ($pt && $pt->num_rows > 0) {
+        $pr = $db->query("SELECT content FROM pages WHERE content IS NOT NULL AND content != ''");
+        if ($pr) {
+            while ($prow = $pr->fetch_assoc()) {
+                if (preg_match_all('/([a-zA-Z0-9_\-\.]+\.(png|jpe?g|webp|svg|gif|ico))/i', $prow['content'], $matches)) {
+                    foreach ($matches[1] as $imgFile) {
+                        $used[basename($imgFile)] = true;
+                    }
+                }
+            }
         }
     }
 
@@ -118,50 +148,65 @@ function count_file_references(mysqli $db, $file_basename)
     $esc  = $db->real_escape_string($file_basename);
     $refs = [];
 
-    $tables = [
-        ['table' => 'products',       'col' => 'image'],
-        ['table' => 'product_images', 'col' => 'image'],
-        ['table' => 'banners',        'col' => 'image'],
-        ['table' => 'categories',     'col' => 'image'],
+    $table_col_map = [
+        'products'          => ['image'],
+        'product_images'    => ['image'],
+        'banners'           => ['image'],
+        'categories'        => ['image'],
+        'hero_slides'       => ['media_path', 'image'],
+        'homepage_features' => ['icon_value', 'image'],
+        'testimonials'      => ['image', 'avatar', 'photo'],
+        'users'             => ['profile_photo'],
+        'admins'            => ['profile_photo'],
+        'admin_users'       => ['profile_photo'],
+        'sliders'           => ['image', 'media_path'],
+        'slides'            => ['image', 'media_path'],
+        'seo_metadata'      => ['og_image', 'twitter_image'],
     ];
 
-    $optional = [
-        ['table' => 'hero_slides',       'col' => 'image'],
-        ['table' => 'sliders',           'col' => 'image'],
-        ['table' => 'testimonials',      'col' => 'image'],
-        ['table' => 'homepage_features', 'col' => 'image'],
-        ['table' => 'slides',            'col' => 'image'],
-    ];
+    foreach ($table_col_map as $tbl => $cols) {
+        $texists = $db->query("SHOW TABLES LIKE '$tbl'");
+        if (!$texists || $texists->num_rows === 0) continue;
 
-    foreach ($optional as $ot) {
-        $tbl = $db->real_escape_string($ot['table']);
-        $col = $db->real_escape_string($ot['col']);
+        foreach ($cols as $col) {
+            $cexists = $db->query("SHOW COLUMNS FROM `$tbl` LIKE '$col'");
+            if (!$cexists || $cexists->num_rows === 0) continue;
+
+            $r = $db->query("SELECT COUNT(*) AS c FROM `$tbl` WHERE `$col`='$esc' OR `$col` LIKE '%/$esc'");
+            $count = $r ? (int)$r->fetch_assoc()['c'] : 0;
+            if ($count > 0) {
+                $refs["{$tbl}.{$col}"] = $count;
+            }
+        }
+    }
+
+    // Key-value settings tables
+    $settings_tables = [
+        ['tbl' => 'settings',      'col' => 'setting_value'],
+        ['tbl' => 'site_settings', 'col' => 'value'],
+        ['tbl' => 'seo_settings',  'col' => 'setting_value'],
+    ];
+    foreach ($settings_tables as $st) {
+        $tbl = $st['tbl'];
+        $col = $st['col'];
         $texists = $db->query("SHOW TABLES LIKE '$tbl'");
         if (!$texists || $texists->num_rows === 0) continue;
         $cexists = $db->query("SHOW COLUMNS FROM `$tbl` LIKE '$col'");
         if (!$cexists || $cexists->num_rows === 0) continue;
-        $tables[] = $ot;
-    }
 
-    foreach ($tables as $ut) {
-        $tbl = $ut['table'];
-        $col = $ut['col'];
-        $r = $db->query("SELECT COUNT(*) AS c FROM `$tbl` WHERE `$col`='$esc'");
-        $refs[$tbl] = $r ? (int)$r->fetch_assoc()['c'] : 0;
+        $r = $db->query("SELECT COUNT(*) AS c FROM `$tbl` WHERE `$col`='$esc' OR `$col` LIKE '%$esc%'");
+        $count = $r ? (int)$r->fetch_assoc()['c'] : 0;
+        if ($count > 0) {
+            $refs["{$tbl}.{$col}"] = $count;
+        }
     }
 
     // pages content search
     $pt = $db->query("SHOW TABLES LIKE 'pages'");
     if ($pt && $pt->num_rows > 0) {
         $r = $db->query("SELECT COUNT(*) AS c FROM pages WHERE content LIKE '%$esc%'");
-        $refs['pages'] = $r ? (int)$r->fetch_assoc()['c'] : 0;
-    }
-
-    // site_settings
-    $st = $db->query("SHOW TABLES LIKE 'site_settings'");
-    if ($st && $st->num_rows > 0) {
-        $r = $db->query("SELECT COUNT(*) AS c FROM site_settings WHERE `value` LIKE '%$esc%'");
-        $refs['site_settings'] = $r ? (int)$r->fetch_assoc()['c'] : 0;
+        $count = $r ? (int)$r->fetch_assoc()['c'] : 0;
+        if ($count > 0) $refs['pages'] = $count;
     }
 
     $total = array_sum($refs);
