@@ -44,9 +44,59 @@ if ($mutating) {
 }
 
 // ════════════════════════════════════════════════════════════
-//  HELPER: Build set of all used file basenames (bulk, fast)
-//  Returns array: ['basename.jpg' => true, ...]
+//  HELPER: Check if a file is a protected system / theme asset
+//  Core assets, theme assets, and system icons must NEVER be deleted!
 // ════════════════════════════════════════════════════════════
+function is_protected_system_file($file_path, $basename)
+{
+    // 1. Any file inside the core assets/ folder is protected
+    $clean_path = str_replace('\\', '/', ltrim((string)$file_path, '/\\'));
+    if (strpos($clean_path, 'assets/') === 0) {
+        return true;
+    }
+
+    // 2. Protected system asset prefixes
+    $protected_prefixes = [
+        'feature_',
+        'hero_',
+        'slide_',
+        'banner_',
+        'logo',
+        'profile_',
+        'favicon',
+        'placeholder',
+        'no-image',
+        'about_who',
+        'about_',
+        'contact_',
+        'google-icon',
+        'gal_',
+        'ind gi',
+        'meter gi',
+        'pump',
+        'stabilizer',
+        'star delta',
+        'single hp',
+        'single ph',
+        'bno',
+        'coil',
+        'contactor',
+        '3ph',
+        '2hp',
+        '1hp',
+        'AhaConvert_'
+    ];
+
+    $lower_basename = strtolower((string)$basename);
+    foreach ($protected_prefixes as $prefix) {
+        if (strpos($lower_basename, strtolower($prefix)) === 0) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 // ════════════════════════════════════════════════════════════
 //  HELPER: Build set of all used file basenames (bulk, fast)
 //  Returns array: ['basename.jpg' => true, ...]
@@ -238,7 +288,8 @@ if ($action === 'check_all') {
     while ($row = $result->fetch_assoc()) {
         $id       = (int)$row['id'];
         $basename = basename($row['file_path']);
-        $is_used  = isset($used_basenames[$basename]);
+        $is_prot  = is_protected_system_file($row['file_path'], $basename);
+        $is_used  = $is_prot || isset($used_basenames[$basename]);
 
         $all_files[$id] = [
             'id'            => $id,
@@ -299,7 +350,7 @@ if ($action === 'check_all') {
         }
     }
 
-    // Unused files
+    // Unused files (EXCLUDING all protected system files)
     $unused_files = [];
     foreach ($all_files as $f) {
         if (!$f['is_used']) $unused_files[] = $f;
@@ -345,8 +396,18 @@ if ($action === 'delete_safe') {
     }
 
     $basename = basename($row['file_path']);
-    $usage    = count_file_references($conn, $basename);
 
+    // NEVER delete protected system assets
+    if (is_protected_system_file($row['file_path'], $basename)) {
+        ob_end_clean();
+        echo json_encode([
+            'success' => false,
+            'message' => 'This is a protected system asset and cannot be deleted.',
+        ]);
+        exit;
+    }
+
+    $usage = count_file_references($conn, $basename);
     if ($usage['total'] > 0) {
         ob_end_clean();
         echo json_encode([
@@ -411,8 +472,19 @@ if ($action === 'bulk_delete_unused') {
         if (!$row) continue;
 
         $basename = basename($row['file_path']);
-        $usage    = count_file_references($conn, $basename);
 
+        // Strictly protect system and theme assets
+        if (is_protected_system_file($row['file_path'], $basename)) {
+            $skipped_count++;
+            $skipped_details[] = [
+                'id'    => $del_id,
+                'name'  => $basename,
+                'usage' => 'Protected system asset',
+            ];
+            continue;
+        }
+
+        $usage = count_file_references($conn, $basename);
         if ($usage['total'] > 0) {
             $skipped_count++;
             $skipped_details[] = [
