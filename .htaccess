@@ -20,11 +20,11 @@ RewriteEngine On
 
 
 # ══════════════════════════════════════════════════════════════
-# 1. FORCE HTTPS AND WWW (skipped on localhost)
+# 1. FORCE HTTPS AND WWW IN A SINGLE CANONICAL HOP
 # ══════════════════════════════════════════════════════════════
 RewriteCond %{HTTP_HOST} !^localhost [NC]
-RewriteCond %{HTTPS} off [OR]
-RewriteCond %{HTTP_HOST} !^www\. [NC]
+RewriteCond %{HTTP_HOST} ^(?!www\.)(.+)$ [NC,OR]
+RewriteCond %{HTTPS} !=on
 RewriteCond %{HTTP_HOST} ^(?:www\.)?(.+)$ [NC]
 RewriteRule ^ https://www.%1%{REQUEST_URI} [L,R=301]
 

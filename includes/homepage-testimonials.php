@@ -174,7 +174,7 @@ if ($testimonials_q && $testimonials_q->num_rows > 0):
                         
                         <div class="testimonial-author">
                             <?php if(!empty($row['image_url'])): ?>
-                                <img src="<?php echo htmlspecialchars(SITE_URL . '/' . ltrim($row['image_url'], '/')); ?>" class="author-img" alt="<?php echo htmlspecialchars($row['client_name']); ?>" loading="lazy">
+                                <img src="<?php echo htmlspecialchars(SITE_URL . '/' . ltrim($row['image_url'], '/')); ?>" class="author-img" alt="<?php echo htmlspecialchars($row['client_name']); ?>" width="55" height="55" loading="lazy" decoding="async">
                             <?php else: ?>
                                 <div class="author-placeholder">
                                     <?php echo strtoupper(substr($row['client_name'], 0, 1)); ?>

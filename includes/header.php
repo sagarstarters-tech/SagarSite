@@ -308,21 +308,27 @@ if (isset($product['slug'])) {
     <meta name="theme-color" content="#1e3c72">
     <link rel="apple-touch-icon" href="<?php echo ASSETS_URL; ?>/images/logo.jpg">
 
-    <!-- Resource Preconnects -->
+    <!-- Resource Preconnects & DNS Prefetch -->
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
     <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com">
 
     <!-- LCP Critical Image Preload (first hero slide = LCP element) -->
     <?php if (!empty($_lcp_hero_img_url) && strpos($_lcp_hero_img_url, 'placeholder') === false): ?>
-    <link rel="preload" as="image" href="<?php echo htmlspecialchars($_lcp_hero_img_url); ?>" fetchpriority="high">
+    <link rel="preload" as="image" href="<?php echo htmlspecialchars($_lcp_hero_img_url); ?>" fetchpriority="high" decoding="async">
     <?php endif; ?>
 
-    <!-- Google Fonts with font-display:swap -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght@300;400;500;600&display=swap">
+    <!-- Google Fonts with non-blocking load & font-display:swap -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght@300;400;500;600&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght@300;400;500;600&display=swap" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght@300;400;500;600&display=swap"></noscript>
 
-    <!-- MDBootstrap Core UI CSS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.css">
+    <!-- MDBootstrap Core UI CSS — Non-blocking with preload -->
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.css"></noscript>
 
     <!-- Font Awesome — non-render-blocking with layout stability -->
     <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
@@ -335,19 +341,22 @@ if (isset($product['slug'])) {
     <link rel="preload" href="<?php echo ASSETS_URL; ?>/css/hero-slider-style.css?v=1.5" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link href="<?php echo ASSETS_URL; ?>/css/hero-slider-style.css?v=1.5" rel="stylesheet"></noscript>
 
-    <!-- Custom Theme & App CSS -->
+    <!-- Custom Theme & App CSS (Critical) -->
     <link href="<?php echo ASSETS_URL; ?>/css/style.css?v=<?php echo file_exists(__DIR__ . '/../assets/css/style.css') ? filemtime(__DIR__ . '/../assets/css/style.css') : '2.0'; ?>" rel="stylesheet">
     <!-- Theme Customizer CSS Variables -->
     <?php
     require_once __DIR__ . '/ThemeService.php';
     ThemeService::injectCSS($conn);
     ?>
-    <!-- WhatsApp Widget CSS -->
-    <link href="<?php echo SITE_URL; ?>/whatsapp-style.css" rel="stylesheet">
-    <!-- Custom Animations CSS -->
-    <link href="<?php echo ASSETS_URL; ?>/css/animations.css?v=1.3" rel="stylesheet">
-    <!-- Language Switcher CSS -->
-    <link href="<?php echo ASSETS_URL; ?>/css/language-switcher.css?v=<?php echo file_exists(__DIR__ . '/../assets/css/language-switcher.css') ? filemtime(__DIR__ . '/../assets/css/language-switcher.css') : '1.0'; ?>" rel="stylesheet">
+    <!-- WhatsApp Widget CSS (Non-blocking) -->
+    <link rel="preload" href="<?php echo SITE_URL; ?>/whatsapp-style.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link href="<?php echo SITE_URL; ?>/whatsapp-style.css" rel="stylesheet"></noscript>
+    <!-- Custom Animations CSS (Non-blocking) -->
+    <link rel="preload" href="<?php echo ASSETS_URL; ?>/css/animations.css?v=1.3" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link href="<?php echo ASSETS_URL; ?>/css/animations.css?v=1.3" rel="stylesheet"></noscript>
+    <!-- Language Switcher CSS (Non-blocking) -->
+    <link rel="preload" href="<?php echo ASSETS_URL; ?>/css/language-switcher.css?v=<?php echo file_exists(__DIR__ . '/../assets/css/language-switcher.css') ? filemtime(__DIR__ . '/../assets/css/language-switcher.css') : '1.0'; ?>" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link href="<?php echo ASSETS_URL; ?>/css/language-switcher.css?v=<?php echo file_exists(__DIR__ . '/../assets/css/language-switcher.css') ? filemtime(__DIR__ . '/../assets/css/language-switcher.css') : '1.0'; ?>" rel="stylesheet"></noscript>
 
     <?php
     require_once 'ScriptService.php';
