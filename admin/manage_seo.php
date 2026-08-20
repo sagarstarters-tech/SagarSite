@@ -32,7 +32,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (move_uploaded_file($_FILES['favicon']['tmp_name'], $upload_target . $favicon)) {
                 $settings['site_favicon'] = 'uploads/media/images/' . $favicon; // full relative path
             }
+        } elseif (!empty($_POST['favicon_path'])) {
+            $settings['site_favicon'] = $_POST['favicon_path'];
         }
+
         if (isset($_FILES['og_image']) && $_FILES['og_image']['error'] === 0) {
             $ext = strtolower(pathinfo($_FILES['og_image']['name'], PATHINFO_EXTENSION));
             $og_img = 'og_default.' . $ext;
@@ -42,6 +45,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (move_uploaded_file($_FILES['og_image']['tmp_name'], $upload_target . $og_img)) {
                 $settings['og_default_image'] = 'uploads/media/images/' . $og_img; // full relative path
             }
+        } elseif (!empty($_POST['og_image_path'])) {
+            $settings['og_default_image'] = $_POST['og_image_path'];
         }
 
         $res = $controller->saveGlobalSettings($settings);
@@ -143,21 +148,27 @@ $categories = $conn->query("SELECT id, name FROM categories ORDER BY name ASC");
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label fw-bold">Favicon (Square .png/.ico)</label>
-                                        <input type="file" name="favicon" class="form-control" accept="image/*">
-                                        <?php if (!empty($globalSettings['site_favicon'])): 
-                                             $fav_preview = resolve_image_url($globalSettings['site_favicon']);
-                                         ?>
-                                             <div class="mt-2"><img src="<?php echo htmlspecialchars($fav_preview); ?>" style="height: 32px;" onerror="this.src='../assets/images/favicon.png';"></div>
-                                         <?php endif; ?>
+                                        <input type="file" name="favicon" id="favicon" class="form-control" accept="image/*">
+                                        <input type="hidden" name="favicon_path" id="favicon_path" value="<?php echo htmlspecialchars($globalSettings['site_favicon'] ?? ''); ?>">
+                                        <div class="mt-2" id="favicon_preview_box">
+                                            <?php if (!empty($globalSettings['site_favicon'])): 
+                                                 $fav_preview = resolve_image_url($globalSettings['site_favicon']);
+                                             ?>
+                                                 <img src="<?php echo htmlspecialchars($fav_preview); ?>" style="height: 32px;" onerror="this.src='../assets/images/favicon.png';">
+                                             <?php endif; ?>
+                                        </div>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label fw-bold">Open Graph Default Image</label>
-                                        <input type="file" name="og_image" class="form-control" accept="image/*">
-                                        <?php if (!empty($globalSettings['og_default_image'])): 
-                                             $og_preview = resolve_image_url($globalSettings['og_default_image']);
-                                         ?>
-                                             <div class="mt-2"><img src="<?php echo htmlspecialchars($og_preview); ?>" style="max-height: 50px;" onerror="this.style.display='none';"></div>
-                                         <?php endif; ?>
+                                        <input type="file" name="og_image" id="og_image" class="form-control" accept="image/*">
+                                        <input type="hidden" name="og_image_path" id="og_image_path" value="<?php echo htmlspecialchars($globalSettings['og_default_image'] ?? ''); ?>">
+                                        <div class="mt-2" id="og_image_preview_box">
+                                            <?php if (!empty($globalSettings['og_default_image'])): 
+                                                 $og_preview = resolve_image_url($globalSettings['og_default_image']);
+                                             ?>
+                                                 <img src="<?php echo htmlspecialchars($og_preview); ?>" style="max-height: 50px;" onerror="this.style.display='none';">
+                                             <?php endif; ?>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="row">

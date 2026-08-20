@@ -156,6 +156,93 @@ document.addEventListener('DOMContentLoaded', function() {
     let uploadSourceModalInstance = null;
     let mediaGallerySelectorModalInstance = null;
 
+    // Helper: update live preview for a specific file input element
+    function updateFieldImagePreview(inputEl, srcUrl) {
+        if (!inputEl || !srcUrl) return;
+
+        // 1. Check for specific preview target by input name or ID convention
+        const inputName = inputEl.getAttribute('name') || inputEl.id || '';
+        if (inputName) {
+            const cleanName = inputName.replace(/\[\]$/, '').replace(/[^a-zA-Z0-9_-]/g, '_');
+            const previewBox = document.getElementById(cleanName + '_preview_box') ||
+                               document.getElementById(cleanName + '_preview') ||
+                               document.getElementById('preview_' + cleanName);
+            if (previewBox) {
+                let img = previewBox.querySelector('img');
+                if (!img) {
+                    img = document.createElement('img');
+                    img.style.maxHeight = '50px';
+                    img.className = 'img-thumbnail mt-1';
+                    previewBox.appendChild(img);
+                }
+                img.src = srcUrl;
+                img.style.display = 'inline-block';
+                return;
+            }
+        }
+
+        // 2. Check if the input is in a direct flex group with an image (e.g., manage_settings logo)
+        const directFlex = inputEl.closest('.d-flex');
+        if (directFlex && !directFlex.classList.contains('card-body') && !directFlex.classList.contains('modal-body')) {
+            const directImgs = directFlex.querySelectorAll(':scope > img, :scope > div > img, :scope > a > img');
+            const fileInputsInFlex = directFlex.querySelectorAll('input[type="file"]');
+            if (directImgs.length === 1 && fileInputsInFlex.length === 1) {
+                directImgs[0].src = srcUrl;
+                directImgs[0].style.display = 'inline-block';
+                return;
+            }
+        }
+
+        // 3. Check within closest field container (col-*, mb-3, mb-4, form-group)
+        const fieldGroup = inputEl.closest('.mb-3, .mb-4, .mb-2, .form-group, [class*="col-"]');
+        if (fieldGroup) {
+            const fileInputsInGroup = fieldGroup.querySelectorAll('input[type="file"]');
+            if (fileInputsInGroup.length === 1) {
+                let img = fieldGroup.querySelector('img:not(.gallery-select-item)');
+                if (img) {
+                    img.src = srcUrl;
+                    img.style.display = 'inline-block';
+                    const placeholderDiv = fieldGroup.querySelector('.border-dashed');
+                    if (placeholderDiv) placeholderDiv.style.display = 'none';
+                    return;
+                } else {
+                    let previewDiv = fieldGroup.querySelector('.image-preview-wrapper');
+                    if (!previewDiv) {
+                        previewDiv = document.createElement('div');
+                        previewDiv.className = 'image-preview-wrapper mt-2';
+                        inputEl.parentNode.insertBefore(previewDiv, inputEl.nextSibling);
+                    }
+                    let newImg = previewDiv.querySelector('img');
+                    if (!newImg) {
+                        newImg = document.createElement('img');
+                        newImg.style.maxHeight = '60px';
+                        newImg.className = 'img-thumbnail';
+                        previewDiv.appendChild(newImg);
+                    }
+                    newImg.src = srcUrl;
+                    newImg.style.display = 'inline-block';
+                    return;
+                }
+            }
+        }
+
+        // 4. Fallback to direct parent
+        const parent = inputEl.parentElement;
+        if (parent) {
+            let img = parent.querySelector('img:not(.gallery-select-item)');
+            if (img) {
+                img.src = srcUrl;
+                img.style.display = 'inline-block';
+            } else {
+                let newImg = document.createElement('img');
+                newImg.src = srcUrl;
+                newImg.style.maxHeight = '60px';
+                newImg.className = 'img-thumbnail mt-2 d-block';
+                parent.appendChild(newImg);
+            }
+        }
+    }
+
     // Delegate click for file inputs
     document.addEventListener('click', function(e) {
         let target = e.target;
@@ -166,6 +253,12 @@ document.addEventListener('DOMContentLoaded', function() {
         // Skip interception on the Media Library page itself
         if (window.location.pathname.includes('manage_media.php')) {
             return;
+        }
+
+        // Only intercept image file inputs (check accept attribute)
+        const accept = (target.getAttribute('accept') || '').toLowerCase();
+        if (accept && !accept.includes('image') && !accept.includes('png') && !accept.includes('jpg') && !accept.includes('jpeg') && !accept.includes('webp') && !accept.includes('gif') && !accept.includes('ico') && !accept.includes('svg') && !accept.includes('*')) {
+            return; // Non-image file input, let default browser file dialog work
         }
 
         // If it's a file input, we intercept it unless bypassClick is true
@@ -266,16 +359,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             // Immediately update live image preview on screen
-            const container = currentFileInput.closest('.card-body') || currentFileInput.closest('.card') || currentFileInput.parentElement;
-            if (container) {
-                let imgPreview = container.querySelector('img');
-                if (imgPreview) {
-                    imgPreview.src = url;
-                    imgPreview.style.display = 'inline-block';
-                }
-                const placeholderDiv = container.querySelector('.border-dashed');
-                if (placeholderDiv) placeholderDiv.style.display = 'none';
-            }
+            updateFieldImagePreview(currentFileInput, url);
 
             // Fetch the image as a Blob to populate file input
             const response = await fetch(url);
@@ -288,7 +372,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // Trigger change event
-            currentFileInput.dispatchEvent(new Event('change', { bubbles: true }));
+            currentFileInput.dispatchEvent(new Event('change', { bubbles: false }));
             
             // Close modal
             mediaGallerySelectorModalInstance.hide();
@@ -307,15 +391,8 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('change', function(e) {
         if (e.target.tagName === 'INPUT' && e.target.type === 'file' && e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
-            const container = e.target.closest('.card-body') || e.target.closest('.card') || e.target.parentElement;
-            if (container) {
-                let imgPreview = container.querySelector('img');
-                if (imgPreview) {
-                    imgPreview.src = URL.createObjectURL(file);
-                    imgPreview.style.display = 'inline-block';
-                }
-                const placeholderDiv = container.querySelector('.border-dashed');
-                if (placeholderDiv) placeholderDiv.style.display = 'none';
+            if (file.type && file.type.startsWith('image/')) {
+                updateFieldImagePreview(e.target, URL.createObjectURL(file));
             }
         }
     });
