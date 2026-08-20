@@ -16,8 +16,12 @@ if ($features_enabled == '1') {
                             <div class="feature-icon-wrapper">
                                 <?php if ($f['icon_type'] === 'font'): ?>
                                     <i class="<?php echo htmlspecialchars($f['icon_value']); ?> feature-icon-font"></i>
-                                <?php else: ?>
-                                    <img src="<?php echo htmlspecialchars(resolve_image_url($f['icon_value'])); ?>" alt="<?php echo htmlspecialchars($f['title']); ?> Icon" class="feature-icon-img" width="48" height="48" loading="lazy" decoding="async" onerror="this.onerror=null; this.style.display='none';">
+                                <?php else: 
+                                    $icon_src = resolve_feature_icon_url($f['title'], $f['icon_value']);
+                                    $fallback_font = get_feature_fallback_font_icon($f['title']);
+                                ?>
+                                    <img src="<?php echo htmlspecialchars($icon_src); ?>" alt="<?php echo htmlspecialchars($f['title']); ?> Icon" class="feature-icon-img" width="48" height="48" loading="lazy" decoding="async" onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='inline-block';">
+                                    <i class="<?php echo htmlspecialchars($fallback_font); ?> feature-icon-font" style="display:none;"></i>
                                 <?php endif; ?>
                             </div>
                             <h4 class="feature-title"><?php echo htmlspecialchars($f['title']); ?></h4>

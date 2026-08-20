@@ -218,6 +218,62 @@ if (!function_exists('resolve_image_url')) {
     }
 }
 
+// Global Feature Icon Resolver (with smart title matching and graceful fallback)
+if (!function_exists('resolve_feature_icon_url')) {
+    function resolve_feature_icon_url($title, $icon_value = '') {
+        $icon = trim((string)$icon_value);
+        if (!empty($icon)) {
+            $url = resolve_image_url($icon);
+            if ($url && strpos($url, 'placeholder.svg') === false && strpos($url, 'no-image') === false) {
+                return $url;
+            }
+        }
+        
+        $t = strtolower(trim((string)$title));
+        $map = [
+            'power saving'       => 'feature_1772177655.jpg',
+            'power'              => 'feature_1772177655.jpg',
+            'eco'                => 'feature_1773069037.png',
+            'india'              => 'feature_1772177782.png',
+            'shipping'           => 'feature_1772045426.png',
+            'worldwide'          => 'feature_1772045426.png',
+            'quality'            => 'feature_1772045460.png',
+            'offers'             => 'feature_1772045499.png',
+            'offer'              => 'feature_1772045499.png',
+            'payment'            => 'feature_1772045534.png',
+            'secure'             => 'feature_1772045534.png',
+            'support'            => 'feature_1772176874.png',
+            '24x7'               => 'feature_1772176874.png',
+        ];
+        
+        foreach ($map as $key => $file) {
+            if (strpos($t, $key) !== false) {
+                $matched_url = resolve_image_url($file);
+                if ($matched_url && strpos($matched_url, 'placeholder.svg') === false) {
+                    return $matched_url;
+                }
+            }
+        }
+        
+        return resolve_image_url($icon);
+    }
+}
+
+if (!function_exists('get_feature_fallback_font_icon')) {
+    function get_feature_fallback_font_icon($title) {
+        $t = strtolower(trim((string)$title));
+        if (strpos($t, 'power') !== false) return 'fas fa-bolt';
+        if (strpos($t, 'eco') !== false) return 'fas fa-leaf';
+        if (strpos($t, 'india') !== false) return 'fas fa-certificate';
+        if (strpos($t, 'shipping') !== false || strpos($t, 'delivery') !== false) return 'fas fa-truck-fast';
+        if (strpos($t, 'quality') !== false) return 'fas fa-award';
+        if (strpos($t, 'offer') !== false) return 'fas fa-tags';
+        if (strpos($t, 'payment') !== false || strpos($t, 'secure') !== false) return 'fas fa-shield-halved';
+        if (strpos($t, 'support') !== false || strpos($t, '24x7') !== false) return 'fas fa-headset';
+        return 'fas fa-star';
+    }
+}
+
 if (!function_exists('encode_url_path')) {
     function encode_url_path($url) {
         if (empty($url)) return $url;
