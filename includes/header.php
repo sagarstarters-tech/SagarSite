@@ -296,7 +296,9 @@ if (isset($product['slug'])) {
     <meta property="fb:app_id" content="">
 
     <?php if (!empty($seoData['favicon'])): ?>
-    <link rel="icon" type="image/x-icon" href="<?php echo htmlspecialchars(resolve_image_url($seoData['favicon'])); ?>">
+    <link rel="icon" type="image/png" sizes="32x32" href="<?php echo htmlspecialchars(resolve_image_url('favicon.png')); ?>">
+    <?php else: ?>
+    <link rel="icon" type="image/png" sizes="32x32" href="<?php echo ASSETS_URL; ?>/images/favicon.png">
     <?php endif; ?>
 
     <?php if (!empty($seoData['canonical'])): ?>
@@ -306,7 +308,7 @@ if (isset($product['slug'])) {
     <!-- PWA Settings -->
     <link rel="manifest" href="<?php echo SITE_URL; ?>/manifest.json">
     <meta name="theme-color" content="#1e3c72">
-    <link rel="apple-touch-icon" href="<?php echo ASSETS_URL; ?>/images/logo.jpg">
+    <link rel="apple-touch-icon" sizes="192x192" href="<?php echo ASSETS_URL; ?>/images/favicon_192.png">
 
     <!-- Resource Preconnects & DNS Prefetch -->
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
