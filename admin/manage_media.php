@@ -270,38 +270,94 @@ $total_all    = (int)($conn->query("SELECT COUNT(*) as c FROM media_library")->f
 $total_images = (int)($conn->query("SELECT COUNT(*) as c FROM media_library WHERE file_type='image'")->fetch_assoc()['c'] ?? 0);
 $total_videos = (int)($conn->query("SELECT COUNT(*) as c FROM media_library WHERE file_type='video'")->fetch_assoc()['c'] ?? 0);
 
-// ── Pre-compute usage map for 'Used' badge ─────────────────
-// Tables that reference media by basename
-$_usage_tables = [
-    ['table' => 'products',          'col' => 'image'],
-    ['table' => 'product_images',    'col' => 'image'],
-    ['table' => 'banners',           'col' => 'image'],
-    ['table' => 'categories',        'col' => 'image'],
-];
-$_optional_tables = ['hero_slides','sliders','testimonials','homepage_features','slides'];
-foreach ($_optional_tables as $_ot) {
-    $r = $conn->query("SHOW TABLES LIKE '$_ot'");
-    if ($r && $r->num_rows > 0) {
-        // Verify 'image' column actually exists in this table
-        $col_check = $conn->query("SHOW COLUMNS FROM `$_ot` LIKE 'image'");
-        if ($col_check && $col_check->num_rows > 0) {
-            $_usage_tables[] = ['table' => $_ot, 'col' => 'image'];
+// ── Helper: Check if a file is a protected system asset ───
+if (!function_exists('is_protected_media_asset')) {
+    function is_protected_media_asset($file_path, $basename) {
+        $clean_path = str_replace('\\', '/', ltrim((string)$file_path, '/\\'));
+        if (strpos($clean_path, 'assets/') === 0) return true;
+        
+        $protected_prefixes = [
+            'feature_', 'hero_', 'slide_', 'banner_', 'logo', 'profile_', 'favicon',
+            'placeholder', 'no-image', 'about_who', 'about_', 'contact_', 'google-icon',
+            'gal_', 'ind gi', 'meter gi', 'pump', 'stabilizer', 'star delta', 'single hp',
+            'single ph', 'bno', 'coil', 'contactor', '3ph', '2hp', '1hp', 'AhaConvert_'
+        ];
+        $lower_basename = strtolower((string)$basename);
+        foreach ($protected_prefixes as $prefix) {
+            if (strpos($lower_basename, strtolower($prefix)) === 0) return true;
         }
+        return false;
     }
 }
-// Build a set of used basenames
+
+// ── Pre-compute usage map for 'Used' badge across all tables & columns ───
 $_used_basenames = [];
-foreach ($_usage_tables as $_ut) {
-    $_tr = $conn->query("SELECT DISTINCT `{$_ut['col']}` FROM `{$_ut['table']}`");
-    if ($_tr) {
-        while ($_trow = $_tr->fetch_assoc()) {
-            if (!empty($_trow[$_ut['col']])) {
-                $_used_basenames[basename($_trow[$_ut['col']])] = true;
+
+// 1. Entity tables with respective image columns
+$_table_col_map = [
+    'products'          => ['image'],
+    'product_images'    => ['image'],
+    'banners'           => ['image'],
+    'categories'        => ['image'],
+    'hero_slides'       => ['media_path', 'image'],
+    'homepage_features' => ['icon_value', 'image'],
+    'testimonials'      => ['image', 'avatar', 'photo'],
+    'users'             => ['profile_photo'],
+    'admins'            => ['profile_photo'],
+    'admin_users'       => ['profile_photo'],
+    'sliders'           => ['image', 'media_path'],
+    'slides'            => ['image', 'media_path'],
+    'seo_metadata'      => ['og_image', 'twitter_image'],
+];
+
+foreach ($_table_col_map as $tbl => $cols) {
+    $texists = $conn->query("SHOW TABLES LIKE '$tbl'");
+    if (!$texists || $texists->num_rows === 0) continue;
+
+    foreach ($cols as $col) {
+        $cexists = $conn->query("SHOW COLUMNS FROM `$tbl` LIKE '$col'");
+        if (!$cexists || $cexists->num_rows === 0) continue;
+
+        $r = $conn->query("SELECT DISTINCT `$col` FROM `$tbl` WHERE `$col` IS NOT NULL AND `$col` != ''");
+        if ($r) {
+            while ($row = $r->fetch_assoc()) {
+                $bn = basename(trim($row[$col]));
+                if ($bn && strpos($bn, '.') !== false) {
+                    $_used_basenames[$bn] = true;
+                }
             }
         }
     }
 }
-// Pages text search is skipped here for performance (checked in AJAX only)
+
+// 2. Key-value settings tables
+$_settings_tables = [
+    ['tbl' => 'settings',      'col' => 'setting_value'],
+    ['tbl' => 'site_settings', 'col' => 'value'],
+    ['tbl' => 'seo_settings',  'col' => 'setting_value'],
+];
+foreach ($_settings_tables as $st) {
+    $tbl = $st['tbl'];
+    $col = $st['col'];
+    $texists = $conn->query("SHOW TABLES LIKE '$tbl'");
+    if (!$texists || $texists->num_rows === 0) continue;
+    $cexists = $conn->query("SHOW COLUMNS FROM `$tbl` LIKE '$col'");
+    if (!$cexists || $cexists->num_rows === 0) continue;
+
+    $r = $conn->query("SELECT `$col` FROM `$tbl` WHERE `$col` IS NOT NULL AND `$col` != ''");
+    if ($r) {
+        while ($row = $r->fetch_assoc()) {
+            $val = trim($row[$col]);
+            if (preg_match('/([a-zA-Z0-9_\-\.]+\.(png|jpe?g|webp|svg|gif|ico))/i', $val, $m)) {
+                $_used_basenames[basename($m[1])] = true;
+            }
+            $bn = basename($val);
+            if ($bn && strpos($bn, '.') !== false) {
+                $_used_basenames[$bn] = true;
+            }
+        }
+    }
+}
 ?>
 
 <style>
@@ -1325,9 +1381,10 @@ foreach ($_usage_tables as $_ut) {
         $filesize_kb = round($m['file_size'] / 1024);
         $filesize_display = $filesize_kb >= 1024 ? round($filesize_kb / 1024, 1) . ' MB' : $filesize_kb . ' KB';
         $dims = ($m['width'] && $m['height']) ? $m['width'] . '×' . $m['height'] : '';
-        // Check if this file is used anywhere
+        // Check if this file is used anywhere or is a protected system asset
         $_card_basename = basename($m['file_path']);
-        $_is_used = isset($_used_basenames[$_card_basename]);
+        $_is_protected  = is_protected_media_asset($m['file_path'], $_card_basename);
+        $_is_used       = $_is_protected || isset($_used_basenames[$_card_basename]);
     ?>
     <?php 
         $display_url = resolve_image_url($m['file_url']);
