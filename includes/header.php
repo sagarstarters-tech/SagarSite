@@ -47,9 +47,10 @@ if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
 // Fallback: If profile_photo is not in session or empty, fetch it from DB
 if (isset($_SESSION['user_id']) && (empty($_SESSION['profile_photo']) || !isset($_SESSION['profile_photo']))) {
     $uid = intval($_SESSION['user_id']);
-    $usr_q = $conn->query("SELECT profile_photo FROM users WHERE id=$uid");
+    $usr_q = $conn->query("SELECT profile_photo, google_avatar FROM users WHERE id=$uid");
     if ($usr_q && $usr_q->num_rows > 0) {
-        $db_photo = trim($usr_q->fetch_assoc()['profile_photo'] ?? '');
+        $u_row = $usr_q->fetch_assoc();
+        $db_photo = trim($u_row['profile_photo'] ?: ($u_row['google_avatar'] ?? ''));
         $_SESSION['profile_photo'] = $db_photo;
     }
 }
@@ -550,7 +551,7 @@ if (isset($product['slug'])) {
                        $profile_photo_url = resolve_profile_photo_url($_SESSION['profile_photo'] ?? '', $_SESSION['role'] ?? '');
                        ?>
                        <?php if(!empty($profile_photo_url)): ?>
-                           <img src="<?php echo htmlspecialchars($profile_photo_url); ?>" alt="Profile" class="rounded-circle object-fit-cover" style="width: 32px; height: 32px; border: 2px solid #007aff;" onerror="if(!this.dataset.failed){this.dataset.failed=1;this.src='<?php echo $clean_site_url; ?>/assets/images/profile_69c14f73c250a.png';}else{this.outerHTML='<i class=\'fas fa-user-circle fs-4 primary-blue\'></i>';}">
+                           <img src="<?php echo htmlspecialchars($profile_photo_url); ?>" alt="Profile" class="rounded-circle object-fit-cover" style="width: 32px; height: 32px; border: 2px solid #007aff;" onerror="this.outerHTML='<i class=\'fas fa-user-circle fs-4 primary-blue\'></i>';">
                        <?php else: ?>
                            <i class="fas fa-user-circle fs-4 primary-blue"></i>
                        <?php endif; ?>
@@ -754,7 +755,7 @@ function refreshUserState() {
                     <div class="dropdown me-2">
                         <a class="dropdown-toggle d-flex align-items-center hidden-arrow text-reset" href="#" id="navbarDropdownMenuLink" role="button" data-mdb-toggle="dropdown" aria-expanded="false">
                             ${data.profile_photo_url ? 
-                                `<img src="${data.profile_photo_url}" alt="Profile" class="rounded-circle object-fit-cover" style="width: 32px; height: 32px; border: 2px solid #007aff;" onerror="if(!this.dataset.failed){this.dataset.failed=1;this.src='${cleanBaseUrl}/assets/images/profile_69c14f73c250a.png';}else{this.outerHTML='<i class=\\'fas fa-user-circle fs-4 primary-blue\\'></i>';}">` : 
+                                `<img src="${data.profile_photo_url}" alt="Profile" class="rounded-circle object-fit-cover" style="width: 32px; height: 32px; border: 2px solid #007aff;" onerror="this.outerHTML='<i class=\\'fas fa-user-circle fs-4 primary-blue\\'></i>';">` : 
                                 '<i class="fas fa-user-circle fs-4 primary-blue"></i>'}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownMenuLink">

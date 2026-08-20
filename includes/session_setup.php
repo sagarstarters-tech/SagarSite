@@ -109,11 +109,6 @@ if (!function_exists('resolve_profile_photo_url')) {
             return $site_url . '/uploads/' . $clean_photo;
         }
         
-        // 4. Fallback to default profile photo if available
-        if (file_exists($base_path . '/assets/images/profile_69c14f73c250a.png')) {
-            return $assets_url . '/images/profile_69c14f73c250a.png';
-        }
-        
         return '';
     }
 }

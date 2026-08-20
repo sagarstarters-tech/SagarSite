@@ -1,17 +1,15 @@
 <?php
-include '../includes/header.php';
+require_once __DIR__ . '/../includes/session_setup.php';
+require_once __DIR__ . '/../includes/db_connect.php';
+
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit;
 }
 
 $user_id = intval($_SESSION['user_id']);
-$stmt = $conn->prepare("SELECT * FROM users WHERE id=?");
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$user = $stmt->get_result()->fetch_assoc();
-$stmt->close();
 
+// ── Handle Profile Update (POST) BEFORE rendering any HTML ──
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
         $_SESSION['error'] = "Security validation failed. Please try again.";
@@ -19,52 +17,102 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    $name = $conn->real_escape_string($_POST['name']);
-    
+    $name = trim($_POST['name'] ?? '');
+    if (empty($name)) {
+        $_SESSION['error'] = "Name is required.";
+        header("Location: profile.php");
+        exit;
+    }
+
     $phone_raw = trim($_POST['phone'] ?? '');
-    $phone = $conn->real_escape_string($phone_raw);
+    $phone = $phone_raw;
     $phone_clean = str_replace([' ', '-', '(', ')', '+'], '', $phone_raw);
-    $phone_clean_sql = $conn->real_escape_string($phone_clean);
 
     if (strlen($phone_clean) > 5) {
         $stmt_check = $conn->prepare("SELECT id FROM users WHERE REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '(', ''), ')', ''), '+', '')=? AND id != ?");
-        $stmt_check->bind_param("si", $phone_clean_sql, $user_id);
+        $stmt_check->bind_param("si", $phone_clean, $user_id);
         $stmt_check->execute();
         $check_res = $stmt_check->get_result();
         if ($check_res->num_rows > 0) {
             $_SESSION['error'] = "This phone number is already registered to another account.";
+            $stmt_check->close();
             header("Location: profile.php");
             exit;
         }
         $stmt_check->close();
     }
 
-    $address = $conn->real_escape_string($_POST['address']);
-    $city = $conn->real_escape_string($_POST['city']);
-    $state = $conn->real_escape_string($_POST['state']);
-    $country = $conn->real_escape_string($_POST['country']);
-    $zip_code = $conn->real_escape_string($_POST['zip_code']);
-    
+    $address  = trim($_POST['address'] ?? '');
+    $city     = trim($_POST['city'] ?? '');
+    $state    = trim($_POST['state'] ?? '');
+    $country  = trim($_POST['country'] ?? '');
+    $zip_code = trim($_POST['zip_code'] ?? '');
+
     // Handle Profile Photo Upload
     $has_new_photo = false;
-    $new_filename = "";
-    if (isset($_FILES['profile_photo']) && $_FILES['profile_photo']['error'] === 0) {
-        $allowed = ['jpg', 'jpeg', 'png', 'gif'];
-        $filename = $_FILES['profile_photo']['name'];
-        $file_ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-        
-        if (in_array($file_ext, $allowed)) {
-            $new_filename = 'user_' . $user_id . '_' . time() . '.' . $file_ext;
-            $upload_path = '../assets/images/' . $new_filename;
-            
-            if (move_uploaded_file($_FILES['profile_photo']['tmp_name'], $upload_path)) {
-                $has_new_photo = true;
-                $_SESSION['profile_photo'] = $new_filename;
-                $user['profile_photo'] = $new_filename;
-            }
+    $new_filename  = "";
+
+    if (isset($_FILES['profile_photo']) && $_FILES['profile_photo']['error'] === UPLOAD_ERR_OK) {
+        $file_tmp  = $_FILES['profile_photo']['tmp_name'];
+        $file_name = $_FILES['profile_photo']['name'];
+        $file_size = $_FILES['profile_photo']['size'];
+        $file_ext  = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+        $allowed   = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+        // Validate extension
+        if (!in_array($file_ext, $allowed)) {
+            $_SESSION['error'] = "Invalid image format. Allowed formats: JPG, JPEG, PNG, GIF, WEBP.";
+            header("Location: profile.php");
+            exit;
         }
+
+        // Validate file size (max 5MB)
+        if ($file_size > 5 * 1024 * 1024) {
+            $_SESSION['error'] = "Image size exceeds 5MB limit. Please choose a smaller image.";
+            header("Location: profile.php");
+            exit;
+        }
+
+        // Validate that file is an actual image
+        $image_info = @getimagesize($file_tmp);
+        if ($image_info === false) {
+            $_SESSION['error'] = "Uploaded file is not a valid image.";
+            header("Location: profile.php");
+            exit;
+        }
+
+        $base_dir = defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__);
+        $upload_dir = $base_dir . '/assets/images/';
+        if (!is_dir($upload_dir)) {
+            mkdir($upload_dir, 0755, true);
+        }
+
+        $new_filename = 'user_' . $user_id . '_' . time() . '.' . $file_ext;
+        $upload_path  = $upload_dir . $new_filename;
+
+        if (move_uploaded_file($file_tmp, $upload_path)) {
+            $has_new_photo = true;
+            $_SESSION['profile_photo'] = $new_filename;
+        } else {
+            $_SESSION['error'] = "Failed to save uploaded image. Please check server permissions.";
+            header("Location: profile.php");
+            exit;
+        }
+    } elseif (isset($_FILES['profile_photo']) && $_FILES['profile_photo']['error'] !== UPLOAD_ERR_NO_FILE) {
+        $upload_errors = [
+            UPLOAD_ERR_INI_SIZE   => 'The uploaded file exceeds the maximum allowed file size on server.',
+            UPLOAD_ERR_FORM_SIZE  => 'The uploaded file exceeds the MAX_FILE_SIZE directive in form.',
+            UPLOAD_ERR_PARTIAL    => 'The uploaded file was only partially uploaded.',
+            UPLOAD_ERR_NO_TMP_DIR => 'Missing temporary folder on server.',
+            UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk.',
+            UPLOAD_ERR_EXTENSION  => 'A PHP extension stopped the file upload.',
+        ];
+        $err_code = $_FILES['profile_photo']['error'];
+        $_SESSION['error'] = $upload_errors[$err_code] ?? 'An error occurred during file upload.';
+        header("Location: profile.php");
+        exit;
     }
-    
+
     if ($has_new_photo) {
         $stmt = $conn->prepare("UPDATE users SET name=?, phone=?, address=?, city=?, state=?, country=?, zip_code=?, profile_photo=? WHERE id=?");
         $stmt->bind_param("ssssssssi", $name, $phone, $address, $city, $state, $country, $zip_code, $new_filename, $user_id);
@@ -72,21 +120,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = $conn->prepare("UPDATE users SET name=?, phone=?, address=?, city=?, state=?, country=?, zip_code=? WHERE id=?");
         $stmt->bind_param("sssssssi", $name, $phone, $address, $city, $state, $country, $zip_code, $user_id);
     }
-    $stmt->execute();
-    $stmt->close();
-    $_SESSION['name'] = $name;
-    if (isset($_SESSION['needs_profile_update'])) {
-        unset($_SESSION['needs_profile_update']);
+
+    if ($stmt->execute()) {
+        $_SESSION['name'] = $name;
+        if (isset($_SESSION['needs_profile_update']) && !empty($phone) && !empty($address)) {
+            unset($_SESSION['needs_profile_update']);
+        }
+        $_SESSION['success'] = "Profile updated successfully.";
+    } else {
+        $_SESSION['error'] = "Failed to update profile: " . $conn->error;
     }
-    $success = "Profile updated successfully.";
-    $user['name'] = $name;
-    $user['phone'] = $phone;
-    $user['address'] = $address;
-    $user['city'] = $city;
-    $user['state'] = $state;
-    $user['country'] = $country;
-    $user['zip_code'] = $zip_code;
+    $stmt->close();
+
+    header("Location: profile.php");
+    exit;
 }
+
+// ── Fetch fresh user record for display ──
+$stmt = $conn->prepare("SELECT * FROM users WHERE id=?");
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$user = $stmt->get_result()->fetch_assoc();
+$stmt->close();
+
+if (!$user) {
+    header("Location: ../includes/auth.php?action=logout");
+    exit;
+}
+
+// Now include header which renders navigation and HTML structure
+include '../includes/header.php';
 ?>
 <div class="container mt-5 mb-5">
     <div class="row">
@@ -94,14 +157,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="card product-card mb-4">
                 <div class="card-body text-center p-4">
                     <?php 
-                    $profile_photo_url = resolve_profile_photo_url($user['profile_photo'] ?? '', $user['role'] ?? '');
+                    $user_photo = !empty($user['profile_photo']) ? $user['profile_photo'] : ($user['google_avatar'] ?? '');
+                    $profile_photo_url = resolve_profile_photo_url($user_photo, $user['role'] ?? '');
                     ?>
-                    <?php if (!empty($profile_photo_url)): ?>
-                        <img src="<?php echo htmlspecialchars($profile_photo_url); ?>" alt="Profile" class="rounded-circle mb-3 object-fit-cover" style="width: 120px; height: 120px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
-                    <?php else: ?>
-                        <i class="fas fa-user-circle fa-5x primary-blue mb-3"></i>
-                    <?php endif; ?>
-                    <h4><?php echo htmlspecialchars($user['name']); ?></h4>
+                    <div class="position-relative d-inline-block mb-3">
+                        <?php if (!empty($profile_photo_url)): ?>
+                            <img id="profileCardImg" src="<?php echo htmlspecialchars($profile_photo_url); ?>" alt="Profile" class="rounded-circle object-fit-cover shadow-sm" style="width: 120px; height: 120px; border: 3px solid #007aff;" onerror="this.style.display='none'; document.getElementById('profileCardFallbackIcon').style.display='inline-block';">
+                            <i id="profileCardFallbackIcon" class="fas fa-user-circle fa-5x primary-blue" style="display: none;"></i>
+                        <?php else: ?>
+                            <img id="profileCardImg" src="" alt="Profile" class="rounded-circle object-fit-cover shadow-sm" style="width: 120px; height: 120px; border: 3px solid #007aff; display: none;">
+                            <i id="profileCardIcon" class="fas fa-user-circle fa-5x primary-blue"></i>
+                        <?php endif; ?>
+                    </div>
+                    <h4 class="fw-bold mb-1"><?php echo htmlspecialchars($user['name']); ?></h4>
                     <?php if (($user['role'] ?? '') === 'retailer'): ?>
                         <div class="mb-2">
                             <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-1 rounded-pill fw-bold">
@@ -157,16 +225,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="card-body p-4">
                     <h4 class="montserrat primary-blue mb-4">Edit Profile</h4>
                     <?php if(isset($_SESSION['error'])): ?>
-                        <div class="alert alert-danger"><?php echo $_SESSION['error']; unset($_SESSION['error']); ?></div>
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="fas fa-exclamation-circle me-2"></i><?php echo htmlspecialchars($_SESSION['error']); unset($_SESSION['error']); ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
                     <?php endif; ?>
-                    <?php if(isset($success)): ?>
-                        <div class="alert alert-success"><?php echo $success; ?></div>
+                    <?php if(isset($_SESSION['success'])): ?>
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="fas fa-check-circle me-2"></i><?php echo htmlspecialchars($_SESSION['success']); unset($_SESSION['success']); ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
                     <?php endif; ?>
                     <form method="POST" enctype="multipart/form-data" id="profileForm" autocomplete="on">
                         <?php echo csrf_field(); ?>
-                        <div class="mb-4 text-center">
-                            <label for="profile_photo" class="form-label d-block text-start">Profile Photo</label>
-                            <input class="form-control" type="file" name="profile_photo" id="profile_photo" accept="image/*">
+                        <div class="mb-4">
+                            <label for="profile_photo" class="form-label fw-semibold">Profile Photo</label>
+                            <input class="form-control" type="file" name="profile_photo" id="profile_photo" accept="image/jpeg,image/png,image/gif,image/webp">
+                            <div class="form-text text-muted">Upload JPG, PNG, WEBP, or GIF image (Max 5MB).</div>
                         </div>
                         <div class="row mb-3">
                             <div class="col-md-6">
@@ -214,13 +289,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </div>
 
-<!-- Smart Profile: Autofill Detection & AJAX Auto-Save -->
+<!-- Instant Photo Preview & Smart Profile: Autofill Detection & AJAX Auto-Save -->
 <script>
 (function() {
     'use strict';
 
     var CSRF_TOKEN = '<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>';
     var SAVE_URL = 'ajax_update_profile.php';
+
+    // ── Live Instant Image Preview ──
+    var photoInput = document.getElementById('profile_photo');
+    if (photoInput) {
+        photoInput.addEventListener('change', function(e) {
+            var file = e.target.files && e.target.files[0];
+            if (file) {
+                var img = document.getElementById('profileCardImg');
+                var icon = document.getElementById('profileCardIcon');
+                var fallback = document.getElementById('profileCardFallbackIcon');
+                if (fallback) fallback.style.display = 'none';
+                if (icon) icon.style.display = 'none';
+                if (img) {
+                    img.src = URL.createObjectURL(file);
+                    img.style.display = 'inline-block';
+                }
+            }
+        });
+    }
 
     // Track initial server values to avoid saving unchanged data
     var initialValues = {};
@@ -243,7 +337,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (phoneEl) initialValues['phone'] = phoneEl.value.trim();
 
         // ── Autofill Detection via Polling ──
-        // Chrome applies :-webkit-autofill pseudo-class with a special background
         var autofillDetected = false;
         var pollCount = 0;
         var pollInterval = setInterval(function() {

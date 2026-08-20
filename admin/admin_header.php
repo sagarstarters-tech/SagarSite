@@ -125,7 +125,8 @@ $__admin_menu = require __DIR__ . '/config/menu.php';
                                          <img src="<?php echo htmlspecialchars($profile_pic_url); ?>"
                                               alt="Profile"
                                               class="rounded-circle shadow-sm"
-                                              style="width:36px;height:36px;object-fit:cover;border:2px solid #fff;">
+                                              style="width:36px;height:36px;object-fit:cover;border:2px solid #fff;"
+                                              onerror="this.outerHTML='<i class=\'fas fa-user-circle fa-2x text-muted\'></i>';">
                                      <?php else: ?>
                                          <i class="fas fa-user-circle fa-2x text-muted"></i>
                                      <?php endif; ?>
