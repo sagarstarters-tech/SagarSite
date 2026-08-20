@@ -32,7 +32,7 @@ class WebseoController {
     }
 
     /**
-     * Get SEO Audit Report.
+     * Get SEO Audit Report (Optimized single-query JOINs).
      */
     public function getSeoAudit() {
         $report = [
@@ -41,22 +41,44 @@ class WebseoController {
             'total_indexed' => 0
         ];
 
-        // Audit Pages
-        $pages = $this->conn->query("SELECT id, title, slug FROM pages");
-        while ($p = $pages->fetch_assoc()) {
-            $meta = $this->repo->getMetadata('page', $p['id']);
-            if (!$meta || empty($meta['meta_title'])) $report['missing_title'][] = 'Page: ' . $p['title'];
-            if (!$meta || empty($meta['meta_description'])) $report['missing_description'][] = 'Page: ' . $p['title'];
-            $report['total_indexed']++;
+        // 1. Audit Pages via single query
+        $pages = $this->conn->query("
+            SELECT p.id, p.title, m.meta_title, m.meta_description 
+            FROM pages p
+            LEFT JOIN seo_metadata m ON m.entity_type = 'page' AND m.entity_id = p.id
+        ");
+        if ($pages) {
+            while ($p = $pages->fetch_assoc()) {
+                $hasTitle = !empty(trim($p['meta_title'] ?? ''));
+                $hasDesc = !empty(trim($p['meta_description'] ?? ''));
+                if (!$hasTitle && count($report['missing_title']) < 50) {
+                    $report['missing_title'][] = 'Page: ' . ($p['title'] ?: 'ID #' . $p['id']);
+                }
+                if (!$hasDesc && count($report['missing_description']) < 50) {
+                    $report['missing_description'][] = 'Page: ' . ($p['title'] ?: 'ID #' . $p['id']);
+                }
+                $report['total_indexed']++;
+            }
         }
 
-        // Audit Products
-        $prods = $this->conn->query("SELECT id, name FROM products");
-        while ($p = $prods->fetch_assoc()) {
-            $meta = $this->repo->getMetadata('product', $p['id']);
-            if (!$meta || empty($meta['meta_title'])) $report['missing_title'][] = 'Product: ' . $p['name'];
-            if (!$meta || empty($meta['meta_description'])) $report['missing_description'][] = 'Product: ' . $p['name'];
-            $report['total_indexed']++;
+        // 2. Audit Products via single query
+        $prods = $this->conn->query("
+            SELECT pr.id, pr.name, m.meta_title, m.meta_description 
+            FROM products pr
+            LEFT JOIN seo_metadata m ON m.entity_type = 'product' AND m.entity_id = pr.id
+        ");
+        if ($prods) {
+            while ($p = $prods->fetch_assoc()) {
+                $hasTitle = !empty(trim($p['meta_title'] ?? ''));
+                $hasDesc = !empty(trim($p['meta_description'] ?? ''));
+                if (!$hasTitle && count($report['missing_title']) < 50) {
+                    $report['missing_title'][] = 'Product: ' . ($p['name'] ?: 'ID #' . $p['id']);
+                }
+                if (!$hasDesc && count($report['missing_description']) < 50) {
+                    $report['missing_description'][] = 'Product: ' . ($p['name'] ?: 'ID #' . $p['id']);
+                }
+                $report['total_indexed']++;
+            }
         }
 
         return $report;

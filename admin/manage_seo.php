@@ -342,8 +342,8 @@ $categories = $conn->query("SELECT id, name FROM categories ORDER BY name ASC");
 </div>
 
 <script>
-const pages = <?php echo json_encode($pages->fetch_all(MYSQLI_ASSOC)); ?>;
-const categories = <?php echo json_encode($categories->fetch_all(MYSQLI_ASSOC)); ?>;
+const pages = <?php echo json_encode(($pages && $pages instanceof mysqli_result) ? $pages->fetch_all(MYSQLI_ASSOC) : []); ?>;
+const categories = <?php echo json_encode(($categories && $categories instanceof mysqli_result) ? $categories->fetch_all(MYSQLI_ASSOC) : []); ?>;
 
 function toggleEntityId() {
     const type = document.getElementById('entityType').value;
