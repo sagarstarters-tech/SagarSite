@@ -512,8 +512,8 @@ include 'includes/header.php';
                     
                     <?php if ($phonepe_enabled): ?>
                     <div class="mb-3">
-                        <div class="form-check border rounded p-3 bg-light">
-                            <input class="form-check-input ms-1" type="radio" name="payment_method" id="pay_phonepe" value="phonepe" required <?php echo !$cod_enabled ? 'checked' : ''; ?> onchange="updatePaymentUI()">
+                        <div class="form-check border rounded p-3 bg-light" style="cursor: pointer;" onclick="var r = document.getElementById('pay_phonepe'); if(r){ r.checked = true; updatePaymentUI(); }">
+                            <input class="form-check-input ms-1" type="radio" name="payment_method" id="pay_phonepe" value="phonepe" required <?php echo $phonepe_enabled ? 'checked' : ''; ?> onchange="updatePaymentUI()">
                             <label class="form-check-label ms-2 fw-bold" for="pay_phonepe">
                                 Pay Online via PhonePe
                             </label>
@@ -525,8 +525,8 @@ include 'includes/header.php';
                     <?php if ($cod_enabled): ?>
                         <?php if ($cod_allowed_for_all && !$cod_is_blacklisted): ?>
                         <div class="mb-3">
-                            <div class="form-check border rounded p-3 bg-light">
-                                <input class="form-check-input ms-1" type="radio" name="payment_method" id="pay_cod" value="cod" required <?php echo !$phonepe_enabled ? 'checked' : ''; ?> onchange="updatePaymentUI()">
+                            <div class="form-check border rounded p-3 bg-light" style="cursor: pointer;" onclick="var r = document.getElementById('pay_cod'); if(r){ r.checked = true; updatePaymentUI(); }">
+                                <input class="form-check-input ms-1" type="radio" name="payment_method" id="pay_cod" value="cod" required <?php echo (!$phonepe_enabled && $cod_enabled) ? 'checked' : ''; ?> onchange="updatePaymentUI()">
                                 <label class="form-check-label ms-2 fw-bold" for="pay_cod">
                                     Cash On Delivery (COD)
                                     <?php if ($is_partial_cod): ?>
@@ -558,7 +558,7 @@ include 'includes/header.php';
                                         </div>
                                         <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
                                             <span class="text-muted small fw-semibold">
-                                                <i class="fas fa-mobile-alt me-1 text-primary"></i>
+                                                 <i class="fas fa-mobile-alt me-1 text-primary"></i>
                                                 Advance via PhonePe (<?php echo $cod_advance_pct; ?>%)
                                             </span>
                                             <span class="fw-bold text-primary"><?php echo $global_currency; ?><?php echo number_format($advance_amount, 2); ?></span>
@@ -643,7 +643,7 @@ include 'includes/header.php';
                         <?php echo htmlspecialchars($shippingCalc['shipping_metadata']['message']); ?>
                     </div>
                     <!-- COD Charges Line (shown only when COD selected) -->
-                    <div id="cod_charge_sidebar" class="d-flex justify-content-between mb-2" style="display:none;">
+                    <div id="cod_charge_sidebar" class="justify-content-between mb-2 d-none">
                         <span class="text-muted"><i class="fas fa-money-bill-wave me-1"></i>COD Charges</span>
                         <span id="cod_charge_value" class="<?php echo $cod_charge_is_free ? 'text-success fw-bold' : ''; ?>">
                             <?php if ($cod_charge_is_free): ?>
@@ -692,8 +692,16 @@ function updatePaymentUI() {
 
     var isCodSelected = codRadio ? codRadio.checked : false;
 
-    // COD charge line visibility
-    if (codChargeSb) codChargeSb.style.display = isCodSelected ? '' : 'none';
+    // COD charge line visibility in sidebar
+    if (codChargeSb) {
+        if (isCodSelected) {
+            codChargeSb.classList.remove('d-none');
+            codChargeSb.classList.add('d-flex');
+        } else {
+            codChargeSb.classList.remove('d-flex');
+            codChargeSb.classList.add('d-none');
+        }
+    }
 
     // Update grand total display
     if (grandDisplay) {
@@ -705,8 +713,8 @@ function updatePaymentUI() {
     }
 
     <?php if ($is_partial_cod): ?>
-    if (partialInfo) partialInfo.style.display = isCodSelected ? '' : 'none';
-    if (sidebarInfo) sidebarInfo.style.display = isCodSelected ? '' : 'none';
+    if (partialInfo) partialInfo.style.display = isCodSelected ? 'block' : 'none';
+    if (sidebarInfo) sidebarInfo.style.display = isCodSelected ? 'block' : 'none';
     if (placeBtn) {
         placeBtn.innerHTML = isCodSelected
             ? '<i class="fas fa-mobile-alt me-2"></i>Pay Advance &amp; Confirm COD Order'
