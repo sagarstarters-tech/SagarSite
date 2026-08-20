@@ -321,25 +321,28 @@ if (isset($product['slug'])) {
     <link rel="preload" as="image" href="<?php echo htmlspecialchars($_lcp_hero_img_url); ?>" fetchpriority="high" decoding="async">
     <?php endif; ?>
 
-    <!-- Google Fonts with non-blocking load & font-display:swap -->
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght@300;400;500;600&display=swap">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght@300;400;500;600&display=swap" media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght@300;400;500;600&display=swap"></noscript>
+    <!-- Google Fonts with native font-display:swap -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght@300;400;500;600&display=swap">
 
-    <!-- MDBootstrap Core UI CSS — Non-blocking with preload -->
-    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.css"></noscript>
+    <!-- Core UI & Layout Framework (Synchronous for Zero CLS) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.css">
+    <link rel="stylesheet" href="<?php echo ASSETS_URL; ?>/css/hero-slider-style.css?v=1.5">
 
-    <!-- Font Awesome — non-render-blocking with layout stability -->
-    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"></noscript>
+    <!-- Critical Layout Dimensions (Prevents any Cumulative Layout Shift) -->
     <style>
         .fa, .fas, .far, .fab, .fa-solid, .fa-regular, .fa-brands { display: inline-block; width: 1em; height: 1em; line-height: 1; vertical-align: -0.125em; }
+        .hero-slider-wrapper { width: 100%; min-height: 380px; height: 380px; position: relative; overflow: hidden; background: #0f172a; }
+        @media (min-width: 769px) { .hero-slider-wrapper { min-height: 460px; height: 460px; } }
+        @media (min-width: 1025px) { .hero-slider-wrapper { min-height: 560px; height: 560px; } }
+        .hero-bg img { width: 100%; height: 100%; object-fit: cover; object-position: center center; }
+        .category-stage { min-height: 180px; width: 100%; aspect-ratio: 260 / 180; }
+        .product-media-stage { min-height: 250px; width: 100%; aspect-ratio: 1 / 1; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 60px; z-index: 1030; }
     </style>
 
-    <!-- Preload hero slider CSS (above fold) -->
-    <link rel="preload" href="<?php echo ASSETS_URL; ?>/css/hero-slider-style.css?v=1.5" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link href="<?php echo ASSETS_URL; ?>/css/hero-slider-style.css?v=1.5" rel="stylesheet"></noscript>
+    <!-- Font Awesome — non-render-blocking -->
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"></noscript>
 
     <!-- Custom Theme & App CSS (Critical) -->
     <link href="<?php echo ASSETS_URL; ?>/css/style.css?v=<?php echo file_exists(__DIR__ . '/../assets/css/style.css') ? filemtime(__DIR__ . '/../assets/css/style.css') : '2.0'; ?>" rel="stylesheet">
