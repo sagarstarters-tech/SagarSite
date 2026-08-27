@@ -15,23 +15,25 @@ if (!function_exists('get_home_cfg')) {
 }
 
 // ── 1. Fetch Categories with Product Counts & Fallbacks ────────────────────────
+$cats_limit = intval(get_home_cfg('home_cats_count', '8'));
+$cats_limit_sql = ($cats_limit > 0) ? "LIMIT $cats_limit" : "";
 $cats_sql = "SELECT c.*, 
              (SELECT p.image FROM products p WHERE p.category_id = c.id AND p.image != '' ORDER BY p.id DESC LIMIT 1) as product_fallback_image,
              (SELECT COUNT(*) FROM products p WHERE p.category_id = c.id) as product_count 
              FROM categories c 
-             ORDER BY c.id ASC";
+             ORDER BY c.id ASC $cats_limit_sql";
 $cats = $conn->query($cats_sql);
 
 // ── 2. Fetch Trending / Featured Products ──────────────────────────────────────
 $prods_limit = intval(get_home_cfg('home_prods_count', '12'));
-if ($prods_limit < 4 || $prods_limit > 36) $prods_limit = 12;
+$prods_limit_sql = ($prods_limit > 0) ? "LIMIT $prods_limit" : "";
 
 $prods_sql = "SELECT p.*, c.name as category_name, c.slug as category_slug 
               FROM products p 
               LEFT JOIN categories c ON p.category_id = c.id 
               WHERE p.is_trending = 1 
               ORDER BY p.id DESC 
-              LIMIT $prods_limit";
+              $prods_limit_sql";
 $prods = $conn->query($prods_sql);
 
 // Fallback to recent products if no trending products exist
@@ -40,7 +42,7 @@ if (!$prods || $prods->num_rows === 0) {
                   FROM products p 
                   LEFT JOIN categories c ON p.category_id = c.id 
                   ORDER BY p.id DESC 
-                  LIMIT $prods_limit";
+                  $prods_limit_sql";
     $prods = $conn->query($prods_sql);
 }
 

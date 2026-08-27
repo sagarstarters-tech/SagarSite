@@ -110,10 +110,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         $conn->query("DELETE FROM categories WHERE id=$id");
         $success = "Category deleted successfully.";
+    } elseif ($action === 'update_display_settings') {
+        $cats_count = isset($_POST['home_cats_count']) ? intval($_POST['home_cats_count']) : 8;
+        if ($cats_count < 0 || $cats_count > 50) $cats_count = 8;
+        $safe_val = $conn->real_escape_string((string)$cats_count);
+        $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('home_cats_count', '$safe_val') ON DUPLICATE KEY UPDATE setting_value='$safe_val'");
+        $global_settings['home_cats_count'] = (string)$cats_count;
+        $success = "Homepage Category display limit updated to " . ($cats_count == 0 ? "All Categories" : "$cats_count Categories") . " successfully!";
     }
 }
 
 $categories_res = $conn->query("SELECT * FROM categories ORDER BY id DESC");
+$current_home_cats_count = isset($global_settings['home_cats_count']) && $global_settings['home_cats_count'] !== '' ? $global_settings['home_cats_count'] : '8';
 
 // Fetch SEO metadata for categories
 $category_seo = [];
@@ -166,6 +174,22 @@ if ($seo_q) {
                 </div>
                 <h3 class="fw-bold mb-0 text-white">Category Management Hub</h3>
             </div>
+            <!-- Homepage Category Limit Control -->
+            <form method="POST" class="d-flex align-items-center gap-2 bg-white bg-opacity-10 p-2 rounded-3 border border-white border-opacity-25 flex-wrap">
+                <input type="hidden" name="action" value="update_display_settings">
+                <label class="small text-white fw-bold mb-0 text-nowrap"><i class="fas fa-layer-group me-1 text-warning"></i> Show on Homepage:</label>
+                <select name="home_cats_count" class="form-select form-select-sm border-0 fw-bold shadow-sm" style="width: auto; min-width: 150px; background: #ffffff; color: #1e293b;">
+                    <option value="4" <?php echo $current_home_cats_count == '4' ? 'selected' : ''; ?>>4 Categories</option>
+                    <option value="6" <?php echo $current_home_cats_count == '6' ? 'selected' : ''; ?>>6 Categories</option>
+                    <option value="8" <?php echo $current_home_cats_count == '8' ? 'selected' : ''; ?>>8 Categories (Default)</option>
+                    <option value="12" <?php echo $current_home_cats_count == '12' ? 'selected' : ''; ?>>12 Categories</option>
+                    <option value="16" <?php echo $current_home_cats_count == '16' ? 'selected' : ''; ?>>16 Categories</option>
+                    <option value="0" <?php echo $current_home_cats_count == '0' ? 'selected' : ''; ?>>All Categories</option>
+                </select>
+                <button type="submit" class="btn btn-sm btn-primary px-3 fw-bold rounded-2 text-nowrap shadow-sm">
+                    <i class="fas fa-save me-1"></i> Save
+                </button>
+            </form>
         </div>
     </div>
 

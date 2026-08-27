@@ -37,6 +37,7 @@ $default_keys = [
     'home_cats_badge'     => 'EXPLORE CATALOG',
     'home_cats_title'     => 'Shop by Category',
     'home_cats_subtitle'  => 'Industrial motor starters, submersible controllers, star delta panels & stabilizers',
+    'home_cats_count'     => '8',
     'home_cats_btn_text'  => 'View All Categories',
 
     // 3. Featured / Trending Products
@@ -307,10 +308,17 @@ $active_tab = $_GET['tab'] ?? 'trust';
                             <input type="text" name="home_cats_title" class="form-control" 
                                    value="<?php echo htmlspecialchars(get_home_setting('home_cats_title', $default_keys['home_cats_title'])); ?>" placeholder="Shop by Category">
                         </div>
-                        <div class="col-md-8">
-                            <label class="form-label fw-bold">Section Subtitle / Description</label>
-                            <input type="text" name="home_cats_subtitle" class="form-control" 
-                                   value="<?php echo htmlspecialchars(get_home_setting('home_cats_subtitle', $default_keys['home_cats_subtitle'])); ?>" placeholder="Industrial motor starters, submersible controllers...">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Categories to Display</label>
+                            <select name="home_cats_count" class="form-select">
+                                <?php $catCnt = get_home_setting('home_cats_count', $default_keys['home_cats_count']); ?>
+                                <option value="4" <?php echo $catCnt == '4' ? 'selected' : ''; ?>>4 Categories</option>
+                                <option value="6" <?php echo $catCnt == '6' ? 'selected' : ''; ?>>6 Categories</option>
+                                <option value="8" <?php echo $catCnt == '8' ? 'selected' : ''; ?>>8 Categories (Default)</option>
+                                <option value="12" <?php echo $catCnt == '12' ? 'selected' : ''; ?>>12 Categories</option>
+                                <option value="16" <?php echo $catCnt == '16' ? 'selected' : ''; ?>>16 Categories</option>
+                                <option value="0" <?php echo $catCnt == '0' ? 'selected' : ''; ?>>All Categories</option>
+                            </select>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-bold">View All Button Label</label>

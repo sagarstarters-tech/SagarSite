@@ -444,6 +444,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['flash_success'] = "Product deleted successfully.";
         header("Location: manage_products.php?action=list");
         exit;
+    } elseif ($action === 'update_display_settings') {
+        $prods_count = isset($_POST['home_prods_count']) ? intval($_POST['home_prods_count']) : 12;
+        if ($prods_count < 0 || $prods_count > 60) $prods_count = 12;
+        $safe_val = $conn->real_escape_string((string)$prods_count);
+        $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('home_prods_count', '$safe_val') ON DUPLICATE KEY UPDATE setting_value='$safe_val'");
+        $global_settings['home_prods_count'] = (string)$prods_count;
+        $_SESSION['flash_success'] = "Homepage Featured Products display limit updated to " . ($prods_count == 0 ? "All Trending Products" : "$prods_count Products") . " successfully!";
+        header("Location: manage_products.php?action=list");
+        exit;
     }
 }
 
@@ -538,9 +547,12 @@ if ($seo_q) {
 
 <div class="container-fluid py-3">
 
+<?php
+$current_home_prods_count = isset($global_settings['home_prods_count']) && $global_settings['home_prods_count'] !== '' ? $global_settings['home_prods_count'] : '12';
+?>
     <!-- Hero Header Banner -->
     <div class="mp-hero">
-        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+        <div class="d-flex flex-column flex-xl-row align-items-xl-center justify-content-between gap-3">
             <div>
                 <div class="d-flex align-items-center gap-2 mb-1">
                     <span class="badge bg-primary bg-opacity-25 text-white border border-primary border-opacity-50 rounded-pill px-3 py-1 small">
@@ -551,6 +563,25 @@ if ($seo_q) {
                 <h3 class="fw-bold mb-0 text-white">Product Catalog Management</h3>
             </div>
             <div class="d-flex align-items-center gap-2 flex-wrap">
+                <!-- Homepage Featured Limit Selector -->
+                <form method="POST" class="d-flex align-items-center gap-2 bg-white bg-opacity-10 p-2 rounded-3 border border-white border-opacity-25 me-1">
+                    <input type="hidden" name="action" value="update_display_settings">
+                    <label class="small text-white fw-bold mb-0 text-nowrap"><i class="fas fa-fire me-1 text-danger"></i> Homepage Featured:</label>
+                    <select name="home_prods_count" class="form-select form-select-sm border-0 fw-bold shadow-sm" style="width: auto; min-width: 140px; background: #ffffff; color: #1e293b;">
+                        <option value="4" <?php echo $current_home_prods_count == '4' ? 'selected' : ''; ?>>4 Products</option>
+                        <option value="8" <?php echo $current_home_prods_count == '8' ? 'selected' : ''; ?>>8 Products</option>
+                        <option value="12" <?php echo $current_home_prods_count == '12' ? 'selected' : ''; ?>>12 Products (Default)</option>
+                        <option value="16" <?php echo $current_home_prods_count == '16' ? 'selected' : ''; ?>>16 Products</option>
+                        <option value="20" <?php echo $current_home_prods_count == '20' ? 'selected' : ''; ?>>20 Products</option>
+                        <option value="24" <?php echo $current_home_prods_count == '24' ? 'selected' : ''; ?>>24 Products</option>
+                        <option value="36" <?php echo $current_home_prods_count == '36' ? 'selected' : ''; ?>>36 Products</option>
+                        <option value="0" <?php echo $current_home_prods_count == '0' ? 'selected' : ''; ?>>All Trending</option>
+                    </select>
+                    <button type="submit" class="btn btn-sm btn-primary px-3 fw-bold rounded-2 text-nowrap shadow-sm">
+                        <i class="fas fa-save me-1"></i> Save
+                    </button>
+                </form>
+
                 <a href="export_products.php" class="btn mp-btn-white px-3 py-2 rounded-3 d-flex align-items-center gap-2" title="Export Products to CSV">
                     <i class="fas fa-file-export text-success"></i>
                     <span>Export CSV</span>
