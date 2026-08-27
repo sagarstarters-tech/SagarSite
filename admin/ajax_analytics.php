@@ -15,10 +15,12 @@ require_once __DIR__ . '/core/AuthMiddleware.php';
 
 // Auth check (AJAX - no redirect, return 403)
 if (!AuthMiddleware::isAdmin()) {
+    session_write_close();
     http_response_code(403);
     echo json_encode(['error' => 'unauthorized']);
     exit;
 }
+session_write_close(); // Release session file lock immediately so AJAX polls never block page navigation!
 
 header('Content-Type: application/json');
 require_once __DIR__ . '/modules/AnalyticsService.php';

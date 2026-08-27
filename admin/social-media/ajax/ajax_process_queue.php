@@ -12,6 +12,7 @@ require_once BASE_PATH . '/admin/social-media/services/QueueProcessor.php';
 require_once BASE_PATH . '/admin/social-media/services/ScheduleRunner.php';
 
 AuthMiddleware::check($conn);
+session_write_close(); // Release session file lock immediately before running background tasks!
 
 try {
     $schedSummary = ['schedules_run' => 0, 'posts_queued' => 0];

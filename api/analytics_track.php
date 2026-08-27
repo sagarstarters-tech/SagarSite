@@ -37,7 +37,10 @@ require_once BASE_PATH . '/admin/modules/AnalyticsService.php';
 if (session_status() === PHP_SESSION_NONE) {
     include_once BASE_PATH . '/includes/session_setup.php';
 }
-if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin') {
+$isAdmin = (isset($_SESSION['role']) && $_SESSION['role'] === 'admin');
+session_write_close(); // Release session file lock immediately
+
+if ($isAdmin) {
     http_response_code(204);
     exit;
 }
