@@ -764,12 +764,23 @@ class AnalyticsService
             return $cached;
         }
 
-        // Call ip-api.com (free, server-side, no API key)
-        $ctx = stream_context_create(['http' => ['timeout' => 3, 'ignore_errors' => true]]);
+        // Call ip-api.com (server-side, fast cURL with strict 1s timeout)
         $url = 'http://ip-api.com/json/' . urlencode($ip) . '?fields=status,country,regionName,city';
 
         try {
-            $response = @file_get_contents($url, false, $ctx);
+            if (function_exists('curl_init')) {
+                $ch = curl_init($url);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 1);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 1);
+                curl_setopt($ch, CURLOPT_USERAGENT, 'SagarAnalytics/1.0');
+                $response = curl_exec($ch);
+                curl_close($ch);
+            } else {
+                $ctx = stream_context_create(['http' => ['timeout' => 1, 'ignore_errors' => true]]);
+                $response = @file_get_contents($url, false, $ctx);
+            }
+
             if ($response) {
                 $data = json_decode($response, true);
                 if (isset($data['status']) && $data['status'] === 'success') {
