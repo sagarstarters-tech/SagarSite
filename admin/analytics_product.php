@@ -31,7 +31,7 @@ $data = $analytics->getProductAnalytics($productId);
         <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
             <div>
                 <div class="d-flex align-items-center gap-2 mb-2">
-                    <a href="analytics.php" class="badge bg-white bg-opacity-15 text-white border border-white border-opacity-25 rounded-pill px-3 py-1 text-decoration-none small">
+                    <a href="analytics.php" class="badge rounded-pill px-3 py-2 text-decoration-none small d-inline-flex align-items-center gap-1" style="background: rgba(37, 99, 235, 0.25) !important; color: #ffffff !important; border: 1px solid rgba(59, 130, 246, 0.5) !important; font-weight: 600;">
                         <i class="fas fa-arrow-left me-1"></i> Analytics Hub
                     </a>
                     <span class="text-white-50 small"><i class="fas fa-tag me-1"></i> Product ID: #<?php echo $productId; ?></span>
