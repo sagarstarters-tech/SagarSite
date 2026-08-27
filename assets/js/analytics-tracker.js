@@ -238,11 +238,19 @@
         }
     }
 
-    // Run after DOM is ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
+    // ── Non-blocking Idle Initialization ───────────────────
+    function scheduleInit() {
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(init, { timeout: 2000 });
+        } else {
+            setTimeout(init, 200);
+        }
+    }
+
+    if (document.readyState === 'complete') {
+        scheduleInit();
     } else {
-        init();
+        window.addEventListener('load', scheduleInit, { once: true });
     }
 
 })();

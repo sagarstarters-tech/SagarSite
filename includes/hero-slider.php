@@ -63,7 +63,7 @@ $transition_type = $settings['transition_type'] ?? 'slide'; // fade, slide, zoom
                         <img src="<?php echo htmlspecialchars(resolve_image_url($slide['media_path'])); ?>" 
                              alt="<?php echo htmlspecialchars($slide['title'] ?: 'Hero Banner'); ?>" 
                              loading="<?php echo $slide_index === 0 ? 'eager' : 'lazy'; ?>"
-                             <?php if($slide_index === 0): ?>fetchpriority="high"<?php endif; ?>
+                             <?php if($slide_index === 0): ?>fetchpriority="high" sizes="100vw"<?php endif; ?>
                              decoding="async"
                              width="1920" height="700">
                     <?php elseif($slide['bg_type'] === 'video' && $slide['media_path']): ?>

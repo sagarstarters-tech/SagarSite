@@ -133,6 +133,7 @@ Options -Indexes
     ExpiresByType image/gif "access plus 1 year"
     ExpiresByType image/png "access plus 1 year"
     ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType image/avif "access plus 1 year"
     ExpiresByType image/svg+xml "access plus 1 year"
     ExpiresByType image/x-icon "access plus 1 year"
     # CSS & JS — 1 year (safe because files use ?v= versioning for cache-busting)
@@ -144,6 +145,7 @@ Options -Indexes
     ExpiresByType font/woff "access plus 1 year"
     ExpiresByType application/font-woff "access plus 1 year"
     ExpiresByType application/font-woff2 "access plus 1 year"
+    ExpiresByType application/json "access plus 1 hour"
     # HTML/PHP — no cache (dynamic content)
     ExpiresByType text/html "access plus 0 seconds"
     # Default

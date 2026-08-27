@@ -312,22 +312,17 @@ if (isset($product['slug'])) {
     <meta name="theme-color" content="#1e3c72">
     <link rel="apple-touch-icon" sizes="192x192" href="<?php echo ASSETS_URL; ?>/images/favicon_192.png">
 
-    <!-- Resource Preconnects & DNS Prefetch -->
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+    <!-- Resource Hints: Optimized & Deduped -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
 
     <!-- LCP Critical Image Preload (first hero slide = LCP element) -->
     <?php if (!empty($_lcp_hero_img_url) && strpos($_lcp_hero_img_url, 'placeholder') === false): ?>
     <link rel="preload" as="image" href="<?php echo htmlspecialchars($_lcp_hero_img_url); ?>" fetchpriority="high" decoding="async">
     <?php endif; ?>
 
-    <!-- Google Fonts — Non-blocking (layout dimensions locked in inline <style> above) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Google Fonts — Non-blocking with font-display: swap -->
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght@300;400;500;600&display=swap">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght@300;400;500;600&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght@300;400;500;600&display=swap"></noscript>
