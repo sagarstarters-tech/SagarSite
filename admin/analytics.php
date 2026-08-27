@@ -353,8 +353,8 @@ $admin_name = isset($_SESSION['name']) ? htmlspecialchars($_SESSION['name']) : '
                         <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-trophy text-warning me-2"></i> Top Viewed Products</h6>
                         <span class="small text-muted">Most popular items in your catalog</span>
                     </div>
-                    <a href="ajax_analytics_export.php?type=product_views&filter=<?php echo urlencode($filter); ?>&start=<?php echo urlencode($startDate); ?>&end=<?php echo urlencode($endDate); ?>" class="btn btn-sm btn-light border rounded-pill px-3 fw-semibold">
-                        <i class="fas fa-download me-1 text-muted"></i> CSV
+                    <a href="ajax_analytics_export.php?type=product_views&filter=<?php echo urlencode($filter); ?>&start=<?php echo urlencode($startDate); ?>&end=<?php echo urlencode($endDate); ?>" class="btn btn-sm btn-outline-secondary border rounded-pill px-3 fw-bold d-inline-flex align-items-center gap-1" style="font-size: 0.78rem; background: #f8fafc; color: #1e293b;">
+                        <i class="fas fa-file-csv text-success"></i> <span>CSV</span>
                     </a>
                 </div>
                 <div class="table-responsive">
@@ -365,7 +365,7 @@ $admin_name = isset($_SESSION['name']) ? htmlspecialchars($_SESSION['name']) : '
                                 <th>Product</th>
                                 <th>Views</th>
                                 <th>Unique</th>
-                                <th class="text-end">Detail</th>
+                                <th class="text-end">Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -380,8 +380,9 @@ $admin_name = isset($_SESSION['name']) ? htmlspecialchars($_SESSION['name']) : '
                                 <td><strong class="text-dark"><?php echo number_format($p['views']); ?></strong></td>
                                 <td class="text-muted"><?php echo number_format($p['unique_visitors']); ?></td>
                                 <td class="text-end">
-                                    <a href="analytics_product.php?id=<?php echo $p['product_id']; ?>" class="btn btn-sm btn-light border rounded-pill px-2" title="Inspect Product Analytics">
-                                        <i class="fas fa-chart-bar text-primary"></i>
+                                    <a href="analytics_product.php?id=<?php echo $p['product_id']; ?>" class="btn btn-sm btn-primary rounded-pill px-3 py-1 d-inline-flex align-items-center gap-1 shadow-sm text-white fw-bold" style="font-size: 0.75rem;" title="Inspect Product Analytics">
+                                        <i class="fas fa-chart-line"></i>
+                                        <span>View Stats</span>
                                     </a>
                                 </td>
                             </tr>
@@ -400,8 +401,8 @@ $admin_name = isset($_SESSION['name']) ? htmlspecialchars($_SESSION['name']) : '
                         <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-search text-info me-2"></i> Top Product Searches</h6>
                         <span class="small text-muted">What customers are typing in the search bar</span>
                     </div>
-                    <a href="ajax_analytics_export.php?type=searches&filter=<?php echo urlencode($filter); ?>&start=<?php echo urlencode($startDate); ?>&end=<?php echo urlencode($endDate); ?>" class="btn btn-sm btn-light border rounded-pill px-3 fw-semibold">
-                        <i class="fas fa-download me-1 text-muted"></i> CSV
+                    <a href="ajax_analytics_export.php?type=searches&filter=<?php echo urlencode($filter); ?>&start=<?php echo urlencode($startDate); ?>&end=<?php echo urlencode($endDate); ?>" class="btn btn-sm btn-outline-secondary border rounded-pill px-3 fw-bold d-inline-flex align-items-center gap-1" style="font-size: 0.78rem; background: #f8fafc; color: #1e293b;">
+                        <i class="fas fa-file-csv text-success"></i> <span>CSV</span>
                     </a>
                 </div>
                 <div class="table-responsive">
@@ -516,8 +517,8 @@ $admin_name = isset($_SESSION['name']) ? htmlspecialchars($_SESSION['name']) : '
             <div class="dash-card h-100 p-4">
                 <div class="d-flex align-items-center justify-content-between pb-3 border-bottom mb-3">
                     <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-globe text-primary me-2"></i> Traffic Sources</h6>
-                    <a href="ajax_analytics_export.php?type=visitors&filter=<?php echo urlencode($filter); ?>&start=<?php echo urlencode($startDate); ?>&end=<?php echo urlencode($endDate); ?>" class="btn btn-sm btn-light border rounded-pill px-2">
-                        <i class="fas fa-download text-muted"></i>
+                    <a href="ajax_analytics_export.php?type=visitors&filter=<?php echo urlencode($filter); ?>&start=<?php echo urlencode($startDate); ?>&end=<?php echo urlencode($endDate); ?>" class="btn btn-sm btn-outline-secondary border rounded-pill px-3 fw-bold d-inline-flex align-items-center gap-1" style="font-size: 0.78rem; background: #f8fafc; color: #1e293b;">
+                        <i class="fas fa-file-csv text-success"></i> <span>CSV</span>
                     </a>
                 </div>
                 <div class="table-responsive">
@@ -626,8 +627,8 @@ $admin_name = isset($_SESSION['name']) ? htmlspecialchars($_SESSION['name']) : '
                         <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-file-alt text-purple me-2"></i> Top Landing Pages</h6>
                         <span class="small text-muted">Most visited URLs on your store</span>
                     </div>
-                    <a href="ajax_analytics_export.php?type=page_views&filter=<?php echo urlencode($filter); ?>&start=<?php echo urlencode($startDate); ?>&end=<?php echo urlencode($endDate); ?>" class="btn btn-sm btn-light border rounded-pill px-3 fw-semibold">
-                        <i class="fas fa-download me-1 text-muted"></i> CSV
+                    <a href="ajax_analytics_export.php?type=page_views&filter=<?php echo urlencode($filter); ?>&start=<?php echo urlencode($startDate); ?>&end=<?php echo urlencode($endDate); ?>" class="btn btn-sm btn-outline-secondary border rounded-pill px-3 fw-bold d-inline-flex align-items-center gap-1" style="font-size: 0.78rem; background: #f8fafc; color: #1e293b;">
+                        <i class="fas fa-file-csv text-success"></i> <span>CSV</span>
                     </a>
                 </div>
                 <div class="table-responsive">
