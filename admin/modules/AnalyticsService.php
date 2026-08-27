@@ -384,27 +384,41 @@ class AnalyticsService
 
     public function getLiveVisitors(): array
     {
-        $threshold = (int)$this->getSetting('live_visitor_threshold', '300');
+        $threshold = (int)$this->getSetting('live_visitor_threshold', '120');
         $cutoff = date('Y-m-d H:i:s', time() - $threshold);
 
+        // Fetch distinct active visitors (deduplicated by visitor_uid, with their latest activity and page view)
         $stmt = $this->pdo->prepare("
-            SELECT v.id, v.device_type, v.browser, v.country, v.city, v.last_activity,
+            SELECT v.id, v.visitor_uid, v.device_type, v.browser, v.os, v.country, v.region, v.city,
+                   v.traffic_source, v.first_visit, v.last_activity,
+                   TIMESTAMPDIFF(SECOND, v.last_activity, NOW()) as seconds_ago,
                    pv.page_url, pv.page_title
             FROM analytics_visitors v
+            INNER JOIN (
+                SELECT visitor_uid, MAX(last_activity) as max_act
+                FROM analytics_visitors
+                WHERE last_activity >= ? AND is_bot = 0
+                GROUP BY visitor_uid
+            ) latest ON v.visitor_uid = latest.visitor_uid AND v.last_activity = latest.max_act
             LEFT JOIN analytics_page_views pv ON pv.visitor_id = v.id
                 AND pv.id = (SELECT MAX(pv2.id) FROM analytics_page_views pv2 WHERE pv2.visitor_id = v.id)
             WHERE v.last_activity >= ? AND v.is_bot = 0
             ORDER BY v.last_activity DESC
             LIMIT 50
         ");
-        $stmt->execute([$cutoff]);
+        $stmt->execute([$cutoff, $cutoff]);
         $visitors = $stmt->fetchAll();
 
-        $stmt = $this->pdo->prepare("SELECT COUNT(DISTINCT id) FROM analytics_visitors WHERE last_activity >= ? AND is_bot = 0");
+        // Accurate count of unique live human visitors
+        $stmt = $this->pdo->prepare("SELECT COUNT(DISTINCT visitor_uid) FROM analytics_visitors WHERE last_activity >= ? AND is_bot = 0");
         $stmt->execute([$cutoff]);
         $count = (int)$stmt->fetchColumn();
 
-        return ['count' => $count, 'visitors' => $visitors];
+        return [
+            'count'     => $count,
+            'threshold' => $threshold,
+            'visitors'  => $visitors
+        ];
     }
 
     // ── Product Analytics Detail ─────────────────────────────

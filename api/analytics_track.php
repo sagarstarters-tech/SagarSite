@@ -11,6 +11,16 @@
  * ============================================================
  */
 
+// Handle preflight OPTIONS
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    $origin = $_SERVER['HTTP_ORIGIN'] ?? '*';
+    header("Access-Control-Allow-Origin: $origin");
+    header("Access-Control-Allow-Methods: POST, OPTIONS");
+    header("Access-Control-Allow-Headers: Content-Type");
+    http_response_code(200);
+    exit;
+}
+
 // Fast-fail on non-POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -22,6 +32,15 @@ define('BASE_PATH', dirname(__DIR__));
 require_once BASE_PATH . '/config/config.php';
 require_once BASE_PATH . '/config/DbConnection.php';
 require_once BASE_PATH . '/admin/modules/AnalyticsService.php';
+
+// Exclude logged-in admin from customer telemetry
+if (session_status() === PHP_SESSION_NONE) {
+    include_once BASE_PATH . '/includes/session_setup.php';
+}
+if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin') {
+    http_response_code(204);
+    exit;
+}
 
 // ── Check if tracking is enabled ─────────────────────────────
 $pdo = DbConnection::getInstance();

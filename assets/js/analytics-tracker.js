@@ -1,25 +1,31 @@
 /**
  * ============================================================
- *  Sagar Starter's — First-Party Analytics Tracker
+ *  Sagar Starter's — First-Party Analytics & Live Telemetry
  *  Location: /assets/js/analytics-tracker.js
  * ============================================================
  *  Lightweight, privacy-conscious, async tracking script.
+ *  - Real-time heartbeat (every 25s) with instant leave/pagehide detection
  *  - Anonymous first-party cookie (no cross-site tracking)
- *  - sendBeacon for fire-and-forget delivery
- *  - Duplicate event protection
- *  - Never blocks page rendering
+ *  - sendBeacon with keepalive fetch fallback
+ *  - Non-blocking, zero-overhead execution
  * ============================================================
  */
 (function() {
     'use strict';
 
-    // ── Config ───────────────────────────────────────────────
-    var BASE_URL = (window.__ssAnalytics && window.__ssAnalytics.baseUrl) || '';
+    // ── Guard: Skip if tracking disabled or admin user ───────
+    if (window.__ssAnalytics && window.__ssAnalytics.disabled) {
+        return;
+    }
+
+    // ── Config & Endpoint Resolution ─────────────────────────
+    var rawBase = (window.__ssAnalytics && window.__ssAnalytics.baseUrl) || '';
+    var BASE_URL = rawBase ? rawBase.replace(/\/+$/, '') : '';
     var TRACK_URL     = BASE_URL + '/api/analytics_track.php';
     var HEARTBEAT_URL = BASE_URL + '/api/analytics_heartbeat.php';
     var COOKIE_NAME   = '_ss_uid';
     var COOKIE_DAYS   = 365;
-    var HEARTBEAT_SEC = 60;
+    var HEARTBEAT_SEC = 25; // 25 seconds for responsive live tracking
 
     // ── Cookie Helpers ───────────────────────────────────────
     function getCookie(name) {
@@ -43,7 +49,6 @@
             window.crypto.getRandomValues(arr);
             return Array.from(arr, function(b) { return b.toString(16).padStart(2, '0'); }).join('');
         }
-        // Fallback
         var id = '';
         for (var i = 0; i < 32; i++) {
             id += Math.floor(Math.random() * 16).toString(16);
@@ -74,48 +79,103 @@
     var sentEvents = {};
     function isDuplicate(eventKey) {
         var now = Date.now();
-        if (sentEvents[eventKey] && (now - sentEvents[eventKey]) < 5000) {
+        if (sentEvents[eventKey] && (now - sentEvents[eventKey]) < 4000) {
             return true;
         }
         sentEvents[eventKey] = now;
         return false;
     }
 
-    // ── Send Event ───────────────────────────────────────────
+    // ── Send Analytics Event ─────────────────────────────────
     function sendEvent(data) {
         data.visitor_uid = visitorUid;
         data.session_id  = sessionId;
         data.referrer    = document.referrer || '';
 
         var json = JSON.stringify(data);
+        var sent = false;
 
-        // Prefer sendBeacon (non-blocking, works on page unload)
+        // 1. Try sendBeacon
         if (navigator.sendBeacon) {
             try {
-                navigator.sendBeacon(TRACK_URL, new Blob([json], {type: 'application/json'}));
-                return;
+                sent = navigator.sendBeacon(TRACK_URL, new Blob([json], { type: 'application/json' }));
+            } catch (e) {
+                sent = false;
+            }
+        }
+
+        // 2. Fallback: fetch with keepalive
+        if (!sent && window.fetch) {
+            try {
+                fetch(TRACK_URL, {
+                    method: 'POST',
+                    body: json,
+                    headers: { 'Content-Type': 'application/json' },
+                    keepalive: true
+                }).catch(function() {});
             } catch (e) {}
         }
-
-        // Fallback: fetch with keepalive
-        try {
-            fetch(TRACK_URL, {
-                method: 'POST',
-                body: json,
-                headers: {'Content-Type': 'application/json'},
-                keepalive: true
-            }).catch(function() {});
-        } catch (e) {}
     }
 
-    // ── Get Search Context ───────────────────────────────────
-    function getSearchFromUrl() {
-        try {
-            var params = new URLSearchParams(window.location.search);
-            return params.get('search') || '';
-        } catch (e) {
-            return '';
+    // ── Heartbeat & Live Telemetry ───────────────────────────
+    function sendHeartbeat(action) {
+        var act = action || 'heartbeat';
+        var payload = JSON.stringify({
+            visitor_uid: visitorUid,
+            session_id:  sessionId,
+            action:      act
+        });
+
+        var sent = false;
+        if (navigator.sendBeacon) {
+            try {
+                sent = navigator.sendBeacon(HEARTBEAT_URL, new Blob([payload], { type: 'application/json' }));
+            } catch (e) {
+                sent = false;
+            }
         }
+
+        if (!sent && window.fetch) {
+            try {
+                fetch(HEARTBEAT_URL, {
+                    method: 'POST',
+                    body: payload,
+                    headers: { 'Content-Type': 'application/json' },
+                    keepalive: true
+                }).catch(function() {});
+            } catch (e) {}
+        }
+    }
+
+    var heartbeatInterval = null;
+    function startHeartbeat() {
+        if (heartbeatInterval) return;
+
+        // Periodic heartbeat ping while tab is active and visible
+        heartbeatInterval = setInterval(function() {
+            if (!document.hidden) {
+                sendHeartbeat('heartbeat');
+            }
+        }, HEARTBEAT_SEC * 1000);
+
+        // Visibility Change Handler
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                // User minimized or switched away from the tab
+                sendHeartbeat('leave');
+            } else {
+                // User came back to the tab — restore active live status immediately
+                sendHeartbeat('heartbeat');
+            }
+        });
+
+        // Tab Close / Page Unload Handlers
+        window.addEventListener('pagehide', function() {
+            sendHeartbeat('leave');
+        });
+        window.addEventListener('beforeunload', function() {
+            sendHeartbeat('leave');
+        });
     }
 
     // ── Track Page View ──────────────────────────────────────
@@ -143,7 +203,6 @@
         var key = 'prodview:' + productId;
         if (isDuplicate(key)) return;
 
-        // Check if this came from a search
         var fromSearch = '';
         try {
             var ref = document.referrer;
@@ -153,7 +212,6 @@
             }
         } catch (e) {}
 
-        // Also check sessionStorage for last search
         if (!fromSearch) {
             try {
                 fromSearch = sessionStorage.getItem('_ss_last_search') || '';
@@ -183,7 +241,6 @@
         var key = 'search:' + query;
         if (isDuplicate(key)) return;
 
-        // Store last search for search-to-product tracking
         try {
             sessionStorage.setItem('_ss_last_search', query);
         } catch (e) {}
@@ -197,35 +254,6 @@
         });
     }
 
-    // ── Heartbeat (Live Visitors) ────────────────────────────
-    var heartbeatInterval = null;
-    function startHeartbeat() {
-        if (heartbeatInterval) return;
-
-        function beat() {
-            if (document.hidden) return; // Don't beat when tab is hidden
-            var data = JSON.stringify({
-                visitor_uid: visitorUid,
-                session_id: sessionId
-            });
-            if (navigator.sendBeacon) {
-                try {
-                    navigator.sendBeacon(HEARTBEAT_URL, new Blob([data], {type: 'application/json'}));
-                } catch (e) {}
-            }
-        }
-
-        heartbeatInterval = setInterval(beat, HEARTBEAT_SEC * 1000);
-
-        // Stop heartbeat when tab is hidden, resume when visible
-        document.addEventListener('visibilitychange', function() {
-            if (document.hidden) {
-                // Send one last beat
-                beat();
-            }
-        });
-    }
-
     // ── Initialize ───────────────────────────────────────────
     function init() {
         try {
@@ -233,24 +261,24 @@
             trackProductView();
             trackSearch();
             startHeartbeat();
-        } catch (e) {
-            // Analytics must never break the page
-        }
+        } catch (e) {}
     }
 
-    // ── Non-blocking Idle Initialization ───────────────────
-    function scheduleInit() {
-        if ('requestIdleCallback' in window) {
-            requestIdleCallback(init, { timeout: 2000 });
-        } else {
-            setTimeout(init, 200);
-        }
-    }
-
+    // ── Non-blocking Idle / Load Initialization ───────────────
     if (document.readyState === 'complete') {
-        scheduleInit();
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(init, { timeout: 1500 });
+        } else {
+            setTimeout(init, 100);
+        }
     } else {
-        window.addEventListener('load', scheduleInit, { once: true });
+        window.addEventListener('load', function() {
+            if ('requestIdleCallback' in window) {
+                requestIdleCallback(init, { timeout: 1500 });
+            } else {
+                setTimeout(init, 100);
+            }
+        }, { once: true });
     }
 
 })();

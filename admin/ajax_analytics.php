@@ -4,7 +4,7 @@
  *  Analytics AJAX Endpoint (Admin)
  *  Location: /admin/ajax_analytics.php
  * ============================================================
- *  Returns JSON data for dashboard widgets (live count, etc.)
+ *  Returns JSON data for dashboard widgets (live count, live stream, etc.)
  *  Requires admin authentication.
  * ============================================================
  */
@@ -29,7 +29,21 @@ $analytics = new AnalyticsService();
 switch ($action) {
     case 'live_count':
         $live = $analytics->getLiveVisitors();
-        echo json_encode(['count' => $live['count']]);
+        echo json_encode([
+            'success' => true,
+            'count'   => $live['count']
+        ]);
+        break;
+
+    case 'live_stream':
+        $live = $analytics->getLiveVisitors();
+        echo json_encode([
+            'success'     => true,
+            'count'       => $live['count'],
+            'threshold'   => $live['threshold'] ?? 120,
+            'visitors'    => $live['visitors'],
+            'server_time' => date('H:i:s')
+        ]);
         break;
 
     case 'summary':

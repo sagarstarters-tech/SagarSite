@@ -617,7 +617,120 @@ $admin_name = isset($_SESSION['name']) ? htmlspecialchars($_SESSION['name']) : '
     </div>
 
     <!-- ═══════════════════════════════════════════════════════ -->
-    <!--  10. TOP PAGES & RECENT ACTIVITY                            -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!--  10. REAL-TIME LIVE ACTIVE VISITORS & TELEMETRY              -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="an-live-card p-4">
+                <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 pb-3 border-bottom mb-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="an-radar-pulse"></div>
+                        <div>
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <h6 class="fw-bold mb-0 text-dark fs-6"><i class="fas fa-satellite-dish text-success me-2"></i> Real-Time Live Visitors Telemetry</h6>
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-1 fw-bold" id="liveCardCountBadge">
+                                    <span class="an-live-dot me-1"></span> <span id="liveCardCount"><?php echo $liveData['count']; ?> Active Now</span>
+                                </span>
+                            </div>
+                            <span class="small text-muted">Live visitors on your store with real-time location, device, and active browsing page (auto-syncs every 15s)</span>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <span class="small text-muted me-2" id="lastLiveSyncTime"><i class="far fa-clock me-1"></i> Synced: <?php echo date('h:i:s A'); ?></span>
+                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 d-flex align-items-center gap-1 shadow-sm" id="btnRefreshLive">
+                            <i class="fas fa-sync-alt" id="refreshLiveIcon"></i> <span>Refresh Live</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
+                    <table class="an-table align-middle" id="liveVisitorsTable">
+                        <thead>
+                            <tr>
+                                <th>Active Visitor</th>
+                                <th>Location</th>
+                                <th>Device & Platform</th>
+                                <th>Current Page</th>
+                                <th>Traffic Source</th>
+                                <th class="text-end">Last Activity</th>
+                            </tr>
+                        </thead>
+                        <tbody id="liveVisitorsListBody">
+                        <?php if (empty($liveData['visitors'])): ?>
+                            <tr id="liveEmptyRow">
+                                <td colspan="6">
+                                    <div class="an-live-empty-state">
+                                        <div class="an-radar-scanner">
+                                            <i class="fas fa-satellite-dish text-success fs-5"></i>
+                                        </div>
+                                        <h6 class="fw-bold text-dark mb-1">No Visitors Active Right Now</h6>
+                                        <p class="small text-muted mb-0">Real-time telemetry is monitoring your store. When visitors browse, their live location, device, and active page will appear here instantly.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php else: foreach ($liveData['visitors'] as $lv): ?>
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="an-live-dot"></span>
+                                        <div>
+                                            <span class="fw-bold text-dark font-monospace small">#<?php echo substr($lv['visitor_uid'], 0, 8); ?></span>
+                                            <div class="text-muted" style="font-size: 0.7rem;">Session #<?php echo $lv['id']; ?></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="an-location-badge">
+                                        <i class="fas fa-map-marker-alt text-danger me-1"></i>
+                                        <span class="fw-bold"><?php echo htmlspecialchars($lv['city'] ?: ($lv['country'] ? 'City in ' . $lv['country'] : 'Unknown City')); ?></span>
+                                    </div>
+                                    <div class="small text-muted ms-3"><?php echo htmlspecialchars(implode(', ', array_filter([$lv['region'], $lv['country']]))) ?: '—'; ?></div>
+                                </td>
+                                <td>
+                                    <span class="an-device-badge">
+                                        <i class="fas <?php echo ($lv['device_type'] === 'mobile' ? 'fa-mobile-alt text-primary' : ($lv['device_type'] === 'tablet' ? 'fa-tablet-alt text-warning' : 'fa-desktop text-success')); ?>"></i>
+                                        <?php echo htmlspecialchars(($lv['browser'] ?: 'Browser') . ' on ' . ($lv['os'] ?: 'OS')); ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <?php if (!empty($lv['page_url'])): ?>
+                                        <a href="<?php echo htmlspecialchars((defined('SITE_URL') ? SITE_URL : '') . $lv['page_url']); ?>" target="_blank" class="an-page-link" title="<?php echo htmlspecialchars($lv['page_title'] ?: $lv['page_url']); ?>">
+                                            <i class="fas fa-external-link-alt small text-muted me-1"></i>
+                                            <?php echo htmlspecialchars($lv['page_title'] ? (mb_strlen($lv['page_title']) > 32 ? mb_substr($lv['page_title'], 0, 30) . '...' : $lv['page_title']) : $lv['page_url']); ?>
+                                        </a>
+                                        <div class="text-muted" style="font-size: 0.7rem; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><?php echo htmlspecialchars($lv['page_url']); ?></div>
+                                    <?php else: ?>
+                                        <span class="text-muted small">—</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <span class="an-source-tag an-source-<?php echo htmlspecialchars($lv['traffic_source'] ?: 'direct'); ?>">
+                                        <?php echo ucfirst(str_replace('_', ' ', $lv['traffic_source'] ?: 'direct')); ?>
+                                    </span>
+                                </td>
+                                <td class="text-end">
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-1 small">
+                                        <i class="fas fa-circle text-success me-1" style="font-size: 6px;"></i>
+                                        <?php
+                                        $sec = (int)($lv['seconds_ago'] ?? 0);
+                                        if ($sec <= 10) echo 'Just now';
+                                        elseif ($sec < 60) echo $sec . 's ago';
+                                        else echo round($sec / 60) . 'm ago';
+                                        ?>
+                                    </span>
+                                </td>
+                            </tr>
+                        <?php endforeach; endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!--  11. TOP PAGES & RECENT STORE ACTIVITY LOGS                 -->
     <!-- ═══════════════════════════════════════════════════════ -->
     <div class="row g-4 mb-4">
         <!-- Top Pages -->
@@ -652,13 +765,13 @@ $admin_name = isset($_SESSION['name']) ? htmlspecialchars($_SESSION['name']) : '
             </div>
         </div>
 
-        <!-- Recent Visitor Stream -->
+        <!-- Recent Store Activity Logs -->
         <div class="col-lg-6">
             <div class="dash-card h-100 p-4">
                 <div class="d-flex align-items-center justify-content-between pb-3 border-bottom mb-3">
                     <div>
-                        <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-stream text-info me-2"></i> Live Visitor Stream</h6>
-                        <span class="small text-muted">Recent store interaction logs</span>
+                        <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-history text-info me-2"></i> Recent Store Activity Logs</h6>
+                        <span class="small text-muted">Historical visitor & page interaction stream</span>
                     </div>
                 </div>
                 <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
@@ -694,7 +807,7 @@ $admin_name = isset($_SESSION['name']) ? htmlspecialchars($_SESSION['name']) : '
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════ -->
-<!--  CHARTS INITIALIZATION                                      -->
+<!--  CHARTS & REAL-TIME TELEMETRY INITIALIZATION                 -->
 <!-- ═══════════════════════════════════════════════════════════ -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -773,17 +886,154 @@ document.addEventListener('DOMContentLoaded', function() {
         <?php echo json_encode($searchTrend['data']); ?>,
         'rgba(6, 182, 212, 0.35)', '#0891b2');
 
-    // Live visitor auto-refresh (every 30 seconds)
-    setInterval(function() {
-        fetch('ajax_analytics.php?action=live_count', {credentials: 'same-origin'})
+    // ── Helper: Safe HTML Escape ──────────────────────────────
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    // ── Real-Time Live Telemetry Stream Updater ───────────────
+    var isFetchingLive = false;
+    function updateLiveTelemetry() {
+        if (isFetchingLive) return;
+        isFetchingLive = true;
+
+        var icon = document.getElementById('refreshLiveIcon');
+        if (icon) icon.classList.add('fa-spin');
+
+        fetch('ajax_analytics.php?action=live_stream', { credentials: 'same-origin' })
             .then(function(r) { return r.json(); })
             .then(function(d) {
-                if (d && d.count !== undefined) {
-                    var el = document.getElementById('liveCount');
-                    if (el) el.textContent = d.count;
+                if (d && d.success) {
+                    var count = d.count !== undefined ? d.count : 0;
+
+                    // 1. Update Hero Live Count
+                    var elHero = document.getElementById('liveCount');
+                    if (elHero) elHero.textContent = count;
+
+                    // 2. Update Telemetry Card Header Count
+                    var elCardCount = document.getElementById('liveCardCount');
+                    if (elCardCount) elCardCount.textContent = count + (count === 1 ? ' Active Now' : ' Active Now');
+
+                    // 3. Update Sync Timestamp
+                    var elSync = document.getElementById('lastLiveSyncTime');
+                    if (elSync && d.server_time) {
+                        elSync.innerHTML = '<i class="far fa-clock me-1"></i> Synced: ' + escapeHtml(d.server_time);
+                    }
+
+                    // 4. Render Active Live Visitors List
+                    var tbody = document.getElementById('liveVisitorsListBody');
+                    if (tbody) {
+                        if (!d.visitors || d.visitors.length === 0) {
+                            tbody.innerHTML = `
+                                <tr id="liveEmptyRow">
+                                    <td colspan="6">
+                                        <div class="an-live-empty-state">
+                                            <div class="an-radar-scanner">
+                                                <i class="fas fa-satellite-dish text-success fs-5"></i>
+                                            </div>
+                                            <h6 class="fw-bold text-dark mb-1">No Visitors Active Right Now</h6>
+                                            <p class="small text-muted mb-0">Real-time telemetry is monitoring your store. When visitors browse, their live location, device, and active page will appear here instantly.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `;
+                        } else {
+                            var rowsHtml = '';
+                            var siteBase = '<?php echo defined("SITE_URL") ? rtrim(SITE_URL, "/") : ""; ?>';
+                            d.visitors.forEach(function(v) {
+                                var devIcon = 'fa-desktop text-success';
+                                if (v.device_type === 'mobile') devIcon = 'fa-mobile-alt text-primary';
+                                else if (v.device_type === 'tablet') devIcon = 'fa-tablet-alt text-warning';
+
+                                var locCity = v.city || (v.country ? 'City in ' + v.country : 'Unknown City');
+                                var locExtra = [v.region, v.country].filter(Boolean).join(', ') || '—';
+
+                                var sec = parseInt(v.seconds_ago || 0, 10);
+                                var timeText = 'Just now';
+                                if (sec > 10 && sec < 60) timeText = sec + 's ago';
+                                else if (sec >= 60) timeText = Math.round(sec / 60) + 'm ago';
+
+                                var pageDisplay = v.page_url ? (v.page_title ? (v.page_title.length > 32 ? v.page_title.substring(0, 30) + '...' : v.page_title) : v.page_url) : '—';
+                                var pageUrl = v.page_url ? (siteBase + v.page_url) : '#';
+
+                                var src = v.traffic_source || 'direct';
+                                var srcLabel = src.replace('_', ' ');
+                                srcLabel = srcLabel.charAt(0).toUpperCase() + srcLabel.slice(1);
+
+                                rowsHtml += `
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <span class="an-live-dot"></span>
+                                                <div>
+                                                    <span class="fw-bold text-dark font-monospace small">#${v.visitor_uid ? escapeHtml(v.visitor_uid.substring(0, 8)) : 'anon'}</span>
+                                                    <div class="text-muted" style="font-size: 0.7rem;">Session #${v.id}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="an-location-badge">
+                                                <i class="fas fa-map-marker-alt text-danger me-1"></i>
+                                                <span class="fw-bold">${escapeHtml(locCity)}</span>
+                                            </div>
+                                            <div class="small text-muted ms-3">${escapeHtml(locExtra)}</div>
+                                        </td>
+                                        <td>
+                                            <span class="an-device-badge">
+                                                <i class="fas ${devIcon}"></i>
+                                                ${escapeHtml(v.browser || 'Browser')} on ${escapeHtml(v.os || 'OS')}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            ${v.page_url ? `
+                                                <a href="${escapeHtml(pageUrl)}" target="_blank" class="an-page-link" title="${escapeHtml(v.page_title || v.page_url)}">
+                                                    <i class="fas fa-external-link-alt small text-muted me-1"></i>
+                                                    ${escapeHtml(pageDisplay)}
+                                                </a>
+                                                <div class="text-muted" style="font-size: 0.7rem; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(v.page_url)}</div>
+                                            ` : '<span class="text-muted small">—</span>'}
+                                        </td>
+                                        <td>
+                                            <span class="an-source-tag an-source-${escapeHtml(src)}">${escapeHtml(srcLabel)}</span>
+                                        </td>
+                                        <td class="text-end">
+                                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-1 small">
+                                                <i class="fas fa-circle text-success me-1" style="font-size: 6px;"></i>
+                                                ${timeText}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                `;
+                            });
+                            tbody.innerHTML = rowsHtml;
+                        }
+                    }
                 }
-            }).catch(function(){});
-    }, 30000);
+            })
+            .catch(function(){})
+            .finally(function() {
+                isFetchingLive = false;
+                if (icon) icon.classList.remove('fa-spin');
+            });
+    }
+
+    // Manual Refresh button
+    var btnRefreshLive = document.getElementById('btnRefreshLive');
+    if (btnRefreshLive) {
+        btnRefreshLive.addEventListener('click', function(e) {
+            e.preventDefault();
+            updateLiveTelemetry();
+        });
+    }
+
+    // Live visitor auto-refresh (every 15 seconds)
+    setInterval(updateLiveTelemetry, 15000);
 });
 </script>
 

@@ -308,12 +308,13 @@ if ($chatbot_enabled):
 <?php endif; ?>
 
 <?php
-// ── Analytics Tracker (public pages only) ────────────────────
-// Never loads on admin pages. Async/deferred, failure-safe.
+// ── Analytics Tracker (public visitor pages only) ─────────────
+// Never loads on admin pages or for logged-in admin users. Async/deferred, failure-safe.
 $_isAdminPage = (strpos($_SERVER['PHP_SELF'] ?? '', '/admin/') !== false);
-if (!$_isAdminPage):
+$_isAdminUser = (isset($_SESSION['role']) && $_SESSION['role'] === 'admin');
+if (!$_isAdminPage && !$_isAdminUser):
 ?>
-<script>window.__ssAnalytics = { baseUrl: '<?php echo defined("SITE_URL") ? SITE_URL : ""; ?>' };</script>
+<script>window.__ssAnalytics = { baseUrl: '<?php echo defined("SITE_URL") ? rtrim(SITE_URL, "/") : ""; ?>' };</script>
 <script src="<?php echo ASSETS_URL; ?>/js/analytics-tracker.js?v=<?php echo file_exists(__DIR__ . '/../assets/js/analytics-tracker.js') ? filemtime(__DIR__ . '/../assets/js/analytics-tracker.js') : '1.0'; ?>" async defer></script>
 <?php endif; ?>
 
