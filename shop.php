@@ -150,7 +150,13 @@ $prods = $stmt->get_result();
 $cats = $conn->query("SELECT * FROM categories ORDER BY id ASC");
 ?>
 
-<div class="container mt-5 mb-5">
+<div class="container mt-5 mb-5"<?php
+// Analytics: expose search query and result count as data attributes (read-only by tracker JS)
+if (!empty($_GET['search'])) {
+    echo ' data-analytics-search="' . htmlspecialchars($_GET['search'], ENT_QUOTES, 'UTF-8') . '"';
+    echo ' data-analytics-results="' . (int)$total_results . '"';
+}
+?>>
 <?php 
 $setting_key = 'hero_banner_category';
 $hero_bg_class = "bg-light border";

@@ -1,0 +1,293 @@
+/* ══════════════════════════════════════════════════════════════
+   ANALYTICS DASHBOARD — Stylesheet
+   Location: /assets/css/admin-analytics.css
+   Matches existing admin design system (Inter font, slate palette)
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Layout ───────────────────────────────────────────────── */
+.analytics-wrapper {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: #1e293b;
+}
+
+/* ── Date Filter Bar ──────────────────────────────────────── */
+.analytics-filter-bar {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 16px 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
+.analytics-filter-bar .btn-filter {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 6px 14px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #64748b;
+    background: #f8fafc;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+.analytics-filter-bar .btn-filter:hover,
+.analytics-filter-bar .btn-filter.active {
+    background: #0f172a;
+    color: #ffffff;
+    border-color: #0f172a;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(15,23,42,0.15);
+}
+.analytics-filter-bar .custom-range-inputs {
+    display: none;
+}
+.analytics-filter-bar .custom-range-inputs.show {
+    display: flex;
+}
+
+/* ── Stat Cards ───────────────────────────────────────────── */
+.an-stat-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 20px 22px;
+    transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+    position: relative;
+    overflow: hidden;
+}
+.an-stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.06);
+    border-color: #cbd5e1;
+}
+.an-stat-card .an-stat-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    flex-shrink: 0;
+}
+.an-stat-card .an-stat-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    color: #0f172a;
+}
+.an-stat-card .an-stat-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #64748b;
+    margin-bottom: 3px;
+}
+.an-stat-card .an-stat-sub {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin-top: 2px;
+}
+
+/* Icon color variants */
+.an-icon-blue    { background: linear-gradient(135deg, #eff6ff, #dbeafe); color: #2563eb; }
+.an-icon-emerald { background: linear-gradient(135deg, #ecfdf5, #d1fae5); color: #059669; }
+.an-icon-amber   { background: linear-gradient(135deg, #fffbeb, #fef3c7); color: #d97706; }
+.an-icon-purple  { background: linear-gradient(135deg, #f3e8ff, #e9d5ff); color: #7c3aed; }
+.an-icon-rose    { background: linear-gradient(135deg, #fff1f2, #fecdd3); color: #e11d48; }
+.an-icon-cyan    { background: linear-gradient(135deg, #ecfeff, #cffafe); color: #0891b2; }
+.an-icon-orange  { background: linear-gradient(135deg, #fff7ed, #fed7aa); color: #ea580c; }
+.an-icon-indigo  { background: linear-gradient(135deg, #eef2ff, #c7d2fe); color: #4f46e5; }
+
+/* ── Chart Cards ──────────────────────────────────────────── */
+.an-chart-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+    overflow: hidden;
+}
+.an-chart-card .an-chart-header {
+    padding: 18px 22px 14px;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.an-chart-card .an-chart-header h6 {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #0f172a;
+    margin: 0;
+}
+.an-chart-card .an-chart-body {
+    padding: 18px 22px 22px;
+}
+
+/* ── Data Tables ──────────────────────────────────────────── */
+.an-table-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+    overflow: hidden;
+}
+.an-table-card .an-table-header {
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.an-table-card .an-table-header h6 {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #0f172a;
+    margin: 0;
+}
+.an-table {
+    width: 100%;
+    font-size: 0.82rem;
+}
+.an-table thead th {
+    background: #f8fafc;
+    color: #64748b;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.5px;
+    padding: 10px 16px;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
+}
+.an-table tbody td {
+    padding: 10px 16px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+    vertical-align: middle;
+}
+.an-table tbody tr:hover {
+    background: #f8fafc;
+}
+.an-table tbody tr:last-child td {
+    border-bottom: none;
+}
+.an-table .an-rank {
+    display: inline-flex;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    background: #f1f5f9;
+    color: #64748b;
+    font-weight: 700;
+    font-size: 0.7rem;
+    align-items: center;
+    justify-content: center;
+}
+.an-table .an-rank-gold   { background: #fef3c7; color: #d97706; }
+.an-table .an-rank-silver { background: #f1f5f9; color: #475569; }
+.an-table .an-rank-bronze { background: #fed7aa; color: #c2410c; }
+
+/* ── Live Visitors Badge ──────────────────────────────────── */
+.an-live-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #065f46, #047857);
+    color: #ffffff;
+    padding: 8px 16px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    box-shadow: 0 4px 12px rgba(4,120,87,0.25);
+}
+.an-live-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #34d399;
+    animation: anPulse 1.5s ease-in-out infinite;
+}
+@keyframes anPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.3); }
+}
+
+/* ── Export Button ────────────────────────────────────────── */
+.an-btn-export {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #059669;
+    background: #ecfdf5;
+    border: 1px solid #d1fae5;
+    transition: all 0.2s;
+    text-decoration: none;
+    cursor: pointer;
+}
+.an-btn-export:hover {
+    background: #059669;
+    color: #ffffff;
+    border-color: #059669;
+    transform: translateY(-1px);
+}
+
+/* ── Traffic Source Tags ──────────────────────────────────── */
+.an-source-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 8px;
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+.an-source-direct  { background: #f1f5f9; color: #475569; }
+.an-source-google  { background: #dbeafe; color: #1d4ed8; }
+.an-source-facebook { background: #dbeafe; color: #1e40af; }
+.an-source-instagram { background: #fce7f3; color: #be185d; }
+.an-source-youtube { background: #fee2e2; color: #dc2626; }
+.an-source-whatsapp { background: #d1fae5; color: #059669; }
+.an-source-search_engine { background: #e0e7ff; color: #4338ca; }
+.an-source-social { background: #ede9fe; color: #6d28d9; }
+.an-source-referral { background: #fef3c7; color: #b45309; }
+
+/* ── Location "Approximate" Label ─────────────────────────── */
+.an-approx-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 767px) {
+    .an-stat-card { padding: 14px 16px; }
+    .an-stat-card .an-stat-value { font-size: 1.3rem; }
+    .an-chart-card .an-chart-body { padding: 12px 14px 16px; }
+    .an-table { font-size: 0.78rem; }
+    .an-table thead th,
+    .an-table tbody td { padding: 8px 10px; }
+    .analytics-filter-bar { padding: 12px 14px; }
+    .analytics-filter-bar .btn-filter { padding: 5px 10px; font-size: 0.72rem; }
+}
+
+@media (max-width: 575px) {
+    .an-stat-card .an-stat-icon { width: 38px; height: 38px; font-size: 1rem; border-radius: 10px; }
+    .an-stat-card .an-stat-value { font-size: 1.15rem; }
+    .an-table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}

@@ -26,6 +26,14 @@ return [
         'pages' => ['index.php'],
     ],
 
+    // ── Analytics ─────────────────────────────────────────────
+    [
+        'label' => 'Analytics',
+        'icon'  => 'fa-chart-line',
+        'url'   => 'analytics.php',
+        'pages' => ['analytics.php', 'analytics_product.php'],
+    ],
+
     // ── Products ──────────────────────────────────────────────
     [
         'label'    => 'Products',

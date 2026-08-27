@@ -67,6 +67,11 @@ $productSchema = $seoService->generateProductSchema($product);
 <?php echo $productSchema; ?>
 </script>
 
+<?php // Analytics: product tracking data (invisible, read by analytics-tracker.js) ?>
+<div data-analytics-product-id="<?php echo (int)$product['id']; ?>"
+     data-analytics-product-name="<?php echo htmlspecialchars($product['name'], ENT_QUOTES, 'UTF-8'); ?>"
+     style="display:none;"></div>
+
 <?php 
 $hero_bg_style = "";
 $show_product_hero = false;

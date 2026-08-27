@@ -306,5 +306,17 @@ if ($chatbot_enabled):
     </script>
     <script src="<?php echo ASSETS_URL; ?>/js/chatbot-widget.js?v=<?php echo file_exists(__DIR__ . '/../assets/js/chatbot-widget.js') ? filemtime(__DIR__ . '/../assets/js/chatbot-widget.js') : '1.0'; ?>" defer></script>
 <?php endif; ?>
+
+<?php
+// ── Analytics Tracker (public pages only) ────────────────────
+// Never loads on admin pages. Async/deferred, failure-safe.
+$_isAdminPage = (strpos($_SERVER['PHP_SELF'] ?? '', '/admin/') !== false);
+if (!$_isAdminPage):
+?>
+<script>window.__ssAnalytics = { baseUrl: '<?php echo defined("SITE_URL") ? SITE_URL : ""; ?>' };</script>
+<script src="<?php echo ASSETS_URL; ?>/js/analytics-tracker.js?v=<?php echo file_exists(__DIR__ . '/../assets/js/analytics-tracker.js') ? filemtime(__DIR__ . '/../assets/js/analytics-tracker.js') : '1.0'; ?>" async defer></script>
+<?php endif; ?>
+
 </body>
 </html>
+
