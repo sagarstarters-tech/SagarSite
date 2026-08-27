@@ -260,7 +260,119 @@ $admin_name = isset($_SESSION['name']) ? htmlspecialchars($_SESSION['name']) : '
     </div>
 
     <!-- ═══════════════════════════════════════════════════════════ -->
-    <!--  5. CHARTS ROW 1: Visitors & Page Views                     -->
+    <!--  5. REAL-TIME LIVE ACTIVE VISITORS & TELEMETRY              -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="an-live-card p-4">
+                <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 pb-3 border-bottom mb-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="an-radar-pulse"></div>
+                        <div>
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <h6 class="fw-bold mb-0 text-dark fs-6"><i class="fas fa-satellite-dish text-success me-2"></i> Real-Time Live Visitors Telemetry</h6>
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-1 fw-bold" id="liveCardCountBadge">
+                                    <span class="an-live-dot me-1"></span> <span id="liveCardCount"><?php echo $liveData['count']; ?> Active Now</span>
+                                </span>
+                            </div>
+                            <span class="small text-muted">Live visitors on your store with real-time location, device, and active browsing page (auto-syncs every 15s)</span>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <span class="small text-muted me-2" id="lastLiveSyncTime"><i class="far fa-clock me-1"></i> Synced: <?php echo date('h:i:s A'); ?></span>
+                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 d-flex align-items-center gap-1 shadow-sm" id="btnRefreshLive">
+                            <i class="fas fa-sync-alt" id="refreshLiveIcon"></i> <span>Refresh Live</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
+                    <table class="an-table align-middle" id="liveVisitorsTable">
+                        <thead>
+                            <tr>
+                                <th>Active Visitor</th>
+                                <th>Location</th>
+                                <th>Device & Platform</th>
+                                <th>Current Page</th>
+                                <th>Traffic Source</th>
+                                <th class="text-end">Last Activity</th>
+                            </tr>
+                        </thead>
+                        <tbody id="liveVisitorsListBody">
+                        <?php if (empty($liveData['visitors'])): ?>
+                            <tr id="liveEmptyRow">
+                                <td colspan="6">
+                                    <div class="an-live-empty-state">
+                                        <div class="an-radar-scanner">
+                                            <i class="fas fa-satellite-dish text-success fs-5"></i>
+                                        </div>
+                                        <h6 class="fw-bold text-dark mb-1">No Visitors Active Right Now</h6>
+                                        <p class="small text-muted mb-0">Real-time telemetry is monitoring your store. When visitors browse, their live location, device, and active page will appear here instantly.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php else: foreach ($liveData['visitors'] as $lv): ?>
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="an-live-dot"></span>
+                                        <div>
+                                            <span class="fw-bold text-dark font-monospace small">#<?php echo substr($lv['visitor_uid'], 0, 8); ?></span>
+                                            <div class="text-muted" style="font-size: 0.7rem;">Session #<?php echo $lv['id']; ?></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="an-location-badge">
+                                        <i class="fas fa-map-marker-alt text-danger me-1"></i>
+                                        <span class="fw-bold"><?php echo htmlspecialchars($lv['city'] ?: ($lv['country'] ? 'City in ' . $lv['country'] : 'Unknown City')); ?></span>
+                                    </div>
+                                    <div class="small text-muted ms-3"><?php echo htmlspecialchars(implode(', ', array_filter([$lv['region'], $lv['country']]))) ?: '—'; ?></div>
+                                </td>
+                                <td>
+                                    <span class="an-device-badge">
+                                        <i class="fas <?php echo ($lv['device_type'] === 'mobile' ? 'fa-mobile-alt text-primary' : ($lv['device_type'] === 'tablet' ? 'fa-tablet-alt text-warning' : 'fa-desktop text-success')); ?>"></i>
+                                        <?php echo htmlspecialchars(($lv['browser'] ?: 'Browser') . ' on ' . ($lv['os'] ?: 'OS')); ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <?php if (!empty($lv['page_url'])): ?>
+                                        <a href="<?php echo htmlspecialchars((defined('SITE_URL') ? SITE_URL : '') . $lv['page_url']); ?>" target="_blank" class="an-page-link" title="<?php echo htmlspecialchars($lv['page_title'] ?: $lv['page_url']); ?>">
+                                            <i class="fas fa-external-link-alt small text-muted me-1"></i>
+                                            <?php echo htmlspecialchars($lv['page_title'] ? (mb_strlen($lv['page_title']) > 32 ? mb_substr($lv['page_title'], 0, 30) . '...' : $lv['page_title']) : $lv['page_url']); ?>
+                                        </a>
+                                        <div class="text-muted" style="font-size: 0.7rem; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><?php echo htmlspecialchars($lv['page_url']); ?></div>
+                                    <?php else: ?>
+                                        <span class="text-muted small">—</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <span class="an-source-tag an-source-<?php echo htmlspecialchars($lv['traffic_source'] ?: 'direct'); ?>">
+                                        <?php echo ucfirst(str_replace('_', ' ', $lv['traffic_source'] ?: 'direct')); ?>
+                                    </span>
+                                </td>
+                                <td class="text-end">
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-1 small">
+                                        <i class="fas fa-circle text-success me-1" style="font-size: 6px;"></i>
+                                        <?php
+                                        $sec = (int)($lv['seconds_ago'] ?? 0);
+                                        if ($sec <= 10) echo 'Just now';
+                                        elseif ($sec < 60) echo $sec . 's ago';
+                                        else echo round($sec / 60) . 'm ago';
+                                        ?>
+                                    </span>
+                                </td>
+                            </tr>
+                        <?php endforeach; endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!--  6. CHARTS ROW 1: Visitors & Page Views                     -->
     <!-- ═══════════════════════════════════════════════════════════ -->
     <div class="row g-4 mb-4">
         <!-- Visitors Trend Chart -->
@@ -607,119 +719,6 @@ $admin_name = isset($_SESSION['name']) ? htmlspecialchars($_SESSION['name']) : '
                                 </td>
                                 <td><strong class="text-dark"><?php echo number_format($loc['visitors']); ?></strong></td>
                                 <td class="text-end"><span class="badge bg-light text-dark border"><?php echo $loc['percentage']; ?>%</span></td>
-                            </tr>
-                        <?php endforeach; endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ═══════════════════════════════════════════════════════ -->
-    <!-- ═══════════════════════════════════════════════════════ -->
-    <!--  10. REAL-TIME LIVE ACTIVE VISITORS & TELEMETRY              -->
-    <!-- ═══════════════════════════════════════════════════════ -->
-    <div class="row g-4 mb-4">
-        <div class="col-12">
-            <div class="an-live-card p-4">
-                <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 pb-3 border-bottom mb-3">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="an-radar-pulse"></div>
-                        <div>
-                            <div class="d-flex align-items-center gap-2 flex-wrap">
-                                <h6 class="fw-bold mb-0 text-dark fs-6"><i class="fas fa-satellite-dish text-success me-2"></i> Real-Time Live Visitors Telemetry</h6>
-                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-1 fw-bold" id="liveCardCountBadge">
-                                    <span class="an-live-dot me-1"></span> <span id="liveCardCount"><?php echo $liveData['count']; ?> Active Now</span>
-                                </span>
-                            </div>
-                            <span class="small text-muted">Live visitors on your store with real-time location, device, and active browsing page (auto-syncs every 15s)</span>
-                        </div>
-                    </div>
-                    <div class="d-flex align-items-center gap-2 flex-wrap">
-                        <span class="small text-muted me-2" id="lastLiveSyncTime"><i class="far fa-clock me-1"></i> Synced: <?php echo date('h:i:s A'); ?></span>
-                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 d-flex align-items-center gap-1 shadow-sm" id="btnRefreshLive">
-                            <i class="fas fa-sync-alt" id="refreshLiveIcon"></i> <span>Refresh Live</span>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
-                    <table class="an-table align-middle" id="liveVisitorsTable">
-                        <thead>
-                            <tr>
-                                <th>Active Visitor</th>
-                                <th>Location</th>
-                                <th>Device & Platform</th>
-                                <th>Current Page</th>
-                                <th>Traffic Source</th>
-                                <th class="text-end">Last Activity</th>
-                            </tr>
-                        </thead>
-                        <tbody id="liveVisitorsListBody">
-                        <?php if (empty($liveData['visitors'])): ?>
-                            <tr id="liveEmptyRow">
-                                <td colspan="6">
-                                    <div class="an-live-empty-state">
-                                        <div class="an-radar-scanner">
-                                            <i class="fas fa-satellite-dish text-success fs-5"></i>
-                                        </div>
-                                        <h6 class="fw-bold text-dark mb-1">No Visitors Active Right Now</h6>
-                                        <p class="small text-muted mb-0">Real-time telemetry is monitoring your store. When visitors browse, their live location, device, and active page will appear here instantly.</p>
-                                    </div>
-                                </td>
-                            </tr>
-                        <?php else: foreach ($liveData['visitors'] as $lv): ?>
-                            <tr>
-                                <td>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <span class="an-live-dot"></span>
-                                        <div>
-                                            <span class="fw-bold text-dark font-monospace small">#<?php echo substr($lv['visitor_uid'], 0, 8); ?></span>
-                                            <div class="text-muted" style="font-size: 0.7rem;">Session #<?php echo $lv['id']; ?></div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="an-location-badge">
-                                        <i class="fas fa-map-marker-alt text-danger me-1"></i>
-                                        <span class="fw-bold"><?php echo htmlspecialchars($lv['city'] ?: ($lv['country'] ? 'City in ' . $lv['country'] : 'Unknown City')); ?></span>
-                                    </div>
-                                    <div class="small text-muted ms-3"><?php echo htmlspecialchars(implode(', ', array_filter([$lv['region'], $lv['country']]))) ?: '—'; ?></div>
-                                </td>
-                                <td>
-                                    <span class="an-device-badge">
-                                        <i class="fas <?php echo ($lv['device_type'] === 'mobile' ? 'fa-mobile-alt text-primary' : ($lv['device_type'] === 'tablet' ? 'fa-tablet-alt text-warning' : 'fa-desktop text-success')); ?>"></i>
-                                        <?php echo htmlspecialchars(($lv['browser'] ?: 'Browser') . ' on ' . ($lv['os'] ?: 'OS')); ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <?php if (!empty($lv['page_url'])): ?>
-                                        <a href="<?php echo htmlspecialchars((defined('SITE_URL') ? SITE_URL : '') . $lv['page_url']); ?>" target="_blank" class="an-page-link" title="<?php echo htmlspecialchars($lv['page_title'] ?: $lv['page_url']); ?>">
-                                            <i class="fas fa-external-link-alt small text-muted me-1"></i>
-                                            <?php echo htmlspecialchars($lv['page_title'] ? (mb_strlen($lv['page_title']) > 32 ? mb_substr($lv['page_title'], 0, 30) . '...' : $lv['page_title']) : $lv['page_url']); ?>
-                                        </a>
-                                        <div class="text-muted" style="font-size: 0.7rem; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><?php echo htmlspecialchars($lv['page_url']); ?></div>
-                                    <?php else: ?>
-                                        <span class="text-muted small">—</span>
-                                    <?php endif; ?>
-                                </td>
-                                <td>
-                                    <span class="an-source-tag an-source-<?php echo htmlspecialchars($lv['traffic_source'] ?: 'direct'); ?>">
-                                        <?php echo ucfirst(str_replace('_', ' ', $lv['traffic_source'] ?: 'direct')); ?>
-                                    </span>
-                                </td>
-                                <td class="text-end">
-                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-1 small">
-                                        <i class="fas fa-circle text-success me-1" style="font-size: 6px;"></i>
-                                        <?php
-                                        $sec = (int)($lv['seconds_ago'] ?? 0);
-                                        if ($sec <= 10) echo 'Just now';
-                                        elseif ($sec < 60) echo $sec . 's ago';
-                                        else echo round($sec / 60) . 'm ago';
-                                        ?>
-                                    </span>
-                                </td>
                             </tr>
                         <?php endforeach; endif; ?>
                         </tbody>
