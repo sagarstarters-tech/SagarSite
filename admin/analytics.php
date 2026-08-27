@@ -545,10 +545,12 @@ $admin_name = isset($_SESSION['name']) ? htmlspecialchars($_SESSION['name']) : '
                     <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-mobile-alt text-success me-2"></i> Devices & Platforms</h6>
                 </div>
                 <div class="table-responsive">
-                    <table class="an-table mb-2">
+                    <table class="an-table mb-3">
                         <thead><tr><th>Device Type</th><th class="text-end">Sessions</th></tr></thead>
                         <tbody>
-                        <?php foreach ($deviceData['devices'] as $d): ?>
+                        <?php if (empty($deviceData['devices'])): ?>
+                            <tr><td colspan="2" class="text-center text-muted py-3">No device data</td></tr>
+                        <?php else: foreach ($deviceData['devices'] as $d): ?>
                             <tr>
                                 <td>
                                     <i class="fas <?php echo $d['device_type'] === 'mobile' ? 'fa-mobile-alt text-primary' : ($d['device_type'] === 'tablet' ? 'fa-tablet-alt text-warning' : 'fa-desktop text-success'); ?> me-2"></i>
@@ -556,19 +558,26 @@ $admin_name = isset($_SESSION['name']) ? htmlspecialchars($_SESSION['name']) : '
                                 </td>
                                 <td class="text-end"><strong class="text-dark"><?php echo number_format($d['cnt']); ?></strong></td>
                             </tr>
-                        <?php endforeach; ?>
+                        <?php endforeach; endif; ?>
                         </tbody>
                     </table>
-                    
-                    <div class="border-top pt-2">
-                        <div class="small fw-bold text-muted text-uppercase mb-2" style="font-size: 0.7rem; letter-spacing: 0.5px;">Top Browsers</div>
-                        <?php foreach (array_slice($deviceData['browsers'], 0, 3) as $b): ?>
-                            <div class="d-flex justify-content-between align-items-center small py-1 text-muted">
-                                <span><i class="far fa-window-maximize me-1 text-secondary"></i> <?php echo htmlspecialchars($b['browser'] ?: 'Unknown'); ?></span>
-                                <strong class="text-dark"><?php echo number_format($b['cnt']); ?></strong>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
+
+                    <table class="an-table">
+                        <thead><tr><th>Top Browsers</th><th class="text-end">Sessions</th></tr></thead>
+                        <tbody>
+                        <?php if (empty($deviceData['browsers'])): ?>
+                            <tr><td colspan="2" class="text-center text-muted py-3">No browser data</td></tr>
+                        <?php else: foreach (array_slice($deviceData['browsers'], 0, 4) as $b): ?>
+                            <tr>
+                                <td>
+                                    <i class="far fa-window-maximize text-secondary me-2"></i>
+                                    <?php echo htmlspecialchars($b['browser'] ?: 'Unknown'); ?>
+                                </td>
+                                <td class="text-end"><strong class="text-dark"><?php echo number_format($b['cnt']); ?></strong></td>
+                            </tr>
+                        <?php endforeach; endif; ?>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
