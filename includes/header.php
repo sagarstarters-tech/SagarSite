@@ -313,9 +313,11 @@ if (isset($product['slug'])) {
     <link rel="apple-touch-icon" sizes="192x192" href="<?php echo ASSETS_URL; ?>/images/favicon_192.png">
 
     <!-- Resource Hints: Optimized & Deduped -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
 
     <!-- LCP Critical Image Preload (first hero slide = LCP element) -->
     <?php if (!empty($_lcp_hero_img_url) && strpos($_lcp_hero_img_url, 'placeholder') === false): ?>
@@ -335,12 +337,16 @@ if (isset($product['slug'])) {
     <style>
         /* Icon placeholder — prevents icon-font layout jump */
         .fa, .fas, .far, .fab, .fa-solid, .fa-regular, .fa-brands { display: inline-block; width: 1em; height: 1em; line-height: 1; vertical-align: -0.125em; }
+        /* Header & Navbar stability */
+        .top-bar-notice { min-height: 38px; }
+        .main-navbar, header.navbar, .navbar { min-height: 64px; }
         /* Hero slider — locked dimensions, no layout shift */
         .hero-slider-wrapper { width: 100%; min-height: 380px; height: 380px; position: relative; overflow: hidden; background: #0f172a; }
         @media (min-width: 769px) { .hero-slider-wrapper { min-height: 460px; height: 460px; } }
         @media (min-width: 1025px) { .hero-slider-wrapper { min-height: 560px; height: 560px; } }
         .hero-bg img { width: 100%; height: 100%; object-fit: cover; object-position: center center; }
-        /* Product & category card containers — aspect-ratio locks prevent CLS */
+        /* Trust strip & Card containers — aspect-ratio locks prevent CLS */
+        .home-trust-strip { min-height: 80px; }
         .category-stage { min-height: 180px; width: 100%; aspect-ratio: 260 / 180; }
         .product-media-stage { min-height: 250px; width: 100%; aspect-ratio: 1 / 1; }
         /* Bottom nav — fixed, so no layout shift */
