@@ -280,7 +280,7 @@ $admin_name = isset($_SESSION['name']) ? htmlspecialchars($_SESSION['name']) : '
                     </div>
                     <div class="d-flex align-items-center gap-2 flex-wrap">
                         <span class="small text-muted me-2" id="lastLiveSyncTime"><i class="far fa-clock me-1"></i> Synced: <?php echo date('h:i:s A'); ?></span>
-                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 d-flex align-items-center gap-1 shadow-sm" id="btnRefreshLive">
+                        <button type="button" class="btn-refresh-live" id="btnRefreshLive">
                             <i class="fas fa-sync-alt" id="refreshLiveIcon"></i> <span>Refresh Live</span>
                         </button>
                     </div>

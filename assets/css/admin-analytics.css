@@ -470,4 +470,38 @@ a.dash-btn-white:hover {
     position: relative;
 }
 
+/* Clear & Sharp Refresh Live Button */
+.btn-refresh-live {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 16px;
+    border-radius: 9999px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #ffffff !important;
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+    border: 1px solid #1d4ed8 !important;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+    transition: all 0.2s ease;
+    cursor: pointer;
+    text-transform: none;
+    letter-spacing: 0.3px;
+}
+.btn-refresh-live i {
+    font-size: 0.85rem;
+    color: #ffffff !important;
+    opacity: 1 !important;
+}
+.btn-refresh-live:hover {
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+    color: #ffffff !important;
+}
+.btn-refresh-live:active {
+    transform: translateY(0);
+}
+
+
 
