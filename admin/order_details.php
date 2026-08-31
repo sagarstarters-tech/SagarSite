@@ -418,7 +418,17 @@ function sendInvoiceWA(orderId, btn) {
             btn.innerHTML = '<i class="fab fa-whatsapp me-1"></i>Send';
         }
     })
+    .catch(() => {
+        alert('Network Error while sending WhatsApp message.');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fab fa-whatsapp me-1"></i>Send';
+    });
+}
+
 function pushToBharatShip(orderId, btn) {
+    if (!confirm('Are you sure you want to push this order to BharatShip and generate AWB?')) {
+        return;
+    }
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Syncing with BharatShip...';
     fetch('../courier_module/Admin/ajax_courier_handler.php', {
