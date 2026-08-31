@@ -124,7 +124,7 @@ if (strlen($visitorUid) < 16 || strlen($sessionId) < 16) {
     exit;
 }
 
-$allowedEvents = ['page_view', 'product_view', 'search'];
+$allowedEvents = ['page_view', 'product_view', 'search', 'whatsapp_click'];
 if (!in_array($event, $allowedEvents)) {
     http_response_code(400);
     echo json_encode(['error' => 'unknown_event']);
@@ -226,6 +226,28 @@ try {
                         VALUES (?, ?, ?, ?, ?)
                     ");
                     $stmt->execute([$visitorId, $searchQuery, $resultCount, $now, $sessionId]);
+                }
+            }
+            break;
+
+        case 'whatsapp_click':
+            // Track WhatsApp button clicks reusing the product_views table.
+            // product_id  = 0 means cart; from_search stores button_type:qty metadata.
+            if ($productId !== null) {
+                $wa_btn_meta = $fromSearch ?: 'wa_btn:unknown';
+                // Duplicate protection: same visitor, same product, same button, within 15 seconds
+                $stmt = $pdo->prepare("
+                    SELECT COUNT(*) FROM analytics_product_views
+                    WHERE visitor_id = ? AND product_id = ? AND from_search = ? AND viewed_at > DATE_SUB(NOW(), INTERVAL 15 SECOND)
+                ");
+                $stmt->execute([$visitorId, $productId, $wa_btn_meta]);
+                if ((int)$stmt->fetchColumn() === 0) {
+                    $stmt = $pdo->prepare("
+                        INSERT INTO analytics_product_views
+                        (visitor_id, product_id, product_name, referrer, viewed_at, session_id, from_search)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                    ");
+                    $stmt->execute([$visitorId, $productId, $productName, $referrer, $now, $sessionId, $wa_btn_meta]);
                 }
             }
             break;

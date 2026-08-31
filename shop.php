@@ -279,8 +279,17 @@ if (!empty($global_settings[$setting_key])) {
                         $display_price = $has_discount ? $sale_price : $reg_price;
                         $discount_percent = $has_discount ? round((($reg_price - $sale_price) / $reg_price) * 100) : 0;
                         
-                        // WhatsApp Direct Order Text
-                        $wa_msg = urlencode("Hello Sagar Starters! I am interested in ordering: *" . $p['name'] . "* (Price: " . $global_currency . number_format($display_price, 2) . "). Please confirm stock and delivery.");
+                        // WhatsApp Direct Order Text — upgraded rich format
+                        $wa_msg = urlencode(
+                            "Hello Sagar Starter's! \xF0\x9F\x91\x8B" . "\n\n" .
+                            "I am interested in ordering:" . "\n\n" .
+                            "*Product:* " . $p['name'] . "\n\n" .
+                            "*Price:* " . $global_currency . number_format($display_price, 2) . "\n\n" .
+                            "*Quantity:* 1" . "\n\n" .
+                            "*Product Link:*" . "\n" . $p_url . "\n\n" .
+                            "Please confirm stock availability and delivery charges." . "\n\n" .
+                            "Thank you."
+                        );
                         $wa_link = "https://wa.me/{$wa_phone}?text={$wa_msg}";
                         
                         $p_moq = !empty($p['min_order_qty']) ? (int)$p['min_order_qty'] : 1;

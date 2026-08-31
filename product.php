@@ -387,6 +387,84 @@ if (!empty($global_settings['hero_banner_product'])) {
                     <input type="number" name="quantity" id="productQtyInput" class="form-control text-center fw-bold" value="<?php echo $moq; ?>" min="<?php echo $moq; ?>" max="<?php echo $product['stock']; ?>">
                 </div>
                 <button type="submit" class="btn btn-primary btn-lg btn-custom px-4"><i class="fas fa-shopping-cart me-2"></i>Add to Cart</button>
+                <?php
+                // WhatsApp Order button — server-side base link with qty=1, JS updates it on qty change
+                $wa_phone_prod = get_store_whatsapp_number();
+                $prod_url = !empty($product['slug']) ? SITE_URL . '/product/' . $product['slug'] : SITE_URL . '/product.php?id=' . $product['id'];
+                $prod_display_price = ($product['sale_price'] > 0) ? floatval($product['sale_price']) : (floatval($product['regular_price']) > 0 ? floatval($product['regular_price']) : floatval($product['price']));
+                function build_wa_product_msg($name, $currency, $price, $qty, $url) {
+                    return "Hello Sagar Starter's! \xF0\x9F\x91\x8B" . "\n\n" .
+                        "I am interested in ordering:" . "\n\n" .
+                        "*Product:* " . $name . "\n\n" .
+                        "*Price:* " . $currency . number_format($price, 2) . "\n\n" .
+                        "*Quantity:* " . $qty . "\n\n" .
+                        "*Product Link:*" . "\n" . $url . "\n\n" .
+                        "Please confirm stock availability and delivery charges." . "\n\n" .
+                        "Thank you.";
+                }
+                $wa_prod_initial_qty = $moq;
+                $wa_prod_initial_msg = urlencode(build_wa_product_msg($product['name'], $global_currency, $prod_display_price, $wa_prod_initial_qty, $prod_url));
+                $wa_prod_link = "https://wa.me/{$wa_phone_prod}?text={$wa_prod_initial_msg}";
+                ?>
+                <a href="<?php echo $wa_prod_link; ?>" id="waOrderBtn" target="_blank" rel="noopener noreferrer"
+                   class="btn btn-success btn-lg btn-custom px-4"
+                   title="Order on WhatsApp" aria-label="Order on WhatsApp"
+                   data-wa-phone="<?php echo htmlspecialchars($wa_phone_prod, ENT_QUOTES, 'UTF-8'); ?>"
+                   data-product-name="<?php echo htmlspecialchars($product['name'], ENT_QUOTES, 'UTF-8'); ?>"
+                   data-product-price="<?php echo $prod_display_price; ?>"
+                   data-product-currency="<?php echo htmlspecialchars($global_currency, ENT_QUOTES, 'UTF-8'); ?>"
+                   data-product-url="<?php echo htmlspecialchars($prod_url, ENT_QUOTES, 'UTF-8'); ?>"
+                   data-product-id="<?php echo (int)$product['id']; ?>">
+                   <i class="fab fa-whatsapp me-2"></i>Order on WhatsApp
+                </a>
+                <script>
+                (function() {
+                    'use strict';
+                    var btn = document.getElementById('waOrderBtn');
+                    var qtyInput = document.getElementById('productQtyInput');
+                    if (!btn || !qtyInput) return;
+
+                    var phone    = btn.getAttribute('data-wa-phone');
+                    var pName    = btn.getAttribute('data-product-name');
+                    var pPrice   = parseFloat(btn.getAttribute('data-product-price'));
+                    var pCurr    = btn.getAttribute('data-product-currency');
+                    var pUrl     = btn.getAttribute('data-product-url');
+                    var pId      = parseInt(btn.getAttribute('data-product-id'), 10);
+
+                    function formatPrice(n) {
+                        return n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    }
+
+                    function buildWaLink(qty) {
+                        var msg = "Hello Sagar Starter's! \u{1F44B}" + "\n\n" +
+                            "I am interested in ordering:" + "\n\n" +
+                            "*Product:* " + pName + "\n\n" +
+                            "*Price:* " + pCurr + formatPrice(pPrice) + "\n\n" +
+                            "*Quantity:* " + qty + "\n\n" +
+                            "*Product Link:*" + "\n" + pUrl + "\n\n" +
+                            "Please confirm stock availability and delivery charges." + "\n\n" +
+                            "Thank you.";
+                        return 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
+                    }
+
+                    function updateWaLink() {
+                        var qty = parseInt(qtyInput.value, 10) || 1;
+                        btn.href = buildWaLink(qty);
+                    }
+
+                    // Update on every qty change
+                    qtyInput.addEventListener('input', updateWaLink);
+                    qtyInput.addEventListener('change', updateWaLink);
+
+                    // Analytics: track WhatsApp order click
+                    btn.addEventListener('click', function() {
+                        var qty = parseInt(qtyInput.value, 10) || 1;
+                        if (window.trackWhatsAppClick) {
+                            window.trackWhatsAppClick(pId, pName, 'product_detail', qty);
+                        }
+                    });
+                })();
+                </script>
             </form>
             <script>
                 document.getElementById('addToCartForm').addEventListener('submit', function(e) {
@@ -668,7 +746,17 @@ if (!empty($global_settings['hero_banner_product'])) {
                 $rel_display_price = $rel_has_discount ? $rel_sale_price : $rel_reg_price;
                 $rel_url = !empty($p['slug']) ? SITE_URL . "/product/" . $p['slug'] : SITE_URL . "/product.php?id=" . $p['id'];
                 
-                $rel_wa_msg = urlencode("Hello Sagar Starters! I am interested in ordering: *" . $p['name'] . "* (Price: " . $global_currency . number_format($rel_display_price, 2) . "). Please confirm stock and delivery.");
+                // WhatsApp message for related products — upgraded rich format
+                $rel_wa_msg = urlencode(
+                    "Hello Sagar Starter's! \xF0\x9F\x91\x8B" . "\n\n" .
+                    "I am interested in ordering:" . "\n\n" .
+                    "*Product:* " . $p['name'] . "\n\n" .
+                    "*Price:* " . $global_currency . number_format($rel_display_price, 2) . "\n\n" .
+                    "*Quantity:* 1" . "\n\n" .
+                    "*Product Link:*" . "\n" . $rel_url . "\n\n" .
+                    "Please confirm stock availability and delivery charges." . "\n\n" .
+                    "Thank you."
+                );
                 $rel_wa_link = "https://wa.me/{$wa_phone}?text={$rel_wa_msg}";
             ?>
             <div class="col-md-3" data-aos="zoom-in" data-aos-delay="<?php echo $delay; $delay+=100; ?>">

@@ -187,6 +187,36 @@ if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
                     <?php else: ?>
                         <a href="user/login.php" class="btn btn-secondary btn-lg btn-custom w-100 py-3">Login to Checkout</a>
                     <?php endif; ?>
+
+                    <?php
+                    // ── WhatsApp Cart Order Button ────────────────────────────
+                    $wa_cart_phone = get_store_whatsapp_number();
+                    $wa_cart_msg = "Hello Sagar Starter's! \xF0\x9F\x91\x8B\n\n";
+                    $wa_cart_msg .= "I want to order the following products:\n\n";
+                    $item_num = 1;
+                    foreach ($cart_items as $ci) {
+                        $ci_name     = $ci['name'];
+                        $ci_qty      = (int)$ci['qty'];
+                        $ci_price    = (float)$ci['effective_price'];
+                        $ci_subtotal = (float)$ci['total'];
+                        $wa_cart_msg .= $item_num . ". " . $ci_name . "\n";
+                        $wa_cart_msg .= "   Quantity: " . $ci_qty . "\n";
+                        $wa_cart_msg .= "   Price: " . $global_currency . number_format($ci_price, 2) . "\n";
+                        $wa_cart_msg .= "   Subtotal: " . $global_currency . number_format($ci_subtotal, 2) . "\n\n";
+                        $item_num++;
+                    }
+                    $wa_cart_msg .= "Total: " . $global_currency . number_format($grand_total, 2) . "\n\n";
+                    $wa_cart_msg .= "Please confirm stock availability, delivery charges and final order amount.\n\n";
+                    $wa_cart_msg .= "Thank you.";
+                    $wa_cart_link = "https://wa.me/{$wa_cart_phone}?text=" . urlencode($wa_cart_msg);
+                    ?>
+                    <a href="<?php echo $wa_cart_link; ?>" target="_blank" rel="noopener noreferrer"
+                       class="btn btn-success btn-lg btn-custom w-100 py-3 mt-3"
+                       id="waCartOrderBtn"
+                       aria-label="Order cart via WhatsApp"
+                       onclick="if(window.trackWhatsAppClick){window.trackWhatsAppClick(0,'Cart Order','cart',<?php echo count($cart_items); ?>);}">
+                        <i class="fab fa-whatsapp me-2"></i>Order via WhatsApp
+                    </a>
                 </div>
             </div>
         </div>

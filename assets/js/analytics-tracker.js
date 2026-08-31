@@ -261,6 +261,60 @@
             trackProductView();
             trackSearch();
             startHeartbeat();
+            attachCardWaTracking();
+        } catch (e) {}
+    }
+
+    // ── Track WhatsApp Click ──────────────────────────────────
+    // Exposed globally so product.php and cart.php inline scripts can call it.
+    // Parameters:
+    //   productId   {number} — DB product ID (0 for cart)
+    //   productName {string} — Product name or 'Cart Order'
+    //   buttonType  {string} — 'product_card' | 'product_detail' | 'cart'
+    //   quantity    {number} — quantity selected (optional, default 1)
+    window.trackWhatsAppClick = function(productId, productName, buttonType, quantity) {
+        try {
+            var pid  = productId  ? parseInt(productId, 10)  : 0;
+            var qty  = quantity   ? parseInt(quantity, 10)   : 1;
+            var btype = buttonType ? String(buttonType).substring(0, 30) : 'unknown';
+            var name  = productName ? String(productName).substring(0, 255) : '';
+
+            sendEvent({
+                event:        'whatsapp_click',
+                page_url:     window.location.pathname + window.location.search,
+                page_title:   document.title || '',
+                product_id:   pid,
+                product_name: name,
+                from_search:  'wa_btn:' + btype + ':qty' + qty
+            });
+        } catch (e) {}
+    };
+
+    // ── Auto-attach tracking to product card WA buttons (.btn-pro-wa) ────────────
+    function attachCardWaTracking() {
+        try {
+            document.querySelectorAll('a.btn-pro-wa[href*="wa.me"]').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    // Try to read product data from closest card
+                    var card = btn.closest('[data-analytics-product-id]') ||
+                               btn.closest('.product-card-pro');
+                    var pid  = 0;
+                    var name = '';
+                    if (card) {
+                        pid  = parseInt(card.getAttribute('data-analytics-product-id') || '0', 10);
+                        name = card.getAttribute('data-analytics-product-name') || '';
+                    }
+                    // Fallback: read from title of nearest link
+                    if (!name) {
+                        var titleEl = btn.closest('.product-card-pro-body, .card-body');
+                        if (titleEl) {
+                            var titleLink = titleEl.querySelector('.product-pro-title, .card-title a, h6 a');
+                            if (titleLink) name = titleLink.textContent.trim().substring(0, 255);
+                        }
+                    }
+                    window.trackWhatsAppClick(pid, name, 'product_card', 1);
+                });
+            });
         } catch (e) {}
     }
 

@@ -332,8 +332,17 @@ if ($prods_enabled == '1'):
                     $reviews_cnt = isset($p['review_count']) ? (int)$p['review_count'] : 0;
                     $has_reviews = ($reviews_cnt > 0 && $avg_rating > 0);
                     
-                    // WhatsApp Direct Order Text
-                    $wa_msg = urlencode("Hello Sagar Starters! I am interested in ordering: *" . $p['name'] . "* (Price: " . $global_currency . number_format($display_price, 2) . "). Please confirm stock and delivery.");
+                    // WhatsApp Direct Order Text — upgraded rich format
+                    $wa_msg = urlencode(
+                        "Hello Sagar Starter's! \xF0\x9F\x91\x8B" . "\n\n" .
+                        "I am interested in ordering:" . "\n\n" .
+                        "*Product:* " . $p['name'] . "\n\n" .
+                        "*Price:* " . $global_currency . number_format($display_price, 2) . "\n\n" .
+                        "*Quantity:* 1" . "\n\n" .
+                        "*Product Link:*" . "\n" . $p_url . "\n\n" .
+                        "Please confirm stock availability and delivery charges." . "\n\n" .
+                        "Thank you."
+                    );
                     $wa_link = "https://wa.me/{$wa_phone}?text={$wa_msg}";
                 ?>
                 <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6 col-12" data-aos="fade-up" data-aos-delay="<?php echo $delay; $delay+=50; ?>">
