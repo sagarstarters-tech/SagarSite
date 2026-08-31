@@ -212,15 +212,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $google_client_id = $conn->real_escape_string($_POST['google_client_id'] ?? '');
         $google_client_secret = $conn->real_escape_string($_POST['google_client_secret'] ?? '');
         $google_profile_reminder_enabled = isset($_POST['google_profile_reminder_enabled']) ? '1' : '0';
-        $google_profile_reminder_delay = intval($_POST['google_profile_reminder_delay'] ?? 15);
-        $google_profile_reminder_max_count = intval($_POST['google_profile_reminder_max_count'] ?? 1);
+        
+        $google_profile_reminder_delay_1 = intval($_POST['google_profile_reminder_delay_1'] ?? ($_POST['google_profile_reminder_delay'] ?? 15));
+        $google_profile_reminder_delay_2 = intval($_POST['google_profile_reminder_delay_2'] ?? 6);
+        $google_profile_reminder_delay_3 = intval($_POST['google_profile_reminder_delay_3'] ?? 24);
+        $google_profile_reminder_delay_4 = intval($_POST['google_profile_reminder_delay_4'] ?? 48);
+        $google_profile_reminder_delay_5 = intval($_POST['google_profile_reminder_delay_5'] ?? 72);
+        $google_profile_reminder_max_count = intval($_POST['google_profile_reminder_max_count'] ?? 5);
 
         $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('google_login_enabled', '$google_login_enabled') ON DUPLICATE KEY UPDATE setting_value='$google_login_enabled'");
         $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('google_one_tap_enabled', '$google_one_tap_enabled') ON DUPLICATE KEY UPDATE setting_value='$google_one_tap_enabled'");
         $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('google_client_id', '$google_client_id') ON DUPLICATE KEY UPDATE setting_value='$google_client_id'");
         $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('google_client_secret', '$google_client_secret') ON DUPLICATE KEY UPDATE setting_value='$google_client_secret'");
         $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('google_profile_reminder_enabled', '$google_profile_reminder_enabled') ON DUPLICATE KEY UPDATE setting_value='$google_profile_reminder_enabled'");
-        $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('google_profile_reminder_delay', '$google_profile_reminder_delay') ON DUPLICATE KEY UPDATE setting_value='$google_profile_reminder_delay'");
+        $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('google_profile_reminder_delay', '$google_profile_reminder_delay_1') ON DUPLICATE KEY UPDATE setting_value='$google_profile_reminder_delay_1'");
+        $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('google_profile_reminder_delay_1', '$google_profile_reminder_delay_1') ON DUPLICATE KEY UPDATE setting_value='$google_profile_reminder_delay_1'");
+        $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('google_profile_reminder_delay_2', '$google_profile_reminder_delay_2') ON DUPLICATE KEY UPDATE setting_value='$google_profile_reminder_delay_2'");
+        $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('google_profile_reminder_delay_3', '$google_profile_reminder_delay_3') ON DUPLICATE KEY UPDATE setting_value='$google_profile_reminder_delay_3'");
+        $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('google_profile_reminder_delay_4', '$google_profile_reminder_delay_4') ON DUPLICATE KEY UPDATE setting_value='$google_profile_reminder_delay_4'");
+        $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('google_profile_reminder_delay_5', '$google_profile_reminder_delay_5') ON DUPLICATE KEY UPDATE setting_value='$google_profile_reminder_delay_5'");
         $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('google_profile_reminder_max_count', '$google_profile_reminder_max_count') ON DUPLICATE KEY UPDATE setting_value='$google_profile_reminder_max_count'");
     }
 
@@ -958,22 +968,85 @@ $active_tab = isset($_GET['tab']) ? $_GET['tab'] : 'general';
                             </div>
                         </div>
 
-                        <div class="row g-3">
-                            <div class="col-sm-6">
-                                <label class="form-label fw-semibold small">Inactivity Delay (Minutes)</label>
-                                <div class="input-group input-group-sm">
-                                    <input type="number" min="1" max="1440" name="google_profile_reminder_delay" class="form-control" value="<?php echo htmlspecialchars($current_settings['google_profile_reminder_delay'] ?? '15'); ?>" placeholder="15">
-                                    <span class="input-group-text">mins</span>
-                                </div>
-                                <small class="text-muted d-block mt-1" style="font-size: 11px;">Wait time after customer moves away / inactivity.</small>
+                        <!-- 5-Stage Reminder Schedule Table -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-uppercase text-muted"><i class="fas fa-layer-group me-1 text-primary"></i> 5-Stage Automated Reminder Schedule</label>
+                            <div class="table-responsive bg-white rounded-3 border">
+                                <table class="table table-sm table-bordered align-middle mb-0 small">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th style="width: 25%;">Stage</th>
+                                            <th style="width: 35%;">Delay Timing</th>
+                                            <th>Trigger Condition</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="fw-bold"><span class="badge bg-primary me-1">1st</span> Reminder</td>
+                                            <td>
+                                                <div class="input-group input-group-sm">
+                                                    <input type="number" min="0" max="1440" name="google_profile_reminder_delay_1" class="form-control form-control-sm" value="<?php echo htmlspecialchars($current_settings['google_profile_reminder_delay_1'] ?? ($current_settings['google_profile_reminder_delay'] ?? '15')); ?>">
+                                                    <span class="input-group-text">mins</span>
+                                                </div>
+                                            </td>
+                                            <td class="text-muted">0 - 15 mins after leaving website</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold"><span class="badge bg-info text-dark me-1">2nd</span> Reminder</td>
+                                            <td>
+                                                <div class="input-group input-group-sm">
+                                                    <input type="number" min="1" max="168" name="google_profile_reminder_delay_2" class="form-control form-control-sm" value="<?php echo htmlspecialchars($current_settings['google_profile_reminder_delay_2'] ?? '6'); ?>">
+                                                    <span class="input-group-text">hours</span>
+                                                </div>
+                                            </td>
+                                            <td class="text-muted">6 hours after sign-in</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold"><span class="badge bg-warning text-dark me-1">3rd</span> Reminder</td>
+                                            <td>
+                                                <div class="input-group input-group-sm">
+                                                    <input type="number" min="1" max="168" name="google_profile_reminder_delay_3" class="form-control form-control-sm" value="<?php echo htmlspecialchars($current_settings['google_profile_reminder_delay_3'] ?? '24'); ?>">
+                                                    <span class="input-group-text">hours</span>
+                                                </div>
+                                            </td>
+                                            <td class="text-muted">24 hours (1 day) after sign-in</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold"><span class="badge bg-secondary me-1">4th</span> Reminder</td>
+                                            <td>
+                                                <div class="input-group input-group-sm">
+                                                    <input type="number" min="1" max="336" name="google_profile_reminder_delay_4" class="form-control form-control-sm" value="<?php echo htmlspecialchars($current_settings['google_profile_reminder_delay_4'] ?? '48'); ?>">
+                                                    <span class="input-group-text">hours</span>
+                                                </div>
+                                            </td>
+                                            <td class="text-muted">48 hours (2 days) after sign-in</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold"><span class="badge bg-danger me-1">5th</span> Reminder</td>
+                                            <td>
+                                                <div class="input-group input-group-sm">
+                                                    <input type="number" min="1" max="720" name="google_profile_reminder_delay_5" class="form-control form-control-sm" value="<?php echo htmlspecialchars($current_settings['google_profile_reminder_delay_5'] ?? '72'); ?>">
+                                                    <span class="input-group-text">hours</span>
+                                                </div>
+                                            </td>
+                                            <td class="text-muted">72 hours (3 days) final notice</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
-                            <div class="col-sm-6">
-                                <label class="form-label fw-semibold small">Max Reminders Count</label>
-                                <div class="input-group input-group-sm">
-                                    <input type="number" min="1" max="5" name="google_profile_reminder_max_count" class="form-control" value="<?php echo htmlspecialchars($current_settings['google_profile_reminder_max_count'] ?? '1'); ?>" placeholder="1">
-                                    <span class="input-group-text">times</span>
-                                </div>
-                                <small class="text-muted d-block mt-1" style="font-size: 11px;">Max times email is sent per user.</small>
+                        </div>
+
+                        <div class="row g-3 mb-2">
+                            <div class="col-sm-7">
+                                <label class="form-label fw-semibold small">Total Max Reminder Stages</label>
+                                <select name="google_profile_reminder_max_count" class="form-select form-select-sm">
+                                    <?php $max = intval($current_settings['google_profile_reminder_max_count'] ?? 5); ?>
+                                    <option value="1" <?php echo $max == 1 ? 'selected' : ''; ?>>1 Stage Only (1st Reminder)</option>
+                                    <option value="2" <?php echo $max == 2 ? 'selected' : ''; ?>>2 Stages (1st & 2nd)</option>
+                                    <option value="3" <?php echo $max == 3 ? 'selected' : ''; ?>>3 Stages (1st, 2nd & 24hr)</option>
+                                    <option value="4" <?php echo $max == 4 ? 'selected' : ''; ?>>4 Stages (Up to 48hr)</option>
+                                    <option value="5" <?php echo ($max >= 5 || !isset($current_settings['google_profile_reminder_max_count'])) ? 'selected' : ''; ?>>All 5 Stages (Full 72hr Sequence)</option>
+                                </select>
                             </div>
                         </div>
 

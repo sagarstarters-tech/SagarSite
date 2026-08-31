@@ -246,8 +246,12 @@ class GoogleProfileReminderService {
     }
 
     /**
-     * Process due automated reminders.
-     * Called by background shutdown function or cron.
+     * Process due automated reminders across 5 configurable stages.
+     * Stage 1: 0 - 15 mins (Inactivity window)
+     * Stage 2: 6 hours
+     * Stage 3: 24 hours (1 day)
+     * Stage 4: 48 hours (2 days)
+     * Stage 5: 72 hours (3 days)
      * 
      * @return int Number of reminders sent
      */
@@ -260,61 +264,90 @@ class GoogleProfileReminderService {
             return 0;
         }
 
-        // Delay in minutes after moving away / inactivity (default 15 minutes)
-        $delayMinutes = intval($this->getSetting('google_profile_reminder_delay', '15'));
-        if ($delayMinutes < 0) $delayMinutes = 0;
-
-        // Max reminders per user (default 1)
-        $maxCount = intval($this->getSetting('google_profile_reminder_max_count', '1'));
+        // Max stages/levels to send (default 5)
+        $maxCount = intval($this->getSetting('google_profile_reminder_max_count', '5'));
         if ($maxCount < 1) $maxCount = 1;
+        if ($maxCount > 5) $maxCount = 5;
+
+        // Delays for each stage
+        $delay1_mins = intval($this->getSetting('google_profile_reminder_delay_1', $this->getSetting('google_profile_reminder_delay', '15')));
+        if ($delay1_mins < 0) $delay1_mins = 0;
+
+        $delay2_hrs = intval($this->getSetting('google_profile_reminder_delay_2', '6'));
+        $delay3_hrs = intval($this->getSetting('google_profile_reminder_delay_3', '24'));
+        $delay4_hrs = intval($this->getSetting('google_profile_reminder_delay_4', '48'));
+        $delay5_hrs = intval($this->getSetting('google_profile_reminder_delay_5', '72'));
 
         $sentCount = 0;
 
         try {
-            // Find pending reminders where inactivity duration is >= delayMinutes
-            if ($delayMinutes === 0) {
-                $query = "SELECT r.*, u.phone, u.address, u.is_verified, u.name as current_name, u.email as current_email 
-                          FROM google_profile_reminders r 
-                          JOIN users u ON r.user_id = u.id 
-                          WHERE r.reminder_status = 'pending' 
-                            AND r.reminder_count < ? 
-                          ORDER BY r.id ASC 
-                          LIMIT 20";
-                $stmt = $this->conn->prepare($query);
-                $stmt->bind_param("i", $maxCount);
-            } else {
-                $query = "SELECT r.*, u.phone, u.address, u.is_verified, u.name as current_name, u.email as current_email 
-                          FROM google_profile_reminders r 
-                          JOIN users u ON r.user_id = u.id 
-                          WHERE r.reminder_status = 'pending' 
-                            AND r.reminder_count < ? 
-                            AND TIMESTAMPDIFF(MINUTE, r.last_activity_at, NOW()) >= ? 
-                          ORDER BY r.id ASC 
-                          LIMIT 20";
-                $stmt = $this->conn->prepare($query);
-                $stmt->bind_param("ii", $maxCount, $delayMinutes);
-            }
-            $stmt->execute();
-            $result = $stmt->get_result();
-            $records = [];
-            while ($row = $result->fetch_assoc()) {
-                $records[] = $row;
-            }
-            $stmt->close();
+            // Process each stage/level from 1 to $maxCount
+            for ($level = 1; $level <= $maxCount; $level++) {
+                $targetCount = $level - 1; // Stage 1 targets reminder_count = 0, Stage 2 targets reminder_count = 1, etc.
+                $stmt = null;
 
-            foreach ($records as $rec) {
-                // If the user already completed profile in users table, mark completed and skip
-                if (!empty($rec['phone']) && !empty($rec['address'])) {
-                    $this->markCompleted($rec['user_id']);
-                    continue;
+                if ($level === 1) {
+                    if ($delay1_mins === 0) {
+                        $query = "SELECT r.*, u.phone, u.address, u.is_verified, u.name as current_name, u.email as current_email 
+                                  FROM google_profile_reminders r 
+                                  JOIN users u ON r.user_id = u.id 
+                                  WHERE r.reminder_status = 'pending' 
+                                    AND r.reminder_count = 0 
+                                  ORDER BY r.id ASC 
+                                  LIMIT 20";
+                        $stmt = $this->conn->prepare($query);
+                    } else {
+                        $query = "SELECT r.*, u.phone, u.address, u.is_verified, u.name as current_name, u.email as current_email 
+                                  FROM google_profile_reminders r 
+                                  JOIN users u ON r.user_id = u.id 
+                                  WHERE r.reminder_status = 'pending' 
+                                    AND r.reminder_count = 0 
+                                    AND TIMESTAMPDIFF(MINUTE, r.last_activity_at, NOW()) >= ? 
+                                  ORDER BY r.id ASC 
+                                  LIMIT 20";
+                        $stmt = $this->conn->prepare($query);
+                        if ($stmt) $stmt->bind_param("i", $delay1_mins);
+                    }
+                } else {
+                    // Stages 2, 3, 4, 5 calculate duration in hours from login_at
+                    $delayHrs = ($level === 2) ? $delay2_hrs : (($level === 3) ? $delay3_hrs : (($level === 4) ? $delay4_hrs : $delay5_hrs));
+                    
+                    $query = "SELECT r.*, u.phone, u.address, u.is_verified, u.name as current_name, u.email as current_email 
+                              FROM google_profile_reminders r 
+                              JOIN users u ON r.user_id = u.id 
+                              WHERE r.reminder_status = 'pending' 
+                                AND r.reminder_count = ? 
+                                AND TIMESTAMPDIFF(HOUR, r.login_at, NOW()) >= ? 
+                              ORDER BY r.id ASC 
+                              LIMIT 20";
+                    $stmt = $this->conn->prepare($query);
+                    if ($stmt) $stmt->bind_param("ii", $targetCount, $delayHrs);
                 }
 
-                $recipientEmail = !empty($rec['current_email']) ? $rec['current_email'] : $rec['email'];
-                $recipientName = !empty($rec['current_name']) ? $rec['current_name'] : $rec['name'];
+                if ($stmt) {
+                    $stmt->execute();
+                    $result = $stmt->get_result();
+                    $records = [];
+                    while ($row = $result->fetch_assoc()) {
+                        $records[] = $row;
+                    }
+                    $stmt->close();
 
-                $sent = $this->sendReminderEmail($rec['id'], $rec['user_id'], $recipientEmail, $recipientName);
-                if ($sent) {
-                    $sentCount++;
+                    foreach ($records as $rec) {
+                        // If user already completed profile in users table, mark completed and skip
+                        if (!empty($rec['phone']) && !empty($rec['address'])) {
+                            $this->markCompleted($rec['user_id']);
+                            continue;
+                        }
+
+                        $recipientEmail = !empty($rec['current_email']) ? $rec['current_email'] : $rec['email'];
+                        $recipientName = !empty($rec['current_name']) ? $rec['current_name'] : $rec['name'];
+
+                        $sent = $this->sendReminderEmail($rec['id'], $rec['user_id'], $recipientEmail, $recipientName, $level, $maxCount);
+                        if ($sent) {
+                            $sentCount++;
+                        }
+                    }
                 }
             }
         } catch (\Throwable $e) {
@@ -325,15 +358,17 @@ class GoogleProfileReminderService {
     }
 
     /**
-     * Send profile completion reminder email.
+     * Send profile completion reminder email for a specific stage.
      * 
      * @param int $reminderId
      * @param int $userId
      * @param string $recipientEmail
      * @param string $recipientName
+     * @param int $level Current reminder stage (1 to 5)
+     * @param int $maxLevels Maximum stages configured
      * @return bool
      */
-    public function sendReminderEmail($reminderId, $userId, $recipientEmail, $recipientName) {
+    public function sendReminderEmail($reminderId, $userId, $recipientEmail, $recipientName, $level = 1, $maxLevels = 5) {
         if (!filter_var($recipientEmail, FILTER_VALIDATE_EMAIL)) {
             logEmailAttempt($this->conn, null, $recipientEmail, 'google_profile_reminder', 'failed', 'Invalid email address.');
             return false;
@@ -355,16 +390,28 @@ class GoogleProfileReminderService {
             }
             $profileLink = $baseUrl . '/user/profile.php';
 
+            // Contextual stage headline based on reminder level
+            $stageHeadlines = [
+                1 => "You're almost there! Complete your profile for seamless shopping & fast dispatch.",
+                2 => "Friendly Reminder: Your account is active, but your shipping address is missing.",
+                3 => "Don't miss out on exclusive member deals & fast 1-click checkout. Finish your setup today.",
+                4 => "Quick action needed: Your profile details are still incomplete.",
+                5 => "Final Notice: Complete your delivery profile to keep your account ready for fast shipping."
+            ];
+            $stageSubText = $stageHeadlines[$level] ?? $stageHeadlines[1];
+
             // Fetch template
             $tpl = getEmailTemplate($this->conn, 'google_profile_reminder');
 
             $vars = [
-                'name'         => htmlspecialchars($recipientName ?: 'Valued Customer'),
-                'email'        => htmlspecialchars($recipientEmail),
-                'profile_link' => $profileLink,
-                'site_name'    => htmlspecialchars($siteName),
-                'site_url'     => $baseUrl,
-                'current_year' => date('Y')
+                'name'           => htmlspecialchars($recipientName ?: 'Valued Customer'),
+                'email'          => htmlspecialchars($recipientEmail),
+                'profile_link'   => $profileLink,
+                'site_name'      => htmlspecialchars($siteName),
+                'site_url'       => $baseUrl,
+                'reminder_level' => (string)$level,
+                'urgency_text'   => htmlspecialchars($stageSubText),
+                'current_year'   => date('Y')
             ];
 
             if ($tpl) {
@@ -372,7 +419,7 @@ class GoogleProfileReminderService {
                 $body = parseTemplate($tpl['body'], $vars);
             } else {
                 $subject = "Complete Your Profile at " . $siteName;
-                $body = "<p>Hi {$vars['name']},</p><p>Please complete your profile details: <a href='{$profileLink}'>{$profileLink}</a></p>";
+                $body = "<p>Hi {$vars['name']},</p><p>{$stageSubText}</p><p><a href='{$profileLink}'>{$profileLink}</a></p>";
             }
 
             $mail = getMailerInstance($this->conn);
@@ -386,10 +433,11 @@ class GoogleProfileReminderService {
             // Log attempt
             logEmailAttempt($this->conn, null, $recipientEmail, 'google_profile_reminder', 'success');
 
-            // Update reminder record if tracked record exists
+            // Update reminder record
             if ($reminderId > 0) {
-                $upd = $this->conn->prepare("UPDATE google_profile_reminders SET reminder_status = 'sent', reminder_count = reminder_count + 1, last_sent_at = NOW() WHERE id = ?");
-                $upd->bind_param("i", $reminderId);
+                $nextStatus = ($level >= $maxLevels) ? 'sent' : 'pending';
+                $upd = $this->conn->prepare("UPDATE google_profile_reminders SET reminder_status = ?, reminder_count = ?, last_sent_at = NOW() WHERE id = ?");
+                $upd->bind_param("sii", $nextStatus, $level, $reminderId);
                 $upd->execute();
                 $upd->close();
             }
@@ -398,7 +446,7 @@ class GoogleProfileReminderService {
         } catch (\Throwable $e) {
             $errMsg = $e->getMessage();
             logEmailAttempt($this->conn, null, $recipientEmail, 'google_profile_reminder', 'failed', "Error: " . $errMsg);
-            error_log("[GoogleProfileReminder] sendReminderEmail failed for user #{$userId}: " . $errMsg);
+            error_log("[GoogleProfileReminder] sendReminderEmail failed for user #{$userId} (Stage {$level}): " . $errMsg);
             return false;
         }
     }
