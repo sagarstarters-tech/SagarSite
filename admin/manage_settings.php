@@ -988,6 +988,9 @@ $active_tab = isset($_GET['tab']) ? $_GET['tab'] : 'general';
                             <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill" id="testProfileReminderBtn">
                                 <i class="fas fa-paper-plane me-1"></i>Send Test Reminder
                             </button>
+                            <button type="button" class="btn btn-outline-success btn-sm rounded-pill" id="runProfileReminderNowBtn">
+                                <i class="fas fa-sync-alt me-1"></i>Run Reminder Check Now
+                            </button>
                         </div>
                     </div>
                     
@@ -1438,6 +1441,40 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(err => {
                 testProfileReminderBtn.innerHTML = originalHtml;
                 testProfileReminderBtn.disabled = false;
+                alert('Request failed. Check console for details.');
+                console.error(err);
+            });
+        });
+    }
+
+    const runProfileReminderNowBtn = document.getElementById('runProfileReminderNowBtn');
+    if (runProfileReminderNowBtn) {
+        runProfileReminderNowBtn.addEventListener('click', function() {
+            const originalHtml = runProfileReminderNowBtn.innerHTML;
+            runProfileReminderNowBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Checking...';
+            runProfileReminderNowBtn.disabled = true;
+
+            const formData = new FormData();
+            formData.append('action', 'run_now');
+
+            fetch('test_profile_reminder_email.php', {
+                method: 'POST',
+                credentials: 'same-origin',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                runProfileReminderNowBtn.innerHTML = originalHtml;
+                runProfileReminderNowBtn.disabled = false;
+                if(data.success) {
+                    alert(data.message);
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(err => {
+                runProfileReminderNowBtn.innerHTML = originalHtml;
+                runProfileReminderNowBtn.disabled = false;
                 alert('Request failed. Check console for details.');
                 console.error(err);
             });

@@ -189,14 +189,12 @@ class GoogleProfileReminderService {
             $chk->close();
 
             if ($row) {
-                // If existing record was completed or cancelled or sent, reset or update for new incomplete session
-                if ($row['reminder_status'] !== 'completed') {
-                    $upd = $this->conn->prepare("UPDATE google_profile_reminders SET reminder_status = 'pending', email = ?, name = ?, login_at = NOW(), last_activity_at = NOW() WHERE id = ?");
-                    $upd->bind_param("ssi", $email, $name, $row['id']);
-                    $upd->execute();
-                    $upd->close();
-                    return true;
-                }
+                // Reset to pending with reminder_count = 0 so this session is eligible for reminder
+                $upd = $this->conn->prepare("UPDATE google_profile_reminders SET reminder_status = 'pending', reminder_count = 0, email = ?, name = ?, login_at = NOW(), last_activity_at = NOW() WHERE id = ?");
+                $upd->bind_param("ssi", $email, $name, $row['id']);
+                $res = $upd->execute();
+                $upd->close();
+                return $res;
             }
 
             // Insert new pending record
@@ -264,7 +262,7 @@ class GoogleProfileReminderService {
 
         // Delay in minutes after moving away / inactivity (default 15 minutes)
         $delayMinutes = intval($this->getSetting('google_profile_reminder_delay', '15'));
-        if ($delayMinutes < 1) $delayMinutes = 1;
+        if ($delayMinutes < 0) $delayMinutes = 0;
 
         // Max reminders per user (default 1)
         $maxCount = intval($this->getSetting('google_profile_reminder_max_count', '1'));
@@ -274,17 +272,28 @@ class GoogleProfileReminderService {
 
         try {
             // Find pending reminders where inactivity duration is >= delayMinutes
-            $query = "SELECT r.*, u.phone, u.address, u.is_verified, u.name as current_name, u.email as current_email 
-                      FROM google_profile_reminders r 
-                      JOIN users u ON r.user_id = u.id 
-                      WHERE r.reminder_status = 'pending' 
-                        AND r.reminder_count < ? 
-                        AND TIMESTAMPDIFF(MINUTE, r.last_activity_at, NOW()) >= ? 
-                      ORDER BY r.id ASC 
-                      LIMIT 20";
-
-            $stmt = $this->conn->prepare($query);
-            $stmt->bind_param("ii", $maxCount, $delayMinutes);
+            if ($delayMinutes === 0) {
+                $query = "SELECT r.*, u.phone, u.address, u.is_verified, u.name as current_name, u.email as current_email 
+                          FROM google_profile_reminders r 
+                          JOIN users u ON r.user_id = u.id 
+                          WHERE r.reminder_status = 'pending' 
+                            AND r.reminder_count < ? 
+                          ORDER BY r.id ASC 
+                          LIMIT 20";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bind_param("i", $maxCount);
+            } else {
+                $query = "SELECT r.*, u.phone, u.address, u.is_verified, u.name as current_name, u.email as current_email 
+                          FROM google_profile_reminders r 
+                          JOIN users u ON r.user_id = u.id 
+                          WHERE r.reminder_status = 'pending' 
+                            AND r.reminder_count < ? 
+                            AND TIMESTAMPDIFF(MINUTE, r.last_activity_at, NOW()) >= ? 
+                          ORDER BY r.id ASC 
+                          LIMIT 20";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bind_param("ii", $maxCount, $delayMinutes);
+            }
             $stmt->execute();
             $result = $stmt->get_result();
             $records = [];
