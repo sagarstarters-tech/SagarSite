@@ -57,13 +57,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                      $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
                      
                      if (in_array($ext, $allowed)) {
-                         $new_name = uniqid('profile_') . '.' . $ext;
-                         $upload_dir = '../assets/images/';
+                         $new_name = 'profile/user_' . $id . '_' . time() . '.' . $ext;
+                         $upload_dir = '../uploads/images/profile/';
                          if (!is_dir($upload_dir)) {
-                             mkdir($upload_dir, 0777, true);
+                             mkdir($upload_dir, 0755, true);
                          }
-                         if (move_uploaded_file($tmp_name, $upload_dir . $new_name)) {
-                             $photo_update = ", profile_photo='$new_name'";
+                         if (move_uploaded_file($tmp_name, '../uploads/images/' . $new_name)) {
+                             $safe_name = $conn->real_escape_string($new_name);
+                             $photo_update = ", profile_photo='$safe_name'";
                          }
                      }
                  }
@@ -215,8 +216,12 @@ $total_pages = ceil($total_users / $limit);
                         <tr>
                             <td class="ps-4">
                                 <div class="d-flex align-items-center gap-3">
-                                    <?php if(!empty($u['profile_photo'])): ?>
-                                        <img src="../assets/images/<?php echo htmlspecialchars($u['profile_photo']); ?>" alt="Avatar" class="mu-avatar">
+                                    <?php 
+                                        $uPhotoUrl = resolve_profile_photo_url($u['profile_photo'] ?? '', $u['role'] ?? '');
+                                    ?>
+                                    <?php if(!empty($uPhotoUrl)): ?>
+                                        <img src="<?php echo htmlspecialchars($uPhotoUrl); ?>" alt="Avatar" class="mu-avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                        <div class="mu-avatar-placeholder" style="display:none;"><?php echo $uInitials; ?></div>
                                     <?php else: ?>
                                         <div class="mu-avatar-placeholder"><?php echo $uInitials; ?></div>
                                     <?php endif; ?>
