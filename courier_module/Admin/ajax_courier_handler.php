@@ -53,9 +53,45 @@ try {
 
             $res = json_decode($raw, true);
             if ($code === 200 && !empty($res['token'])) {
-                $enc = \CourierModule\Services\CourierCryptoService::encrypt($res['token']);
-                $pdo->prepare("UPDATE courier_integrations SET api_token = ? WHERE provider_code = 'bharatship'")->execute([$enc]);
-                echo json_encode(['success' => true, 'token' => $res['token'], 'message' => 'Bearer token generated and saved successfully!']);
+                $token = $res['token'];
+                $enc = \CourierModule\Services\CourierCryptoService::encrypt($token);
+                $pdo->prepare("UPDATE courier_integrations SET api_token = ?, is_enabled = 1, is_default = 1, auto_sync_orders = 1 WHERE provider_code = 'bharatship'")->execute([$enc]);
+
+                // Sync warehouses automatically
+                $courier = $manager->getCourier('bharatship');
+                if ($courier) {
+                    $courier->setApiToken($token);
+                    $whRes = $courier->getWarehouses();
+                    if ($whRes['success'] && !empty($whRes['warehouses'])) {
+                        foreach ($whRes['warehouses'] as $wh) {
+                            $whId = intval($wh['warehouse_id'] ?? $wh['id'] ?? 6763);
+                            $whName = trim((string)($wh['warehouse_name'] ?? $wh['name'] ?? 'Primary Hub'));
+                            $stmt = $pdo->prepare("
+                                INSERT INTO courier_warehouses (
+                                    integration_id, warehouse_id, warehouse_name, warehouse_code,
+                                    contact_name, contact_phone, address_line1, city, state, pincode, is_default, is_active
+                                ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1)
+                                ON DUPLICATE KEY UPDATE
+                                    warehouse_name = VALUES(warehouse_name),
+                                    address_line1 = VALUES(address_line1)
+                            ");
+                            $stmt->execute([
+                                $whId,
+                                $whName,
+                                (string)$whId,
+                                (string)($wh['name'] ?? 'Pramod Kumar Sagar'),
+                                (string)($wh['number'] ?? '8573934013'),
+                                (string)($wh['address'] ?? 'Alipur Madra Jakhania'),
+                                (string)($wh['city_name'] ?? 'Ghazipur'),
+                                (string)($wh['state'] ?? 'UTTAR PRADESH'),
+                                (string)($wh['pincode'] ?? '275203')
+                            ]);
+                        }
+                        $pdo->prepare("UPDATE courier_integrations SET pickup_address_id = 6763 WHERE provider_code = 'bharatship'")->execute();
+                    }
+                }
+
+                echo json_encode(['success' => true, 'token' => $token, 'message' => 'BharatShip Bearer Token generated and Warehouses synced successfully!']);
             } else {
                 echo json_encode(['success' => false, 'message' => $res['message'] ?? 'Failed to authenticate with BharatShip.']);
             }
