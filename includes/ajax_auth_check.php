@@ -32,6 +32,13 @@ if (isset($_SESSION['user_id'])) {
         $_SESSION['role'] = $u_row['role'];
         $_SESSION['profile_photo'] = trim($u_row['profile_photo'] ?: ($u_row['google_avatar'] ?? ''));
     }
+    
+    if (!empty($_SESSION['needs_profile_update'])) {
+        try {
+            require_once __DIR__ . '/GoogleProfileReminderService.php';
+            (new GoogleProfileReminderService($conn))->touchActivity($uid);
+        } catch (\Throwable $e) {}
+    }
 }
 
 // Resolve profile photo URL using global helper

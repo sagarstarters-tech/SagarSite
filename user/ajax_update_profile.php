@@ -145,6 +145,10 @@ $check_stmt->close();
 
 if (!empty($updated_user['phone']) && !empty($updated_user['address'])) {
     unset($_SESSION['needs_profile_update']);
+    try {
+        require_once __DIR__ . '/../includes/GoogleProfileReminderService.php';
+        (new GoogleProfileReminderService($conn))->markCompleted($user_id);
+    } catch (\Throwable $e) {}
 }
 
 echo json_encode([

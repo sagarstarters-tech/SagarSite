@@ -110,6 +110,10 @@ if (!defined('DISABLE_AUTO_REMINDER_TRIGGER')) {
             require_once __DIR__ . '/AbandonedCartService.php';
             (new AbandonedCartService($conn))->processAutoReminders();
         } catch (\Throwable $e) {}
+        try {
+            require_once __DIR__ . '/GoogleProfileReminderService.php';
+            (new GoogleProfileReminderService($conn))->processAutoReminders();
+        } catch (\Throwable $e) {}
     } else {
         // Run safely in background shutdown after web response is delivered to user
         register_shutdown_function(function() use ($conn) {
@@ -127,6 +131,11 @@ if (!defined('DISABLE_AUTO_REMINDER_TRIGGER')) {
                     require_once __DIR__ . '/AbandonedCartService.php';
                     (new AbandonedCartService($conn))->processAutoReminders();
                 }
+            } catch (\Throwable $e) {}
+
+            try {
+                require_once __DIR__ . '/GoogleProfileReminderService.php';
+                (new GoogleProfileReminderService($conn))->processAutoReminders();
             } catch (\Throwable $e) {}
         });
     }

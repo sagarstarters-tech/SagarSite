@@ -157,6 +157,15 @@ if ($result->num_rows > 0) {
     // Check if profile is incomplete
     if (empty($user['phone']) || empty($user['address'])) {
         $_SESSION['needs_profile_update'] = true;
+        try {
+            require_once __DIR__ . '/../includes/GoogleProfileReminderService.php';
+            (new GoogleProfileReminderService($conn))->trackGoogleLogin($user['id'], $email, $user['name'] ?: $name);
+        } catch (\Throwable $e) {}
+    } else {
+        try {
+            require_once __DIR__ . '/../includes/GoogleProfileReminderService.php';
+            (new GoogleProfileReminderService($conn))->markCompleted($user['id']);
+        } catch (\Throwable $e) {}
     }
     
     // Load saved cart from DB
@@ -182,6 +191,11 @@ if ($result->num_rows > 0) {
         $_SESSION['role'] = 'user';
         $_SESSION['profile_photo'] = $avatar;
         $_SESSION['needs_profile_update'] = true; // New Google users always need to complete profile
+        
+        try {
+            require_once __DIR__ . '/../includes/GoogleProfileReminderService.php';
+            (new GoogleProfileReminderService($conn))->trackGoogleLogin($new_id, $email, $name);
+        } catch (\Throwable $e) {}
         
         // Sync any guest cart to the new user's DB record
         sync_cart_to_db($conn);

@@ -133,8 +133,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($stmt->execute()) {
         $_SESSION['name'] = $name;
-        if (isset($_SESSION['needs_profile_update']) && !empty($phone) && !empty($address)) {
-            unset($_SESSION['needs_profile_update']);
+        if (!empty($phone) && !empty($address)) {
+            if (isset($_SESSION['needs_profile_update'])) {
+                unset($_SESSION['needs_profile_update']);
+            }
+            try {
+                require_once __DIR__ . '/../includes/GoogleProfileReminderService.php';
+                (new GoogleProfileReminderService($conn))->markCompleted($user_id);
+            } catch (\Throwable $e) {}
         }
         $_SESSION['success'] = "Profile updated successfully.";
     } else {

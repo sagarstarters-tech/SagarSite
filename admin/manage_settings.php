@@ -211,11 +211,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $google_one_tap_enabled = isset($_POST['google_one_tap_enabled']) ? '1' : '0';
         $google_client_id = $conn->real_escape_string($_POST['google_client_id'] ?? '');
         $google_client_secret = $conn->real_escape_string($_POST['google_client_secret'] ?? '');
+        $google_profile_reminder_enabled = isset($_POST['google_profile_reminder_enabled']) ? '1' : '0';
+        $google_profile_reminder_delay = intval($_POST['google_profile_reminder_delay'] ?? 15);
+        $google_profile_reminder_max_count = intval($_POST['google_profile_reminder_max_count'] ?? 1);
 
         $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('google_login_enabled', '$google_login_enabled') ON DUPLICATE KEY UPDATE setting_value='$google_login_enabled'");
         $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('google_one_tap_enabled', '$google_one_tap_enabled') ON DUPLICATE KEY UPDATE setting_value='$google_one_tap_enabled'");
         $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('google_client_id', '$google_client_id') ON DUPLICATE KEY UPDATE setting_value='$google_client_id'");
         $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('google_client_secret', '$google_client_secret') ON DUPLICATE KEY UPDATE setting_value='$google_client_secret'");
+        $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('google_profile_reminder_enabled', '$google_profile_reminder_enabled') ON DUPLICATE KEY UPDATE setting_value='$google_profile_reminder_enabled'");
+        $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('google_profile_reminder_delay', '$google_profile_reminder_delay') ON DUPLICATE KEY UPDATE setting_value='$google_profile_reminder_delay'");
+        $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('google_profile_reminder_max_count', '$google_profile_reminder_max_count') ON DUPLICATE KEY UPDATE setting_value='$google_profile_reminder_max_count'");
     }
 
     // 4. Hero Banners Block
@@ -930,6 +936,60 @@ $active_tab = isset($_GET['tab']) ? $_GET['tab'] : 'general';
                             <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('googleRedirectUri')"><i class="fas fa-copy"></i> Copy</button>
                         </div>
                     </div>
+
+                    <hr class="my-4">
+
+                    <!-- Profile Completion Auto-Reminder Settings -->
+                    <div class="p-3 bg-light rounded-3 border mb-4">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <h6 class="fw-bold mb-0 text-dark">
+                                <i class="fas fa-bell text-warning me-2"></i>Profile Completion Auto-Reminder
+                            </h6>
+                            <span class="badge bg-primary">Auto Email</span>
+                        </div>
+                        <p class="small text-muted mb-3">
+                            Automatically sends a reminder email with a direct profile link when a customer signs in with Google and moves away without filling their profile details (Phone, Address, etc.).
+                        </p>
+
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" name="google_profile_reminder_enabled" id="googleProfileReminderEnabled" <?php echo (!isset($current_settings['google_profile_reminder_enabled']) || $current_settings['google_profile_reminder_enabled'] == '1') ? 'checked' : ''; ?>>
+                                <label class="form-check-label ms-1 fw-bold" for="googleProfileReminderEnabled">Enable Profile Completion Reminder Email</label>
+                            </div>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <label class="form-label fw-semibold small">Inactivity Delay (Minutes)</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" min="1" max="1440" name="google_profile_reminder_delay" class="form-control" value="<?php echo htmlspecialchars($current_settings['google_profile_reminder_delay'] ?? '15'); ?>" placeholder="15">
+                                    <span class="input-group-text">mins</span>
+                                </div>
+                                <small class="text-muted d-block mt-1" style="font-size: 11px;">Wait time after customer moves away / inactivity.</small>
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label fw-semibold small">Max Reminders Count</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" min="1" max="5" name="google_profile_reminder_max_count" class="form-control" value="<?php echo htmlspecialchars($current_settings['google_profile_reminder_max_count'] ?? '1'); ?>" placeholder="1">
+                                    <span class="input-group-text">times</span>
+                                </div>
+                                <small class="text-muted d-block mt-1" style="font-size: 11px;">Max times email is sent per user.</small>
+                            </div>
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2 mt-3 pt-2 border-top">
+                            <?php 
+                                $tpl_id_q = $conn->query("SELECT id FROM email_templates WHERE tpl_key = 'google_profile_reminder' LIMIT 1");
+                                $tpl_id = ($tpl_id_q && $t_row = $tpl_id_q->fetch_assoc()) ? $t_row['id'] : '';
+                            ?>
+                            <a href="manage_email_templates.php<?php echo $tpl_id ? '?edit=' . $tpl_id : ''; ?>" class="btn btn-outline-primary btn-sm rounded-pill">
+                                <i class="fas fa-envelope-open-text me-1"></i>Edit Email Template
+                            </a>
+                            <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill" id="testProfileReminderBtn">
+                                <i class="fas fa-paper-plane me-1"></i>Send Test Reminder
+                            </button>
+                        </div>
+                    </div>
                     
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary btn-custom flex-grow-1">Save Social Login Settings</button>
@@ -1341,6 +1401,43 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(err => {
                 testGoogleBtn.innerHTML = '<i class="fas fa-plug me-2"></i>Test Connection';
                 testGoogleBtn.disabled = false;
+                alert('Request failed. Check console for details.');
+                console.error(err);
+            });
+        });
+    }
+
+    const testProfileReminderBtn = document.getElementById('testProfileReminderBtn');
+    if (testProfileReminderBtn) {
+        testProfileReminderBtn.addEventListener('click', function() {
+            const email = prompt('Enter the email address to send a test profile completion reminder to:');
+            if (!email || !email.trim()) return;
+
+            const originalHtml = testProfileReminderBtn.innerHTML;
+            testProfileReminderBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Sending...';
+            testProfileReminderBtn.disabled = true;
+
+            const formData = new FormData();
+            formData.append('test_email', email.trim());
+
+            fetch('test_profile_reminder_email.php', {
+                method: 'POST',
+                credentials: 'same-origin',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                testProfileReminderBtn.innerHTML = originalHtml;
+                testProfileReminderBtn.disabled = false;
+                if(data.success) {
+                    alert('Success: ' + data.message);
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(err => {
+                testProfileReminderBtn.innerHTML = originalHtml;
+                testProfileReminderBtn.disabled = false;
                 alert('Request failed. Check console for details.');
                 console.error(err);
             });

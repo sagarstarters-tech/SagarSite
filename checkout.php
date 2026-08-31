@@ -219,6 +219,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $upd_stmt->bind_param("sssssssi", $billing_name, $billing_address, $billing_city, $billing_state, $billing_country, $billing_zip, $billing_phone, $user_id);
             $upd_stmt->execute();
             $upd_stmt->close();
+            
+            if (!empty($billing_phone) && !empty($billing_address)) {
+                if (isset($_SESSION['needs_profile_update'])) {
+                    unset($_SESSION['needs_profile_update']);
+                }
+                try {
+                    require_once __DIR__ . '/includes/GoogleProfileReminderService.php';
+                    (new GoogleProfileReminderService($conn))->markCompleted($user_id);
+                } catch (\Throwable $e) {}
+            }
         }
 
         $status = 'pending';
