@@ -1,6 +1,10 @@
 <?php
 include 'admin_header.php';
+require_once __DIR__ . '/../courier_module/Database/CourierSchemaBootstrap.php';
 require_once __DIR__ . '/../courier_module/Services/CourierCryptoService.php';
+
+// Auto-create missing tables on production if not existing
+\CourierModule\Database\CourierSchemaBootstrap::ensureTablesExist($conn);
 
 // Fetch current courier integrations
 $integrations_q = $conn->query("SELECT * FROM courier_integrations ORDER BY id ASC");

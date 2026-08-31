@@ -28,6 +28,9 @@ class CourierManager
         } else {
             $this->pdo = $pdo;
         }
+
+        require_once __DIR__ . '/../Database/CourierSchemaBootstrap.php';
+        \CourierModule\Database\CourierSchemaBootstrap::ensureTablesExist($this->pdo);
     }
 
     /**

@@ -1,5 +1,9 @@
 <?php
 include 'admin_header.php';
+require_once __DIR__ . '/../courier_module/Database/CourierSchemaBootstrap.php';
+
+// Auto-create missing tables on production if not existing
+\CourierModule\Database\CourierSchemaBootstrap::ensureTablesExist($conn);
 
 // Pagination
 $page = max(1, intval($_GET['page'] ?? 1));
