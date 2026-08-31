@@ -49,6 +49,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    if ($action === 'buy_now') {
+        // Same as 'add' but redirects straight to checkout
+        $qty = intval($_POST['quantity'] ?? 1);
+        if ($qty < $moq) $qty = $moq;
+
+        $current_qty = isset($_SESSION['cart'][$product_id]) ? $_SESSION['cart'][$product_id] : 0;
+        $new_qty = $current_qty + $qty;
+        if ($new_qty < $moq) $new_qty = $moq;
+
+        if ($new_qty > $stock) {
+            $new_qty = $stock;
+        }
+
+        if ($new_qty > 0) {
+            $_SESSION['cart'][$product_id] = $new_qty;
+        }
+
+        sync_cart_to_db($conn);
+        track_abandoned_cart($conn);
+        header("Location: ../checkout.php");
+        exit;
+    }
+
     if ($action === 'update') {
         $qty = intval($_POST['quantity'] ?? 1);
         if ($qty > 0 && $qty < $moq) {

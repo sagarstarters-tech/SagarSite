@@ -386,7 +386,12 @@ if (!empty($global_settings['hero_banner_product'])) {
                 <div class="me-3" style="width: 110px;">
                     <input type="number" name="quantity" id="productQtyInput" class="form-control text-center fw-bold" value="<?php echo $moq; ?>" min="<?php echo $moq; ?>" max="<?php echo $product['stock']; ?>">
                 </div>
-                <button type="submit" class="btn btn-primary btn-lg btn-custom px-4"><i class="fas fa-shopping-cart me-2"></i>Add to Cart</button>
+                <button type="submit" name="action" value="add" class="btn btn-primary btn-lg btn-custom px-4" id="addToCartBtn">
+                    <i class="fas fa-shopping-cart me-2"></i>Add to Cart
+                </button>
+                <button type="submit" name="action" value="buy_now" class="btn btn-warning btn-lg btn-custom px-4 fw-bold" id="buyNowBtn" style="color:#1a1a1a;">
+                    <i class="fas fa-bolt me-2"></i>Buy Now
+                </button>
                 <?php
                 // WhatsApp Order button — server-side base link with qty=1, JS updates it on qty change
                 $wa_phone_prod = get_store_whatsapp_number();
@@ -467,17 +472,41 @@ if (!empty($global_settings['hero_banner_product'])) {
                 </script>
             </form>
             <script>
-                document.getElementById('addToCartForm').addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    const btn = this.querySelector('button[type="submit"]');
-                    btn.classList.add('disabled');
-                    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Adding...';
-                    window.flyToCartAnimation(document.getElementById('mainProductImage'));
-                    const form = this;
-                    setTimeout(function() {
-                        HTMLFormElement.prototype.submit.call(form);
-                    }, 800);
-                });
+                (function() {
+                    var form = document.getElementById('addToCartForm');
+                    var lastClickedBtn = null;
+
+                    // Track which button was clicked last
+                    form.addEventListener('click', function(e) {
+                        if (e.target && e.target.closest('button[type="submit"]')) {
+                            lastClickedBtn = e.target.closest('button[type="submit"]');
+                        }
+                    });
+
+                    form.addEventListener('submit', function(e) {
+                        e.preventDefault();
+                        var clickedBtn = lastClickedBtn || this.querySelector('button[type="submit"]');
+                        var isBuyNow = clickedBtn && clickedBtn.value === 'buy_now';
+
+                        // Disable both buttons to prevent double-click
+                        this.querySelectorAll('button[type="submit"]').forEach(function(b) {
+                            b.classList.add('disabled');
+                            b.setAttribute('disabled', 'disabled');
+                        });
+
+                        if (isBuyNow) {
+                            clickedBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+                        } else {
+                            clickedBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Adding...';
+                            window.flyToCartAnimation(document.getElementById('mainProductImage'));
+                        }
+
+                        var f = this;
+                        setTimeout(function() {
+                            HTMLFormElement.prototype.submit.call(f);
+                        }, isBuyNow ? 300 : 800);
+                    });
+                })();
             </script>
             <?php if ($has_bulk_discount): ?>
             <script>
