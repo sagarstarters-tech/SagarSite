@@ -73,7 +73,7 @@ $failed_queue    = (int)($conn->query("SELECT COUNT(*) as c FROM courier_queue W
             <div class="card border-0 shadow-sm rounded-4 p-3 bg-white">
                 <div class="d-flex align-items-center">
                     <div class="rounded-circle p-3 bg-primary bg-opacity-10 text-primary me-3">
-                        <i class="fas fa-box-check fa-2x"></i>
+                        <i class="fas fa-boxes fa-2x"></i>
                     </div>
                     <div>
                         <small class="text-muted fw-semibold">Total Synced Shipments</small>
