@@ -87,19 +87,15 @@ if (!function_exists('resolve_profile_photo_url')) {
         }
 
         // 2. Dynamically detect the correct base URL
-        //    This prevents stale constants (e.g. SITE_URL set from a different script context)
-        //    from causing incorrect URLs in AJAX responses.
         $is_https = (isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] === 'on' || $_SERVER['HTTPS'] === '1'))
                   || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
         $proto = $is_https ? 'https' : 'http';
         $http_host = $_SERVER['HTTP_HOST'] ?? '';
 
         if (!empty($http_host) && $http_host !== 'localhost' && strpos($http_host, '127.0.0.1') === false) {
-            // Live server: use protocol + host directly (no subfolder)
             $assets_url = $proto . '://' . rtrim($http_host, '/') . '/assets';
             $site_url   = $proto . '://' . rtrim($http_host, '/');
         } else {
-            // Local / CLI: fall back to SITE_URL constant or ASSETS_URL constant
             $site_url   = defined('SITE_URL')   ? rtrim(SITE_URL,   '/') : '';
             $site_url   = preg_replace('#/(includes|admin|api|user|auth|cron|shipping_module_src|wapi)$#i', '', $site_url);
             $assets_url = defined('ASSETS_URL') ? rtrim(ASSETS_URL, '/') : ($site_url . '/assets');
@@ -110,7 +106,19 @@ if (!function_exists('resolve_profile_photo_url')) {
         $clean_photo = ltrim($photo, '/');
         $basename    = basename($clean_photo);
 
-        // 3. Check in assets/images/ (server-side confirm) → return URL
+        // 3. NEW: Check uploads/images/profile/ first (deploy-safe storage, not wiped by git push)
+        //    Handles filenames stored as 'profile/user_X_ts.ext' OR bare 'user_X_ts.ext'
+        $uploads_profile_path = $base_path . '/uploads/images/profile/' . $basename;
+        if (file_exists($uploads_profile_path)) {
+            return $site_url . '/uploads/images/profile/' . $basename;
+        }
+        // Also check if stored with 'profile/' prefix in clean_photo
+        $uploads_full_path = $base_path . '/uploads/images/' . $clean_photo;
+        if (file_exists($uploads_full_path)) {
+            return $site_url . '/uploads/images/' . $clean_photo;
+        }
+
+        // 4. Legacy: Check in assets/images/ (old location — kept for backward compat)
         if (file_exists($base_path . '/assets/images/' . $basename)) {
             return $assets_url . '/images/' . $basename;
         }
@@ -118,7 +126,7 @@ if (!function_exists('resolve_profile_photo_url')) {
             return $assets_url . '/images/' . $clean_photo;
         }
 
-        // 4. Check in uploads/
+        // 5. Check in uploads/ root
         if (file_exists($base_path . '/uploads/media/images/' . $basename)) {
             return $site_url . '/uploads/media/images/' . $basename;
         }
@@ -126,9 +134,8 @@ if (!function_exists('resolve_profile_photo_url')) {
             return $site_url . '/uploads/' . $clean_photo;
         }
 
-        // 5. Fallback: build assets URL directly without file_exists check
-        //    (handles production where files exist but BASE_PATH mapping differs)
-        //    The browser's onerror handler will catch any 404.
+        // 6. Fallback: build URL without file_exists check
+        //    Browser onerror handler will catch any 404.
         return $assets_url . '/images/' . $basename;
     }
 }

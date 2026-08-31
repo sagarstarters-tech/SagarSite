@@ -33,6 +33,11 @@ Thumbs.db
 !/uploads/.gitkeep
 !/uploads/.gitignore
 !/uploads/downloads/.htaccess
+!/uploads/images/
+!/uploads/images/.gitkeep
+!/uploads/images/.htaccess
+!/uploads/images/profile/
+!/uploads/images/profile/.gitkeep
 
 # Vendor (if composer is used)
 # Backups & SQL Dumps

@@ -82,16 +82,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $base_dir = defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__);
-        $upload_dir = $base_dir . '/assets/images/';
+        // ── IMPORTANT: Store in uploads/images/ (git-ignored, deploy-safe) ──
+        // assets/images/ is wiped on every git deployment — do NOT use it for user files.
+        $upload_dir = $base_dir . '/uploads/images/';
         if (!is_dir($upload_dir)) {
             mkdir($upload_dir, 0755, true);
         }
 
-        $new_filename = 'user_' . $user_id . '_' . time() . '.' . $file_ext;
-        $upload_path  = $upload_dir . $new_filename;
+        $new_filename = 'profile/user_' . $user_id . '_' . time() . '.' . $file_ext;
+        $upload_path  = $base_dir . '/uploads/images/' . $new_filename;
+
+        // Ensure the profile sub-directory exists
+        $profile_subdir = $base_dir . '/uploads/images/profile';
+        if (!is_dir($profile_subdir)) {
+            mkdir($profile_subdir, 0755, true);
+        }
 
         if (move_uploaded_file($file_tmp, $upload_path)) {
             $has_new_photo = true;
+            // Store as 'uploads/images/profile/user_X_timestamp.ext' in DB
+            // resolve_profile_photo_url() checks uploads/ tree and returns correct URL
             $_SESSION['profile_photo'] = $new_filename;
         } else {
             $_SESSION['error'] = "Failed to save uploaded image. Please check server permissions.";
