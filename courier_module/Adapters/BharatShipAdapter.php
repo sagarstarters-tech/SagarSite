@@ -73,15 +73,25 @@ class BharatShipAdapter extends BaseCourierAdapter
      */
     public function getWarehouses(): array
     {
-        $res = $this->request('api/warehouseList', 'GET');
-        if (!$res['success']) {
-            $res = $this->request('api/v1/warehouse-list', 'GET');
-        }
-        if (!$res['success']) {
-            $res = $this->request('api/warehouses', 'GET');
+        // Try all official BharatShip warehouse list endpoints
+        $endpoints = [
+            ['api/v1/warehouse-list', 'GET'],
+            ['api/v1/warehouse-list', 'POST'],
+            ['api/warehouseList', 'GET'],
+            ['api/warehouseList', 'POST'],
+            ['api/v1/warehouses', 'GET'],
+            ['api/warehouses', 'GET']
+        ];
+
+        $res = null;
+        foreach ($endpoints as $ep) {
+            $res = $this->request($ep[0], $ep[1]);
+            if ($res['success']) {
+                break;
+            }
         }
 
-        if ($res['success']) {
+        if ($res && $res['success']) {
             $list = $res['data']['data'] ?? (isset($res['data'][0]) ? $res['data'] : ($res['data']['warehouses'] ?? []));
             return [
                 'success'    => true,
