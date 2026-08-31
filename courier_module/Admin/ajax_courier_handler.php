@@ -30,6 +30,37 @@ try {
     $postedToken = trim($_POST['api_token'] ?? '');
 
     switch ($action) {
+        case 'generate_auth_token':
+            $email = trim($_POST['email'] ?? '');
+            $password = trim($_POST['password'] ?? '');
+            if (empty($email) || empty($password)) {
+                echo json_encode(['success' => false, 'message' => 'Email and password are required.']);
+                exit;
+            }
+
+            $url = 'https://app.bharatship.com/api/authToken';
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => json_encode(['email' => $email, 'password' => $password]),
+                CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Accept: application/json'],
+                CURLOPT_TIMEOUT => 15
+            ]);
+            $raw = curl_exec($ch);
+            $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            $res = json_decode($raw, true);
+            if ($code === 200 && !empty($res['token'])) {
+                $enc = \CourierModule\Services\CourierCryptoService::encrypt($res['token']);
+                $pdo->prepare("UPDATE courier_integrations SET api_token = ? WHERE provider_code = 'bharatship'")->execute([$enc]);
+                echo json_encode(['success' => true, 'token' => $res['token'], 'message' => 'Bearer token generated and saved successfully!']);
+            } else {
+                echo json_encode(['success' => false, 'message' => $res['message'] ?? 'Failed to authenticate with BharatShip.']);
+            }
+            exit;
+
         case 'test_connection':
             $providerCode = trim($_POST['provider_code'] ?? 'bharatship');
             $courier = $manager->getCourier($providerCode);

@@ -144,7 +144,12 @@ $failed_queue    = (int)($conn->query("SELECT COUNT(*) as c FROM courier_queue W
                     </div>
 
                     <div class="col-md-6">
-                        <label class="form-label fw-bold small text-muted">API Bearer Token</label>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label fw-bold small text-muted mb-0">API Bearer Token</label>
+                            <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none fw-bold text-info" data-mdb-toggle="modal" data-mdb-target="#generateTokenModal">
+                                <i class="fas fa-key me-1"></i>Generate from Login
+                            </button>
+                        </div>
                         <div class="input-group">
                             <input type="password" name="api_token" id="bsApiToken" class="form-control" placeholder="<?php echo !empty($maskedToken) ? $maskedToken : 'Paste your BharatShip Bearer Token'; ?>">
                             <button class="btn btn-outline-secondary" type="button" onclick="toggleTokenVisibility()"><i class="fas fa-eye" id="tokenEyeIcon"></i></button>
@@ -268,6 +273,38 @@ $failed_queue    = (int)($conn->query("SELECT COUNT(*) as c FROM courier_queue W
         </div>
     </div>
 
+</div>
+
+<!-- Generate Token Modal -->
+<div class="modal fade" id="generateTokenModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold"><i class="fas fa-key text-info me-2"></i>Generate Token from BharatShip Login</h5>
+                <button type="button" class="btn-close" data-mdb-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="generateTokenForm">
+                <input type="hidden" name="action" value="generate_auth_token">
+                <div class="modal-body p-4">
+                    <p class="small text-muted mb-3">Enter your registered BharatShip login credentials to automatically generate and save your Bearer Token.</p>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">BharatShip Email *</label>
+                        <input type="email" name="email" class="form-control" value="sagarstarters@gmail.com" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold text-muted">BharatShip Password *</label>
+                        <input type="password" name="password" class="form-control" value="Pramod@2026" required>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light btn-custom px-4" data-mdb-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-info text-white btn-custom px-4 shadow-sm" id="genTokenSubmitBtn">
+                        <i class="fas fa-magic me-1"></i>Generate &amp; Save Token
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 <!-- Test Connection Modal -->
@@ -495,6 +532,38 @@ function testBharatShipConnection() {
         `;
     });
 }
+
+// Generate Token from Login Form Submit
+document.getElementById('generateTokenForm')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const btn = document.getElementById('genTokenSubmitBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Authenticating...';
+
+    const formData = new FormData(this);
+    const params = new URLSearchParams(formData);
+
+    fetch('../courier_module/Admin/ajax_courier_handler.php', {
+        method: 'POST',
+        body: params
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-magic me-1"></i>Generate &amp; Save Token';
+        if (data.success) {
+            alert('Success: ' + data.message);
+            location.reload();
+        } else {
+            alert('Failed: ' + (data.message || 'Authentication error'));
+        }
+    })
+    .catch(err => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-magic me-1"></i>Generate &amp; Save Token';
+        alert('Network Error: ' + err.message);
+    });
+});
 
 // Save Configuration
 document.getElementById('bharatshipForm').addEventListener('submit', function(e) {
