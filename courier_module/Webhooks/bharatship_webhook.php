@@ -20,29 +20,35 @@ require_once BASE_PATH . '/config/DbConnection.php';
 
 $pdo = DbConnection::getInstance();
 
-// 1. Read raw JSON payload
+// 1. Handle BharatShip Probe / URL Verification Pings (GET, HEAD, or empty test POST)
+if ($_SERVER['REQUEST_METHOD'] === 'GET' || $_SERVER['REQUEST_METHOD'] === 'HEAD') {
+    http_response_code(200);
+    echo json_encode(['status' => 'success', 'message' => 'BharatShip Webhook Endpoint Active (200 OK)']);
+    exit;
+}
+
+// Read raw JSON payload
 $rawPayload = file_get_contents('php://input');
 $data = json_decode($rawPayload, true);
 
-if (empty($data) || !is_array($data)) {
-    http_response_code(400);
-    echo json_encode(['status' => 'error', 'message' => 'Invalid JSON payload.']);
+// If empty ping or test verification probe, respond 200 OK
+if (empty($data) || !is_array($data) || isset($data['test']) || isset($data['ping']) || empty($data['awb_number']) && empty($data['awb']) && empty($data['waybill']) && empty($data['tracking_number'])) {
+    http_response_code(200);
+    echo json_encode([
+        'status'  => 'success',
+        'message' => 'BharatShip Webhook Verified & Active (200 OK)',
+        'received_at' => date('Y-m-d H:i:s')
+    ]);
     exit;
 }
 
 // 2. Extract AWB and status identifiers
-$awb = trim((string)($data['awb_number'] ?? $data['awb'] ?? $data['tracking_number'] ?? ''));
+$awb = trim((string)($data['waybill'] ?? $data['awb_number'] ?? $data['awb'] ?? $data['tracking_number'] ?? ''));
 $status = strtoupper(trim((string)($data['current_status'] ?? $data['status'] ?? '')));
 $courierPartner = trim((string)($data['courier_name'] ?? $data['courier_partner'] ?? ''));
 $labelUrl = trim((string)($data['label_url'] ?? $data['label'] ?? ''));
 $manifestUrl = trim((string)($data['manifest_url'] ?? ''));
 $statusDescription = trim((string)($data['status_description'] ?? $data['activity'] ?? $status));
-
-if (empty($awb)) {
-    http_response_code(422);
-    echo json_encode(['status' => 'error', 'message' => 'AWB number is missing in payload.']);
-    exit;
-}
 
 try {
     // 3. Find matching shipment in database
