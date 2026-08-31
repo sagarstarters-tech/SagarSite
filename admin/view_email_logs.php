@@ -4,11 +4,12 @@ include 'admin_header.php';
 // Pagination setup
 $items_per_page = 20;
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+if ($page < 1) $page = 1;
 $offset = ($page - 1) * $items_per_page;
 
 // Fetch totals
 $total_q = $conn->query("SELECT COUNT(*) as cnt FROM email_logs");
-$total_items = $total_q->fetch_assoc()['cnt'];
+$total_items = $total_q ? $total_q->fetch_assoc()['cnt'] : 0;
 $total_pages = ceil($total_items / $items_per_page);
 
 // Fetch logs
@@ -50,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <h4 class="fw-bold mb-0">Email Activity Logs</h4>
     <?php if ($total_items > 0): ?>
         <form method="POST" class="m-0" onsubmit="return confirm('WARNING: This will permanently delete ALL email activity logs from the database. This action cannot be undone. Are you absolutely sure?');">
-    <?php echo csrf_input(); ?>
+            <?php echo csrf_input(); ?>
             <input type="hidden" name="action" value="clear_all">
             <button type="submit" class="btn btn-outline-danger btn-sm px-3"><i class="fas fa-trash-alt me-2"></i>Clear All Data</button>
         </form>
@@ -84,13 +85,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <?php while($log = $logs->fetch_assoc()): ?>
                         <tr>
                             <td>
-                                <span class="d-block mb-1"><?php echo date('M d, Y', strtotime($log['created_at'])); ?></span>
+                                <span class="d-block mb-1 fw-semibold"><?php echo date('M d, Y', strtotime($log['created_at'])); ?></span>
                                 <small class="text-muted"><?php echo date('h:i A', strtotime($log['created_at'])); ?></small>
                             </td>
                             <td>
-                                <?php if($log['order_id']): ?>
+                                <?php if(!empty($log['order_id'])): ?>
                                     <span class="fw-bold text-primary">#<?php echo $log['order_number']; ?></span>
-                                    <br><small class="text-muted"><?php echo htmlspecialchars($log['customer_name']); ?></small>
+                                    <br><small class="text-muted"><?php echo htmlspecialchars($log['customer_name'] ?? ''); ?></small>
                                 <?php else: ?>
                                     <span class="text-muted">N/A</span>
                                 <?php endif; ?>
@@ -99,6 +100,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <td>
                                 <?php if($log['email_type'] === 'customer_order'): ?>
                                     <span class="badge bg-info bg-opacity-10 text-info border border-info px-2 py-1">Customer Auth</span>
+                                <?php elseif($log['email_type'] === 'google_profile_reminder'): ?>
+                                    <span class="badge bg-warning bg-opacity-10 text-warning border border-warning px-2 py-1">Profile Reminder</span>
                                 <?php else: ?>
                                     <span class="badge bg-primary bg-opacity-10 text-primary border border-primary px-2 py-1">Admin Alert</span>
                                 <?php endif; ?>
@@ -111,115 +114,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <?php if($log['error_message']): ?>
-                                    <button class="btn btn-sm btn-outline-danger" data-mdb-toggle="modal" data-mdb-target="#errorModal<?php echo $log['id']; ?>">
+                                <?php if(!empty($log['error_message'])): ?>
+                                    <button type="button" class="btn btn-sm btn-outline-danger btn-view-error" 
+                                        data-id="<?php echo $log['id']; ?>" 
+                                        data-error="<?php echo htmlspecialchars($log['error_message']); ?>">
                                         View Error
                                     </button>
-                                    
-                                    <!-- Error Modal -->
-                                    <div class="modal fade" id="errorModal<?php echo $log['id']; ?>" tabindex="-1">
-                                        <div class="modal-dialog">
-                                            <div class="modal-content rounded-4 border-0">
-                                                <div class="modal-header border-bottom border-danger bg-danger bg-opacity-10">
-                                                    <h5 class="modal-title fw-bold text-danger"><i class="fas fa-exclamation-circle me-2"></i>Delivery Error</h5>
-                                                    <button type="button" class="btn-close" data-mdb-dismiss="modal"></button>
-                                                </div>
-                                                <div class="modal-body p-4">
-                                                    <p class="mb-0 text-dark"><?php echo nl2br(htmlspecialchars($log['error_message'])); ?></p>
-                                                </div>
-                                                <div class="modal-footer border-0">
-                                                    <button type="button" class="btn btn-light" data-mdb-dismiss="modal">Close</button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
                                 <?php else: ?>
                                     <span class="text-muted">-</span>
                                 <?php endif; ?>
                             </td>
                             <td class="pe-4">
                                 <div class="d-flex justify-content-end align-items-center gap-2">
-                                    <button class="btn btn-info btn-sm btn-custom px-3" data-mdb-toggle="modal" data-mdb-target="#viewLogModal<?php echo $log['id']; ?>">
+                                    <button type="button" class="btn btn-info btn-sm btn-custom px-3 btn-view-log"
+                                        data-id="<?php echo $log['id']; ?>"
+                                        data-timestamp="<?php echo date('M d, Y - h:i A', strtotime($log['created_at'])); ?>"
+                                        data-email="<?php echo htmlspecialchars($log['recipient_email']); ?>"
+                                        data-type="<?php echo htmlspecialchars($log['email_type']); ?>"
+                                        data-status="<?php echo htmlspecialchars($log['status']); ?>"
+                                        data-error="<?php echo htmlspecialchars($log['error_message'] ?? ''); ?>"
+                                        data-order="<?php echo htmlspecialchars($log['order_number'] ?? ''); ?>"
+                                        data-customer="<?php echo htmlspecialchars($log['customer_name'] ?? ''); ?>">
                                         <i class="fas fa-eye"></i> View
                                     </button>
                                     <form method="POST" class="m-0 p-0" onsubmit="return confirm('Are you sure you want to delete this log entry?');">
-    <?php echo csrf_input(); ?>
+                                        <?php echo csrf_input(); ?>
                                         <input type="hidden" name="action" value="delete">
                                         <input type="hidden" name="log_id" value="<?php echo $log['id']; ?>">
                                         <button type="submit" class="btn btn-danger btn-sm btn-custom px-3"><i class="fas fa-trash-alt"></i></button>
                                     </form>
                                 </div>
-
-                                <!-- View Modal -->
-                                <div class="modal fade" id="viewLogModal<?php echo $log['id']; ?>" tabindex="-1">
-                                    <div class="modal-dialog text-start">
-                                        <div class="modal-content rounded-4 border-0">
-                                            <div class="modal-header bg-light">
-                                                <h5 class="modal-title fw-bold">Log Details #<?php echo $log['id']; ?></h5>
-                                                <button type="button" class="btn-close" data-mdb-dismiss="modal"></button>
-                                            </div>
-                                            <div class="modal-body p-4">
-                                                <div class="mb-3">
-                                                    <label class="form-label fw-bold text-muted small text-uppercase">Timestamp</label>
-                                                    <p class="mb-0 fs-5"><?php echo date('M d, Y - h:i A', strtotime($log['created_at'])); ?></p>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label class="form-label fw-bold text-muted small text-uppercase">Recipient Email</label>
-                                                    <p class="mb-0 fs-5"><?php echo htmlspecialchars($log['recipient_email']); ?></p>
-                                                </div>
-                                                
-                                                <div class="mb-3 d-flex justify-content-between">
-                                                    <div>
-                                                        <label class="form-label fw-bold text-muted small text-uppercase mb-1">Email Type</label>
-                                                        <div>
-                                                            <?php if($log['email_type'] === 'customer_order'): ?>
-                                                                <span class="badge bg-info bg-opacity-10 text-info border border-info">Customer Auth</span>
-                                                            <?php else: ?>
-                                                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary">Admin Alert</span>
-                                                            <?php endif; ?>
-                                                        </div>
-                                                    </div>
-                                                    <div>
-                                                        <label class="form-label fw-bold text-muted small text-uppercase mb-1">Status</label>
-                                                        <div>
-                                                            <?php if($log['status'] === 'success'): ?>
-                                                                <span class="badge bg-success"><i class="fas fa-check me-1"></i>Sent</span>
-                                                            <?php else: ?>
-                                                                <span class="badge bg-danger"><i class="fas fa-times me-1"></i>Failed</span>
-                                                            <?php endif; ?>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                
-                                                <?php if($log['error_message']): ?>
-                                                <div class="mb-3">
-                                                    <label class="form-label fw-bold text-danger small text-uppercase">Error Message</label>
-                                                    <div class="p-3 bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded text-danger">
-                                                        <?php echo nl2br(htmlspecialchars($log['error_message'])); ?>
-                                                    </div>
-                                                </div>
-                                                <?php endif; ?>
-                                                
-                                                <?php if($log['order_id']): ?>
-                                                <div class="mt-4 pt-3 border-top">
-                                                    <h6 class="fw-bold mb-2">Associated Order Data</h6>
-                                                    <p class="mb-1"><strong>Order ID:</strong> #<?php echo $log['order_number']; ?></p>
-                                                    <p class="mb-0"><strong>Customer Name:</strong> <?php echo htmlspecialchars($log['customer_name']); ?></p>
-                                                    <a href="manage_orders.php" class="btn btn-outline-primary btn-sm mt-2">View Orders Dashboard</a>
-                                                </div>
-                                                <?php endif; ?>
-                                            </div>
-                                            <div class="modal-footer border-0 bg-light">
-                                                <button type="button" class="btn btn-secondary btn-custom" data-mdb-dismiss="modal">Close</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
                             </td>
                         </tr>
                         <?php endwhile; ?>
                     <?php else: ?>
-                        <tr><td colspan="6" class="text-center py-5 text-muted"><i class="fas fa-envelope-open fa-3x mb-3 text-light"></i><br>No email activity logged yet.</td></tr>
+                        <tr><td colspan="7" class="text-center py-5 text-muted"><i class="fas fa-envelope-open fa-3x mb-3 text-light"></i><br>No email activity logged yet.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
@@ -244,5 +173,161 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
     </div>
 </div>
+
+<!-- Single Clean Dynamic Log Details Modal (Placed outside table to prevent flickering) -->
+<div class="modal fade" id="dynamicLogModal" tabindex="-1" aria-labelledby="dynamicLogModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered text-start">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header bg-light border-0 py-3">
+                <h5 class="modal-title fw-bold" id="dynamicLogModalLabel"><i class="fas fa-info-circle text-primary me-2"></i>Log Details <span id="modalLogId" class="text-primary"></span></h5>
+                <button type="button" class="btn-close" data-mdb-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-muted small text-uppercase mb-1">Timestamp</label>
+                    <p class="mb-0 fs-5 text-dark fw-semibold" id="modalLogTimestamp"></p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-muted small text-uppercase mb-1">Recipient Email</label>
+                    <p class="mb-0 fs-5 text-dark" id="modalLogEmail"></p>
+                </div>
+                
+                <div class="mb-3 d-flex justify-content-between align-items-center bg-light p-3 rounded-3">
+                    <div>
+                        <label class="form-label fw-bold text-muted small text-uppercase mb-1">Email Type</label>
+                        <div id="modalLogType"></div>
+                    </div>
+                    <div class="text-end">
+                        <label class="form-label fw-bold text-muted small text-uppercase mb-1">Status</label>
+                        <div id="modalLogStatus"></div>
+                    </div>
+                </div>
+                
+                <div id="modalLogErrorWrapper" class="mb-3 d-none">
+                    <label class="form-label fw-bold text-danger small text-uppercase">Error Message</label>
+                    <div class="p-3 bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded text-danger" id="modalLogError"></div>
+                </div>
+                
+                <div id="modalLogOrderWrapper" class="mt-4 pt-3 border-top d-none">
+                    <h6 class="fw-bold mb-2 text-dark">Associated Order Data</h6>
+                    <p class="mb-1"><strong>Order ID:</strong> <span id="modalLogOrderNum" class="text-primary fw-bold"></span></p>
+                    <p class="mb-0"><strong>Customer Name:</strong> <span id="modalLogCustomerName"></span></p>
+                    <a href="manage_orders.php" class="btn btn-outline-primary btn-sm mt-2 rounded-pill">View Orders Dashboard</a>
+                </div>
+            </div>
+            <div class="modal-footer border-0 bg-light py-2">
+                <button type="button" class="btn btn-secondary btn-custom px-4 rounded-pill" data-mdb-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Single Clean Dynamic Error Details Modal (Placed outside table to prevent flickering) -->
+<div class="modal fade" id="dynamicErrorModal" tabindex="-1" aria-labelledby="dynamicErrorModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered text-start">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header border-bottom border-danger bg-danger bg-opacity-10 py-3">
+                <h5 class="modal-title fw-bold text-danger" id="dynamicErrorModalLabel"><i class="fas fa-exclamation-circle me-2"></i>Delivery Error <span id="modalErrorLogId"></span></h5>
+                <button type="button" class="btn-close" data-mdb-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="mb-0 text-dark" id="modalErrorContent" style="white-space: pre-wrap; word-break: break-word;"></p>
+            </div>
+            <div class="modal-footer border-0 bg-light py-2">
+                <button type="button" class="btn btn-secondary btn-custom px-4 rounded-pill" data-mdb-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let logModalInstance = null;
+    let errorModalInstance = null;
+
+    function getModal(id) {
+        const el = document.getElementById(id);
+        if (!el) return null;
+        if (typeof mdb !== 'undefined' && mdb.Modal) {
+            return mdb.Modal.getInstance(el) || new mdb.Modal(el);
+        }
+        return null;
+    }
+
+    document.querySelectorAll('.btn-view-log').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const id = this.dataset.id;
+            const ts = this.dataset.timestamp;
+            const email = this.dataset.email;
+            const type = this.dataset.type;
+            const status = this.dataset.status;
+            const error = this.dataset.error;
+            const order = this.dataset.order;
+            const customer = this.dataset.customer;
+
+            document.getElementById('modalLogId').textContent = '#' + id;
+            document.getElementById('modalLogTimestamp').textContent = ts;
+            document.getElementById('modalLogEmail').textContent = email;
+
+            let typeBadge = '<span class="badge bg-primary bg-opacity-10 text-primary border border-primary px-2 py-1">' + (type || 'Admin Alert') + '</span>';
+            if (type === 'customer_order') {
+                typeBadge = '<span class="badge bg-info bg-opacity-10 text-info border border-info px-2 py-1">Customer Auth</span>';
+            } else if (type === 'google_profile_reminder') {
+                typeBadge = '<span class="badge bg-warning bg-opacity-10 text-warning border border-warning px-2 py-1">Profile Reminder</span>';
+            }
+            document.getElementById('modalLogType').innerHTML = typeBadge;
+
+            if (status === 'success') {
+                document.getElementById('modalLogStatus').innerHTML = '<span class="badge bg-success rounded-pill px-3 py-1"><i class="fas fa-check me-1"></i>Sent</span>';
+            } else {
+                document.getElementById('modalLogStatus').innerHTML = '<span class="badge bg-danger rounded-pill px-3 py-1"><i class="fas fa-times me-1"></i>Failed</span>';
+            }
+
+            const errWrapper = document.getElementById('modalLogErrorWrapper');
+            if (error && error.trim() !== '') {
+                document.getElementById('modalLogError').textContent = error;
+                errWrapper.classList.remove('d-none');
+            } else {
+                errWrapper.classList.add('d-none');
+            }
+
+            const orderWrapper = document.getElementById('modalLogOrderWrapper');
+            if (order && order.trim() !== '') {
+                document.getElementById('modalLogOrderNum').textContent = '#' + order;
+                document.getElementById('modalLogCustomerName').textContent = customer || '';
+                orderWrapper.classList.remove('d-none');
+            } else {
+                orderWrapper.classList.add('d-none');
+            }
+
+            if (!logModalInstance) {
+                logModalInstance = getModal('dynamicLogModal');
+            }
+            if (logModalInstance) {
+                logModalInstance.show();
+            }
+        });
+    });
+
+    document.querySelectorAll('.btn-view-error').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const id = this.dataset.id;
+            const error = this.dataset.error;
+
+            document.getElementById('modalErrorLogId').textContent = '#' + id;
+            document.getElementById('modalErrorContent').textContent = error || 'No error details recorded.';
+
+            if (!errorModalInstance) {
+                errorModalInstance = getModal('dynamicErrorModal');
+            }
+            if (errorModalInstance) {
+                errorModalInstance.show();
+            }
+        });
+    });
+});
+</script>
 
 <?php include 'admin_footer.php'; ?>
