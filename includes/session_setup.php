@@ -134,8 +134,13 @@ if (!function_exists('resolve_profile_photo_url')) {
             return $site_url . '/uploads/' . $clean_photo;
         }
 
-        // 6. Fallback: build URL without file_exists check
-        //    Browser onerror handler will catch any 404.
+        // 6. Fallback: build appropriate URL based on path pattern
+        if (strpos($clean_photo, 'profile/') === 0 || strpos($basename, 'user_') === 0) {
+            return $site_url . '/uploads/images/profile/' . $basename;
+        }
+        if (strpos($clean_photo, 'uploads/') === 0) {
+            return $site_url . '/' . $clean_photo;
+        }
         return $assets_url . '/images/' . $basename;
     }
 }
