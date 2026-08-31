@@ -91,6 +91,37 @@ try {
             echo json_encode($res);
             exit;
 
+        case 'add_warehouse':
+            $providerCode = trim($_POST['provider_code'] ?? 'bharatship');
+            $courier = $manager->getCourier($providerCode);
+            if (!$courier) {
+                echo json_encode(['success' => false, 'message' => 'Courier provider not found.']);
+                exit;
+            }
+
+            $warehouseData = [
+                'warehouse_name' => trim($_POST['warehouse_name'] ?? 'Primary Hub'),
+                'warehouse_type' => trim($_POST['warehouse_type'] ?? 'office'),
+                'contact_name'   => trim($_POST['contact_name'] ?? 'Store Manager'),
+                'contact_phone'  => trim($_POST['contact_phone'] ?? '918573934013'),
+                'contact_email'  => trim($_POST['contact_email'] ?? ''),
+                'address_line1'  => trim($_POST['address_line1'] ?? ''),
+                'address_line2'  => trim($_POST['address_line2'] ?? ''),
+                'city'           => trim($_POST['city'] ?? ''),
+                'state'          => trim($_POST['state'] ?? ''),
+                'pincode'        => trim($_POST['pincode'] ?? '110001')
+            ];
+
+            $res = $courier->createWarehouse($warehouseData);
+            if ($res['success']) {
+                $whId = (int)($res['warehouse_id'] ?? 0);
+                if ($whId > 0) {
+                    $pdo->prepare("UPDATE courier_integrations SET pickup_address_id = ? WHERE provider_code = ?")->execute([$whId, $providerCode]);
+                }
+            }
+            echo json_encode($res);
+            exit;
+
         case 'fetch_couriers':
             $providerCode = trim($_POST['provider_code'] ?? 'bharatship');
             $courier = $manager->getCourier($providerCode);

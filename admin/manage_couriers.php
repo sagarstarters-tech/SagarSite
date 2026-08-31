@@ -156,9 +156,15 @@ $failed_queue    = (int)($conn->query("SELECT COUNT(*) as c FROM courier_queue W
                     <div class="col-md-6">
                         <div class="d-flex justify-content-between align-items-center mb-1">
                             <label class="form-label fw-bold small text-muted mb-0">Default Pickup Warehouse (<code>pickup_address_id</code>)</label>
-                            <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none fw-bold" onclick="syncWarehousesFromApi()" id="syncWhBtn">
-                                <i class="fas fa-sync-alt me-1"></i>Sync from BharatShip
-                            </button>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none fw-bold text-primary" onclick="syncWarehousesFromApi()" id="syncWhBtn">
+                                    <i class="fas fa-sync-alt me-1"></i>Sync from BharatShip
+                                </button>
+                                <span class="text-muted">|</span>
+                                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none fw-bold text-success" data-mdb-toggle="modal" data-mdb-target="#addWarehouseModal">
+                                    <i class="fas fa-plus-circle me-1"></i>+ Add Warehouse
+                                </button>
+                            </div>
                         </div>
                         <select name="pickup_address_id" id="pickupAddressSelect" class="form-select">
                             <option value="0">-- Select Pickup Warehouse --</option>
@@ -168,7 +174,7 @@ $failed_queue    = (int)($conn->query("SELECT COUNT(*) as c FROM courier_queue W
                                 </option>
                             <?php endforeach; ?>
                         </select>
-                        <div class="form-text small">Select the pickup warehouse registered in your BharatShip Dashboard.</div>
+                        <div class="form-text small">Select the pickup warehouse registered in your BharatShip Dashboard or click <b>+ Add Warehouse</b> to register one now.</div>
                     </div>
 
                     <!-- Default Courier Mode -->
@@ -283,6 +289,63 @@ $failed_queue    = (int)($conn->query("SELECT COUNT(*) as c FROM courier_queue W
     </div>
 </div>
 
+<!-- Add Warehouse Modal -->
+<div class="modal fade" id="addWarehouseModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold"><i class="fas fa-warehouse text-success me-2"></i>Register New Warehouse on BharatShip</h5>
+                <button type="button" class="btn-close" data-mdb-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="addWarehouseForm">
+                <input type="hidden" name="action" value="add_warehouse">
+                <input type="hidden" name="provider_code" value="bharatship">
+
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">Warehouse Name *</label>
+                        <input type="text" name="warehouse_name" class="form-control" value="Sagar Starters Store" required>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted">Contact Person *</label>
+                            <input type="text" name="contact_name" class="form-control" value="Sagar Store Manager" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted">Phone Number (10 Digits) *</label>
+                            <input type="tel" name="contact_phone" class="form-control" value="918573934013" maxlength="10" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">Street Address *</label>
+                        <textarea name="address_line1" class="form-control" rows="2" placeholder="Full store pickup address" required>Shop No 5, Near Market, Main Road</textarea>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold text-muted">City *</label>
+                            <input type="text" name="city" class="form-control" value="Prayagraj" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold text-muted">State *</label>
+                            <input type="text" name="state" class="form-control" value="Uttar Pradesh" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold text-muted">Pincode (6 Digits) *</label>
+                            <input type="text" name="pincode" class="form-control" value="211001" maxlength="6" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light btn-custom px-4" data-mdb-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success btn-custom px-4 shadow-sm" id="createWhBtn">
+                        <i class="fas fa-plus me-1"></i>Create on BharatShip
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
 function toggleTokenVisibility() {
     const input = document.getElementById('bsApiToken');
@@ -317,15 +380,19 @@ function syncWarehousesFromApi() {
             const select = document.getElementById('pickupAddressSelect');
             select.innerHTML = '<option value="0">-- Select Pickup Warehouse --</option>';
             data.warehouses.forEach(wh => {
-                const whId = wh.warehouse_id || wh.id || 0;
+                const whId = wh.warehouse_id || wh.id || wh.pickup_address_id || 1;
                 const whName = wh.warehouse_name || wh.name || 'Warehouse';
                 const city = wh.city_name || wh.city || '';
                 const pin = wh.pincode || '';
                 select.innerHTML += `<option value="${whId}">${whName} (ID: ${whId} &bull; ${city} ${pin})</option>`;
             });
+            // Auto-select first warehouse
+            if (select.options.length > 1) {
+                select.selectedIndex = 1;
+            }
             alert('Successfully synced ' + data.warehouses.length + ' warehouses from BharatShip!');
         } else {
-            alert('Could not fetch warehouses: ' + (data.message || 'Please check your API token'));
+            alert('Notice: BharatShip returned 0 active warehouses.\n\nClick "+ Add Warehouse" to register your store pickup address on BharatShip instantly.');
         }
     })
     .catch(err => {
@@ -334,6 +401,38 @@ function syncWarehousesFromApi() {
         alert('Network Error: ' + err.message);
     });
 }
+
+// Create Warehouse Form Submit
+document.getElementById('addWarehouseForm')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const btn = document.getElementById('createWhBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Registering on BharatShip...';
+
+    const formData = new FormData(this);
+    const params = new URLSearchParams(formData);
+
+    fetch('../courier_module/Admin/ajax_courier_handler.php', {
+        method: 'POST',
+        body: params
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-plus me-1"></i>Create on BharatShip';
+        if (data.success) {
+            alert('Warehouse registered on BharatShip successfully! ID: ' + (data.warehouse_id || 'Active'));
+            location.reload();
+        } else {
+            alert('Failed to create warehouse: ' + (data.message || 'Please check details'));
+        }
+    })
+    .catch(err => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-plus me-1"></i>Create on BharatShip';
+        alert('Network Error: ' + err.message);
+    });
+});
 
 // Test Connection
 function testBharatShipConnection() {
