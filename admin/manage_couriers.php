@@ -364,13 +364,19 @@ function toggleTokenVisibility() {
 // Sync Warehouses from BharatShip API
 function syncWarehousesFromApi() {
     const btn = document.getElementById('syncWhBtn');
+    const tokenVal = document.getElementById('bsApiToken')?.value || '';
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Syncing...';
+
+    let bodyData = 'action=fetch_warehouses&provider_code=bharatship';
+    if (tokenVal) {
+        bodyData += '&api_token=' + encodeURIComponent(tokenVal);
+    }
 
     fetch('../courier_module/Admin/ajax_courier_handler.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: 'action=fetch_warehouses&provider_code=bharatship'
+        body: bodyData
     })
     .then(r => r.json())
     .then(data => {
@@ -406,10 +412,14 @@ function syncWarehousesFromApi() {
 document.getElementById('addWarehouseForm')?.addEventListener('submit', function(e) {
     e.preventDefault();
     const btn = document.getElementById('createWhBtn');
+    const tokenVal = document.getElementById('bsApiToken')?.value || '';
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Registering on BharatShip...';
 
     const formData = new FormData(this);
+    if (tokenVal) {
+        formData.append('api_token', tokenVal);
+    }
     const params = new URLSearchParams(formData);
 
     fetch('../courier_module/Admin/ajax_courier_handler.php', {
@@ -437,6 +447,7 @@ document.getElementById('addWarehouseForm')?.addEventListener('submit', function
 // Test Connection
 function testBharatShipConnection() {
     const btn = document.getElementById('testConnBtn');
+    const tokenVal = document.getElementById('bsApiToken')?.value || '';
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Testing...';
 
@@ -446,10 +457,15 @@ function testBharatShipConnection() {
     body.innerHTML = '<i class="fas fa-spinner fa-spin fa-3x text-primary mb-3"></i><p>Testing connection to BharatShip...</p>';
     modal.show();
 
+    let bodyData = 'action=test_connection&provider_code=bharatship';
+    if (tokenVal) {
+        bodyData += '&api_token=' + encodeURIComponent(tokenVal);
+    }
+
     fetch('../courier_module/Admin/ajax_courier_handler.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: 'action=test_connection&provider_code=bharatship'
+        body: bodyData
     })
     .then(r => r.json())
     .then(data => {

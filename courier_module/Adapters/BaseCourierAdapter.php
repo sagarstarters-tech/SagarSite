@@ -44,6 +44,14 @@ abstract class BaseCourierAdapter implements CourierInterface
     }
 
     /**
+     * Dynamically override Bearer token for immediate AJAX test/creation
+     */
+    public function setApiToken(string $token): void
+    {
+        $this->apiToken = trim($token);
+    }
+
+    /**
      * Execute secure HTTP request with automatic logging and error handling
      */
     protected function request(

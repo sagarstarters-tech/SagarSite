@@ -27,6 +27,8 @@ $manager = new \CourierModule\Services\CourierManager($pdo);
 $action = $_POST['action'] ?? $_GET['action'] ?? '';
 
 try {
+    $postedToken = trim($_POST['api_token'] ?? '');
+
     switch ($action) {
         case 'test_connection':
             $providerCode = trim($_POST['provider_code'] ?? 'bharatship');
@@ -34,6 +36,12 @@ try {
             if (!$courier) {
                 echo json_encode(['success' => false, 'message' => "Provider '{$providerCode}' is not configured."]);
                 exit;
+            }
+            if (!empty($postedToken) && strpos($postedToken, '••••') === false) {
+                $courier->setApiToken($postedToken);
+                // Also auto-save valid token
+                $enc = \CourierModule\Services\CourierCryptoService::encrypt($postedToken);
+                $pdo->prepare("UPDATE courier_integrations SET api_token = ? WHERE provider_code = ?")->execute([$enc, $providerCode]);
             }
             $testRes = $courier->testConnection();
             echo json_encode($testRes);
@@ -45,6 +53,9 @@ try {
             if (!$courier) {
                 echo json_encode(['success' => false, 'message' => 'Courier provider not found.']);
                 exit;
+            }
+            if (!empty($postedToken) && strpos($postedToken, '••••') === false) {
+                $courier->setApiToken($postedToken);
             }
 
             $res = $courier->getWarehouses();
@@ -97,6 +108,9 @@ try {
             if (!$courier) {
                 echo json_encode(['success' => false, 'message' => 'Courier provider not found.']);
                 exit;
+            }
+            if (!empty($postedToken) && strpos($postedToken, '••••') === false) {
+                $courier->setApiToken($postedToken);
             }
 
             $warehouseData = [
