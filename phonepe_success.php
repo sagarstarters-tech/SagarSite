@@ -124,6 +124,14 @@ if (strtoupper($code) === 'PAYMENT_SUCCESS' || strtoupper($code) === 'SUCCESS') 
             require_once 'includes/whatsapp_functions.php';
             sendAutomatedWhatsApp($conn, $order_id);
             sendAdminOrderNotification($conn, $order_id);
+
+            // Queue for background courier sync (fail-safe)
+            try {
+                require_once __DIR__ . '/courier_module/Services/CourierQueueService.php';
+                (new \CourierModule\Services\CourierQueueService())->enqueueOrder((int)$order_id);
+            } catch (Throwable $e) {
+                error_log('[CourierQueue] PhonePe success enqueue error: ' . $e->getMessage());
+            }
         }
     }
     // PhonePe returns amount in paisa

@@ -274,6 +274,68 @@ $stageIndex = $info['progress_stage_index'];
             </form>
         </div>
         
+        <!-- Courier / Aggregator Shipment Card -->
+        <?php
+        require_once __DIR__ . '/../courier_module/Services/CourierManager.php';
+        $courierManager = new \CourierModule\Services\CourierManager();
+        $courierShipment = $courierManager->getShipmentByOrderId($order_id);
+        ?>
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold m-0"><i class="fas fa-truck-moving text-primary me-2"></i>Courier &amp; Logistics</h5>
+                <?php if ($courierShipment): ?>
+                    <span class="badge bg-success bg-opacity-10 text-success border border-success px-2 py-1">
+                        <i class="fas fa-check-circle me-1"></i>Synced
+                    </span>
+                <?php else: ?>
+                    <span class="badge bg-secondary bg-opacity-10 text-secondary border px-2 py-1">
+                        Not Dispatched
+                    </span>
+                <?php endif; ?>
+            </div>
+
+            <?php if ($courierShipment): ?>
+                <div class="mb-2">
+                    <p class="text-muted mb-0 small uppercase fw-bold">Assigned Courier</p>
+                    <h6 class="fw-bold text-dark mb-0"><?php echo htmlspecialchars($courierShipment['courier_partner_name'] ?? 'BharatShip Partner'); ?></h6>
+                    <small class="text-muted">(Via <?php echo htmlspecialchars($courierShipment['provider_name']); ?>)</small>
+                </div>
+                <div class="mb-2 mt-2">
+                    <p class="text-muted mb-0 small uppercase fw-bold">Waybill / AWB Number</p>
+                    <div class="d-flex align-items-center gap-2">
+                        <h6 class="fw-bold text-primary font-monospace mb-0"><?php echo htmlspecialchars($courierShipment['awb_number']); ?></h6>
+                    </div>
+                </div>
+                <?php if (!empty($courierShipment['routing_code'])): ?>
+                    <div class="mb-2 mt-2">
+                        <p class="text-muted mb-0 small uppercase fw-bold">Routing Code</p>
+                        <span class="badge bg-light text-dark border font-monospace"><?php echo htmlspecialchars($courierShipment['routing_code']); ?></span>
+                    </div>
+                <?php endif; ?>
+                <div class="mb-3 mt-2">
+                    <p class="text-muted mb-0 small uppercase fw-bold">Shipment Status</p>
+                    <span class="badge bg-info bg-opacity-10 text-info border border-info">
+                        <?php echo htmlspecialchars($courierShipment['courier_status']); ?>
+                    </span>
+                </div>
+                <div class="d-flex gap-2 flex-wrap mt-2">
+                    <?php if (!empty($courierShipment['label_url'])): ?>
+                        <a href="<?php echo htmlspecialchars($courierShipment['label_url']); ?>" target="_blank" class="btn btn-primary btn-sm btn-custom px-3">
+                            <i class="fas fa-print me-1"></i>Shipping Label (PDF)
+                        </a>
+                    <?php endif; ?>
+                    <a href="https://app.bharatship.com/track/<?php echo urlencode($courierShipment['awb_number']); ?>" target="_blank" class="btn btn-light btn-sm border px-3">
+                        <i class="fas fa-external-link-alt me-1"></i>Live Tracking
+                    </a>
+                </div>
+            <?php else: ?>
+                <p class="text-muted small mb-3">Push order directly to BharatShip to generate AWB and shipping label in 1-click.</p>
+                <button class="btn btn-primary btn-sm btn-custom px-4 shadow-sm" onclick="pushToBharatShip(<?php echo $order_id; ?>, this)" id="pushBharatShipBtn">
+                    <i class="fas fa-paper-plane me-1"></i>Push to BharatShip (Auto AWB)
+                </button>
+            <?php endif; ?>
+        </div>
+        
         <!-- Invoice Card -->
         <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
             <h5 class="fw-bold mb-3"><i class="fas fa-file-invoice text-primary me-2"></i>Invoice</h5>
@@ -356,7 +418,30 @@ function sendInvoiceWA(orderId, btn) {
             btn.innerHTML = '<i class="fab fa-whatsapp me-1"></i>Send';
         }
     })
-    .catch(() => { btn.disabled = false; btn.innerHTML = '<i class="fab fa-whatsapp me-1"></i>Send'; });
+function pushToBharatShip(orderId, btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Syncing with BharatShip...';
+    fetch('../courier_module/Admin/ajax_courier_handler.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'action=push_single_order&order_id=' + orderId
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message || 'Order dispatched to BharatShip successfully!');
+            location.reload();
+        } else {
+            alert('BharatShip Sync Failed: ' + (data.message || 'Please check API credentials'));
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-paper-plane me-1"></i>Push to BharatShip (Auto AWB)';
+        }
+    })
+    .catch(err => {
+        alert('Network Error: ' + err.message);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane me-1"></i>Push to BharatShip (Auto AWB)';
+    });
 }
 </script>
 

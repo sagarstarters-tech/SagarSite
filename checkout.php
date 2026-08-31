@@ -406,6 +406,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             require_once 'includes/digital_product_functions.php';
             activateDigitalDownloads($conn, $order_id);
 
+            // Queue for background courier sync (fail-safe)
+            try {
+                require_once __DIR__ . '/courier_module/Services/CourierQueueService.php';
+                (new \CourierModule\Services\CourierQueueService())->enqueueOrder((int)$order_id);
+            } catch (\Throwable $e) {
+                error_log('[CourierQueue] Enqueue error: ' . $e->getMessage());
+            }
+
             $success = "Order placed successfully! Order ID: #$order_id";
         }
     } elseif ($payment_method === 'phonepe') {

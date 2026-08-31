@@ -112,6 +112,14 @@ if ($finalStatus === 'SUCCESS') {
         // Activate Digital Downloads
         require_once 'includes/digital_product_functions.php';
         activateDigitalDownloads($conn, $order_id);
+
+        // Queue for background courier sync (fail-safe)
+        try {
+            require_once __DIR__ . '/courier_module/Services/CourierQueueService.php';
+            (new \CourierModule\Services\CourierQueueService())->enqueueOrder((int)$order_id);
+        } catch (Throwable $e) {
+            error_log('[CourierQueue] Webhook enqueue error: ' . $e->getMessage());
+        }
     }
 } else if ($finalStatus === 'FAILED') {
     // Mark the order as cancelled

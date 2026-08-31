@@ -67,7 +67,7 @@ return [
     [
         'label'    => 'Orders',
         'icon'     => 'fa-shopping-cart',
-        'pages'    => ['manage_orders.php', 'manage_order_tracking.php', 'manage_cod_blacklist.php'],
+        'pages'    => ['manage_orders.php', 'manage_order_tracking.php', 'manage_cod_blacklist.php', 'manage_couriers.php', 'courier_logs.php'],
         'children' => [
             [
                 'label'  => 'All Orders',
@@ -130,6 +130,18 @@ return [
                 'icon'  => 'fa-shipping-fast',
                 'url'   => 'manage_order_tracking.php',
                 'pages' => ['manage_order_tracking.php'],
+            ],
+            [
+                'label' => 'Courier Integrations',
+                'icon'  => 'fa-truck-moving',
+                'url'   => 'manage_couriers.php',
+                'pages' => ['manage_couriers.php'],
+            ],
+            [
+                'label' => 'Courier Sync Logs',
+                'icon'  => 'fa-history',
+                'url'   => 'courier_logs.php',
+                'pages' => ['courier_logs.php'],
             ],
             [
                 'label' => 'COD Blacklist',
