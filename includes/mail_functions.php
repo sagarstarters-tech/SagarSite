@@ -11,13 +11,32 @@ require_once __DIR__ . '/mail_config.php';
  * Log email sending attempts to the database
  */
 function logEmailAttempt($conn, $order_id, $recipient, $type, $status, $error_msg = null) {
-    if ($error_msg) {
-        $error_msg = $conn->real_escape_string($error_msg);
+    if (!$conn) return;
+    try {
+        if ($error_msg) {
+            $error_msg = $conn->real_escape_string($error_msg);
+        }
+        
+        $order_id_val = (!empty($order_id) && intval($order_id) > 0) ? intval($order_id) : null;
+        
+        if ($order_id_val === null) {
+            $stmt = $conn->prepare("INSERT INTO email_logs (order_id, recipient_email, email_type, status, error_message) VALUES (NULL, ?, ?, ?, ?)");
+            if ($stmt) {
+                $stmt->bind_param("ssss", $recipient, $type, $status, $error_msg);
+                $stmt->execute();
+                $stmt->close();
+            }
+        } else {
+            $stmt = $conn->prepare("INSERT INTO email_logs (order_id, recipient_email, email_type, status, error_message) VALUES (?, ?, ?, ?, ?)");
+            if ($stmt) {
+                $stmt->bind_param("issss", $order_id_val, $recipient, $type, $status, $error_msg);
+                $stmt->execute();
+                $stmt->close();
+            }
+        }
+    } catch (\Throwable $e) {
+        error_log('[logEmailAttempt] Error: ' . $e->getMessage());
     }
-    
-    $stmt = $conn->prepare("INSERT INTO email_logs (order_id, recipient_email, email_type, status, error_message) VALUES (?, ?, ?, ?, ?)");
-    $stmt->bind_param("issss", $order_id, $recipient, $type, $status, $error_msg);
-    $stmt->execute();
 }
 
 /**

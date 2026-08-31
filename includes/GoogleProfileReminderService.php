@@ -335,7 +335,7 @@ class GoogleProfileReminderService {
      */
     public function sendReminderEmail($reminderId, $userId, $recipientEmail, $recipientName) {
         if (!filter_var($recipientEmail, FILTER_VALIDATE_EMAIL)) {
-            logEmailAttempt($this->conn, 0, $recipientEmail, 'google_profile_reminder', 'failed', 'Invalid email address.');
+            logEmailAttempt($this->conn, null, $recipientEmail, 'google_profile_reminder', 'failed', 'Invalid email address.');
             return false;
         }
 
@@ -384,18 +384,20 @@ class GoogleProfileReminderService {
             $mail->send();
 
             // Log attempt
-            logEmailAttempt($this->conn, 0, $recipientEmail, 'google_profile_reminder', 'success');
+            logEmailAttempt($this->conn, null, $recipientEmail, 'google_profile_reminder', 'success');
 
-            // Update reminder record
-            $upd = $this->conn->prepare("UPDATE google_profile_reminders SET reminder_status = 'sent', reminder_count = reminder_count + 1, last_sent_at = NOW() WHERE id = ?");
-            $upd->bind_param("i", $reminderId);
-            $upd->execute();
-            $upd->close();
+            // Update reminder record if tracked record exists
+            if ($reminderId > 0) {
+                $upd = $this->conn->prepare("UPDATE google_profile_reminders SET reminder_status = 'sent', reminder_count = reminder_count + 1, last_sent_at = NOW() WHERE id = ?");
+                $upd->bind_param("i", $reminderId);
+                $upd->execute();
+                $upd->close();
+            }
 
             return true;
         } catch (\Throwable $e) {
             $errMsg = $e->getMessage();
-            logEmailAttempt($this->conn, 0, $recipientEmail, 'google_profile_reminder', 'failed', "Error: " . $errMsg);
+            logEmailAttempt($this->conn, null, $recipientEmail, 'google_profile_reminder', 'failed', "Error: " . $errMsg);
             error_log("[GoogleProfileReminder] sendReminderEmail failed for user #{$userId}: " . $errMsg);
             return false;
         }
