@@ -340,17 +340,17 @@ $failed_queue    = (int)($conn->query("SELECT COUNT(*) as c FROM courier_queue W
 
                 <div class="modal-body p-4">
                     <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted">Warehouse Name *</label>
-                        <input type="text" name="warehouse_name" class="form-control" value="Sagar Starters Store" required>
+                        <label class="form-label small fw-bold text-muted">Warehouse Name (Max 20 chars) *</label>
+                        <input type="text" name="warehouse_name" class="form-control" value="SagarStartersStore" maxlength="20" required>
                     </div>
                     <div class="row g-2 mb-3">
                         <div class="col-md-6">
                             <label class="form-label small fw-bold text-muted">Contact Person *</label>
-                            <input type="text" name="contact_name" class="form-control" value="Sagar Store Manager" required>
+                            <input type="text" name="contact_name" class="form-control" value="Pramod Kumar Sagar" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label small fw-bold text-muted">Phone Number (10 Digits) *</label>
-                            <input type="tel" name="contact_phone" class="form-control" value="918573934013" maxlength="10" required>
+                            <input type="tel" name="contact_phone" class="form-control" value="8573934013" maxlength="10" placeholder="10-digit mobile number" required>
                         </div>
                     </div>
                     <div class="mb-3">
