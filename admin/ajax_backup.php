@@ -69,6 +69,9 @@ try {
         case 'create_backup':
             handleCreateBackup($conn);
             break;
+        case 'upload_backup':
+            handleUploadBackup($conn);
+            break;
         case 'list_backups':
             handleListBackups($conn);
             break;
@@ -101,11 +104,11 @@ exit;
 
 
 // ═══════════════════════════════════════════════════════════
-//  CREATE BACKUP
+//  CREATE MANUAL BACKUP
 // ═══════════════════════════════════════════════════════════
 function handleCreateBackup($conn) {
-    $type = $_POST['backup_type'] ?? 'full'; // full, db_only, files_only
-    if (!in_array($type, ['full', 'db_only', 'files_only'])) {
+    $type = $_POST['backup_type'] ?? 'full'; // full, db_only, files_only, custom
+    if (!in_array($type, ['full', 'db_only', 'files_only', 'custom'])) {
         echo json_encode(['success' => false, 'error' => 'Invalid backup type.']);
         return;
     }
@@ -118,14 +121,42 @@ function handleCreateBackup($conn) {
     }
 
     $timestamp = date('Y-m-d_H-i-s');
-    $backupName = "backup_{$type}_{$timestamp}";
+    $rawName = trim($_POST['backup_name'] ?? '');
+    if (!empty($rawName)) {
+        $cleanCustom = preg_replace('/[^a-zA-Z0-9_\-\s]/', '', $rawName);
+        $cleanCustom = str_replace(' ', '_', trim($cleanCustom));
+        $backupName = $cleanCustom . '_' . $timestamp;
+    } else {
+        $backupName = "manual_{$type}_{$timestamp}";
+    }
+
+    $notes = trim($_POST['notes'] ?? 'Manual backup created from Admin Panel.');
     $zipFileName = "{$backupName}.zip";
     $zipFilePath = BACKUP_DIR . '/' . $zipFileName;
 
+    // Determine what to include
+    $includeDb = ($type === 'full' || $type === 'db_only' || ($type === 'custom' && !empty($_POST['include_db'])));
+    $includeUploads = ($type === 'full' || $type === 'files_only' || ($type === 'custom' && !empty($_POST['include_uploads'])));
+    $includeAssets = ($type === 'full' || $type === 'files_only' || ($type === 'custom' && !empty($_POST['include_assets'])));
+    $includeConfig = ($type === 'full' || $type === 'files_only' || ($type === 'custom' && !empty($_POST['include_config'])));
+
+    if (!$includeDb && !$includeUploads && !$includeAssets && !$includeConfig) {
+        echo json_encode(['success' => false, 'error' => 'Please select at least one item to backup.']);
+        return;
+    }
+
+    // Determine record type
+    $recordType = 'full';
+    if ($includeDb && !$includeUploads && !$includeAssets && !$includeConfig) {
+        $recordType = 'db_only';
+    } elseif (!$includeDb && ($includeUploads || $includeAssets || $includeConfig)) {
+        $recordType = 'files_only';
+    }
+
     // Insert record as in_progress
-    $stmt = $conn->prepare("INSERT INTO site_backups (backup_name, backup_type, trigger_type, file_path, status, created_by, created_at) VALUES (?, ?, 'manual', ?, 'in_progress', ?, NOW())");
-    $userId = intval($_SESSION['user_id']);
-    $stmt->bind_param('sssi', $backupName, $type, $zipFilePath, $userId);
+    $stmt = $conn->prepare("INSERT INTO site_backups (backup_name, backup_type, trigger_type, file_path, status, notes, created_by, created_at) VALUES (?, ?, 'manual', ?, 'in_progress', ?, ?, NOW())");
+    $userId = intval($_SESSION['user_id'] ?? 0);
+    $stmt->bind_param('ssssi', $backupName, $recordType, $zipFilePath, $notes, $userId);
     $stmt->execute();
     $backupId = $stmt->insert_id;
     $stmt->close();
@@ -140,32 +171,35 @@ function handleCreateBackup($conn) {
         $filesCount = 0;
 
         // ── Database Backup ─────────────────────────────────
-        if ($type === 'full' || $type === 'db_only') {
+        if ($includeDb) {
             $sqlContent = generateDatabaseDump($conn);
             $zip->addFromString('database_backup.sql', $sqlContent);
 
-            // Count tables
             $tablesResult = $conn->query("SHOW TABLES");
             $dbTablesCount = $tablesResult ? $tablesResult->num_rows : 0;
         }
 
         // ── Files Backup ────────────────────────────────────
-        if ($type === 'full' || $type === 'files_only') {
-            $dirsToBackup = [
-                'uploads' => BASE_PATH . '/uploads',
-                'assets/images' => BASE_PATH . '/assets/images',
-                'assets/css' => BASE_PATH . '/assets/css',
-                'assets/js' => BASE_PATH . '/assets/js',
-                'config' => BASE_PATH . '/config',
-            ];
+        $dirsToBackup = [];
+        if ($includeUploads) {
+            $dirsToBackup['uploads'] = BASE_PATH . '/uploads';
+        }
+        if ($includeAssets) {
+            $dirsToBackup['assets/images'] = BASE_PATH . '/assets/images';
+            $dirsToBackup['assets/css'] = BASE_PATH . '/assets/css';
+            $dirsToBackup['assets/js'] = BASE_PATH . '/assets/js';
+        }
+        if ($includeConfig) {
+            $dirsToBackup['config'] = BASE_PATH . '/config';
+        }
 
-            foreach ($dirsToBackup as $prefix => $dirPath) {
-                if (is_dir($dirPath)) {
-                    $filesCount += addDirectoryToZip($zip, $dirPath, "files/{$prefix}");
-                }
+        foreach ($dirsToBackup as $prefix => $dirPath) {
+            if (is_dir($dirPath)) {
+                $filesCount += addDirectoryToZip($zip, $dirPath, "files/{$prefix}");
             }
+        }
 
-            // Add root config files
+        if ($includeConfig) {
             $rootFiles = ['.env', '.htaccess', 'manifest.json', 'robots.txt'];
             foreach ($rootFiles as $rf) {
                 $rfPath = BASE_PATH . '/' . $rf;
@@ -179,13 +213,15 @@ function handleCreateBackup($conn) {
         // Add backup metadata
         $metadata = json_encode([
             'backup_name' => $backupName,
-            'backup_type' => $type,
+            'backup_type' => $recordType,
+            'trigger' => 'manual',
             'created_at' => date('Y-m-d H:i:s'),
             'db_name' => DB_NAME,
             'db_tables_count' => $dbTablesCount,
             'files_count' => $filesCount,
             'php_version' => PHP_VERSION,
             'site_url' => defined('SITE_URL') ? SITE_URL : '',
+            'notes' => $notes,
         ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         $zip->addFromString('backup_metadata.json', $metadata);
 
@@ -193,7 +229,7 @@ function handleCreateBackup($conn) {
 
         // Update record
         $fileSize = filesize($zipFilePath);
-        $stmt = $conn->prepare("UPDATE site_backups SET status = 'completed', file_size = ?, db_tables_count = ?, files_count = ?, notes = 'Backup completed successfully.' WHERE id = ?");
+        $stmt = $conn->prepare("UPDATE site_backups SET status = 'completed', file_size = ?, db_tables_count = ?, files_count = ? WHERE id = ?");
         $stmt->bind_param('iiii', $fileSize, $dbTablesCount, $filesCount, $backupId);
         $stmt->execute();
         $stmt->close();
@@ -203,11 +239,11 @@ function handleCreateBackup($conn) {
 
         echo json_encode([
             'success' => true,
-            'message' => 'Backup created successfully!',
+            'message' => 'Manual backup created successfully!',
             'backup' => [
                 'id' => $backupId,
                 'name' => $backupName,
-                'type' => $type,
+                'type' => $recordType,
                 'size' => formatFileSize($fileSize),
                 'size_bytes' => $fileSize,
                 'tables' => $dbTablesCount,
@@ -216,16 +252,104 @@ function handleCreateBackup($conn) {
         ]);
 
     } catch (Throwable $e) {
-        // Mark as failed
         $error = $conn->real_escape_string($e->getMessage());
         $conn->query("UPDATE site_backups SET status = 'failed', notes = 'Error: {$error}' WHERE id = {$backupId}");
-
-        // Cleanup partial ZIP
         if (file_exists($zipFilePath)) @unlink($zipFilePath);
-
         echo json_encode(['success' => false, 'error' => 'Backup failed: ' . $e->getMessage()]);
     }
 }
+
+
+// ═══════════════════════════════════════════════════════════
+//  UPLOAD MANUAL BACKUP (.ZIP)
+// ═══════════════════════════════════════════════════════════
+function handleUploadBackup($conn) {
+    if (empty($_FILES['backup_file']['name']) || $_FILES['backup_file']['error'] !== UPLOAD_ERR_OK) {
+        $errMap = [
+            UPLOAD_ERR_INI_SIZE => 'Uploaded file exceeds the maximum upload limit (upload_max_filesize).',
+            UPLOAD_ERR_FORM_SIZE => 'Uploaded file exceeds MAX_FILE_SIZE directive.',
+            UPLOAD_ERR_PARTIAL => 'The file was only partially uploaded.',
+            UPLOAD_ERR_NO_FILE => 'No file was uploaded.',
+            UPLOAD_ERR_NO_TMP_DIR => 'Missing temporary folder on server.',
+            UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk.',
+        ];
+        $err = $errMap[$_FILES['backup_file']['error'] ?? 0] ?? 'File upload failed.';
+        echo json_encode(['success' => false, 'error' => $err]);
+        return;
+    }
+
+    $fileTmp = $_FILES['backup_file']['tmp_name'];
+    $fileName = $_FILES['backup_file']['name'];
+    $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+
+    if ($fileExt !== 'zip') {
+        echo json_encode(['success' => false, 'error' => 'Only .zip backup archive files are supported.']);
+        return;
+    }
+
+    $zip = new ZipArchive();
+    if ($zip->open($fileTmp) !== true) {
+        echo json_encode(['success' => false, 'error' => 'Invalid or corrupted ZIP backup archive.']);
+        return;
+    }
+
+    // Inspect zip contents
+    $hasDb = false;
+    $hasFiles = false;
+    $metaJson = $zip->getFromName('backup_metadata.json');
+    $metadata = $metaJson ? json_decode($metaJson, true) : null;
+
+    if ($zip->locateName('database_backup.sql') !== false) {
+        $hasDb = true;
+    }
+    for ($i = 0; $i < $zip->numFiles; $i++) {
+        $entry = $zip->getNameIndex($i);
+        if (strpos($entry, 'files/') === 0) {
+            $hasFiles = true;
+            break;
+        }
+    }
+    $zip->close();
+
+    $backupType = 'full';
+    if ($hasDb && !$hasFiles) $backupType = 'db_only';
+    elseif (!$hasDb && $hasFiles) $backupType = 'files_only';
+
+    $cleanName = preg_replace('/[^a-zA-Z0-9_\-]/', '_', pathinfo($fileName, PATHINFO_FILENAME));
+    $timestamp = date('Y-m-d_H-i-s');
+    $destFileName = "uploaded_{$cleanName}_{$timestamp}.zip";
+    $destPath = BACKUP_DIR . '/' . $destFileName;
+
+    if (!move_uploaded_file($fileTmp, $destPath)) {
+        echo json_encode(['success' => false, 'error' => 'Failed to store uploaded backup in backup repository.']);
+        return;
+    }
+
+    $fileSize = filesize($destPath);
+    $backupName = $metadata['backup_name'] ?? $cleanName;
+    $dbTablesCount = $metadata['db_tables_count'] ?? ($hasDb ? 1 : 0);
+    $filesCount = $metadata['files_count'] ?? ($hasFiles ? 1 : 0);
+    $userId = intval($_SESSION['user_id'] ?? 0);
+    $notes = 'Uploaded manual backup archive from local computer.';
+
+    $stmt = $conn->prepare("INSERT INTO site_backups (backup_name, backup_type, trigger_type, file_path, file_size, db_tables_count, files_count, status, notes, created_by, created_at) VALUES (?, ?, 'manual', ?, ?, ?, ?, 'completed', ?, ?, NOW())");
+    $stmt->bind_param('sssiiisi', $backupName, $backupType, $destPath, $fileSize, $dbTablesCount, $filesCount, $notes, $userId);
+    $stmt->execute();
+    $backupId = $stmt->insert_id;
+    $stmt->close();
+
+    echo json_encode([
+        'success' => true,
+        'message' => 'Backup ZIP uploaded and registered successfully!',
+        'backup' => [
+            'id' => $backupId,
+            'name' => $backupName,
+            'type' => $backupType,
+            'size' => formatFileSize($fileSize),
+        ]
+    ]);
+}
+
 
 
 // ═══════════════════════════════════════════════════════════
