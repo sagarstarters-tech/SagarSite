@@ -266,18 +266,75 @@ function sendAdminOrderNotification($conn, $order_id) {
         $adminMessage .= "Time: $orderTime\n\n";
         $adminMessage .= "Login to admin panel to process this order.";
 
-        // Send via Meta Cloud API (v21.0)
-        $token    = trim($settings['api_token']);
-        $phone_id = trim($settings['phone_number_id']);
-        $url      = "https://graph.facebook.com/v21.0/{$phone_id}/messages";
+        // Check if Meta Template is configured to enable 24/7 delivery without requiring "Hi"
+        $admin_tpl_name = trim($settings['admin_template_name'] ?? '');
+        if (empty($admin_tpl_name)) {
+            $admin_tpl_name = trim($settings['meta_template_name'] ?? '');
+        }
 
-        $payload = [
-            "messaging_product" => "whatsapp",
-            "recipient_type"    => "individual",
-            "to"                => $clean_admin,
-            "type"              => "text",
-            "text"              => ["preview_url" => false, "body" => $adminMessage]
-        ];
+        if (!empty($admin_tpl_name)) {
+            // ── 24/7 TEMPLATE MODE (Bypasses 24-hour restriction) ──
+            $orderStatus = ucwords(str_replace('_', ' ', $order['status'] ?? 'Processing'));
+            $trackingID  = 'N/A';
+            
+            $replacementValues = [
+                '{CustomerName}' => $customerName,
+                '{OrderID}'      => $order_id,
+                '{OrderStatus}'  => $orderStatus,
+                '{TrackingID}'   => $trackingID,
+                '{OrderAmount}'  => $orderAmount
+            ];
+
+            preg_match_all('/\{(CustomerName|OrderID|OrderStatus|TrackingID|OrderAmount)\}/', $settings['message_template'], $matches);
+            
+            $params = [];
+            if (!empty($matches[0])) {
+                foreach ($matches[0] as $varKey) {
+                    $params[] = ["type" => "text", "text" => (string)$replacementValues[$varKey]];
+                }
+            }
+            
+            $components = [
+                [
+                    "type" => "body",
+                    "parameters" => $params
+                ]
+            ];
+
+            $header_image_url = trim($settings['wa_header_image_url'] ?? '');
+            if (!empty($header_image_url)) {
+                array_unshift($components, [
+                    "type" => "header",
+                    "parameters" => [
+                        [
+                            "type" => "image",
+                            "image" => ["link" => $header_image_url]
+                        ]
+                    ]
+                ]);
+            }
+
+            $payload = [
+                "messaging_product" => "whatsapp",
+                "recipient_type"    => "individual",
+                "to"                => $clean_admin,
+                "type"              => "template",
+                "template"          => [
+                    "name"       => $admin_tpl_name,
+                    "language"   => ["code" => trim($settings['meta_template_lang'] ?? 'en')],
+                    "components" => $components
+                ]
+            ];
+        } else {
+            // ── TEXT MODE (Requires 24-hour conversation window) ──
+            $payload = [
+                "messaging_product" => "whatsapp",
+                "recipient_type"    => "individual",
+                "to"                => $clean_admin,
+                "type"              => "text",
+                "text"              => ["preview_url" => false, "body" => $adminMessage]
+            ];
+        }
 
         $ch = curl_init($url);
         curl_setopt_array($ch, [

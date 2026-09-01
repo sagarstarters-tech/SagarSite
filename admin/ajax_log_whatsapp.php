@@ -117,8 +117,8 @@ if ($sending_mode === 'api') {
     $clean_number = normalize_whatsapp_phone_number($customer_number);
     $url = "https://graph.facebook.com/v21.0/{$phone_id}/messages";
     
-    if (!empty($meta_template_name) && !$is_admin_test) {
-        // --- TEMPLATE MODE (Customer Only) ---
+    if (!empty($meta_template_name)) {
+        // --- TEMPLATE MODE (24/7 Delivery Bypassing 24h Restriction) ---
         // 1. We need to fetch variables to populate the template
         // Note: The message passed from modal is the ALREADY REPLACED text.
         // But for Meta API templates, we need the raw parameters back.

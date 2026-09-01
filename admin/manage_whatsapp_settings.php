@@ -218,13 +218,12 @@ $logs = $conn->query($logs_query);
                                 <div id="adminTestResult" class="small mt-2 d-none"></div>
                             </div>
                             <div class="col-md-6 mb-3 d-flex align-items-center">
-                                <div class="alert alert-info py-2 px-3 mb-0 small w-100 border-0 bg-info bg-opacity-10">
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    <strong>How it works:</strong>
-                                    <ul class="mb-0 ps-3 mt-1">
-                                        <li>Sending Mode must be <strong>WhatsApp Business API</strong>.</li>
-                                        <li>Admin receives instant order summary: Order #ID, Customer Name, Mobile, Total Amount, and Payment Mode.</li>
-                                        <li><em>Tip:</em> Send a "Hi" message from your admin phone to your Business bot once every 24 hours so Meta allows direct incoming text alerts.</li>
+                                <div class="alert alert-success py-2 px-3 mb-0 small w-100 border-0 bg-success bg-opacity-10">
+                                    <i class="fas fa-bolt text-success me-1"></i>
+                                    <strong>24/7 Automated Delivery:</strong>
+                                    <ul class="mb-0 ps-3 mt-1 text-dark">
+                                        <li>Jaise customer ko bina "Hi" ke direct message milta hai, waise hi Admin alert bhi <strong>Approved Meta Template (<code><?php echo htmlspecialchars($settings['meta_template_name'] ?? 'new_order_status'); ?></code>)</strong> se 24/7 deliver hoga.</li>
+                                        <li>Admin ko bina kisi "Hi/Hello" bhejhe har new order par automatic WhatsApp alert aayega.</li>
                                     </ul>
                                 </div>
                             </div>
