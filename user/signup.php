@@ -1,76 +1,187 @@
-<?php include '../includes/header.php'; ?>
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card product-card">
-                <div class="card-body p-4 p-md-5">
-                    <h2 class="text-center montserrat primary-blue mb-4">Sign Up</h2>
-                    <?php if(isset($_SESSION['error'])): ?>
-                        <div class="alert alert-danger"><?php echo $_SESSION['error']; unset($_SESSION['error']); ?></div>
-                    <?php endif; ?>
-                    <form action="../includes/auth.php" method="POST" autocomplete="on">
-                        <input type="hidden" name="action" value="signup">
-                        <?php echo csrf_field(); ?>
-                        <div class="mb-3">
-                            <label class="form-label" for="signup_name">Full Name</label>
-                            <input type="text" name="name" id="signup_name" class="form-control" autocomplete="name" placeholder="Enter your full name" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label" for="signup_email">Email address</label>
-                            <input type="email" name="email" id="signup_email" class="form-control" autocomplete="email" placeholder="you@example.com" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label" for="signup_password">Password</label>
-                            <input type="password" name="password" id="signup_password" class="form-control" autocomplete="new-password" placeholder="Minimum 8 characters" required>
-                            <div class="form-check mt-1">
-                                <input class="form-check-input show-password-toggle" type="checkbox" id="showPwSignup">
-                                <label class="form-check-label small text-muted" for="showPwSignup">Show password</label>
-                            </div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Phone Number</label>
-                                <?php echo render_phone_input('phone', '', true); ?>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label" for="signup_zip">Zip / Pincode</label>
-                                <input type="text" name="zip_code" id="signup_zip" class="form-control" autocomplete="postal-code" inputmode="numeric" placeholder="e.g. 110001" required>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label" for="signup_address">Address</label>
-                            <input type="text" name="address" id="signup_address" class="form-control" autocomplete="street-address" placeholder="Street address, house no." required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label" for="signup_city">City</label>
-                            <input type="text" name="city" id="signup_city" class="form-control" autocomplete="address-level2" placeholder="City" required>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label" for="signup_state">State/Province</label>
-                                <input type="text" name="state" id="signup_state" class="form-control" autocomplete="address-level1" placeholder="State" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label" for="signup_country">Country</label>
-                                <input type="text" name="country" id="signup_country" class="form-control" autocomplete="country-name" placeholder="Country" required>
-                            </div>
-                        </div>
-                        <div class="mb-3 form-check">
-                            <input type="checkbox" class="form-check-input" id="agreeTerms" name="agree_terms" required>
-                            <label class="form-check-label small text-muted" for="agreeTerms">
-                                I agree to the <a href="../page.php?slug=terms-conditions" class="text-success text-decoration-none">Terms of Service</a> and <a href="../page.php?slug=privacy-policy" class="text-success text-decoration-none">Privacy Policy</a>
-                            </label>
-                        </div>
-                        <button type="submit" class="btn btn-primary btn-custom w-100 mt-3">Create Account</button>
-                    </form>
+<?php 
+$page_title = "Register - Sagar Starters";
+include '../includes/header.php'; 
+?>
 
-                    <?php if (isset($global_settings['google_login_enabled']) && $global_settings['google_login_enabled'] == '1'): ?>
-                    <div class="mt-4 text-center">
-                        <div class="d-flex align-items-center mb-3">
-                            <hr class="flex-grow-1 opacity-25">
-                            <span class="mx-3 text-muted small text-uppercase">or</span>
-                            <hr class="flex-grow-1 opacity-25">
+<div class="auth-page-bg">
+    <div class="container py-3">
+        <div class="auth-master-card">
+            <div class="row g-0">
+                <!-- ════════ LEFT PANE: VISUAL HERO ARTWORK ════════ -->
+                <div class="col-lg-5 d-none d-lg-block">
+                    <div class="auth-hero-pane">
+                        <div class="auth-hero-content">
+                            <div class="auth-brand-badge">
+                                <i class="fas fa-bolt"></i> Sagar Starters
+                            </div>
+                            <h2 class="auth-hero-title">Start Your Journey With Us</h2>
+                            <p class="auth-hero-desc">
+                                Create an account to unlock GST invoicing, quick warranty registration, live delivery tracking, and exclusive discounts.
+                            </p>
+
+                            <div class="auth-feature-pills">
+                                <div class="auth-feature-pill">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Fast 1-Click Ordering</span>
+                                </div>
+                                <div class="auth-feature-pill">
+                                    <i class="fas fa-file-invoice-dollar"></i>
+                                    <span>Instant GST Invoices &amp; B2B Pricing</span>
+                                </div>
+                                <div class="auth-feature-pill">
+                                    <i class="fas fa-truck-ramp-box"></i>
+                                    <span>Live WhatsApp &amp; SMS Tracking</span>
+                                </div>
+                            </div>
                         </div>
+
+                        <div class="auth-hero-footer">
+                            <span>&copy; <?php echo date('Y'); ?> Sagar Starters</span>
+                            <div class="auth-social-icons">
+                                <a href="https://facebook.com" target="_blank" class="auth-social-btn" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+                                <a href="https://instagram.com" target="_blank" class="auth-social-btn" title="Instagram"><i class="fab fa-instagram"></i></a>
+                                <a href="https://wa.me/919999999999" target="_blank" class="auth-social-btn" title="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ════════ RIGHT PANE: REGISTRATION FORM ════════ -->
+                <div class="col-lg-7">
+                    <div class="auth-form-pane">
+                        <!-- Top Switcher Tab -->
+                        <div class="auth-tab-nav">
+                            <a href="login.php" class="auth-tab-link">Sign In</a>
+                            <a href="signup.php" class="auth-tab-link active">Register</a>
+                        </div>
+
+                        <div class="auth-form-header">
+                            <h3>Create an Account 🚀</h3>
+                            <p>Fill in the details below to register your new account.</p>
+                        </div>
+
+                        <?php if(isset($_SESSION['error'])): ?>
+                            <div class="alert alert-danger rounded-3 py-2 px-3 mb-3 d-flex align-items-center gap-2">
+                                <i class="fas fa-exclamation-circle text-danger flex-shrink-0"></i>
+                                <span><?php echo $_SESSION['error']; unset($_SESSION['error']); ?></span>
+                            </div>
+                        <?php endif; ?>
+
+                        <form action="../includes/auth.php" method="POST" autocomplete="on">
+                            <input type="hidden" name="action" value="signup">
+                            <?php echo csrf_field(); ?>
+
+                            <!-- Full Name -->
+                            <div class="auth-field-wrapper">
+                                <label class="auth-field-label" for="signup_name">Full Name</label>
+                                <div class="auth-input-container">
+                                    <i class="fas fa-user auth-input-icon"></i>
+                                    <input type="text" name="name" id="signup_name" class="auth-input-control" placeholder="Enter your full name" autocomplete="name" required>
+                                </div>
+                            </div>
+
+                            <!-- Email Address -->
+                            <div class="auth-field-wrapper">
+                                <label class="auth-field-label" for="signup_email">Email Address</label>
+                                <div class="auth-input-container">
+                                    <i class="fas fa-envelope auth-input-icon"></i>
+                                    <input type="email" name="email" id="signup_email" class="auth-input-control" placeholder="you@example.com" autocomplete="email" required>
+                                </div>
+                            </div>
+
+                            <!-- Password -->
+                            <div class="auth-field-wrapper">
+                                <label class="auth-field-label" for="signup_password">Password</label>
+                                <div class="auth-input-container">
+                                    <i class="fas fa-lock auth-input-icon"></i>
+                                    <input type="password" name="password" id="signup_password" class="auth-input-control pe-5" placeholder="Minimum 8 characters" autocomplete="new-password" required>
+                                    <button type="button" class="auth-pw-toggle-btn" onclick="togglePasswordVisibility('signup_password', this)" title="Show/Hide Password">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Phone & Zip code in 2 cols -->
+                            <div class="row g-2">
+                                <div class="col-md-7">
+                                    <div class="auth-field-wrapper">
+                                        <label class="auth-field-label">Phone Number</label>
+                                        <?php echo render_phone_input('phone', '', true); ?>
+                                    </div>
+                                </div>
+                                <div class="col-md-5">
+                                    <div class="auth-field-wrapper">
+                                        <label class="auth-field-label" for="signup_zip">Pincode</label>
+                                        <div class="auth-input-container">
+                                            <i class="fas fa-map-pin auth-input-icon"></i>
+                                            <input type="text" name="zip_code" id="signup_zip" class="auth-input-control" placeholder="e.g. 110001" autocomplete="postal-code" inputmode="numeric" required>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Address -->
+                            <div class="auth-field-wrapper">
+                                <label class="auth-field-label" for="signup_address">Street Address</label>
+                                <div class="auth-input-container">
+                                    <i class="fas fa-home auth-input-icon"></i>
+                                    <input type="text" name="address" id="signup_address" class="auth-input-control" placeholder="House/Shop no., street name, area" autocomplete="street-address" required>
+                                </div>
+                            </div>
+
+                            <!-- City, State & Country -->
+                            <div class="row g-2">
+                                <div class="col-md-4">
+                                    <div class="auth-field-wrapper">
+                                        <label class="auth-field-label" for="signup_city">City</label>
+                                        <div class="auth-input-container">
+                                            <i class="fas fa-city auth-input-icon"></i>
+                                            <input type="text" name="city" id="signup_city" class="auth-input-control" placeholder="City" autocomplete="address-level2" required>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="auth-field-wrapper">
+                                        <label class="auth-field-label" for="signup_state">State</label>
+                                        <div class="auth-input-container">
+                                            <i class="fas fa-map auth-input-icon"></i>
+                                            <input type="text" name="state" id="signup_state" class="auth-input-control" placeholder="State" autocomplete="address-level1" required>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="auth-field-wrapper">
+                                        <label class="auth-field-label" for="signup_country">Country</label>
+                                        <div class="auth-input-container">
+                                            <i class="fas fa-globe auth-input-icon"></i>
+                                            <input type="text" name="country" id="signup_country" class="auth-input-control" placeholder="India" autocomplete="country-name" value="India" required>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Agree terms checkbox -->
+                            <div class="form-check mb-3 mt-1">
+                                <input type="checkbox" class="form-check-input" id="agreeTerms" name="agree_terms" required>
+                                <label class="form-check-label small text-muted" for="agreeTerms">
+                                    I agree to the <a href="../page.php?slug=terms-conditions" class="text-primary fw-bold text-decoration-none" target="_blank">Terms of Service</a> &amp; <a href="../page.php?slug=privacy-policy" class="text-primary fw-bold text-decoration-none" target="_blank">Privacy Policy</a>
+                                </label>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <button type="submit" class="btn btn-auth-submit">
+                                <i class="fas fa-user-plus me-2"></i>Create Account
+                            </button>
+                        </form>
+
+                        <!-- Google Auth Option -->
+                        <?php if (isset($global_settings['google_login_enabled']) && $global_settings['google_login_enabled'] == '1'): ?>
+                        <div class="auth-divider">
+                            <hr>
+                            <span>or sign up with</span>
+                            <hr>
+                        </div>
+
                         <a href="../auth/google_redirect.php" class="btn btn-google-signin">
                             <svg width="20px" height="20px" viewBox="0 0 118 120" version="1.1" xmlns="http://www.w3.org/2000/svg">
                                 <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
@@ -83,9 +194,14 @@
                             </svg>
                             <span>Continue with Google</span>
                         </a>
+                        <?php endif; ?>
+
+                        <!-- Footer switch -->
+                        <div class="text-center mt-4">
+                            <span class="text-muted small">Already have an account?</span>
+                            <a href="login.php" class="fw-bold text-primary ms-1 text-decoration-none">Sign In here</a>
+                        </div>
                     </div>
-                    <?php endif; ?>
-                    <p class="text-center mt-3">Already have an account? <a href="login.php">Login here</a></p>
                 </div>
             </div>
         </div>
@@ -98,5 +214,22 @@
 </script>
 <?php unset($_SESSION['error_popup']); ?>
 <?php endif; ?>
+
+<script>
+function togglePasswordVisibility(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const icon = btn.querySelector('i');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+}
+</script>
 
 <?php include '../includes/footer.php'; ?>
