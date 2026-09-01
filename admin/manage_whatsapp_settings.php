@@ -499,7 +499,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 btnRunTest.disabled = false;
                 btnRunTest.innerText = 'Send Test Message';
                 if (data.success) {
-                    const msgId = data.message_id ? `<br><small class="text-muted">Message ID: ${data.message_id}</small>` : '';
+                    const msgId = data.message_id ? `<div class="mt-1"><span class="badge bg-success bg-opacity-75 text-wrap font-monospace fw-normal text-start" style="font-size:0.75rem; word-break:break-all; max-width:100%; display:inline-block;">ID: ${data.message_id}</span></div>` : '';
                     const msgStatus = data.message_status ? `<br><small class="text-muted">Status: <strong>${data.message_status}</strong></small>` : '';
                     testResult.className = 'alert alert-success py-2 small';
                     testResult.innerHTML = `✅ <strong>API Accepted!</strong> Message queued for delivery.${msgId}${msgStatus}`
@@ -554,10 +554,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
 
                     if (data.success) {
-                        const msgId = data.message_id ? `<span class="badge bg-success ms-1">${data.message_id}</span>` : '';
-                        adminTestResult.className = 'alert alert-success py-3 small mt-2';
+                        const msgId = data.message_id ? `<div class="mt-1"><span class="badge bg-success bg-opacity-75 text-wrap font-monospace fw-normal text-start" style="font-size:0.75rem; word-break:break-all; max-width:100%; display:inline-block;">ID: ${data.message_id}</span></div>` : '';
+                        adminTestResult.className = 'alert alert-success py-3 small mt-2 shadow-sm rounded-3';
                         adminTestResult.innerHTML = `
-                            <div><i class="fas fa-check-circle me-1"></i> <strong>Meta API Accepted Message!</strong> ${msgId}</div>
+                            <div class="fw-bold text-success"><i class="fas fa-check-circle me-1"></i> Meta API Accepted Message!</div>
+                            ${msgId}
                             <div class="mt-2 pt-2 border-top border-success border-opacity-25 text-dark" style="font-size:0.82rem; line-height:1.45;">
                                 <strong>⚠️ Agar WhatsApp par turant receive na ho, toh ye 2 baatein check karein:</strong>
                                 <ol class="mb-0 ps-3 mt-1 text-dark">
