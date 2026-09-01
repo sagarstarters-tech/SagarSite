@@ -314,6 +314,10 @@ function sendAdminOrderNotification($conn, $order_id) {
             ];
 
             $header_image_url = trim($settings['wa_header_image_url'] ?? '');
+            if (empty($header_image_url) && $admin_tpl_name === 'admin_new_order_alert') {
+                $header_image_url = 'https://sagarstarters.com/assets/images/auth_banner.jpg';
+            }
+
             if (!empty($header_image_url)) {
                 array_unshift($components, [
                     "type" => "header",
@@ -348,23 +352,57 @@ function sendAdminOrderNotification($conn, $order_id) {
             ];
         }
 
-        $ch = curl_init($url);
-        curl_setopt_array($ch, [
-            CURLOPT_POSTFIELDS     => json_encode($payload),
-            CURLOPT_HTTPHEADER     => [
-                'Authorization: Bearer ' . $token,
-                'Content-Type: application/json'
-            ],
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT        => 15,
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_SSL_VERIFYHOST => 0,
-        ]);
+        $send_admin_meta = function($pay) use ($url, $token) {
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [
+                CURLOPT_POSTFIELDS     => json_encode($pay),
+                CURLOPT_HTTPHEADER     => [
+                    'Authorization: Bearer ' . $token,
+                    'Content-Type: application/json'
+                ],
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT        => 15,
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_SSL_VERIFYHOST => 0,
+            ]);
+            $res  = curl_exec($ch);
+            $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $err  = curl_error($ch);
+            curl_close($ch);
+            return [$res, $code, $err];
+        };
 
-        $result     = curl_exec($ch);
-        $http_code  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $curl_error = curl_error($ch);
-        curl_close($ch);
+        list($result, $http_code, $curl_error) = $send_admin_meta($payload);
+        $meta_response = json_decode($result, true);
+
+        // Smart Auto-Recovery for header mismatch
+        if ($http_code != 200 && isset($payload['template'])) {
+            $errMsg = $meta_response['error']['message'] ?? '';
+            $errDetails = $meta_response['error']['error_data']['details'] ?? '';
+            $fullErr = $errMsg . ' ' . $errDetails;
+
+            if (stripos($fullErr, 'expected IMAGE') !== false) {
+                $fallback_img = 'https://sagarstarters.com/assets/images/auth_banner.jpg';
+                $has_header = false;
+                foreach ($payload['template']['components'] as $c) {
+                    if (($c['type'] ?? '') === 'header') { $has_header = true; break; }
+                }
+                if (!$has_header) {
+                    array_unshift($payload['template']['components'], [
+                        "type" => "header",
+                        "parameters" => [["type" => "image", "image" => ["link" => $fallback_img]]]
+                    ]);
+                    list($result, $http_code, $curl_error) = $send_admin_meta($payload);
+                    $meta_response = json_decode($result, true);
+                }
+            } elseif (stripos($fullErr, 'expected NO_HEADER') !== false || stripos($fullErr, 'unexpected header') !== false) {
+                $payload['template']['components'] = array_values(array_filter($payload['template']['components'], function($c) {
+                    return ($c['type'] ?? '') !== 'header';
+                }));
+                list($result, $http_code, $curl_error) = $send_admin_meta($payload);
+                $meta_response = json_decode($result, true);
+            }
+        }
 
         // Log to file
         $log_dir = __DIR__ . '/../logs';

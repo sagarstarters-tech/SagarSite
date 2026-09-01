@@ -190,8 +190,12 @@ if ($sending_mode === 'api') {
             ]
         ];
         
-        // Add header image component if configured
+        // Add header image component if configured or if admin template
         $header_image_url = trim($settings['wa_header_image_url'] ?? '');
+        if (empty($header_image_url) && ($is_admin_test || $meta_template_name === 'admin_new_order_alert')) {
+            $header_image_url = 'https://sagarstarters.com/assets/images/auth_banner.jpg';
+        }
+
         if (!empty($header_image_url)) {
             array_unshift($components, [
                 "type" => "header",
@@ -226,27 +230,64 @@ if ($sending_mode === 'api') {
         ];
     }
 
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_POSTFIELDS,    json_encode($payload));
-    curl_setopt($ch, CURLOPT_HTTPHEADER,    [
-        'Authorization: Bearer ' . $token,
-        'Content-Type: application/json'
-    ]);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT,        20); // increased from default
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    
-    $result     = curl_exec($ch);
-    $http_code  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curl_error = curl_error($ch);
-    curl_close($ch);
-    
+    $send_to_meta = function($pay) use ($url, $token) {
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_POSTFIELDS     => json_encode($pay),
+            CURLOPT_HTTPHEADER     => [
+                'Authorization: Bearer ' . $token,
+                'Content-Type: application/json'
+            ],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 15,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => 0,
+        ]);
+        $res  = curl_exec($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $err  = curl_error($ch);
+        curl_close($ch);
+        return [$res, $code, $err];
+    };
+
+    list($result, $http_code, $curl_error) = $send_to_meta($payload);
     $meta_response = json_decode($result, true);
-    
-    // Always log full interaction for traceability
+
+    // Smart Auto-Recovery: if Meta failed because header was expected or unexpected
+    if ($http_code != 200 && isset($payload['template'])) {
+        $errMsg = $meta_response['error']['message'] ?? '';
+        $errDetails = $meta_response['error']['error_data']['details'] ?? '';
+        $fullErr = $errMsg . ' ' . $errDetails;
+
+        if (stripos($fullErr, 'expected IMAGE') !== false) {
+            // Add image header and retry
+            $fallback_img = 'https://sagarstarters.com/assets/images/auth_banner.jpg';
+            $has_header = false;
+            foreach ($payload['template']['components'] as $c) {
+                if (($c['type'] ?? '') === 'header') { $has_header = true; break; }
+            }
+            if (!$has_header) {
+                array_unshift($payload['template']['components'], [
+                    "type" => "header",
+                    "parameters" => [["type" => "image", "image" => ["link" => $fallback_img]]]
+                ]);
+                list($result, $http_code, $curl_error) = $send_to_meta($payload);
+                $meta_response = json_decode($result, true);
+            }
+        } elseif (stripos($fullErr, 'expected NO_HEADER') !== false || stripos($fullErr, 'unexpected header') !== false) {
+            // Remove header and retry
+            $payload['template']['components'] = array_values(array_filter($payload['template']['components'], function($c) {
+                return ($c['type'] ?? '') !== 'header';
+            }));
+            list($result, $http_code, $curl_error) = $send_to_meta($payload);
+            $meta_response = json_decode($result, true);
+        }
+    }
+
+    // Always log every API call for diagnosis
     $log_dir = __DIR__ . '/../logs';
     if (!is_dir($log_dir)) mkdir($log_dir, 0755, true);
-    $log_entry = '[' . date('Y-m-d H:i:s') . "] Order #$order_id → HTTP:{$http_code} To:{$clean_number}" . PHP_EOL;
+    $log_entry = '[' . date('Y-m-d H:i:s') . "] Manual/Test WhatsApp to:{$customer_number} HTTP:{$http_code}" . PHP_EOL;
     $log_entry .= "Payload: " . json_encode($payload) . PHP_EOL;
     $log_entry .= "Response: " . $result . PHP_EOL;
     $log_entry .= str_repeat('-', 60) . PHP_EOL;
