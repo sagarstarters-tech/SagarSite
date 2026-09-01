@@ -11,25 +11,74 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
     exit;
 }
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST' && !(isset($_GET['test']) && $_GET['test'] == '1')) {
+require_once '../includes/whatsapp_functions.php';
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' && !(isset($_GET['test']) && $_GET['test'] == '1') && !(isset($_GET['test_admin']) && $_GET['test_admin'] == '1')) {
     echo json_encode(['success' => false, 'error' => 'Invalid request method']);
     exit;
 }
 
-if (isset($_GET['test']) && $_GET['test'] == '1') {
+if (isset($_GET['test_admin']) && $_GET['test_admin'] == '1') {
+    // Test Admin Notification
+    $admin_number = trim($_GET['number'] ?? '');
+    if (empty($admin_number)) {
+        echo json_encode(['success' => false, 'error' => 'Please enter admin phone number.']);
+        exit;
+    }
+    
+    // Fetch latest order for demo data
+    $q = $conn->query("
+        SELECT o.id, o.status, o.total_amount, o.payment_mode, o.created_at,
+               u.name AS customer_name, u.phone AS customer_phone
+        FROM orders o 
+        JOIN users u ON o.user_id = u.id 
+        ORDER BY o.id DESC LIMIT 1
+    ");
+    $order = ($q && $q->num_rows > 0) ? $q->fetch_assoc() : [
+        'id' => 999,
+        'customer_name' => 'Demo Customer',
+        'customer_phone' => '+91 9876543210',
+        'total_amount' => 1555.00,
+        'payment_mode' => 'COD',
+        'created_at' => date('Y-m-d H:i:s')
+    ];
+
+    $order_id      = (int)$order['id'];
+    $customerName  = trim($order['customer_name']);
+    $customerPhone = trim($order['customer_phone']);
+    $orderAmount   = number_format((float)$order['total_amount'], 2);
+    $paymentMode   = strtoupper($order['payment_mode'] ?? 'COD');
+    $orderTime     = date('d M Y, h:i A', strtotime($order['created_at']));
+
+    $adminMessage  = "🛒 *TEST Admin New Order Alert!*\n\n";
+    $adminMessage .= "Order: *#$order_id*\n";
+    $adminMessage .= "Customer: $customerName\n";
+    $adminMessage .= "Phone: $customerPhone\n";
+    $adminMessage .= "Amount: ₹$orderAmount\n";
+    $adminMessage .= "Payment: $paymentMode\n";
+    $adminMessage .= "Time: $orderTime\n\n";
+    $adminMessage .= "✅ This is a test notification verifying your WhatsApp Admin Alert system.";
+
+    $sending_mode    = 'api';
+    $customer_number = $admin_number;
+    $message         = $adminMessage;
+    $is_admin_test   = true;
+} elseif (isset($_GET['test']) && $_GET['test'] == '1') {
     $sending_mode = 'api';
     $customer_number = $_GET['number'] ?? '';
     $message = "Test message from settings panel.";
+    $is_admin_test = false;
     
     // Fetch latest order for variables
     $q = $conn->query("SELECT id FROM orders ORDER BY id DESC LIMIT 1");
-    $order_data = $q->fetch_assoc();
+    $order_data = $q ? $q->fetch_assoc() : null;
     $order_id = $order_data['id'] ?? 1;
 } else {
-    $order_id      = intval($_POST['order_id'] ?? 0);
+    $order_id        = intval($_POST['order_id'] ?? 0);
     $customer_number = trim($_POST['customer_number'] ?? '');
     $message         = trim($_POST['message'] ?? '');
     $sending_mode    = trim($_POST['sending_mode'] ?? '');
+    $is_admin_test   = false;
 }
 
 // Whitelist sending_mode to avoid arbitrary data
@@ -65,11 +114,11 @@ if ($sending_mode === 'api') {
     $meta_template_name = $settings['meta_template_name'] ?? '';
     
     // Normalize customer number
-    $clean_number = preg_replace('/[^0-9]/', '', $customer_number);
-    $url = "https://graph.facebook.com/v19.0/{$phone_id}/messages";
+    $clean_number = normalize_whatsapp_phone_number($customer_number);
+    $url = "https://graph.facebook.com/v21.0/{$phone_id}/messages";
     
-    if (!empty($meta_template_name)) {
-        // --- TEMPLATE MODE ---
+    if (!empty($meta_template_name) && !$is_admin_test) {
+        // --- TEMPLATE MODE (Customer Only) ---
         // 1. We need to fetch variables to populate the template
         // Note: The message passed from modal is the ALREADY REPLACED text.
         // But for Meta API templates, we need the raw parameters back.

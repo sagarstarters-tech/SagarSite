@@ -211,12 +211,21 @@ $logs = $conn->query($logs_query);
                             <div class="col-md-6 mb-3 text-start">
                                 <label class="form-label fw-bold d-block">Admin WhatsApp Number</label>
                                 <?php echo render_phone_input('admin_whatsapp_number', $settings['admin_whatsapp_number'] ?? '', true); ?>
-                                <small class="text-muted">Admin's WhatsApp number with country code. New order alerts will be sent here.</small>
+                                <small class="text-muted d-block">Admin's WhatsApp number with country code. New order alerts will be sent here.</small>
+                                <button type="button" class="btn btn-sm btn-outline-success mt-2 fw-bold rounded-pill" id="btnQuickTestAdmin">
+                                    <i class="fab fa-whatsapp me-1"></i> Send Test Admin Alert to this number
+                                </button>
+                                <div id="adminTestResult" class="small mt-2 d-none"></div>
                             </div>
                             <div class="col-md-6 mb-3 d-flex align-items-center">
                                 <div class="alert alert-info py-2 px-3 mb-0 small w-100 border-0 bg-info bg-opacity-10">
                                     <i class="fas fa-info-circle me-1"></i>
-                                    <strong>Note:</strong> Admin gets a simple text message (not template) with order details like Order ID, Customer Name, Amount, and Payment Mode.
+                                    <strong>How it works:</strong>
+                                    <ul class="mb-0 ps-3 mt-1">
+                                        <li>Sending Mode must be <strong>WhatsApp Business API</strong>.</li>
+                                        <li>Admin receives instant order summary: Order #ID, Customer Name, Mobile, Total Amount, and Payment Mode.</li>
+                                        <li><em>Tip:</em> Send a "Hi" message from your admin phone to your Business bot once every 24 hours so Meta allows direct incoming text alerts.</li>
+                                    </ul>
                                 </div>
                             </div>
                         </div>
@@ -489,6 +498,61 @@ document.addEventListener('DOMContentLoaded', function() {
                 testResult.innerText = 'Network error: ' + err.message;
             });
     });
+
+    // Quick Test Admin Alert Handler
+    const btnQuickTestAdmin = document.getElementById('btnQuickTestAdmin');
+    const adminTestResult   = document.getElementById('adminTestResult');
+
+    if (btnQuickTestAdmin) {
+        btnQuickTestAdmin.addEventListener('click', function() {
+            // Read admin number from the hidden phone input or text input
+            const adminPhoneInput = document.querySelector('input[name="admin_whatsapp_number"]') || document.querySelector('.phone-hidden-final');
+            let rawNumber = adminPhoneInput ? adminPhoneInput.value : '';
+            
+            if (!rawNumber || rawNumber.replace(/\D/g, '').length < 10) {
+                alert('Please enter a valid Admin WhatsApp Number (at least 10 digits) before testing.');
+                return;
+            }
+
+            btnQuickTestAdmin.disabled = true;
+            btnQuickTestAdmin.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Sending Test Alert...';
+            adminTestResult.className = 'alert alert-info py-2 small mt-2';
+            adminTestResult.innerText = 'Calling Meta Cloud API...';
+            adminTestResult.classList.remove('d-none');
+
+            fetch('ajax_log_whatsapp.php?test_admin=1&number=' + encodeURIComponent(rawNumber))
+                .then(res => res.text())
+                .then(text => {
+                    btnQuickTestAdmin.disabled = false;
+                    btnQuickTestAdmin.innerHTML = '<i class="fab fa-whatsapp me-1"></i> Send Test Admin Alert to this number';
+                    
+                    let data;
+                    try {
+                        data = JSON.parse(text);
+                    } catch(e) {
+                        adminTestResult.className = 'alert alert-danger py-2 small mt-2';
+                        adminTestResult.innerText = 'Invalid response: ' + text.substring(0, 150);
+                        return;
+                    }
+
+                    if (data.success) {
+                        adminTestResult.className = 'alert alert-success py-2 small mt-2';
+                        adminTestResult.innerHTML = `✅ <strong>Admin Alert Sent Successfully!</strong> Check your WhatsApp on ${rawNumber}.`;
+                    } else {
+                        adminTestResult.className = 'alert alert-danger py-2 small mt-2';
+                        adminTestResult.innerHTML = `❌ <strong>Alert Failed:</strong> ${data.error || 'Unknown error'}`
+                            + (data.details ? `<br><small>${data.details}</small>` : '')
+                            + `<br><small class="mt-1 d-block">Check <a href="whatsapp_debug.php" target="_blank" class="alert-link">WhatsApp Debug Tool</a> for details.</small>`;
+                    }
+                })
+                .catch(err => {
+                    btnQuickTestAdmin.disabled = false;
+                    btnQuickTestAdmin.innerHTML = '<i class="fab fa-whatsapp me-1"></i> Send Test Admin Alert to this number';
+                    adminTestResult.className = 'alert alert-danger py-2 small mt-2';
+                    adminTestResult.innerText = 'Network error: ' + err.message;
+                });
+        });
+    }
 });
 </script>
 

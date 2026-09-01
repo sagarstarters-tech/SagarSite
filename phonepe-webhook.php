@@ -113,6 +113,11 @@ if ($finalStatus === 'SUCCESS') {
         require_once 'includes/digital_product_functions.php';
         activateDigitalDownloads($conn, $order_id);
 
+        // WhatsApp Notifications (Customer & Admin)
+        require_once 'includes/whatsapp_functions.php';
+        sendAutomatedWhatsApp($conn, $order_id);
+        sendAdminOrderNotification($conn, $order_id);
+
         // Queue for background courier sync (fail-safe)
         try {
             require_once __DIR__ . '/courier_module/Services/CourierQueueService.php';

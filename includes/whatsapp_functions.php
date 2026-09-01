@@ -4,6 +4,29 @@
  * Handles automated notifications via Meta Cloud API
  */
 
+/**
+ * Clean and normalize phone number into standard international format (e.g., 919876543210 for India)
+ */
+function normalize_whatsapp_phone_number($phone) {
+    $digits = preg_replace('/[^0-9]/', '', (string)$phone);
+    $digits = ltrim($digits, '0');
+    if (empty($digits)) return '';
+
+    // If 14 digits starting with 9191 (e.g. user selected +91 and also typed 91 in number)
+    if (strlen($digits) == 14 && substr($digits, 0, 4) === '9191') {
+        $digits = substr($digits, 2);
+    }
+    // If 12 digits starting with 91, return it
+    if (strlen($digits) == 12 && substr($digits, 0, 2) === '91') {
+        return $digits;
+    }
+    // If standard 10 digits Indian mobile, prepend 91
+    if (strlen($digits) == 10) {
+        return '91' . $digits;
+    }
+    return $digits;
+}
+
 function sendAutomatedWhatsApp($conn, $order_id) {
     // Check if feature is globally enabled
     $set_q = $conn->query("SELECT * FROM whatsapp_settings WHERE id = 1");
@@ -41,11 +64,7 @@ function sendAutomatedWhatsApp($conn, $order_id) {
     $trackingID = !empty($order['tracking_number']) ? $order['tracking_number'] : 'N/A';
     $orderAmount = number_format($order['total_amount'] ?? 0, 2);
 
-    // Meta API requires strict country code numeric formatting. E.g. India +91
-    $clean_number = preg_replace('/[^0-9]/', '', $customerPhone);
-    if (strpos($clean_number, '0') === 0) $clean_number = ltrim($clean_number, '0');
-    if (strlen($clean_number) == 10) $clean_number = '91' . $clean_number;
-
+    $clean_number = normalize_whatsapp_phone_number($customerPhone);
     if (empty($clean_number)) return false;
 
     // Parse Template variables for payload and default text message
@@ -66,9 +85,9 @@ function sendAutomatedWhatsApp($conn, $order_id) {
     // Prepare Meta API Payload
     $token = trim($settings['api_token']);
     $phone_id = trim($settings['phone_number_id']);
-    $url = "https://graph.facebook.com/v19.0/{$phone_id}/messages";
+    $url = "https://graph.facebook.com/v21.0/{$phone_id}/messages";
     
-    $meta_template_name = $settings['meta_template_name'] ?? '';
+    $meta_template_name = trim($settings['meta_template_name'] ?? '');
     if (!empty($meta_template_name)) {
         // --- TEMPLATE MODE ---
         preg_match_all('/\{(CustomerName|OrderID|OrderStatus|TrackingID|OrderAmount)\}/', $settings['message_template'], $matches);
@@ -108,7 +127,7 @@ function sendAutomatedWhatsApp($conn, $order_id) {
             "to"                => $clean_number,
             "type"              => "template",
             "template"          => [
-                "name"     => trim($meta_template_name),
+                "name"     => $meta_template_name,
                 "language" => ["code" => trim($settings['meta_template_lang'] ?? 'en')],
                 "components" => $components
             ]
@@ -125,14 +144,17 @@ function sendAutomatedWhatsApp($conn, $order_id) {
     }
 
     $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_POSTFIELDS,    json_encode($payload));
-    curl_setopt($ch, CURLOPT_HTTPHEADER,    [
-        'Authorization: Bearer ' . $token,
-        'Content-Type: application/json'
+    curl_setopt_array($ch, [
+        CURLOPT_POSTFIELDS     => json_encode($payload),
+        CURLOPT_HTTPHEADER     => [
+            'Authorization: Bearer ' . $token,
+            'Content-Type: application/json'
+        ],
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 15,
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_SSL_VERIFYHOST => 0,
     ]);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT,        15);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
     
     $result     = curl_exec($ch);
     $http_code  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -166,15 +188,10 @@ function sendAutomatedWhatsApp($conn, $order_id) {
         $status_msg = "Failed API (Auto): (#{$error_code}) " . substr($error_desc, 0, 100);
         
         // Log deep error for admin
-        $log_dir = __DIR__ . '/../logs';
-        if (!is_dir($log_dir)) mkdir($log_dir, 0755, true);
-        $log_entry = '[' . date('Y-m-d H:i:s') . "] Order #$order_id API Error: (#$error_code) $error_desc" . PHP_EOL;
-        $log_entry .= "Payload: " . json_encode($payload) . PHP_EOL;
-        $log_entry .= "Response: " . $result . PHP_EOL;
         file_put_contents($log_dir . '/whatsapp_errors.log', $log_entry, FILE_APPEND);
     }
     
-    // Log to Database using generic INSERT
+    // Log to Database
     $conn->query("INSERT INTO whatsapp_logs (order_id, customer_number, message, sending_mode, status) VALUES ($order_id, '$clean_number', '" . $conn->real_escape_string($message) . "', 'api', '$status_msg')");
     
     return $http_code == 200;
@@ -182,8 +199,6 @@ function sendAutomatedWhatsApp($conn, $order_id) {
 
 /**
  * Send WhatsApp notification to ADMIN when a new order is placed.
- * This is independent of the customer notification (sendAutomatedWhatsApp).
- * Uses text message mode for admin (no Meta template needed).
  * Fail-safe: errors are logged but never block order completion.
  *
  * @param mysqli $conn    Database connection
@@ -192,7 +207,7 @@ function sendAutomatedWhatsApp($conn, $order_id) {
  */
 function sendAdminOrderNotification($conn, $order_id) {
     try {
-        // Ensure admin notification columns exist (safe to run every time, no-op if already present)
+        // Ensure admin notification columns exist
         $conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS admin_whatsapp_number VARCHAR(20) NOT NULL DEFAULT ''");
         $conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS admin_notify_on_new_order TINYINT(1) NOT NULL DEFAULT 1");
 
@@ -218,11 +233,8 @@ function sendAdminOrderNotification($conn, $order_id) {
             return false;
         }
 
-        // Clean admin number (ensure country code format)
-        $clean_admin = preg_replace('/[^0-9]/', '', $admin_number);
-        if (strpos($clean_admin, '0') === 0) $clean_admin = ltrim($clean_admin, '0');
-        if (strlen($clean_admin) == 10) $clean_admin = '91' . $clean_admin;
-        
+        // Clean admin number with standard normalizer
+        $clean_admin = normalize_whatsapp_phone_number($admin_number);
         if (empty($clean_admin)) return false;
 
         // Fetch order details for admin message
@@ -254,10 +266,10 @@ function sendAdminOrderNotification($conn, $order_id) {
         $adminMessage .= "Time: $orderTime\n\n";
         $adminMessage .= "Login to admin panel to process this order.";
 
-        // Send via Meta Cloud API (text mode — no template needed)
+        // Send via Meta Cloud API (v21.0)
         $token    = trim($settings['api_token']);
         $phone_id = trim($settings['phone_number_id']);
-        $url      = "https://graph.facebook.com/v19.0/{$phone_id}/messages";
+        $url      = "https://graph.facebook.com/v21.0/{$phone_id}/messages";
 
         $payload = [
             "messaging_product" => "whatsapp",
@@ -268,14 +280,17 @@ function sendAdminOrderNotification($conn, $order_id) {
         ];
 
         $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_POSTFIELDS,    json_encode($payload));
-        curl_setopt($ch, CURLOPT_HTTPHEADER,     [
-            'Authorization: Bearer ' . $token,
-            'Content-Type: application/json'
+        curl_setopt_array($ch, [
+            CURLOPT_POSTFIELDS     => json_encode($payload),
+            CURLOPT_HTTPHEADER     => [
+                'Authorization: Bearer ' . $token,
+                'Content-Type: application/json'
+            ],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 15,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => 0,
         ]);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT,        15);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
         $result     = curl_exec($ch);
         $http_code  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -300,11 +315,18 @@ function sendAdminOrderNotification($conn, $order_id) {
             $meta_response = json_decode($result, true);
             if ($http_code == 200 && isset($meta_response['messages'])) {
                 $msg_id     = $meta_response['messages'][0]['id'] ?? 'unknown';
-                $status_msg = 'Admin Sent via Meta API ID:' . substr($msg_id, 0, 20);
+                $status_msg = 'Admin Alert Sent (ID: ' . substr($msg_id, 0, 20) . ')';
             } else {
                 $error_desc = $meta_response['error']['message'] ?? 'Unknown Meta API Error';
                 $error_code = $meta_response['error']['code'] ?? 'N/A';
-                $status_msg = "Admin Failed API: (#{$error_code}) " . substr($error_desc, 0, 100);
+                
+                // Detailed diagnostic message for 24h window
+                if ($error_code == 131047 || $error_code == 131026) {
+                    $status_msg = "Admin Alert Failed: 24h Window Expired (Admin must send 'Hi' to bot once)";
+                } else {
+                    $status_msg = "Admin Alert Failed: (#{$error_code}) " . substr($error_desc, 0, 80);
+                }
+                file_put_contents($log_dir . '/whatsapp_errors.log', $log_entry, FILE_APPEND);
             }
         }
 
@@ -315,9 +337,7 @@ function sendAdminOrderNotification($conn, $order_id) {
         return $http_code == 200;
 
     } catch (Exception $e) {
-        // Fail-safe: never block order completion
         error_log("[WhatsApp Admin] Exception Order#$order_id: " . $e->getMessage());
         return false;
     }
 }
-?>
