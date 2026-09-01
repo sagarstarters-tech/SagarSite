@@ -333,8 +333,8 @@ if ($prods_enabled == '1'):
                     $has_reviews = ($reviews_cnt > 0 && $avg_rating > 0);
                     
                     // WhatsApp Direct Order Text — upgraded rich format
-                    $wa_msg = urlencode(
-                        "Hello Sagar Starter's! \xF0\x9F\x91\x8B" . "\n\n" .
+                    $wa_msg = rawurlencode(
+                        "Hello Sagar Starters!" . "\n\n" .
                         "I am interested in ordering:" . "\n\n" .
                         "*Product:* " . $p['name'] . "\n\n" .
                         "*Price:* " . $global_currency . number_format($display_price, 2) . "\n\n" .

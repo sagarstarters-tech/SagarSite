@@ -280,8 +280,8 @@ if (!empty($global_settings[$setting_key])) {
                         $discount_percent = $has_discount ? round((($reg_price - $sale_price) / $reg_price) * 100) : 0;
                         
                         // WhatsApp Direct Order Text — upgraded rich format
-                        $wa_msg = urlencode(
-                            "Hello Sagar Starter's! \xF0\x9F\x91\x8B" . "\n\n" .
+                        $wa_msg = rawurlencode(
+                            "Hello Sagar Starters!" . "\n\n" .
                             "I am interested in ordering:" . "\n\n" .
                             "*Product:* " . $p['name'] . "\n\n" .
                             "*Price:* " . $global_currency . number_format($display_price, 2) . "\n\n" .

@@ -324,15 +324,29 @@ document.addEventListener('DOMContentLoaded', function() {
     const tplTableBody = document.getElementById('tplTableBody');
 
     btnSync.addEventListener('click', function() {
+        const currentWabaId = document.getElementById('metaWabaId')?.value.trim() || '';
+        const currentToken = document.querySelector('input[name="api_token"]')?.value.trim() || '';
+        const currentPhoneId = document.querySelector('input[name="phone_number_id"]')?.value.trim() || '';
+
+        if (!currentToken) {
+            alert('Please enter your Business API Token first.');
+            return;
+        }
+
         btnSync.disabled = true;
         btnSync.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
         tplStatus.className = 'small mt-1 text-info';
-        tplStatus.innerText = 'Connecting to Meta...';
+        tplStatus.innerText = 'Connecting to Meta Graph API...';
         tplStatus.classList.remove('d-none');
         tplList.classList.add('d-none');
 
-        const currentWabaId = document.getElementById('metaWabaId').value;
-        fetch('ajax_sync_meta_templates.php?waba_id=' + encodeURIComponent(currentWabaId))
+        const params = new URLSearchParams({
+            waba_id: currentWabaId,
+            token: currentToken,
+            phone_id: currentPhoneId
+        });
+
+        fetch('ajax_sync_meta_templates.php?' + params.toString())
             .then(res => res.json())
             .then(data => {
                 btnSync.disabled = false;
@@ -340,20 +354,34 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if (data.error) {
                     tplStatus.className = 'small mt-1 text-danger';
-                    tplStatus.innerText = 'Error: ' + data.error;
+                    tplStatus.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i> ' + data.error;
                 } else if (data.templates && data.templates.length > 0) {
+                    if (data.waba_id && document.getElementById('metaWabaId')) {
+                        document.getElementById('metaWabaId').value = data.waba_id;
+                    }
                     tplStatus.className = 'small mt-1 text-success';
-                    tplStatus.innerText = 'Templates fetched successfully!';
+                    tplStatus.innerHTML = `<i class="fas fa-check-circle me-1"></i> Found <strong>${data.templates.length}</strong> template(s)! Click "Select" to use.`;
                     
                     tplTableBody.innerHTML = '';
                     data.templates.forEach(tpl => {
+                        const statusBadge = tpl.status === 'APPROVED' 
+                            ? '<span class="badge bg-success">APPROVED</span>' 
+                            : `<span class="badge bg-warning text-dark">${tpl.status}</span>`;
+                        
+                        const bodySnippet = tpl.body_text 
+                            ? `<div class="small text-muted font-monospace mt-1 text-truncate" style="max-width:280px;" title="${tpl.body_text.replace(/"/g, '&quot;')}">${tpl.body_text}</div>` 
+                            : '';
+
                         const row = `
                             <tr>
-                                <td class="fw-bold fs-7">${tpl.name}</td>
-                                <td class="fs-7">${tpl.language}</td>
-                                <td class="fs-7"><span class="badge bg-light text-dark">${tpl.category}</span></td>
+                                <td>
+                                    <div class="fw-bold">${tpl.name}</div>
+                                    ${bodySnippet}
+                                </td>
+                                <td><span class="badge bg-light text-dark border">${tpl.language}</span></td>
+                                <td>${statusBadge}</td>
                                 <td class="text-end">
-                                    <button type="button" class="btn btn-sm btn-primary py-1 px-2" onclick="selectTemplate('${tpl.name}', '${tpl.language}')">Select</button>
+                                    <button type="button" class="btn btn-sm btn-primary py-1 px-3 fw-bold rounded-pill" onclick="selectTemplate('${tpl.name}', '${tpl.language}')">Select</button>
                                 </td>
                             </tr>
                         `;
@@ -362,7 +390,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     tplList.classList.remove('d-none');
                 } else {
                     tplStatus.className = 'small mt-1 text-warning';
-                    tplStatus.innerText = 'No approved templates found.';
+                    tplStatus.innerHTML = '<i class="fas fa-info-circle me-1"></i> No message templates found in this WhatsApp Business Account.';
                 }
             })
             .catch(err => {

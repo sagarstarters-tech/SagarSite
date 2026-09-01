@@ -191,7 +191,7 @@ if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
                     <?php
                     // ── WhatsApp Cart Order Button ────────────────────────────
                     $wa_cart_phone = get_store_whatsapp_number();
-                    $wa_cart_msg = "Hello Sagar Starter's! \xF0\x9F\x91\x8B\n\n";
+                    $wa_cart_msg = "Hello Sagar Starters!\n\n";
                     $wa_cart_msg .= "I want to order the following products:\n\n";
                     $item_num = 1;
                     foreach ($cart_items as $ci) {
@@ -208,7 +208,7 @@ if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
                     $wa_cart_msg .= "Total: " . $global_currency . number_format($grand_total, 2) . "\n\n";
                     $wa_cart_msg .= "Please confirm stock availability, delivery charges and final order amount.\n\n";
                     $wa_cart_msg .= "Thank you.";
-                    $wa_cart_link = "https://wa.me/{$wa_cart_phone}?text=" . urlencode($wa_cart_msg);
+                    $wa_cart_link = "https://wa.me/{$wa_cart_phone}?text=" . rawurlencode($wa_cart_msg);
                     ?>
                     <a href="<?php echo $wa_cart_link; ?>" target="_blank" rel="noopener noreferrer"
                        class="btn btn-success btn-lg btn-custom w-100 py-3 mt-3"

@@ -398,7 +398,7 @@ if (!empty($global_settings['hero_banner_product'])) {
                 $prod_url = !empty($product['slug']) ? SITE_URL . '/product/' . $product['slug'] : SITE_URL . '/product.php?id=' . $product['id'];
                 $prod_display_price = ($product['sale_price'] > 0) ? floatval($product['sale_price']) : (floatval($product['regular_price']) > 0 ? floatval($product['regular_price']) : floatval($product['price']));
                 function build_wa_product_msg($name, $currency, $price, $qty, $url) {
-                    return "Hello Sagar Starter's! \xF0\x9F\x91\x8B" . "\n\n" .
+                    return "Hello Sagar Starters!" . "\n\n" .
                         "I am interested in ordering:" . "\n\n" .
                         "*Product:* " . $name . "\n\n" .
                         "*Price:* " . $currency . number_format($price, 2) . "\n\n" .
@@ -408,7 +408,7 @@ if (!empty($global_settings['hero_banner_product'])) {
                         "Thank you.";
                 }
                 $wa_prod_initial_qty = $moq;
-                $wa_prod_initial_msg = urlencode(build_wa_product_msg($product['name'], $global_currency, $prod_display_price, $wa_prod_initial_qty, $prod_url));
+                $wa_prod_initial_msg = rawurlencode(build_wa_product_msg($product['name'], $global_currency, $prod_display_price, $wa_prod_initial_qty, $prod_url));
                 $wa_prod_link = "https://wa.me/{$wa_phone_prod}?text={$wa_prod_initial_msg}";
                 ?>
                 <a href="<?php echo $wa_prod_link; ?>" id="waOrderBtn" target="_blank" rel="noopener noreferrer"
@@ -441,7 +441,7 @@ if (!empty($global_settings['hero_banner_product'])) {
                     }
 
                     function buildWaLink(qty) {
-                        var msg = "Hello Sagar Starter's! \u{1F44B}" + "\n\n" +
+                        var msg = "Hello Sagar Starters!" + "\n\n" +
                             "I am interested in ordering:" + "\n\n" +
                             "*Product:* " + pName + "\n\n" +
                             "*Price:* " + pCurr + formatPrice(pPrice) + "\n\n" +
