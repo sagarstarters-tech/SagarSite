@@ -355,6 +355,43 @@ if (isset($conn) && $conn instanceof mysqli) {
     border-left: 4px solid #e65100;
 }
 
+/* ── Details Modal & Table Formatting ────────────────── */
+.modal-details-dialog {
+    max-width: 620px;
+    margin: 1.75rem auto;
+}
+.backup-details-table {
+    table-layout: fixed;
+    width: 100%;
+    margin-bottom: 0;
+}
+.backup-details-table td {
+    padding: 0.75rem 0.6rem;
+    vertical-align: top;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+.backup-details-table td.label-col {
+    width: 34%;
+    color: #6c757d;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+.backup-details-table td.val-col {
+    width: 66%;
+    font-size: 0.88rem;
+    color: #212529;
+}
+.backup-name-card {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 0.9rem 1.1rem;
+    word-break: break-all;
+    overflow-wrap: anywhere;
+}
+
 /* ── Empty State ──────────────────────────────────────── */
 .empty-state {
     padding: 3rem;
@@ -791,9 +828,9 @@ if (isset($conn) && $conn instanceof mysqli) {
 
 <!-- ════════ BACKUP DETAILS MODAL ════════ -->
 <div class="modal fade" id="detailsModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-details-dialog">
         <div class="modal-content border-0 rounded-4 shadow-lg">
-            <div class="modal-header border-0">
+            <div class="modal-header border-0 pb-0">
                 <h5 class="modal-title fw-bold"><i class="fas fa-info-circle me-2 text-primary"></i>Backup Details</h5>
                 <button type="button" class="btn-close" data-mdb-dismiss="modal"></button>
             </div>
@@ -1363,7 +1400,7 @@ function executeDelete() {
 // ═══════════════════════════════════════════════════════════
 function showDetails(id) {
     document.getElementById('detailsContent').innerHTML = 
-        '<div class="text-center py-4"><div class="spinner-border text-primary"></div></div>';
+        '<div class="text-center py-4"><div class="spinner-border text-primary"></div><div class="small text-muted mt-2">Loading details...</div></div>';
     detailsModalInstance.show();
 
     const formData = new FormData();
@@ -1376,23 +1413,86 @@ function showDetails(id) {
         .then(data => {
             if (data.success) {
                 const b = data.backup;
+                const typeIcon = {
+                    'full': 'fa-database',
+                    'db_only': 'fa-server',
+                    'files_only': 'fa-folder',
+                    'custom': 'fa-sliders-h'
+                }[b.backup_type] || 'fa-file';
+
+                const statusIcon = {
+                    'completed': 'fa-check-circle',
+                    'failed': 'fa-times-circle',
+                    'in_progress': 'fa-spinner fa-spin',
+                    'restored': 'fa-undo'
+                }[b.status] || 'fa-circle';
+
+                const triggerLabel = b.trigger_type === 'auto' ? 'AUTO (CRON)' : 'MANUAL';
+                const triggerClass = b.trigger_type === 'auto' ? 'trigger-auto' : 'trigger-manual';
+
                 document.getElementById('detailsContent').innerHTML = `
-                    <table class="table table-sm table-borderless mb-0">
-                        <tr><td class="text-muted fw-semibold" style="width:40%;">Name</td><td class="fw-bold">${escHtml(b.backup_name)}</td></tr>
-                        <tr><td class="text-muted fw-semibold">Type</td><td><span class="type-badge type-${b.backup_type}">${capitalize(b.backup_type.replace('_',' '))}</span></td></tr>
-                        <tr><td class="text-muted fw-semibold">Trigger</td><td><span class="trigger-badge trigger-${b.trigger_type}">${capitalize(b.trigger_type)}</span></td></tr>
-                        <tr><td class="text-muted fw-semibold">Status</td><td><span class="status-badge status-${b.status}">${capitalize(b.status)}</span></td></tr>
-                        <tr><td class="text-muted fw-semibold">Size</td><td>${b.file_size_formatted}</td></tr>
-                        <tr><td class="text-muted fw-semibold">DB Tables</td><td>${b.db_tables_count || '—'}</td></tr>
-                        <tr><td class="text-muted fw-semibold">Files</td><td>${b.files_count || '—'}</td></tr>
-                        <tr><td class="text-muted fw-semibold">Created</td><td>${b.created_at_formatted}</td></tr>
-                        <tr><td class="text-muted fw-semibold">Created By</td><td>${escHtml(b.created_by_name || '—')}</td></tr>
-                        <tr><td class="text-muted fw-semibold">File Exists</td><td>${b.file_exists ? '<span class="text-success"><i class="fas fa-check-circle"></i> Yes</span>' : '<span class="text-danger"><i class="fas fa-times-circle"></i> No</span>'}</td></tr>
-                        ${b.notes ? `<tr><td class="text-muted fw-semibold">Notes</td><td class="small">${escHtml(b.notes)}</td></tr>` : ''}
+                    <div class="backup-name-card mb-3">
+                        <div class="d-flex align-items-start justify-content-between gap-2">
+                            <div>
+                                <span class="text-muted small text-uppercase fw-bold" style="font-size:0.7rem;letter-spacing:0.5px;">Backup File Name</span>
+                                <div class="fw-bold fs-6 text-dark mt-1" style="word-break:break-all;">${escHtml(b.backup_name)}</div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2 py-1 flex-shrink-0" onclick="navigator.clipboard.writeText('${escJs(b.backup_name)}'); showToast('info', 'Backup name copied to clipboard!');" title="Copy backup name">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <table class="table backup-details-table table-borderless">
+                        <tr>
+                            <td class="label-col"><i class="fas fa-tag me-1 text-primary"></i> Type</td>
+                            <td class="val-col"><span class="type-badge type-${b.backup_type}"><i class="fas ${typeIcon}"></i> ${capitalize(b.backup_type.replace('_',' '))}</span></td>
+                        </tr>
+                        <tr>
+                            <td class="label-col"><i class="fas fa-bolt me-1 text-warning"></i> Trigger</td>
+                            <td class="val-col"><span class="trigger-badge ${triggerClass}">${triggerLabel}</span></td>
+                        </tr>
+                        <tr>
+                            <td class="label-col"><i class="fas fa-check-circle me-1 text-success"></i> Status</td>
+                            <td class="val-col"><span class="status-badge status-${b.status}"><i class="fas ${statusIcon}"></i> ${capitalize(b.status)}</span></td>
+                        </tr>
+                        <tr>
+                            <td class="label-col"><i class="fas fa-hdd me-1 text-info"></i> File Size</td>
+                            <td class="val-col fw-bold">${b.file_size_formatted}</td>
+                        </tr>
+                        <tr>
+                            <td class="label-col"><i class="fas fa-database me-1 text-primary"></i> DB Tables</td>
+                            <td class="val-col">${b.db_tables_count > 0 ? b.db_tables_count + ' tables' : '—'}</td>
+                        </tr>
+                        <tr>
+                            <td class="label-col"><i class="fas fa-folder me-1 text-warning"></i> Files Backed Up</td>
+                            <td class="val-col">${b.files_count > 0 ? b.files_count + ' files' : '—'}</td>
+                        </tr>
+                        <tr>
+                            <td class="label-col"><i class="fas fa-calendar-alt me-1 text-muted"></i> Created At</td>
+                            <td class="val-col">${b.created_at_formatted}</td>
+                        </tr>
+                        <tr>
+                            <td class="label-col"><i class="fas fa-user me-1 text-muted"></i> Created By</td>
+                            <td class="val-col">${escHtml(b.created_by_name || 'System / Auto Cron')}</td>
+                        </tr>
+                        <tr>
+                            <td class="label-col"><i class="fas fa-shield-alt me-1 text-muted"></i> Storage Status</td>
+                            <td class="val-col">${b.file_exists ? '<span class="text-success fw-semibold"><i class="fas fa-check-circle me-1"></i> Verified on Disk</span>' : '<span class="text-danger fw-semibold"><i class="fas fa-times-circle me-1"></i> File Missing on Disk</span>'}</td>
+                        </tr>
+                        ${b.notes ? `
+                        <tr>
+                            <td class="label-col"><i class="fas fa-sticky-note me-1 text-muted"></i> Notes</td>
+                            <td class="val-col">
+                                <div class="p-2 rounded-3 bg-light text-muted border small" style="word-break:break-word;">
+                                    ${escHtml(b.notes)}
+                                </div>
+                            </td>
+                        </tr>` : ''}
                     </table>
                 `;
             } else {
-                document.getElementById('detailsContent').innerHTML = `<p class="text-danger">${data.error}</p>`;
+                document.getElementById('detailsContent').innerHTML = `<p class="text-danger py-3 text-center">${data.error}</p>`;
             }
         });
 }
