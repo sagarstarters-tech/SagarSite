@@ -46,6 +46,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     // Admin notification fields
     $admin_whatsapp_number = $conn->real_escape_string(trim($_POST['admin_whatsapp_number'] ?? ''));
     $admin_notify_on_new_order = isset($_POST['admin_notify_on_new_order']) ? 1 : 0;
+    $admin_template_name = $conn->real_escape_string(trim($_POST['admin_template_name'] ?? ''));
+
+    // Auto add admin_template_name column if not exists
+    $conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS admin_template_name VARCHAR(100) NOT NULL DEFAULT ''");
 
     $update_query = "UPDATE whatsapp_settings SET 
         is_enabled = $is_enabled,
@@ -62,7 +66,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         waba_id = '$waba_id',
         wa_header_image_url = '$wa_header_image_url',
         admin_whatsapp_number = '$admin_whatsapp_number',
-        admin_notify_on_new_order = $admin_notify_on_new_order
+        admin_notify_on_new_order = $admin_notify_on_new_order,
+        admin_template_name = '$admin_template_name'
         WHERE id = 1";
 
     if ($conn->query($update_query)) {
@@ -212,19 +217,31 @@ $logs = $conn->query($logs_query);
                                 <label class="form-label fw-bold d-block">Admin WhatsApp Number</label>
                                 <?php echo render_phone_input('admin_whatsapp_number', $settings['admin_whatsapp_number'] ?? '', true); ?>
                                 <small class="text-muted d-block">Admin's WhatsApp number with country code. New order alerts will be sent here.</small>
-                                <button type="button" class="btn btn-sm btn-outline-success mt-2 fw-bold rounded-pill" id="btnQuickTestAdmin">
+                                
+                                <div class="mt-3">
+                                    <label class="form-label fw-bold small text-uppercase tracking-wider">Admin Meta Template Name <span class="badge bg-light text-muted border">Optional</span></label>
+                                    <input type="text" name="admin_template_name" class="form-control bg-light" placeholder="e.g. admin_new_order_alert" value="<?php echo htmlspecialchars($settings['admin_template_name'] ?? ''); ?>">
+                                    <small class="text-muted">Enter specific approved template for admin alerts (e.g. <code>admin_new_order_alert</code>). If empty, customer template (<code><?php echo htmlspecialchars($settings['meta_template_name'] ?? 'new_order_status'); ?></code>) is used.</small>
+                                </div>
+
+                                <button type="button" class="btn btn-sm btn-outline-success mt-3 fw-bold rounded-pill" id="btnQuickTestAdmin">
                                     <i class="fab fa-whatsapp me-1"></i> Send Test Admin Alert to this number
                                 </button>
                                 <div id="adminTestResult" class="small mt-2 d-none"></div>
                             </div>
                             <div class="col-md-6 mb-3 d-flex align-items-center">
-                                <div class="alert alert-success py-2 px-3 mb-0 small w-100 border-0 bg-success bg-opacity-10">
-                                    <i class="fas fa-bolt text-success me-1"></i>
-                                    <strong>24/7 Automated Delivery:</strong>
-                                    <ul class="mb-0 ps-3 mt-1 text-dark">
-                                        <li>Jaise customer ko bina "Hi" ke direct message milta hai, waise hi Admin alert bhi <strong>Approved Meta Template (<code><?php echo htmlspecialchars($settings['meta_template_name'] ?? 'new_order_status'); ?></code>)</strong> se 24/7 deliver hoga.</li>
-                                        <li>Admin ko bina kisi "Hi/Hello" bhejhe har new order par automatic WhatsApp alert aayega.</li>
-                                    </ul>
+                                <div class="alert alert-success py-3 px-3 mb-0 small w-100 border-0 bg-success bg-opacity-10">
+                                    <h6 class="fw-bold text-success mb-2"><i class="fas fa-bolt me-1"></i> 24/7 Automated Delivery</h6>
+                                    <p class="mb-2 text-dark">Customer ki tarah Admin ko bhi bina kisi "Hi" ke direct 24/7 alert receive hoga.</p>
+                                    <hr class="my-2 border-success border-opacity-25">
+                                    <strong>Recommended Admin Template Structure (in Meta):</strong>
+                                    <div class="bg-white p-2 rounded border small text-muted font-monospace mt-1">
+                                        🛒 *New Order Alert!*<br>
+                                        Order: *#{{1}}*<br>
+                                        Customer: {{2}}<br>
+                                        Amount: ₹{{3}}<br>
+                                        Payment: {{4}}
+                                    </div>
                                 </div>
                             </div>
                         </div>
