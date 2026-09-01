@@ -45,7 +45,9 @@ Thumbs.db
 *.zip
 *.tar.gz
 *.7z
-/backups/
+/backups/*
+!/backups/.gitkeep
+!/backups/.htaccess
 /backup/
 /scratch/
 scratch.php

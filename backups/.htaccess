@@ -1,0 +1,14 @@
+# Deny all direct access to backup files
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule .* - [F,L]
+</IfModule>
+
+# Fallback: deny all
+<IfModule !mod_rewrite.c>
+    Order deny,allow
+    Deny from all
+</IfModule>
+
+# Block directory listing
+Options -Indexes

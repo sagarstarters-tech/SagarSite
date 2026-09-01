@@ -412,7 +412,7 @@ return [
     [
         'label'    => 'Settings &amp; Configs',
         'icon'     => 'fa-cogs',
-        'pages'    => ['manage_settings.php', 'system_optimize.php', 'manage_seo.php', 'manage_tracking.php', 'manage_scripts.php'],
+        'pages'    => ['manage_settings.php', 'system_optimize.php', 'manage_seo.php', 'manage_tracking.php', 'manage_scripts.php', 'manage_backups.php'],
         'children' => [
             [
                 'label'  => 'Global Properties',
@@ -472,6 +472,12 @@ return [
                 'icon'  => 'fa-code',
                 'url'   => 'manage_scripts.php',
                 'pages' => ['manage_scripts.php'],
+            ],
+            [
+                'label' => 'Backup &amp; Restore',
+                'icon'  => 'fa-shield-alt',
+                'url'   => 'manage_backups.php',
+                'pages' => ['manage_backups.php'],
             ],
         ],
     ],
