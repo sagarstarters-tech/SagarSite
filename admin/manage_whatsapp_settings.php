@@ -536,8 +536,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
 
                     if (data.success) {
-                        adminTestResult.className = 'alert alert-success py-2 small mt-2';
-                        adminTestResult.innerHTML = `✅ <strong>Admin Alert Sent Successfully!</strong> Check your WhatsApp on ${rawNumber}.`;
+                        const msgId = data.message_id ? `<span class="badge bg-success ms-1">${data.message_id}</span>` : '';
+                        adminTestResult.className = 'alert alert-success py-3 small mt-2';
+                        adminTestResult.innerHTML = `
+                            <div><i class="fas fa-check-circle me-1"></i> <strong>Meta API Accepted Message!</strong> ${msgId}</div>
+                            <div class="mt-2 pt-2 border-top border-success border-opacity-25 text-dark" style="font-size:0.82rem; line-height:1.45;">
+                                <strong>⚠️ Agar WhatsApp par turant receive na ho, toh ye 2 baatein check karein:</strong>
+                                <ol class="mb-0 ps-3 mt-1 text-dark">
+                                    <li><strong>24-Hour Window Rule:</strong> Apne personal phone (<code>${rawNumber}</code>) se apne Business number (<strong>+91 9721083003</strong>) par WhatsApp par <strong>"Hi"</strong> message send kijiye taki Meta incoming session open ho sake.</li>
+                                    <li><strong>Meta App "Development Mode":</strong> Agar Meta Developer Console (<code>developers.facebook.com</code>) me aapka App <em>Development Mode</em> me hai, toh <em>WhatsApp &gt; API Setup &gt; Step 5</em> me <code>${rawNumber}</code> number add hona zaroori hai, ya App ko <strong>Live Mode</strong> me switch karein.</li>
+                                </ol>
+                                <div class="mt-2 text-end">
+                                    <a href="whatsapp_debug.php" target="_blank" class="fw-bold text-success text-decoration-underline"><i class="fas fa-external-link-alt me-1"></i>Open Full Meta Debug Log</a>
+                                </div>
+                            </div>
+                        `;
                     } else {
                         adminTestResult.className = 'alert alert-danger py-2 small mt-2';
                         adminTestResult.innerHTML = `❌ <strong>Alert Failed:</strong> ${data.error || 'Unknown error'}`
