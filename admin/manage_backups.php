@@ -10,6 +10,43 @@
  */
 $current_page = 'manage_backups.php';
 include 'admin_header.php';
+
+// Auto-create database tables if not exist (Self-healing migration)
+if (isset($conn) && $conn instanceof mysqli) {
+    try {
+        $conn->query("CREATE TABLE IF NOT EXISTS `site_backups` (
+            `id` INT AUTO_INCREMENT PRIMARY KEY,
+            `backup_name` VARCHAR(255) NOT NULL,
+            `backup_type` ENUM('full','db_only','files_only') NOT NULL DEFAULT 'full',
+            `trigger_type` ENUM('manual','auto') NOT NULL DEFAULT 'manual',
+            `file_path` VARCHAR(500) DEFAULT NULL,
+            `file_size` BIGINT UNSIGNED DEFAULT 0,
+            `db_tables_count` INT UNSIGNED DEFAULT 0,
+            `files_count` INT UNSIGNED DEFAULT 0,
+            `status` ENUM('in_progress','completed','failed','restored') NOT NULL DEFAULT 'in_progress',
+            `notes` TEXT DEFAULT NULL,
+            `created_by` INT UNSIGNED DEFAULT NULL,
+            `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            INDEX `idx_status` (`status`),
+            INDEX `idx_created_at` (`created_at`),
+            INDEX `idx_trigger_type` (`trigger_type`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+
+        $conn->query("CREATE TABLE IF NOT EXISTS `backup_settings` (
+            `setting_key` VARCHAR(100) PRIMARY KEY,
+            `setting_value` TEXT DEFAULT NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+
+        $conn->query("INSERT IGNORE INTO `backup_settings` (`setting_key`, `setting_value`) VALUES
+            ('auto_backup_enabled', '0'),
+            ('auto_backup_frequency', 'weekly'),
+            ('auto_backup_type', 'full'),
+            ('max_backups_keep', '5'),
+            ('last_auto_backup', '0');");
+    } catch (\Throwable $e) {
+        error_log('[Backup] Auto migration notice: ' . $e->getMessage());
+    }
+}
 ?>
 
 <style>

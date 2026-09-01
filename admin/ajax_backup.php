@@ -52,9 +52,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 define('BACKUP_DIR', BASE_PATH . '/backups');
 define('BACKUP_TEMP_DIR', BACKUP_DIR . '/temp');
 
-// Ensure backup directories exist
+// Ensure backup directories and .htaccess exist
 if (!is_dir(BACKUP_DIR)) @mkdir(BACKUP_DIR, 0755, true);
 if (!is_dir(BACKUP_TEMP_DIR)) @mkdir(BACKUP_TEMP_DIR, 0755, true);
+$htaccessFile = BACKUP_DIR . '/.htaccess';
+if (!file_exists($htaccessFile)) {
+    @file_put_contents($htaccessFile, "<IfModule mod_rewrite.c>\nRewriteEngine On\nRewriteRule .* - [F,L]\n</IfModule>\n<IfModule !mod_rewrite.c>\nOrder deny,allow\nDeny from all\n</IfModule>\nOptions -Indexes\n");
+}
+
+// Auto-create database tables if not exist (Self-healing on production/live server)
+ensureBackupTablesExist($conn);
 
 // ── Route Action ────────────────────────────────────────────
 try {
@@ -844,3 +851,41 @@ function deleteDirectory($dir) {
     }
     @rmdir($dir);
 }
+
+function ensureBackupTablesExist($conn) {
+    if (!$conn || !($conn instanceof mysqli)) return;
+    try {
+        $conn->query("CREATE TABLE IF NOT EXISTS `site_backups` (
+            `id` INT AUTO_INCREMENT PRIMARY KEY,
+            `backup_name` VARCHAR(255) NOT NULL,
+            `backup_type` ENUM('full','db_only','files_only') NOT NULL DEFAULT 'full',
+            `trigger_type` ENUM('manual','auto') NOT NULL DEFAULT 'manual',
+            `file_path` VARCHAR(500) DEFAULT NULL,
+            `file_size` BIGINT UNSIGNED DEFAULT 0,
+            `db_tables_count` INT UNSIGNED DEFAULT 0,
+            `files_count` INT UNSIGNED DEFAULT 0,
+            `status` ENUM('in_progress','completed','failed','restored') NOT NULL DEFAULT 'in_progress',
+            `notes` TEXT DEFAULT NULL,
+            `created_by` INT UNSIGNED DEFAULT NULL,
+            `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            INDEX `idx_status` (`status`),
+            INDEX `idx_created_at` (`created_at`),
+            INDEX `idx_trigger_type` (`trigger_type`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+
+        $conn->query("CREATE TABLE IF NOT EXISTS `backup_settings` (
+            `setting_key` VARCHAR(100) PRIMARY KEY,
+            `setting_value` TEXT DEFAULT NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+
+        $conn->query("INSERT IGNORE INTO `backup_settings` (`setting_key`, `setting_value`) VALUES
+            ('auto_backup_enabled', '0'),
+            ('auto_backup_frequency', 'weekly'),
+            ('auto_backup_type', 'full'),
+            ('max_backups_keep', '5'),
+            ('last_auto_backup', '0');");
+    } catch (\Throwable $e) {
+        error_log('[Backup Migration] Auto-setup failed: ' . $e->getMessage());
+    }
+}
+

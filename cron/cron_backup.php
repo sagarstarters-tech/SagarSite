@@ -56,6 +56,32 @@ if ($conn->connect_error) {
 }
 $conn->set_charset('utf8mb4');
 
+// Ensure tables exist
+try {
+    $conn->query("CREATE TABLE IF NOT EXISTS `site_backups` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `backup_name` VARCHAR(255) NOT NULL,
+        `backup_type` ENUM('full','db_only','files_only') NOT NULL DEFAULT 'full',
+        `trigger_type` ENUM('manual','auto') NOT NULL DEFAULT 'manual',
+        `file_path` VARCHAR(500) DEFAULT NULL,
+        `file_size` BIGINT UNSIGNED DEFAULT 0,
+        `db_tables_count` INT UNSIGNED DEFAULT 0,
+        `files_count` INT UNSIGNED DEFAULT 0,
+        `status` ENUM('in_progress','completed','failed','restored') NOT NULL DEFAULT 'in_progress',
+        `notes` TEXT DEFAULT NULL,
+        `created_by` INT UNSIGNED DEFAULT NULL,
+        `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX `idx_status` (`status`),
+        INDEX `idx_created_at` (`created_at`),
+        INDEX `idx_trigger_type` (`trigger_type`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+
+    $conn->query("CREATE TABLE IF NOT EXISTS `backup_settings` (
+        `setting_key` VARCHAR(100) PRIMARY KEY,
+        `setting_value` TEXT DEFAULT NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+} catch (\Throwable $e) {}
+
 // ── Check if auto backup is enabled ─────────────────────────
 $settings = [];
 $res = $conn->query("SELECT setting_key, setting_value FROM backup_settings");
