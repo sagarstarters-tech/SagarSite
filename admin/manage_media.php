@@ -1407,7 +1407,8 @@ foreach ($_settings_tables as $st) {
          data-mimetype="<?php echo htmlspecialchars($m['mime_type']); ?>"
          data-filesize="<?php echo $filesize_display; ?>"
          data-dims="<?php echo $dims; ?>"
-         data-url="<?php echo htmlspecialchars($m['file_url']); ?>"
+         data-url="<?php echo htmlspecialchars($display_url); ?>"
+         data-display-url="<?php echo htmlspecialchars($display_url); ?>"
          data-full-url="<?php echo htmlspecialchars($absolute_url); ?>"
          data-alt="<?php echo htmlspecialchars($m['alt_text']); ?>"
          data-caption="<?php echo htmlspecialchars($m['caption'] ?? ''); ?>"
@@ -1861,10 +1862,11 @@ function openMediaDetail(card) {
 
     // Preview
     const preview = document.getElementById('panelPreview');
+    const previewSrc = d.displayUrl || d.url || d.fullUrl;
     if (d.filetype === 'video') {
-        preview.innerHTML = `<video controls style="width:100%; max-height:300px;"><source src="${d.url}" type="${d.mimetype}">Your browser does not support this video.</video>`;
+        preview.innerHTML = `<video controls style="width:100%; max-height:300px;"><source src="${previewSrc}" type="${d.mimetype}">Your browser does not support this video.</video>`;
     } else {
-        preview.innerHTML = `<img src="${d.url}" alt="${d.alt || ''}" style="max-height:300px;">`;
+        preview.innerHTML = `<img src="${previewSrc}" alt="${d.alt || ''}" style="max-height:300px; max-width:100%; object-fit:contain; border-radius:8px;" onerror="if(this.src !== '${d.fullUrl}'){this.src='${d.fullUrl}';}else{this.onerror=null; this.src='../assets/images/placeholder.svg';}">`;
     }
 
     document.getElementById('mediaDetailPanel').classList.add('open');
