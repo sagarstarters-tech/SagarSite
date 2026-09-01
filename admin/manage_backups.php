@@ -355,33 +355,10 @@ if (isset($conn) && $conn instanceof mysqli) {
     border-left: 4px solid #e65100;
 }
 
-/* ── Details Modal & Table Formatting ────────────────── */
+/* ── Details Modal & Card Formatting ────────────────── */
 .modal-details-dialog {
-    max-width: 620px;
+    max-width: 540px;
     margin: 1.75rem auto;
-}
-.backup-details-table {
-    table-layout: fixed;
-    width: 100%;
-    margin-bottom: 0;
-}
-.backup-details-table td {
-    padding: 0.75rem 0.6rem;
-    vertical-align: top;
-    word-break: break-word;
-    overflow-wrap: anywhere;
-    white-space: normal;
-}
-.backup-details-table td.label-col {
-    width: 34%;
-    color: #6c757d;
-    font-weight: 600;
-    font-size: 0.85rem;
-}
-.backup-details-table td.val-col {
-    width: 66%;
-    font-size: 0.88rem;
-    color: #212529;
 }
 .backup-name-card {
     background: #f8f9fa;
@@ -390,6 +367,56 @@ if (isset($conn) && $conn instanceof mysqli) {
     padding: 0.9rem 1.1rem;
     word-break: break-all;
     overflow-wrap: anywhere;
+    width: 100%;
+    box-sizing: border-box;
+}
+.backup-details-list {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    box-sizing: border-box;
+}
+.detail-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.65rem 0.25rem;
+    border-bottom: 1px dashed #edf2f7;
+    font-size: 0.88rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+.detail-item:last-child {
+    border-bottom: none;
+}
+.detail-item .detail-lbl {
+    color: #6c757d;
+    font-weight: 600;
+    font-size: 0.84rem;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+.detail-item .detail-val {
+    text-align: right;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    white-space: normal;
+    color: #212529;
+}
+.detail-notes-box {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    font-size: 0.84rem;
+    color: #495057;
+    width: 100%;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    white-space: normal;
+    box-sizing: border-box;
+    margin-top: 0.35rem;
 }
 
 /* ── Empty State ──────────────────────────────────────── */
@@ -1433,7 +1460,7 @@ function showDetails(id) {
                 document.getElementById('detailsContent').innerHTML = `
                     <div class="backup-name-card mb-3">
                         <div class="d-flex align-items-start justify-content-between gap-2">
-                            <div>
+                            <div class="overflow-hidden" style="min-width: 0;">
                                 <span class="text-muted small text-uppercase fw-bold" style="font-size:0.7rem;letter-spacing:0.5px;">Backup File Name</span>
                                 <div class="fw-bold fs-6 text-dark mt-1" style="word-break:break-all;">${escHtml(b.backup_name)}</div>
                             </div>
@@ -1443,53 +1470,52 @@ function showDetails(id) {
                         </div>
                     </div>
 
-                    <table class="table backup-details-table table-borderless">
-                        <tr>
-                            <td class="label-col"><i class="fas fa-tag me-1 text-primary"></i> Type</td>
-                            <td class="val-col"><span class="type-badge type-${b.backup_type}"><i class="fas ${typeIcon}"></i> ${capitalize(b.backup_type.replace('_',' '))}</span></td>
-                        </tr>
-                        <tr>
-                            <td class="label-col"><i class="fas fa-bolt me-1 text-warning"></i> Trigger</td>
-                            <td class="val-col"><span class="trigger-badge ${triggerClass}">${triggerLabel}</span></td>
-                        </tr>
-                        <tr>
-                            <td class="label-col"><i class="fas fa-check-circle me-1 text-success"></i> Status</td>
-                            <td class="val-col"><span class="status-badge status-${b.status}"><i class="fas ${statusIcon}"></i> ${capitalize(b.status)}</span></td>
-                        </tr>
-                        <tr>
-                            <td class="label-col"><i class="fas fa-hdd me-1 text-info"></i> File Size</td>
-                            <td class="val-col fw-bold">${b.file_size_formatted}</td>
-                        </tr>
-                        <tr>
-                            <td class="label-col"><i class="fas fa-database me-1 text-primary"></i> DB Tables</td>
-                            <td class="val-col">${b.db_tables_count > 0 ? b.db_tables_count + ' tables' : '—'}</td>
-                        </tr>
-                        <tr>
-                            <td class="label-col"><i class="fas fa-folder me-1 text-warning"></i> Files Backed Up</td>
-                            <td class="val-col">${b.files_count > 0 ? b.files_count + ' files' : '—'}</td>
-                        </tr>
-                        <tr>
-                            <td class="label-col"><i class="fas fa-calendar-alt me-1 text-muted"></i> Created At</td>
-                            <td class="val-col">${b.created_at_formatted}</td>
-                        </tr>
-                        <tr>
-                            <td class="label-col"><i class="fas fa-user me-1 text-muted"></i> Created By</td>
-                            <td class="val-col">${escHtml(b.created_by_name || 'System / Auto Cron')}</td>
-                        </tr>
-                        <tr>
-                            <td class="label-col"><i class="fas fa-shield-alt me-1 text-muted"></i> Storage Status</td>
-                            <td class="val-col">${b.file_exists ? '<span class="text-success fw-semibold"><i class="fas fa-check-circle me-1"></i> Verified on Disk</span>' : '<span class="text-danger fw-semibold"><i class="fas fa-times-circle me-1"></i> File Missing on Disk</span>'}</td>
-                        </tr>
-                        ${b.notes ? `
-                        <tr>
-                            <td class="label-col"><i class="fas fa-sticky-note me-1 text-muted"></i> Notes</td>
-                            <td class="val-col">
-                                <div class="p-2 rounded-3 bg-light text-muted border small" style="word-break:break-word;">
-                                    ${escHtml(b.notes)}
-                                </div>
-                            </td>
-                        </tr>` : ''}
-                    </table>
+                    <div class="backup-details-list mb-3">
+                        <div class="detail-item">
+                            <div class="detail-lbl"><i class="fas fa-tag me-2 text-primary"></i>Type</div>
+                            <div class="detail-val"><span class="type-badge type-${b.backup_type}"><i class="fas ${typeIcon}"></i> ${capitalize(b.backup_type.replace('_',' '))}</span></div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-lbl"><i class="fas fa-bolt me-2 text-warning"></i>Trigger</div>
+                            <div class="detail-val"><span class="trigger-badge ${triggerClass}">${triggerLabel}</span></div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-lbl"><i class="fas fa-check-circle me-2 text-success"></i>Status</div>
+                            <div class="detail-val"><span class="status-badge status-${b.status}">${capitalize(b.status)}</span></div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-lbl"><i class="fas fa-hdd me-2 text-info"></i>File Size</div>
+                            <div class="detail-val fw-bold">${b.file_size_formatted}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-lbl"><i class="fas fa-database me-2 text-primary"></i>DB Tables</div>
+                            <div class="detail-val">${b.db_tables_count > 0 ? b.db_tables_count + ' tables' : '—'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-lbl"><i class="fas fa-folder me-2 text-warning"></i>Files Backed Up</div>
+                            <div class="detail-val">${b.files_count > 0 ? b.files_count + ' files' : '—'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-lbl"><i class="fas fa-calendar-alt me-2 text-muted"></i>Created At</div>
+                            <div class="detail-val">${b.created_at_formatted}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-lbl"><i class="fas fa-user me-2 text-muted"></i>Created By</div>
+                            <div class="detail-val">${escHtml(b.created_by_name || 'System / Auto Cron')}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-lbl"><i class="fas fa-shield-alt me-2 text-muted"></i>Storage Status</div>
+                            <div class="detail-val">${b.file_exists ? '<span class="text-success fw-semibold"><i class="fas fa-check-circle me-1"></i> Verified on Disk</span>' : '<span class="text-danger fw-semibold"><i class="fas fa-times-circle me-1"></i> File Missing</span>'}</div>
+                        </div>
+                    </div>
+
+                    ${b.notes ? `
+                    <div class="mb-1">
+                        <div class="text-muted small fw-semibold mb-1"><i class="fas fa-sticky-note me-1 text-muted"></i>Notes / Reason:</div>
+                        <div class="detail-notes-box">
+                            ${escHtml(b.notes)}
+                        </div>
+                    </div>` : ''}
                 `;
             } else {
                 document.getElementById('detailsContent').innerHTML = `<p class="text-danger py-3 text-center">${data.error}</p>`;
