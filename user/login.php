@@ -49,6 +49,13 @@ include '../includes/header.php';
                 <!-- ════════ RIGHT PANE: LOGIN FORM ════════ -->
                 <div class="col-lg-7">
                     <div class="auth-form-pane">
+                        <!-- Mobile Brand Header (< 992px) -->
+                        <div class="d-lg-none text-center mb-3">
+                            <span class="auth-brand-badge mb-2 d-inline-flex bg-dark text-warning">
+                                <i class="fas fa-bolt text-warning"></i> Sagar Starters
+                            </span>
+                        </div>
+
                         <!-- Top Switcher Tab -->
                         <div class="auth-tab-nav">
                             <a href="login.php" class="auth-tab-link active">Sign In</a>

@@ -49,6 +49,13 @@ include '../includes/header.php';
                 <!-- ════════ RIGHT PANE: REGISTRATION FORM ════════ -->
                 <div class="col-lg-7">
                     <div class="auth-form-pane">
+                        <!-- Mobile Brand Header (< 992px) -->
+                        <div class="d-lg-none text-center mb-3">
+                            <span class="auth-brand-badge mb-2 d-inline-flex bg-dark text-warning">
+                                <i class="fas fa-bolt text-warning"></i> Sagar Starters
+                            </span>
+                        </div>
+
                         <!-- Top Switcher Tab -->
                         <div class="auth-tab-nav">
                             <a href="login.php" class="auth-tab-link">Sign In</a>
@@ -101,15 +108,15 @@ include '../includes/header.php';
                                 </div>
                             </div>
 
-                            <!-- Phone & Zip code in 2 cols -->
+                            <!-- Phone & Zip code in responsive cols -->
                             <div class="row g-2">
-                                <div class="col-md-7">
+                                <div class="col-md-7 col-12">
                                     <div class="auth-field-wrapper">
                                         <label class="auth-field-label">Phone Number</label>
                                         <?php echo render_phone_input('phone', '', true); ?>
                                     </div>
                                 </div>
-                                <div class="col-md-5">
+                                <div class="col-md-5 col-12">
                                     <div class="auth-field-wrapper">
                                         <label class="auth-field-label" for="signup_zip">Pincode</label>
                                         <div class="auth-input-container">
@@ -131,7 +138,7 @@ include '../includes/header.php';
 
                             <!-- City, State & Country -->
                             <div class="row g-2">
-                                <div class="col-md-4">
+                                <div class="col-md-4 col-sm-6 col-12">
                                     <div class="auth-field-wrapper">
                                         <label class="auth-field-label" for="signup_city">City</label>
                                         <div class="auth-input-container">
@@ -140,7 +147,7 @@ include '../includes/header.php';
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-4 col-sm-6 col-12">
                                     <div class="auth-field-wrapper">
                                         <label class="auth-field-label" for="signup_state">State</label>
                                         <div class="auth-input-container">
@@ -149,7 +156,7 @@ include '../includes/header.php';
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-4 col-12">
                                     <div class="auth-field-wrapper">
                                         <label class="auth-field-label" for="signup_country">Country</label>
                                         <div class="auth-input-container">

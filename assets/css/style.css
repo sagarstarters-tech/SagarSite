@@ -2910,13 +2910,95 @@ body {
     color: #94a3b8;
 }
 
-/* Responsive breakpoint */
-@media (max-width: 991px) {
-    .auth-hero-pane {
-        min-height: 320px;
-        padding: 2.2rem 1.8rem;
+/* Responsive breakpoints */
+@media (max-width: 991.98px) {
+    .auth-page-bg {
+        padding: 1.5rem 0.75rem;
+    }
+    .auth-master-card {
+        border-radius: 20px;
+        max-width: 600px;
     }
     .auth-form-pane {
         padding: 2.2rem 1.8rem;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .auth-page-bg {
+        padding: 0.75rem 0.4rem;
+        background: #ffffff;
+    }
+    .auth-master-card {
+        border-radius: 16px;
+        box-shadow: none;
+        border: none;
+    }
+    .auth-form-pane {
+        padding: 1rem 0.35rem;
+    }
+    .auth-form-header h3 {
+        font-size: 1.45rem;
+    }
+    .auth-form-header p {
+        font-size: 0.82rem;
+        margin-bottom: 1.25rem;
+    }
+    .auth-input-control {
+        font-size: 16px !important; /* Prevents iOS Safari auto-zoom */
+        padding: 0.7rem 0.85rem 0.7rem 2.6rem;
+    }
+    .auth-tab-nav {
+        margin-bottom: 1.4rem;
+    }
+    .auth-tab-link {
+        font-size: 0.85rem;
+        padding: 0.5rem 0.75rem;
+    }
+    .btn-auth-submit {
+        padding: 0.8rem 1rem;
+        font-size: 0.95rem;
+    }
+    .auth-field-wrapper {
+        margin-bottom: 1rem;
+    }
+}
+
+/* Phone input styling inside auth form */
+.auth-field-wrapper .phone-group {
+    border: 1.5px solid #e2e8f0 !important;
+    border-radius: 12px !important;
+    background-color: #f8fafc !important;
+    overflow: hidden;
+    transition: all 0.25s ease;
+    height: 46px !important;
+}
+.auth-field-wrapper .phone-group:focus-within {
+    background-color: #ffffff !important;
+    border-color: #0d6efd !important;
+    box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.12) !important;
+}
+.auth-field-wrapper .phone-group .country-code-select {
+    background-color: #f1f5f9 !important;
+    border: none !important;
+    border-right: 1.5px solid #e2e8f0 !important;
+    font-size: 0.88rem !important;
+    font-weight: 600;
+    color: #334155 !important;
+    height: 100% !important;
+    width: 78px !important;
+    flex: 0 0 78px !important;
+}
+.auth-field-wrapper .phone-group .phone-main-input {
+    background-color: transparent !important;
+    border: none !important;
+    font-size: 0.93rem !important;
+    color: #1e293b !important;
+    height: 100% !important;
+    padding-left: 0.85rem !important;
+}
+@media (max-width: 575.98px) {
+    .auth-field-wrapper .phone-group .phone-main-input {
+        font-size: 16px !important;
     }
 }
