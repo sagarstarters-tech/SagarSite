@@ -164,8 +164,13 @@ $logs = $conn->query($logs_query);
 
                     <div class="mb-4">
                         <label class="form-label fw-bold"><i class="fas fa-image text-info me-1"></i>Template Header Image URL <small class="text-muted">(Required if template has image header)</small></label>
-                        <input type="url" name="wa_header_image_url" class="form-control bg-light" placeholder="https://yourdomain.com/path/to/header-image.png" value="<?php echo htmlspecialchars($settings['wa_header_image_url'] ?? ''); ?>">
-                        <small class="text-muted">Public HTTPS URL of the image shown in template header. Must be a <strong>.jpg</strong> or <strong>.png</strong> file accessible from the internet.</small>
+                        <div class="input-group">
+                            <input type="url" id="waHeaderImgInput" name="wa_header_image_url" class="form-control bg-light" placeholder="https://sagarstarters.com/assets/images/admin_order_alert_banner.jpg" value="<?php echo htmlspecialchars($settings['wa_header_image_url'] ?? 'https://sagarstarters.com/assets/images/admin_order_alert_banner.jpg'); ?>">
+                            <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('waHeaderImgInput').value='https://sagarstarters.com/assets/images/admin_order_alert_banner.jpg'" title="Set to New Order Received Banner">
+                                <i class="fas fa-magic me-1"></i> Use Order Banner
+                            </button>
+                        </div>
+                        <small class="text-muted">Public HTTPS URL of the image shown in template header (e.g. <code>https://sagarstarters.com/assets/images/admin_order_alert_banner.jpg</code>).</small>
                     </div>
 
                     <div id="metaTemplatesList" class="mb-4 d-none p-3 border rounded-3 bg-white shadow-sm overflow-auto" style="max-height: 250px;">

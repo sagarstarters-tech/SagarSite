@@ -315,7 +315,7 @@ function sendAdminOrderNotification($conn, $order_id) {
 
             $header_image_url = trim($settings['wa_header_image_url'] ?? '');
             if (empty($header_image_url) && $admin_tpl_name === 'admin_new_order_alert') {
-                $header_image_url = 'https://sagarstarters.com/assets/images/auth_banner.jpg';
+                $header_image_url = 'https://sagarstarters.com/assets/images/admin_order_alert_banner.jpg';
             }
 
             if (!empty($header_image_url)) {

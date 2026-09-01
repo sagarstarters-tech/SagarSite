@@ -193,7 +193,7 @@ if ($sending_mode === 'api') {
         // Add header image component if configured or if admin template
         $header_image_url = trim($settings['wa_header_image_url'] ?? '');
         if (empty($header_image_url) && ($is_admin_test || $meta_template_name === 'admin_new_order_alert')) {
-            $header_image_url = 'https://sagarstarters.com/assets/images/auth_banner.jpg';
+            $header_image_url = 'https://sagarstarters.com/assets/images/admin_order_alert_banner.jpg';
         }
 
         if (!empty($header_image_url)) {
