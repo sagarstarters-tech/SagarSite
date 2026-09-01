@@ -37,19 +37,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['subscribe_email'])) {
                 <p class="small mb-3"><?php echo nl2br(htmlspecialchars($global_settings['footer_text'])); ?></p>
             <?php endif; ?>
             
-            <div class="d-flex mt-4">
+            <div class="d-flex mt-4 flex-wrap gap-2">
                 <?php if(!empty($global_settings['social_facebook'])): ?>
-                    <a href="<?php echo htmlspecialchars($global_settings['social_facebook']); ?>" target="_blank" rel="noopener noreferrer" class="social-icon-circle me-3" aria-label="Follow us on Facebook"><i class="fab fa-facebook-f"></i></a>
+                    <a href="<?php echo htmlspecialchars($global_settings['social_facebook']); ?>" target="_blank" rel="noopener noreferrer" class="social-icon-circle" aria-label="Follow us on Facebook"><i class="fab fa-facebook-f"></i></a>
                 <?php endif; ?>
                 
                 <?php if(!empty($global_settings['social_twitter'])): ?>
-                    <a href="<?php echo htmlspecialchars($global_settings['social_twitter']); ?>" target="_blank" rel="noopener noreferrer" class="social-icon-circle me-3" aria-label="Follow us on Twitter"><i class="fab fa-twitter"></i></a>
+                    <a href="<?php echo htmlspecialchars($global_settings['social_twitter']); ?>" target="_blank" rel="noopener noreferrer" class="social-icon-circle" aria-label="Follow us on Twitter"><i class="fab fa-twitter"></i></a>
                 <?php endif; ?>
                 
                 <?php if(!empty($global_settings['social_instagram'])): ?>
-                    <a href="<?php echo htmlspecialchars($global_settings['social_instagram']); ?>" target="_blank" rel="noopener noreferrer" class="social-icon-circle me-3" aria-label="Follow us on Instagram"><i class="fab fa-instagram"></i></a>
+                    <a href="<?php echo htmlspecialchars($global_settings['social_instagram']); ?>" target="_blank" rel="noopener noreferrer" class="social-icon-circle" aria-label="Follow us on Instagram"><i class="fab fa-instagram"></i></a>
                 <?php endif; ?>
                 
+                <?php if(!empty($global_settings['social_whatsapp'])): ?>
+                    <a href="<?php echo htmlspecialchars($global_settings['social_whatsapp']); ?>" target="_blank" rel="noopener noreferrer" class="social-icon-circle" aria-label="Chat on WhatsApp"><i class="fab fa-whatsapp"></i></a>
+                <?php endif; ?>
+
+                <?php if(!empty($global_settings['social_youtube'])): ?>
+                    <a href="<?php echo htmlspecialchars($global_settings['social_youtube']); ?>" target="_blank" rel="noopener noreferrer" class="social-icon-circle" aria-label="Follow us on YouTube"><i class="fab fa-youtube"></i></a>
+                <?php endif; ?>
+
                 <?php if(!empty($global_settings['social_linkedin'])): ?>
                     <a href="<?php echo htmlspecialchars($global_settings['social_linkedin']); ?>" target="_blank" rel="noopener noreferrer" class="social-icon-circle" aria-label="Follow us on LinkedIn"><i class="fab fa-linkedin-in"></i></a>
                 <?php endif; ?>

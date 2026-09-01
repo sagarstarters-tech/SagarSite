@@ -19,6 +19,8 @@ $site_keys = [
     'social_twitter' => 'https://twitter.com/yourhandle',
     'social_instagram' => 'https://instagram.com/yourhandle',
     'social_linkedin' => 'https://linkedin.com/company/yourcompany',
+    'social_whatsapp' => 'https://wa.me/919999999999',
+    'social_youtube' => 'https://youtube.com/@yourchannel',
     'footer_copyright' => 'Copyright &copy; ' . date("Y") . ' Sagar Starter\'s. Powered by Sagar Starter\'s.'
 ];
 
@@ -170,6 +172,20 @@ if ($res) {
                         <input type="text" name="social_linkedin" class="form-control bg-light border-0" 
                                value="<?php echo htmlspecialchars($current_settings['social_linkedin'] ?? ''); ?>" 
                                placeholder="<?php echo htmlspecialchars($site_keys['social_linkedin']); ?>">
+                    </div>
+
+                    <div class="input-group mb-3">
+                        <span class="input-group-text bg-light border-0"><i class="fab fa-whatsapp text-success" style="width: 20px;"></i></span>
+                        <input type="text" name="social_whatsapp" class="form-control bg-light border-0" 
+                               value="<?php echo htmlspecialchars($current_settings['social_whatsapp'] ?? ''); ?>" 
+                               placeholder="<?php echo htmlspecialchars($site_keys['social_whatsapp']); ?>">
+                    </div>
+
+                    <div class="input-group mb-3">
+                        <span class="input-group-text bg-light border-0"><i class="fab fa-youtube text-danger" style="width: 20px;"></i></span>
+                        <input type="text" name="social_youtube" class="form-control bg-light border-0" 
+                               value="<?php echo htmlspecialchars($current_settings['social_youtube'] ?? ''); ?>" 
+                               placeholder="<?php echo htmlspecialchars($site_keys['social_youtube']); ?>">
                     </div>
                     
                     <div class="form-text mt-2"><i class="fas fa-info-circle me-1"></i>Leave a link completely blank to hide its icon from the footer.</div>

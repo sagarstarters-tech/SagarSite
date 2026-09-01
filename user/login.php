@@ -36,11 +36,23 @@ include '../includes/header.php';
                         </div>
 
                         <div class="auth-hero-footer">
-                            <span>&copy; <?php echo date('Y'); ?> Sagar Starters</span>
+                            <span>&copy; <?php echo date('Y'); ?> <?php echo htmlspecialchars($global_settings['site_name'] ?? 'Sagar Starters'); ?></span>
                             <div class="auth-social-icons">
-                                <a href="https://facebook.com" target="_blank" class="auth-social-btn" title="Facebook"><i class="fab fa-facebook-f"></i></a>
-                                <a href="https://instagram.com" target="_blank" class="auth-social-btn" title="Instagram"><i class="fab fa-instagram"></i></a>
-                                <a href="https://wa.me/919999999999" target="_blank" class="auth-social-btn" title="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+                                <?php if(!empty($global_settings['social_facebook'])): ?>
+                                    <a href="<?php echo htmlspecialchars($global_settings['social_facebook']); ?>" target="_blank" rel="noopener noreferrer" class="auth-social-btn" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+                                <?php endif; ?>
+                                <?php if(!empty($global_settings['social_instagram'])): ?>
+                                    <a href="<?php echo htmlspecialchars($global_settings['social_instagram']); ?>" target="_blank" rel="noopener noreferrer" class="auth-social-btn" title="Instagram"><i class="fab fa-instagram"></i></a>
+                                <?php endif; ?>
+                                <?php if(!empty($global_settings['social_whatsapp'])): ?>
+                                    <a href="<?php echo htmlspecialchars($global_settings['social_whatsapp']); ?>" target="_blank" rel="noopener noreferrer" class="auth-social-btn" title="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+                                <?php endif; ?>
+                                <?php if(!empty($global_settings['social_youtube'])): ?>
+                                    <a href="<?php echo htmlspecialchars($global_settings['social_youtube']); ?>" target="_blank" rel="noopener noreferrer" class="auth-social-btn" title="YouTube"><i class="fab fa-youtube"></i></a>
+                                <?php endif; ?>
+                                <?php if(!empty($global_settings['social_twitter'])): ?>
+                                    <a href="<?php echo htmlspecialchars($global_settings['social_twitter']); ?>" target="_blank" rel="noopener noreferrer" class="auth-social-btn" title="Twitter"><i class="fab fa-twitter"></i></a>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
