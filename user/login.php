@@ -39,7 +39,7 @@
                             <span class="mx-3 text-muted small text-uppercase">or</span>
                             <hr class="flex-grow-1 opacity-25">
                         </div>
-                        <a href="../auth/google_redirect.php" class="btn btn-outline-dark w-100 py-2 d-flex align-items-center justify-content-center gap-2" style="border-color: #dadce0; background-color: #ffffff;">
+                        <a href="../auth/google_redirect.php" class="btn btn-google-signin">
                             <svg width="20px" height="20px" viewBox="0 0 118 120" version="1.1" xmlns="http://www.w3.org/2000/svg">
                                 <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
                                     <path d="M117.6,61.36 C117.6,57.1 117.2,53.01 116.5,49.09 L60,49.09 L60,72.3 L92.29,72.3 C90.9,79.8 86.67,86.15 80.31,90.4 L80.31,105.46 L99.7,105.46 C111.05,95.01 117.6,79.63 117.6,61.36 Z" fill="#4285F4"></path>
@@ -49,7 +49,7 @@
                                     <path d="M0,0 L120,0 L120,120 L0,120 L0,0 Z"></path>
                                 </g>
                             </svg>
-                            <span class="fw-semibold" style="color: #3c4043;">Continue with Google</span>
+                            <span>Continue with Google</span>
                         </a>
                     </div>
                     <?php endif; ?>
