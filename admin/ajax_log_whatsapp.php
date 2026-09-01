@@ -111,25 +111,27 @@ if ($sending_mode === 'api') {
 
     $token = trim($settings['api_token']);
     $phone_id = trim($settings['phone_number_id']);
-    $meta_template_name = $settings['meta_template_name'] ?? '';
     
-    // Normalize customer number
+    // Check if testing admin template or customer template
+    $admin_tpl_override = trim($_GET['admin_template_name'] ?? ($settings['admin_template_name'] ?? ''));
+    if ($is_admin_test && !empty($admin_tpl_override)) {
+        $meta_template_name = $admin_tpl_override;
+    } else {
+        $meta_template_name = $settings['meta_template_name'] ?? '';
+    }
+    
+    // Normalize customer/admin number
     $clean_number = normalize_whatsapp_phone_number($customer_number);
     $url = "https://graph.facebook.com/v21.0/{$phone_id}/messages";
     
     if (!empty($meta_template_name)) {
         // --- TEMPLATE MODE (24/7 Delivery Bypassing 24h Restriction) ---
-        // 1. We need to fetch variables to populate the template
-        // Note: The message passed from modal is the ALREADY REPLACED text.
-        // But for Meta API templates, we need the raw parameters back.
-        // We reuse the mapping in the 'includes/whatsapp_functions.php' logic.
-        
         $q = $conn->query("
-            SELECT o.id, o.status, o.total_amount, u.name, 
+            SELECT o.id, o.status, o.total_amount, o.payment_mode, o.created_at, u.name, u.phone,
                    (SELECT tracking_number FROM order_tracking WHERE order_id = o.id LIMIT 1) as tracking_number
             FROM orders o JOIN users u ON o.user_id = u.id WHERE o.id = $order_id
         ");
-        $order = $q->fetch_assoc();
+        $order = ($q && $q->num_rows > 0) ? $q->fetch_assoc() : null;
         
         // Failsafe for test mode (if order doesn't exist)
         if (!$order) {
@@ -137,25 +139,46 @@ if ($sending_mode === 'api') {
                 'id' => $order_id,
                 'status' => 'processing',
                 'total_amount' => 1999.00,
+                'payment_mode' => 'COD',
+                'created_at' => date('Y-m-d H:i:s'),
                 'name' => 'Demo Customer',
+                'phone' => '+91 9876543210',
                 'tracking_number' => 'TEST123456789'
             ];
         }
         
-        $replacementValues = [
-            '{CustomerName}' => trim($order['name'] ?? 'Customer'),
-            '{OrderID}'      => $order['id'] ?? $order_id,
-            '{OrderStatus}'  => ucwords(str_replace('_', ' ', $order['status'] ?? 'Processing')),
-            '{TrackingID}'   => $order['tracking_number'] ?: 'TESTTRACKING123',
-            '{OrderAmount}'  => number_format($order['total_amount'] ?? 0, 2)
-        ];
+        $customerName  = trim($order['name'] ?? 'Customer');
+        $customerPhone = trim($order['phone'] ?? '+91 9876543210');
+        $orderAmount   = number_format((float)($order['total_amount'] ?? 0), 2);
+        $orderStatus   = ucwords(str_replace('_', ' ', $order['status'] ?? 'Processing'));
+        $trackingID    = $order['tracking_number'] ?: 'TESTTRACKING123';
+        $paymentMode   = strtoupper($order['payment_mode'] ?? 'COD');
 
-        preg_match_all('/\{(CustomerName|OrderID|OrderStatus|TrackingID|OrderAmount)\}/', $settings['message_template'], $matches);
-        
         $params = [];
-        if (!empty($matches[0])) {
-            foreach ($matches[0] as $varKey) {
-                $params[] = ["type" => "text", "text" => (string)$replacementValues[$varKey]];
+        // If it's the admin template (or admin test), pass the 5 standard admin parameters
+        if ($is_admin_test || $meta_template_name === $admin_tpl_override) {
+            $params = [
+                ["type" => "text", "text" => (string)$order_id],
+                ["type" => "text", "text" => (string)$customerName],
+                ["type" => "text", "text" => (string)$customerPhone],
+                ["type" => "text", "text" => (string)$orderAmount],
+                ["type" => "text", "text" => (string)$paymentMode],
+            ];
+        } else {
+            // Customer template parameters mapped from bridge
+            $replacementValues = [
+                '{CustomerName}' => $customerName,
+                '{OrderID}'      => $order['id'] ?? $order_id,
+                '{OrderStatus}'  => $orderStatus,
+                '{TrackingID}'   => $trackingID,
+                '{OrderAmount}'  => $orderAmount
+            ];
+
+            preg_match_all('/\{(CustomerName|OrderID|OrderStatus|TrackingID|OrderAmount)\}/', $settings['message_template'], $matches);
+            if (!empty($matches[0])) {
+                foreach ($matches[0] as $varKey) {
+                    $params[] = ["type" => "text", "text" => (string)($replacementValues[$varKey] ?? '')];
+                }
             }
         }
 
@@ -187,9 +210,9 @@ if ($sending_mode === 'api') {
             "to"                => $clean_number,
             "type"              => "template",
             "template"          => [
-                "name"     => $meta_template_name,
-                "language" => ["code" => $settings['meta_template_lang'] ?? 'en'],
-                "components" => $components
+                "name"       => trim($meta_template_name),
+                "language"   => ["code" => trim($settings['meta_template_lang'] ?? 'en')],
+                "components" => $components,
             ]
         ];
     } else {

@@ -274,23 +274,35 @@ function sendAdminOrderNotification($conn, $order_id) {
 
         if (!empty($admin_tpl_name)) {
             // ── 24/7 TEMPLATE MODE (Bypasses 24-hour restriction) ──
-            $orderStatus = ucwords(str_replace('_', ' ', $order['status'] ?? 'Processing'));
-            $trackingID  = 'N/A';
-            
-            $replacementValues = [
-                '{CustomerName}' => $customerName,
-                '{OrderID}'      => $order_id,
-                '{OrderStatus}'  => $orderStatus,
-                '{TrackingID}'   => $trackingID,
-                '{OrderAmount}'  => $orderAmount
-            ];
-
-            preg_match_all('/\{(CustomerName|OrderID|OrderStatus|TrackingID|OrderAmount)\}/', $settings['message_template'], $matches);
-            
             $params = [];
-            if (!empty($matches[0])) {
-                foreach ($matches[0] as $varKey) {
-                    $params[] = ["type" => "text", "text" => (string)$replacementValues[$varKey]];
+            
+            // If it's a dedicated admin template (e.g. admin_new_order_alert)
+            if ($admin_tpl_name !== ($settings['meta_template_name'] ?? '')) {
+                $params = [
+                    ["type" => "text", "text" => (string)$order_id],
+                    ["type" => "text", "text" => (string)$customerName],
+                    ["type" => "text", "text" => (string)$customerPhone],
+                    ["type" => "text", "text" => (string)$orderAmount],
+                    ["type" => "text", "text" => (string)$paymentMode],
+                ];
+            } else {
+                // Fallback mapping if using customer template
+                $orderStatus = ucwords(str_replace('_', ' ', $order['status'] ?? 'Processing'));
+                $trackingID  = 'N/A';
+                
+                $replacementValues = [
+                    '{CustomerName}' => $customerName,
+                    '{OrderID}'      => $order_id,
+                    '{OrderStatus}'  => $orderStatus,
+                    '{TrackingID}'   => $trackingID,
+                    '{OrderAmount}'  => $orderAmount
+                ];
+
+                preg_match_all('/\{(CustomerName|OrderID|OrderStatus|TrackingID|OrderAmount)\}/', $settings['message_template'], $matches);
+                if (!empty($matches[0])) {
+                    foreach ($matches[0] as $varKey) {
+                        $params[] = ["type" => "text", "text" => (string)$replacementValues[$varKey]];
+                    }
                 }
             }
             

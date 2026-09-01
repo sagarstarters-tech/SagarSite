@@ -532,11 +532,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
             btnQuickTestAdmin.disabled = true;
             btnQuickTestAdmin.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Sending Test Alert...';
-            adminTestResult.className = 'alert alert-info py-2 small mt-2';
-            adminTestResult.innerText = 'Calling Meta Cloud API...';
-            adminTestResult.classList.remove('d-none');
-
-            fetch('ajax_log_whatsapp.php?test_admin=1&number=' + encodeURIComponent(rawNumber))
+            const adminTpl = document.querySelector('input[name="admin_template_name"]')?.value.trim() || '';
+            fetch('ajax_log_whatsapp.php?test_admin=1&number=' + encodeURIComponent(rawNumber) + '&admin_template_name=' + encodeURIComponent(adminTpl))
                 .then(res => res.text())
                 .then(text => {
                     btnQuickTestAdmin.disabled = false;
