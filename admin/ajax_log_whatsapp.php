@@ -207,37 +207,105 @@ if ($sending_mode === 'api') {
         $siteUrl = defined('SITE_URL') ? rtrim(SITE_URL, '/') : 'https://sagarstarters.com';
         $orderLink = $siteUrl . '/admin/order_details.php?id=' . $order_id;
 
+        $statusMessage = "Your order #$order_id is currently $orderStatus.";
+        if (strtolower($order['status'] ?? '') === 'shipped') {
+            $statusMessage = "Your order has been dispatched via Courier. Tracking ID: $trackingID";
+        } elseif (strtolower($order['status'] ?? '') === 'delivered') {
+            $statusMessage = "Your order has been successfully delivered. Thank you for shopping with us!";
+        }
+
+        $expectedDelivery = date('d M Y', strtotime($order['created_at'] . ' + 4 days'));
+
+        // Standard Parameter Sets:
+        // 1. Order Confirmation (9 Parameters)
+        $params_9 = [
+            ["type" => "text", "text" => (string)$customerName],    // {{1}} customer_name
+            ["type" => "text", "text" => (string)$order_id],        // {{2}} order_id
+            ["type" => "text", "text" => (string)$orderDate],       // {{3}} order_date
+            ["type" => "text", "text" => (string)$orderAmount],     // {{4}} order_total
+            ["type" => "text", "text" => (string)$paymentMode],     // {{5}} payment_method
+            ["type" => "text", "text" => (string)$orderStatus],     // {{6}} order_status
+            ["type" => "text", "text" => (string)$itemsOrdered],    // {{7}} order_items
+            ["type" => "text", "text" => (string)$deliveryAddress], // {{8}} customer_address
+            ["type" => "text", "text" => (string)$orderLink],       // {{9}} order_link
+        ];
+
+        // 2. Order Status Update (10 Parameters)
+        $params_10 = [
+            ["type" => "text", "text" => (string)$customerName],    // {{1}} customer_name
+            ["type" => "text", "text" => (string)$order_id],        // {{2}} order_id
+            ["type" => "text", "text" => (string)$orderDate],       // {{3}} order_date
+            ["type" => "text", "text" => (string)$orderStatus],     // {{4}} order_status
+            ["type" => "text", "text" => (string)$statusMessage],   // {{5}} status_message
+            ["type" => "text", "text" => (string)$itemsOrdered],    // {{6}} order_items
+            ["type" => "text", "text" => (string)$orderAmount],     // {{7}} order_total
+            ["type" => "text", "text" => (string)$deliveryAddress], // {{8}} customer_address
+            ["type" => "text", "text" => (string)$expectedDelivery],// {{9}} expected_delivery_date
+            ["type" => "text", "text" => (string)$orderLink],       // {{10}} order_link
+        ];
+
+        // 3. Admin New Order Alert (11 Parameters)
+        $params_11 = [
+            ["type" => "text", "text" => (string)$order_id],        // {{1}}
+            ["type" => "text", "text" => (string)$orderDate],       // {{2}}
+            ["type" => "text", "text" => (string)$orderTime],       // {{3}}
+            ["type" => "text", "text" => (string)$customerName],    // {{4}}
+            ["type" => "text", "text" => (string)$customerPhone],   // {{5}}
+            ["type" => "text", "text" => (string)$orderAmount],     // {{6}}
+            ["type" => "text", "text" => (string)$paymentMode],     // {{7}}
+            ["type" => "text", "text" => (string)$orderStatus],     // {{8}}
+            ["type" => "text", "text" => (string)$deliveryAddress], // {{9}}
+            ["type" => "text", "text" => (string)$itemsOrdered],    // {{10}}
+            ["type" => "text", "text" => (string)$orderLink],       // {{11}}
+        ];
+
+        // 4. Legacy 4 and 5 Parameters
+        $params_4 = [
+            ["type" => "text", "text" => (string)$order_id],
+            ["type" => "text", "text" => (string)$customerName],
+            ["type" => "text", "text" => (string)$orderAmount],
+            ["type" => "text", "text" => (string)$paymentMode],
+        ];
+
+        $params_5 = [
+            ["type" => "text", "text" => (string)$customerName],
+            ["type" => "text", "text" => (string)$order_id],
+            ["type" => "text", "text" => (string)$orderStatus],
+            ["type" => "text", "text" => (string)$trackingID],
+            ["type" => "text", "text" => (string)$orderAmount],
+        ];
+
+        // Select initial parameter set based on test type and template name
         $params = [];
-        // If it's the admin template (or admin test), default to 11 parameters
         if ($is_admin_test || (!empty($admin_tpl_override) && $meta_template_name === $admin_tpl_override)) {
-            $params = [
-                ["type" => "text", "text" => (string)$order_id],        // {{1}}
-                ["type" => "text", "text" => (string)$orderDate],       // {{2}}
-                ["type" => "text", "text" => (string)$orderTime],       // {{3}}
-                ["type" => "text", "text" => (string)$customerName],    // {{4}}
-                ["type" => "text", "text" => (string)$customerPhone],   // {{5}}
-                ["type" => "text", "text" => (string)$orderAmount],     // {{6}}
-                ["type" => "text", "text" => (string)$paymentMode],     // {{7}}
-                ["type" => "text", "text" => (string)$orderStatus],     // {{8}}
-                ["type" => "text", "text" => (string)$deliveryAddress], // {{9}}
-                ["type" => "text", "text" => (string)$itemsOrdered],    // {{10}}
-                ["type" => "text", "text" => (string)$orderLink],       // {{11}}
-            ];
+            $params = $params_11;
+        } elseif ($is_order_confirm_test || stripos($meta_template_name, 'confirm') !== false) {
+            $params = $params_9;
+        } elseif (stripos($meta_template_name, 'status') !== false || stripos($meta_template_name, 'update') !== false) {
+            $params = $params_10;
         } else {
             // Customer template parameters mapped from bridge
             $replacementValues = [
-                '{CustomerName}' => $customerName,
-                '{OrderID}'      => $order['id'] ?? $order_id,
-                '{OrderStatus}'  => $orderStatus,
-                '{TrackingID}'   => $trackingID,
-                '{OrderAmount}'  => $orderAmount
+                '{CustomerName}'     => $customerName,
+                '{OrderID}'          => $order['id'] ?? $order_id,
+                '{OrderStatus}'      => $orderStatus,
+                '{TrackingID}'       => $trackingID,
+                '{OrderAmount}'      => $orderAmount,
+                '{OrderDate}'        => $orderDate,
+                '{PaymentMethod}'    => $paymentMode,
+                '{DeliveryAddress}'  => $deliveryAddress,
+                '{ItemsOrdered}'     => $itemsOrdered,
+                '{ExpectedDelivery}' => $expectedDelivery,
+                '{OrderLink}'        => $orderLink
             ];
 
-            preg_match_all('/\{(CustomerName|OrderID|OrderStatus|TrackingID|OrderAmount)\}/', $settings['message_template'], $matches);
+            preg_match_all('/\{(CustomerName|OrderID|OrderStatus|TrackingID|OrderAmount|OrderDate|PaymentMethod|DeliveryAddress|ItemsOrdered|ExpectedDelivery|OrderLink)\}/', $settings['message_template'], $matches);
             if (!empty($matches[0])) {
                 foreach ($matches[0] as $varKey) {
                     $params[] = ["type" => "text", "text" => (string)($replacementValues[$varKey] ?? '')];
                 }
+            } else {
+                $params = $params_10;
             }
         }
 
@@ -308,7 +376,7 @@ if ($sending_mode === 'api') {
     list($result, $http_code, $curl_error) = $send_to_meta($payload);
     $meta_response = json_decode($result, true);
 
-    // Smart Auto-Recovery: if Meta failed, retry with parameter adjustments or header fixes
+    // Smart Multi-Tier Auto-Recovery
     if ($http_code != 200 && isset($payload['template'])) {
         $errMsg     = $meta_response['error']['message'] ?? '';
         $errDetails = $meta_response['error']['error_data']['details'] ?? '';
@@ -317,27 +385,22 @@ if ($sending_mode === 'api') {
 
         // Auto-Recovery A: Parameter count mismatch
         if ($errCode == 132000 || stripos($fullErr, 'parameter') !== false || stripos($fullErr, 'placeholder') !== false) {
-            if (count($payload['template']['components'][0]['parameters']) === 4) {
-                // Try 5 parameters (including Phone)
-                $payload['template']['components'][0]['parameters'] = [
-                    ["type" => "text", "text" => (string)$order_id],
-                    ["type" => "text", "text" => (string)$customerName],
-                    ["type" => "text", "text" => (string)$customerPhone],
-                    ["type" => "text", "text" => (string)$orderAmount],
-                    ["type" => "text", "text" => (string)$paymentMode],
+            $all_param_sets = [$params_9, $params_10, $params_11, $params_5, $params_4];
+            foreach ($all_param_sets as $try_set) {
+                if ($try_set === $params) continue; // Already tried
+                $payload['template']['components'] = array_values(array_filter($payload['template']['components'], function($c) {
+                    return ($c['type'] ?? '') !== 'header'; // Strip header during retry to avoid header conflict
+                }));
+                // Set body parameters
+                $payload['template']['components'][0] = [
+                    "type" => "body",
+                    "parameters" => $try_set
                 ];
                 list($result, $http_code, $curl_error) = $send_to_meta($payload);
                 $meta_response = json_decode($result, true);
-            } elseif (count($payload['template']['components'][0]['parameters']) === 5) {
-                // Try 4 parameters
-                $payload['template']['components'][0]['parameters'] = [
-                    ["type" => "text", "text" => (string)$order_id],
-                    ["type" => "text", "text" => (string)$customerName],
-                    ["type" => "text", "text" => (string)$orderAmount],
-                    ["type" => "text", "text" => (string)$paymentMode],
-                ];
-                list($result, $http_code, $curl_error) = $send_to_meta($payload);
-                $meta_response = json_decode($result, true);
+                if ($http_code == 200 && isset($meta_response['messages'])) {
+                    break;
+                }
             }
         }
 
@@ -372,25 +435,6 @@ if ($sending_mode === 'api') {
             $payload['template']['language']['code'] = ($curr_lang === 'en') ? 'en_US' : 'en';
             list($result, $http_code, $curl_error) = $send_to_meta($payload);
             $meta_response = json_decode($result, true);
-        }
-
-        // Auto-Recovery D: Final Fallback to Text Message
-        if ($http_code != 200 && $is_admin_test) {
-            $text_payload = [
-                "messaging_product" => "whatsapp",
-                "recipient_type"    => "individual",
-                "to"                => $clean_number,
-                "type"              => "text",
-                "text"              => ["preview_url" => false, "body" => $message]
-            ];
-            list($text_result, $text_code, $text_err) = $send_to_meta($text_payload);
-            $text_meta = json_decode($text_result, true);
-            if ($text_code == 200 && isset($text_meta['messages'])) {
-                $payload   = $text_payload;
-                $result    = $text_result;
-                $http_code = $text_code;
-                $meta_response = $text_meta;
-            }
         }
     }
 
