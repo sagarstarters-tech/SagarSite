@@ -327,112 +327,128 @@ function trackAWBShipment(orderId, awb, courierName) {
  */
 function renderAWBTrackingPanel(data) {
     const hasUrl = data.tracking_url && data.tracking_url.trim() !== '';
-    
+    const courierName = data.courier_name || 'Courier';
+    const awb = data.awb;
+    const status = data.order_status || 'processing';
+    const statusFormatted = data.order_status_formatted || 'Processing';
+    const estDelivery = data.estimated_delivery_date || 'In Transit';
+    const history = data.history || [];
+
+    // Stage calculation for progress bar
+    const stages = ['pending', 'processing', 'shipped', 'out_for_delivery', 'delivered'];
+    let currentStageIndex = 1;
+    if (status === 'shipped' || status === 'partially_shipped') currentStageIndex = 2;
+    if (status === 'out_for_delivery') currentStageIndex = 3;
+    if (status === 'delivered' || status === 'completed') currentStageIndex = 4;
+    if (status === 'cancelled') currentStageIndex = -1;
+
+    let timelineHtml = '';
+    if (history.length > 0) {
+        timelineHtml = `
+            <div class="card border-0 shadow-sm rounded-4 mb-4 bg-light">
+                <div class="card-body p-4">
+                    <h6 class="fw-bold mb-3 text-dark"><i class="fas fa-history text-primary me-2"></i>Status History Timeline</h6>
+                    <div class="timeline-stepper">
+                        ${history.map((h, idx) => `
+                            <div class="d-flex align-items-start mb-3">
+                                <div class="badge bg-primary rounded-circle p-2 me-3 mt-1" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-check" style="font-size: 10px;"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <strong class="text-dark">${h.status_formatted}</strong>
+                                        <small class="text-muted font-monospace">${h.created_at}</small>
+                                    </div>
+                                    ${h.notes ? `<p class="text-muted small mb-0 mt-1">${h.notes}</p>` : ''}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
     let html = `
         <div class="p-4">
-            <!-- AWB Info Card -->
+            <!-- AWB Info Cards -->
             <div class="row g-3 mb-4">
-                <div class="col-md-4">
-                    <div class="card bg-light border-0 rounded-3 h-100">
+                <div class="col-md-3">
+                    <div class="card bg-light border-0 rounded-4 h-100 shadow-sm">
                         <div class="card-body text-center p-3">
                             <div class="text-muted small mb-1"><i class="fas fa-hashtag me-1"></i>Order ID</div>
                             <div class="fw-bold fs-5 text-dark">#${data.order_id}</div>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="card bg-light border-0 rounded-3 h-100">
+                <div class="col-md-3">
+                    <div class="card bg-light border-0 rounded-4 h-100 shadow-sm">
                         <div class="card-body text-center p-3">
-                            <div class="text-muted small mb-1"><i class="fas fa-truck me-1"></i>Courier</div>
-                            <div class="fw-bold fs-5 text-primary">${data.courier_name}</div>
+                            <div class="text-muted small mb-1"><i class="fas fa-truck-fast me-1"></i>Courier Partner</div>
+                            <div class="fw-bold fs-5 text-primary">${courierName}</div>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="card bg-light border-0 rounded-3 h-100">
+                <div class="col-md-3">
+                    <div class="card bg-light border-0 rounded-4 h-100 shadow-sm">
                         <div class="card-body text-center p-3">
                             <div class="text-muted small mb-1"><i class="fas fa-barcode me-1"></i>AWB Number</div>
-                            <div class="fw-bold fs-5 text-success font-monospace">${data.awb}</div>
+                            <div class="fw-bold fs-5 text-success font-monospace">${awb}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-light border-0 rounded-4 h-100 shadow-sm">
+                        <div class="card-body text-center p-3">
+                            <div class="text-muted small mb-1"><i class="fas fa-calendar-check me-1"></i>Est. Delivery</div>
+                            <div class="fw-bold fs-5 text-dark">${estDelivery}</div>
                         </div>
                     </div>
                 </div>
             </div>
-            
-            <!-- Action Buttons -->
-            <div class="d-flex flex-wrap gap-2 justify-content-center mb-4">
-                <button class="btn btn-primary btn-lg rounded-pill px-4 shadow-sm" onclick="copyAWB('${data.awb}')">
-                    <i class="fas fa-copy me-2"></i>Copy AWB Number
-                </button>
-                ${hasUrl ? `
-                    <a href="${data.tracking_url}" target="_blank" rel="noopener noreferrer" class="btn btn-success btn-lg rounded-pill px-4 shadow-sm">
-                        <i class="fas fa-external-link-alt me-2"></i>Track on ${data.courier_name}
-                    </a>
-                ` : ''}
-            </div>
-            
-            ${hasUrl ? `
-            <!-- Embedded Tracking (iframe) -->
-            <div class="card border rounded-3 overflow-hidden">
-                <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-2">
-                    <span class="small text-muted"><i class="fas fa-globe me-1"></i>Live Tracking — ${data.courier_name}</span>
-                    <a href="${data.tracking_url}" target="_blank" class="btn btn-outline-primary btn-sm rounded-pill px-3">
-                        <i class="fas fa-expand me-1"></i>Open Full Page
-                    </a>
-                </div>
-                <div class="position-relative" style="min-height: 500px; background: #f8f9fa;">
-                    <iframe src="https://t.17track.net/en#nums=${data.awb}" 
-                            id="awbTrackingIframe"
-                            style="width: 100%; height: 500px; border: none;"
-                            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-                            loading="lazy"
-                            onload="document.getElementById('awbIframeLoader').style.display='none';"
-                            onerror="handleIframeError()">
-                    </iframe>
-                    <div id="awbIframeLoader" class="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center" style="background: rgba(248,249,250,0.95);">
-                        <div class="spinner-border text-primary mb-3" role="status"></div>
-                        <p class="text-muted mb-2">Loading ${data.courier_name} tracking page...</p>
-                        <p class="text-muted small">If it doesn't load, courier may block embedding.</p>
-                        <a href="${data.tracking_url}" target="_blank" class="btn btn-outline-primary btn-sm mt-2 rounded-pill">
-                            <i class="fas fa-external-link-alt me-1"></i>Open Directly Instead
+
+            <!-- Prominent Direct Tracker Launch Card -->
+            <div class="card border-0 rounded-4 shadow-sm mb-4" style="background: linear-gradient(135deg, #f0f7ff 0%, #e6f0fa 100%); border: 2px dashed #0d6efd !important;">
+                <div class="card-body p-4 text-center">
+                    <div class="d-inline-flex p-3 bg-white rounded-circle shadow-sm mb-3 text-primary">
+                        <i class="fas fa-shipping-fast fa-2x"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-1">Official Carrier Live Tracking</h5>
+                    <p class="text-muted small mb-3">Track real-time dispatch, transit checkpoints and out-for-delivery status directly on <strong>${courierName}</strong>.</p>
+                    
+                    <div class="d-flex flex-wrap gap-2 justify-content-center">
+                        ${hasUrl ? `
+                            <a href="${data.tracking_url}" target="_blank" rel="noopener noreferrer" class="btn btn-success btn-lg rounded-pill px-4 shadow-sm fw-bold">
+                                <i class="fas fa-external-link-alt me-2"></i>Open Official ${courierName} Tracking Page
+                            </a>
+                        ` : ''}
+                        <button class="btn btn-primary btn-lg rounded-pill px-4 shadow-sm" onclick="copyAWB('${awb}')">
+                            <i class="fas fa-copy me-2"></i>Copy AWB: ${awb}
+                        </button>
+                    </div>
+
+                    <!-- Alternate Trackers -->
+                    <div class="mt-4 pt-3 border-top d-flex flex-wrap align-items-center justify-content-center gap-2">
+                        <span class="small text-muted me-2">Alternative Trackers:</span>
+                        <a href="${data.global_17track_url || `https://t.17track.net/en#nums=${awb}`}" target="_blank" class="btn btn-sm btn-outline-dark rounded-pill px-3">
+                            <i class="fas fa-globe me-1"></i>17Track
+                        </a>
+                        <a href="${data.shiprocket_url || `https://shiprocket.co/tracking/${awb}`}" target="_blank" class="btn btn-sm btn-outline-info rounded-pill px-3">
+                            <i class="fas fa-rocket me-1"></i>Shiprocket
+                        </a>
+                        <a href="https://www.google.com/search?q=${encodeURIComponent(courierName + ' tracking ' + awb)}" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                            <i class="fab fa-google me-1"></i>Google Search
                         </a>
                     </div>
                 </div>
             </div>
-            ` : `
-            <div class="alert alert-info rounded-3">
-                <i class="fas fa-info-circle me-2"></i>
-                No tracking URL configured for this courier. You can still use the AWB number above to manually track on the courier's website.
-            </div>
-            `}
+
+            <!-- Status History Timeline -->
+            ${timelineHtml}
         </div>
     `;
     
     document.getElementById('awb_modal_body').innerHTML = html;
-    
-    // Auto-hide iframe loader after 8 seconds (fallback for X-Frame-Options block)
-    if (hasUrl) {
-        setTimeout(() => {
-            const loader = document.getElementById('awbIframeLoader');
-            if (loader) loader.style.display = 'none';
-        }, 8000);
-    }
-}
-
-/**
- * Handle iframe load error (courier blocks embedding)
- */
-function handleIframeError() {
-    const loader = document.getElementById('awbIframeLoader');
-    if (loader) {
-        loader.innerHTML = `
-            <div class="text-center">
-                <i class="fas fa-shield-alt fa-3x text-warning mb-3"></i>
-                <h6 class="fw-bold">Courier website blocked embedding</h6>
-                <p class="text-muted small">This is normal — most courier sites restrict iframe loading for security.</p>
-                <p class="text-muted small">Please use the "Track on Courier" button above to open tracking directly.</p>
-            </div>
-        `;
-    }
 }
 
 /**

@@ -57,19 +57,24 @@ if ($is_admin) {
     $stmt->close();
 }
 
-// --- Fetch tracking data ---
+// --- Fetch tracking and order data ---
 $stmt = $conn->prepare("
-    SELECT t.tracking_number, c.name as courier_name, c.tracking_url_base 
-    FROM order_tracking t 
+    SELECT o.id, o.status, o.total_amount, o.created_at,
+           u.name as customer_name, u.email as customer_email,
+           t.tracking_number, t.estimated_delivery_date,
+           c.name as courier_name, c.tracking_url_base 
+    FROM orders o
+    LEFT JOIN users u ON o.user_id = u.id
+    LEFT JOIN order_tracking t ON o.id = t.order_id
     LEFT JOIN courier_companies c ON t.courier_id = c.id 
-    WHERE t.order_id = ?
+    WHERE o.id = ?
 ");
 $stmt->bind_param("i", $order_id);
 $stmt->execute();
-$tracking = $stmt->get_result()->fetch_assoc();
+$order_data = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
-if (!$tracking || empty($tracking['tracking_number'])) {
+if (!$order_data || empty($order_data['tracking_number'])) {
     echo json_encode([
         'status' => 'error',
         'message' => 'No AWB/tracking number assigned to this order yet.'
@@ -77,21 +82,51 @@ if (!$tracking || empty($tracking['tracking_number'])) {
     exit;
 }
 
-$awb = $tracking['tracking_number'];
-$courier_name = $tracking['courier_name'] ?? 'Unknown';
+$awb = $order_data['tracking_number'];
+$courier_name = $order_data['courier_name'] ?? 'Delhivery';
 $tracking_url = null;
 
-if (!empty($tracking['tracking_url_base'])) {
-    $tracking_url = $tracking['tracking_url_base'] . urlencode($awb);
+if (!empty($order_data['tracking_url_base'])) {
+    $tracking_url = $order_data['tracking_url_base'] . urlencode($awb);
+} else {
+    // Default fallback to Delhivery or 17Track if no base URL
+    $tracking_url = "https://www.delhivery.com/track/package/" . urlencode($awb);
+}
+
+// Fetch status history timeline
+$history = [];
+$h_stmt = $conn->prepare("SELECT * FROM order_status_history WHERE order_id = ? ORDER BY created_at ASC");
+if ($h_stmt) {
+    $h_stmt->bind_param("i", $order_id);
+    $h_stmt->execute();
+    $h_res = $h_stmt->get_result();
+    while ($row = $h_res->fetch_assoc()) {
+        $history[] = [
+            'status' => $row['status'],
+            'status_formatted' => ucwords(str_replace('_', ' ', $row['status'])),
+            'notes' => $row['notes'] ?? '',
+            'created_at' => date('d M Y, h:i A', strtotime($row['created_at']))
+        ];
+    }
+    $h_stmt->close();
 }
 
 echo json_encode([
     'status' => 'success',
     'data' => [
-        'awb' => $awb,
-        'courier_name' => $courier_name,
-        'tracking_url' => $tracking_url,
-        'order_id' => $order_id
+        'awb'                     => $awb,
+        'courier_name'            => $courier_name,
+        'tracking_url'            => $tracking_url,
+        'global_17track_url'      => "https://t.17track.net/en#nums=" . urlencode($awb),
+        'shiprocket_url'          => "https://shiprocket.co/tracking/" . urlencode($awb),
+        'order_id'                => $order_id,
+        'order_status'            => $order_data['status'] ?? 'processing',
+        'order_status_formatted'  => ucwords(str_replace('_', ' ', $order_data['status'] ?? 'Processing')),
+        'total_amount'            => number_format((float)($order_data['total_amount'] ?? 0), 2),
+        'estimated_delivery_date' => $order_data['estimated_delivery_date'] ? date('d M Y', strtotime($order_data['estimated_delivery_date'])) : 'In Transit',
+        'customer_name'           => $order_data['customer_name'] ?? 'Customer',
+        'customer_email'          => $order_data['customer_email'] ?? '',
+        'history'                 => $history
     ]
 ]);
 exit;
