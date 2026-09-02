@@ -128,12 +128,13 @@ if ($sending_mode === 'api') {
     $phone_id = trim($settings['phone_number_id']);
     
     // Check if testing admin template, order confirm template, or status template
+    $post_tpl_type = trim($_POST['template_type'] ?? '');
     if ($is_admin_test) {
         $meta_template_name = trim($_GET['admin_template_name'] ?? ($settings['admin_template_name'] ?? ''));
-    } elseif ($is_order_confirm_test) {
-        $meta_template_name = trim($_GET['template_name'] ?? ($settings['order_confirmation_template_name'] ?? ''));
+    } elseif ($is_order_confirm_test || $post_tpl_type === 'confirmation') {
+        $meta_template_name = trim($_POST['template_name'] ?? ($_GET['template_name'] ?? ($settings['order_confirmation_template_name'] ?? 'order_confirmation')));
     } else {
-        $meta_template_name = trim($_GET['template_name'] ?? ($settings['meta_template_name'] ?? ''));
+        $meta_template_name = trim($_POST['template_name'] ?? ($_GET['template_name'] ?? ($settings['meta_template_name'] ?? 'order_status_updated')));
     }
     
     // Normalize customer/admin number

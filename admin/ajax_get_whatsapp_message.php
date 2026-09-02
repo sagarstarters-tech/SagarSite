@@ -1,5 +1,6 @@
 <?php
 require_once '../includes/db_connect.php';
+require_once '../includes/whatsapp_functions.php';
 
 header('Content-Type: application/json');
 
@@ -20,56 +21,129 @@ $order_id = intval($_GET['order_id']);
 
 // Get settings
 $set_q = $conn->query("SELECT * FROM whatsapp_settings WHERE id = 1");
-$settings = $set_q ? $set_q->fetch_assoc() : null;
+$settings = $set_q ? $set_q->fetch_assoc() : [];
 
-if (!$settings || !$settings['is_enabled']) {
-    echo json_encode(['error' => 'WhatsApp Notifications are disabled.']);
+if (empty($settings) || empty($settings['is_enabled'])) {
+    echo json_encode(['error' => 'WhatsApp Notifications are disabled in settings.']);
     exit;
 }
 
-// Get order details — prepared statement, no SQL injection
-$order_stmt = $conn->prepare(
-    "SELECT o.*, u.name as customer_name, u.phone as customer_phone
-     FROM orders o JOIN users u ON o.user_id = u.id
-     WHERE o.id = ?"
-);
-$order_stmt->bind_param("i", $order_id);
-$order_stmt->execute();
-$order_res = $order_stmt->get_result();
-$order_stmt->close();
+// Get order details safely
+$q = $conn->query("
+    SELECT o.id, o.status, o.total_amount, o.created_at, o.payment_mode,
+           o.tracking_number AS order_tracking_num, o.carrier AS order_carrier,
+           u.name AS customer_name, u.phone AS customer_phone,
+           u.address AS customer_address, u.city AS customer_city, u.state AS customer_state, u.zip_code AS customer_zip
+    FROM orders o 
+    LEFT JOIN users u ON o.user_id = u.id 
+    WHERE o.id = $order_id
+");
 
-if (!$order_res || $order_res->num_rows === 0) {
+if (!$q || $q->num_rows === 0) {
     echo json_encode(['error' => 'Order not found.']);
     exit;
 }
 
-$order = $order_res->fetch_assoc();
+$order = $q->fetch_assoc();
 
-// Tracking number — prepared statement
-$tracking_id = 'N/A';
-$track_stmt = $conn->prepare("SELECT tracking_number FROM order_tracking WHERE order_id = ? LIMIT 1");
-$track_stmt->bind_param("i", $order_id);
-$track_stmt->execute();
-$track_res = $track_stmt->get_result();
-$track_stmt->close();
-if ($track_res && $track_res->num_rows > 0) {
-    $track = $track_res->fetch_assoc();
-    $tracking_id = $track['tracking_number'] ?: 'N/A';
+// Tracking details
+$tracking_q = $conn->query("
+    SELECT ot.tracking_number, ot.estimated_delivery_date, cc.name AS courier_name
+    FROM order_tracking ot
+    LEFT JOIN courier_companies cc ON ot.courier_id = cc.id
+    WHERE ot.order_id = $order_id
+    LIMIT 1
+");
+$track = ($tracking_q && $tracking_q->num_rows > 0) ? $tracking_q->fetch_assoc() : [];
+
+$customerName  = trim($order['customer_name'] ?? 'Customer');
+$customerPhone = trim($order['customer_phone'] ?? '');
+$orderStatus   = ucwords(str_replace('_', ' ', $order['status'] ?? 'Processing'));
+$trackingID    = !empty($track['tracking_number']) ? $track['tracking_number'] : (!empty($order['order_tracking_num']) ? $order['order_tracking_num'] : 'N/A');
+$courierName   = !empty($track['courier_name']) ? $track['courier_name'] : (!empty($order['order_carrier']) ? $order['order_carrier'] : 'Courier');
+$orderAmount   = number_format((float)($order['total_amount'] ?? 0), 2);
+$orderDate     = date('d M Y', strtotime($order['created_at']));
+$orderTime     = date('h:i A', strtotime($order['created_at']));
+$expectedDelivery = !empty($track['estimated_delivery_date']) 
+    ? date('d M Y', strtotime($track['estimated_delivery_date'])) 
+    : date('d M Y', strtotime($order['created_at'] . ' + 4 days'));
+
+// Address
+$addressParts = array_filter([
+    trim($order['customer_address'] ?? ''),
+    trim($order['customer_city'] ?? ''),
+    trim($order['customer_state'] ?? ''),
+    trim($order['customer_zip'] ?? '')
+]);
+$deliveryAddress = !empty($addressParts) ? implode(', ', $addressParts) : 'Customer Delivery Address';
+
+// Order items
+$itemsList = [];
+$items_res = $conn->query("
+    SELECT oi.quantity, oi.price, p.name as product_name
+    FROM order_items oi
+    LEFT JOIN products p ON oi.product_id = p.id
+    WHERE oi.order_id = $order_id
+");
+if ($items_res && $items_res->num_rows > 0) {
+    while ($itm = $items_res->fetch_assoc()) {
+        $pName = trim($itm['product_name'] ?? 'Product');
+        $qty   = (int)($itm['quantity'] ?? 1);
+        $itemsList[] = "• {$pName} ({$qty}x)";
+    }
+}
+$itemsOrdered = !empty($itemsList) ? implode("\n", $itemsList) : "Order #$order_id";
+
+$statusMessage = "Your order #$order_id is currently $orderStatus.";
+if (strtolower($order['status']) === 'shipped') {
+    $statusMessage = "Your order has been dispatched via $courierName. Tracking ID: $trackingID";
+} elseif (strtolower($order['status']) === 'delivered') {
+    $statusMessage = "Your order has been successfully delivered. Thank you for shopping with us!";
+} elseif (strtolower($order['status']) === 'cancelled') {
+    $statusMessage = "Your order has been cancelled. Please contact support for assistance.";
 }
 
-$template = $settings['message_template'];
+$siteUrl = defined('SITE_URL') ? rtrim(SITE_URL, '/') : 'https://sagarstarters.com';
+$orderLink = $siteUrl . '/my-orders.php';
 
-// Replace variables in template
-$message = str_replace(
-    ['{CustomerName}', '{OrderID}', '{OrderStatus}', '{TrackingID}', '{OrderAmount}'],
-    [$order['customer_name'], $order['id'], ucfirst($order['status']), $tracking_id, number_format($order['total_amount'], 2)],
-    $template
-);
+// Construct preview for Status Template (order_status_updated)
+$status_preview = "Hello Dear {$customerName},\n\nYour Order No. #{$order_id} status has been updated.\n\nOrder Date: {$orderDate}\nCurrent Status: *{$orderStatus}*\nStatus Message: {$statusMessage}\nItems Ordered:\n{$itemsOrdered}\nTotal Amount: ₹{$orderAmount}\nDelivery Address:\n{$deliveryAddress}\nExpected Delivery: {$expectedDelivery}\nOrder Link: {$orderLink}\n\nThank you for shopping with Sagar Starter's!";
+
+// Construct preview for Confirmation Template (order_confirmation)
+$confirm_preview = "Hello Dear {$customerName},\n\nThank you for your order! Your Order #{$order_id} has been successfully placed.\n\nOrder Date: {$orderDate}\nTotal Amount: ₹{$orderAmount}\nPayment: " . strtoupper($order['payment_mode'] ?? 'COD') . "\nOrder Status: {$orderStatus}\nItems:\n{$itemsOrdered}\nDelivery Address:\n{$deliveryAddress}\nTrack Order: {$orderLink}\n\nThank you for shopping with Sagar Starter's!";
+
+$custom_template = !empty($settings['message_template']) ? $settings['message_template'] : $status_preview;
+$replacementValues = [
+    '{CustomerName}'     => $customerName,
+    '{OrderID}'          => $order_id,
+    '{OrderStatus}'      => $orderStatus,
+    '{TrackingID}'       => $trackingID,
+    '{OrderAmount}'      => $orderAmount,
+    '{OrderDate}'        => $orderDate,
+    '{OrderTime}'        => $orderTime,
+    '{StatusMessage}'    => $statusMessage,
+    '{ItemsOrdered}'     => $itemsOrdered,
+    '{DeliveryAddress}'  => $deliveryAddress,
+    '{ExpectedDelivery}' => $expectedDelivery,
+    '{OrderLink}'        => $orderLink
+];
+$custom_preview = $custom_template;
+foreach ($replacementValues as $k => $v) {
+    $custom_preview = str_replace($k, $v, $custom_preview);
+}
+
+// Meta template names
+$status_tpl_name  = !empty($settings['meta_template_name']) ? $settings['meta_template_name'] : 'order_status_updated';
+$confirm_tpl_name = !empty($settings['order_confirmation_template_name']) ? $settings['order_confirmation_template_name'] : 'order_confirmation';
 
 echo json_encode([
-    'success'        => true,
-    'message'        => $message,
-    'customer_phone' => $order['customer_phone'] ?: '',
-    'sending_mode'   => $settings['sending_mode'],
-    // api_token intentionally omitted — never expose secrets in GET AJAX response
+    'success'               => true,
+    'customer_phone'        => normalize_whatsapp_phone_number($customerPhone),
+    'sending_mode'          => $settings['sending_mode'] ?? 'api',
+    'status_template_name'  => $status_tpl_name,
+    'confirm_template_name' => $confirm_tpl_name,
+    'status_preview'        => $status_preview,
+    'confirm_preview'       => $confirm_preview,
+    'message'               => $status_preview, // default message
 ]);
+

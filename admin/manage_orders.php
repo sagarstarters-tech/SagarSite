@@ -358,38 +358,69 @@ $wa_enabled = ($wa_settings && $wa_settings['is_enabled'] == 1);
 <?php if ($wa_enabled): ?>
 <!-- WhatsApp Notification Modal -->
 <div class="modal fade" id="whatsappModal" tabindex="-1" aria-labelledby="whatsappModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content rounded-4 border-0">
-            <div class="modal-header border-bottom-0 pb-0">
-                <h5 class="modal-title fw-bold" id="whatsappModalLabel"><i class="fab fa-whatsapp text-success me-2"></i>Send WhatsApp Update</h5>
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header border-bottom pb-3 bg-light rounded-top-4">
+                <div class="d-flex align-items-center">
+                    <div class="bg-success text-white rounded-circle p-2 me-2 d-flex align-items-center justify-content-center" style="width:36px; height:36px;">
+                        <i class="fab fa-whatsapp fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold m-0" id="whatsappModalLabel">Send WhatsApp Notification</h5>
+                        <small class="text-muted">Direct Meta Cloud API &amp; Web Dispatch</small>
+                    </div>
+                </div>
                 <button type="button" class="btn-close" data-mdb-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <div id="waLoading" class="text-center py-4 d-none">
-                    <div class="spinner-border text-success" role="status"><span class="visually-hidden">Loading...</span></div>
-                    <p class="mt-2 text-muted">Generating message template...</p>
+            <div class="modal-body p-4">
+                <div id="waLoading" class="text-center py-5">
+                    <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3 text-muted fw-semibold">Syncing Meta template and order variables...</p>
                 </div>
                 
                 <form id="waForm" class="d-none">
-    <?php echo csrf_input(); ?>
+                    <?php echo csrf_input(); ?>
                     <input type="hidden" id="waOrderId">
                     <input type="hidden" id="waMode">
-                    <input type="hidden" id="waToken">
+                    <input type="hidden" id="waStatusTplName">
+                    <input type="hidden" id="waConfirmTplName">
                     
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Customer Phone Number</label>
-                        <input type="text" id="waCustomerPhone" class="form-control bg-light" placeholder="Include country code, e.g. 919876543210" required>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-muted text-uppercase mb-1">Customer Phone Number</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="fas fa-phone text-success"></i></span>
+                                <input type="text" id="waCustomerPhone" class="form-control" placeholder="919876543210" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-muted text-uppercase mb-1">Select Meta Template</label>
+                            <select id="waTemplateType" class="form-select border-success">
+                                <option value="status" selected>📦 Order Status Update</option>
+                                <option value="confirmation">🎉 Order Confirmation</option>
+                            </select>
+                        </div>
                     </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Message Content</label>
-                        <textarea id="waMessage" class="form-control bg-light" rows="8" required></textarea>
+
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label class="form-label fw-bold small text-muted text-uppercase m-0">Message Content / Meta Preview</label>
+                        <span id="waTplBadge" class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1">
+                            <i class="fas fa-check-circle me-1"></i>Meta Template: <span id="waTplNameText">order_status_updated</span>
+                        </span>
                     </div>
+                    <div class="mb-2">
+                        <textarea id="waMessage" class="form-control font-monospace text-dark bg-light" rows="9" style="font-size: 0.9rem;" required></textarea>
+                    </div>
+                    <small class="text-muted"><i class="fas fa-info-circle me-1"></i>Variables are automatically populated from the order and synced with Meta Cloud API.</small>
                 </form>
             </div>
-            <div class="modal-footer border-top-0 pt-0">
-                <button type="button" class="btn btn-light btn-custom text-dark" data-mdb-dismiss="modal">Cancel</button>
-                <button type="button" id="waSendBtn" class="btn btn-success btn-custom px-4 disabled"><i class="fas fa-paper-plane me-2"></i>Send Message</button>
+            <div class="modal-footer border-top bg-light rounded-bottom-4 py-2 px-4">
+                <button type="button" class="btn btn-link text-muted" data-mdb-dismiss="modal">Cancel</button>
+                <button type="button" id="waSendBtn" class="btn btn-success rounded-3 px-4 disabled">
+                    <i class="fas fa-paper-plane me-2"></i>Send via Meta API
+                </button>
             </div>
         </div>
     </div>
@@ -397,28 +428,56 @@ $wa_enabled = ($wa_settings && $wa_settings['is_enabled'] == 1);
 
 <script>
 let whatsappModalInstance;
+let waOrderPayload = {};
 
 document.addEventListener('DOMContentLoaded', () => {
-    whatsappModalInstance = new mdb.Modal(document.getElementById('whatsappModal'));
+    const modalEl = document.getElementById('whatsappModal');
+    if (modalEl && typeof mdb !== 'undefined') {
+        whatsappModalInstance = new mdb.Modal(modalEl);
+    }
     
+    // Template Switcher Listener
+    document.getElementById('waTemplateType').addEventListener('change', function() {
+        const type = this.value;
+        const badgeEl = document.getElementById('waTplNameText');
+        const msgEl = document.getElementById('waMessage');
+        
+        if (type === 'confirmation') {
+            badgeEl.innerText = waOrderPayload.confirm_template_name || 'order_confirmation';
+            msgEl.value = waOrderPayload.confirm_preview || '';
+        } else {
+            badgeEl.innerText = waOrderPayload.status_template_name || 'order_status_updated';
+            msgEl.value = waOrderPayload.status_preview || '';
+        }
+    });
+
     document.getElementById('waSendBtn').addEventListener('click', function() {
+        const btn = this;
         const orderId = document.getElementById('waOrderId').value;
         const phone = document.getElementById('waCustomerPhone').value;
         const message = document.getElementById('waMessage').value;
-        const mode = document.getElementById('waMode').value;
-        const token = document.getElementById('waToken').value; // In case they implement API here later
+        const mode = document.getElementById('waMode').value || 'api';
+        const tplType = document.getElementById('waTemplateType').value;
+        const tplName = (tplType === 'confirmation') 
+            ? document.getElementById('waConfirmTplName').value 
+            : document.getElementById('waStatusTplName').value;
         
         if (!phone || !message) {
-            alert("Please provide both the customer's phone number and the message.");
+            alert("Please provide both the customer phone number and the message content.");
             return;
         }
 
-        // 1. Send AJAX to log the attempt implicitly
+        btn.classList.add('disabled');
+        const origText = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending...';
+
         const formData = new FormData();
         formData.append('order_id', orderId);
         formData.append('customer_number', phone);
         formData.append('message', message);
         formData.append('sending_mode', mode);
+        formData.append('template_type', tplType);
+        formData.append('template_name', tplName);
 
         fetch('ajax_log_whatsapp.php', {
             method: 'POST',
@@ -426,37 +485,40 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         .then(response => response.json())
         .then(data => {
+            btn.classList.remove('disabled');
+            btn.innerHTML = origText;
+            
             if(data.success) {
-                // 2. Execute Send Mode
                 if (mode === 'web') {
                     const waLink = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
                     window.open(waLink, '_blank');
                     whatsappModalInstance.hide();
-                } else if (mode === 'api') {
-                    alert("Message Sent Successfully via Meta API.");
+                } else {
+                    alert("✅ Message Sent Successfully to Customer via Meta API! (Message ID: " + (data.message_id || 'OK') + ")");
                     whatsappModalInstance.hide();
-                    location.reload(); // Refresh to show updated logs
                 }
             } else {
-                alert("Error logging the message: " + data.error);
+                alert("❌ WhatsApp Delivery Notice:\n" + (data.error || 'Unknown error occurred.'));
             }
         })
         .catch(err => {
+            btn.classList.remove('disabled');
+            btn.innerHTML = origText;
             console.error(err);
-            alert("Network error while trying to send message.");
+            alert("Network error while communicating with WhatsApp endpoint.");
         });
     });
 });
 
 function openWhatsAppModal(orderId) {
-    // Reset modal UI
     document.getElementById('waForm').classList.add('d-none');
     document.getElementById('waLoading').classList.remove('d-none');
     document.getElementById('waSendBtn').classList.add('disabled');
     
-    whatsappModalInstance.show();
+    if (whatsappModalInstance) {
+        whatsappModalInstance.show();
+    }
 
-    // Fetch message
     fetch(`ajax_get_whatsapp_message.php?order_id=${orderId}`)
         .then(response => response.json())
         .then(data => {
@@ -464,32 +526,38 @@ function openWhatsAppModal(orderId) {
             
             if (data.error) {
                 alert(data.error);
-                whatsappModalInstance.hide();
+                if (whatsappModalInstance) whatsappModalInstance.hide();
                 return;
             }
 
+            waOrderPayload = data;
+
             // Populate form
             document.getElementById('waOrderId').value = orderId;
-            document.getElementById('waCustomerPhone').value = data.customer_phone.replace(/[^0-9]/g, ''); // Strip non digits
-            document.getElementById('waMessage').value = data.message;
-            document.getElementById('waMode').value = data.sending_mode;
-            document.getElementById('waToken').value = data.api_token;
+            document.getElementById('waCustomerPhone').value = (data.customer_phone || '').replace(/[^0-9]/g, '');
+            document.getElementById('waMode').value = data.sending_mode || 'api';
+            document.getElementById('waStatusTplName').value = data.status_template_name || 'order_status_updated';
+            document.getElementById('waConfirmTplName').value = data.confirm_template_name || 'order_confirmation';
+            
+            // Set initial preview
+            document.getElementById('waTemplateType').value = 'status';
+            document.getElementById('waTplNameText').innerText = data.status_template_name || 'order_status_updated';
+            document.getElementById('waMessage').value = data.status_preview || data.message || '';
             
             // Show Form
             document.getElementById('waForm').classList.remove('d-none');
             document.getElementById('waSendBtn').classList.remove('disabled');
             
-            // Change button text contextually
             if (data.sending_mode === 'api') {
-                document.getElementById('waSendBtn').innerHTML = '<i class="fas fa-server me-2"></i>Send via API';
+                document.getElementById('waSendBtn').innerHTML = '<i class="fas fa-server me-2"></i>Send via Meta API';
             } else {
                 document.getElementById('waSendBtn').innerHTML = '<i class="fas fa-external-link-alt me-2"></i>Open WhatsApp Web';
             }
         })
         .catch(err => {
             console.error(err);
-            alert("Error fetching order info.");
-            whatsappModalInstance.hide();
+            alert("Error fetching order WhatsApp details.");
+            if (whatsappModalInstance) whatsappModalInstance.hide();
         });
 }
 </script>
