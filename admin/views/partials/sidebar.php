@@ -204,10 +204,10 @@ if (isset($conn)) {
             <i class="<?php echo $icon_full; ?>"></i>
             <span><?php echo $item['label']; ?></span>
             <?php if ($item['label'] === 'Orders' && $new_orders_count > 0): ?>
-                <span class="badge rounded-pill bg-danger ms-2 order-notif-badge" style="font-size: 0.65rem; padding: 0.35em 0.65em;"><?php echo $new_orders_count; ?></span>
+                <span class="badge rounded-pill bg-danger text-white ms-2 order-notif-badge" style="font-size: 0.65rem; padding: 0.35em 0.65em; background-color: #dc3545 !important; color: #ffffff !important; font-weight: 600;"><?php echo $new_orders_count; ?></span>
             <?php endif; ?>
             <?php if ($item['label'] === 'Customers' && $new_customers_count > 0): ?>
-                <span class="badge rounded-pill bg-info ms-2 customer-notif-badge" style="font-size: 0.65rem; padding: 0.35em 0.65em;"><?php echo $new_customers_count; ?></span>
+                <span class="badge rounded-pill bg-info text-white ms-2 customer-notif-badge" style="font-size: 0.65rem; padding: 0.35em 0.65em; color: #ffffff !important; font-weight: 600;"><?php echo $new_customers_count; ?></span>
             <?php endif; ?>
             <i class="fas fa-chevron-down ms-auto" style="font-size:0.75rem;"></i>
         </a>
@@ -263,16 +263,16 @@ if (isset($conn)) {
                             <?php if ($child_icon): ?><i class="<?php echo $child_icon; ?>"></i><?php endif; ?>
                             <span><?php echo $child['label']; ?></span>
                             <?php if ($child['label'] === 'All Orders' && $new_orders_count > 0): ?>
-                                <span class="badge rounded-pill bg-danger ms-2 order-notif-badge" style="font-size: 0.6rem; padding: 0.25em 0.5em; text-white"><?php echo $new_orders_count; ?></span>
+                                <span class="badge rounded-pill bg-danger text-white ms-2 order-notif-badge" style="font-size: 0.6rem; padding: 0.25em 0.5em; background-color: #dc3545 !important; color: #ffffff !important; font-weight: 600;"><?php echo $new_orders_count; ?></span>
                             <?php endif; ?>
                             <?php if ($child['label'] === 'Pending' && $pending_count > 0): ?>
-                                <span class="badge rounded-pill bg-danger ms-2" style="font-size: 0.6rem; padding: 0.25em 0.5em;"><?php echo $pending_count; ?></span>
+                                <span class="badge rounded-pill bg-danger text-white ms-2" style="font-size: 0.6rem; padding: 0.25em 0.5em; background-color: #dc3545 !important; color: #ffffff !important; font-weight: 600;"><?php echo $pending_count; ?></span>
                             <?php endif; ?>
                             <?php if ($child['label'] === 'Processing' && $processing_count > 0): ?>
-                                <span class="badge rounded-pill bg-warning text-dark ms-2" style="font-size: 0.6rem; padding: 0.25em 0.5em;"><?php echo $processing_count; ?></span>
+                                <span class="badge rounded-pill bg-warning text-dark ms-2" style="font-size: 0.6rem; padding: 0.25em 0.5em; font-weight: 600;"><?php echo $processing_count; ?></span>
                             <?php endif; ?>
                             <?php if ($child['label'] === 'All Customers' && $new_customers_count > 0): ?>
-                                <span class="badge rounded-pill bg-info ms-2 customer-notif-badge" style="font-size: 0.6rem; padding: 0.25em 0.5em; text-white"><?php echo $new_customers_count; ?></span>
+                                <span class="badge rounded-pill bg-info text-white ms-2 customer-notif-badge" style="font-size: 0.6rem; padding: 0.25em 0.5em; color: #ffffff !important; font-weight: 600;"><?php echo $new_customers_count; ?></span>
                             <?php endif; ?>
                         </a>
                     </li>
