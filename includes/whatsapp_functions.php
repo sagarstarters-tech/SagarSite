@@ -252,59 +252,26 @@ function sendCustomerOrderConfirmationWhatsApp($conn, $order_id) {
                 ["type" => "text", "text" => (string)$paymentMode],
             ];
 
-            $initial_params = !empty($params_9) ? $params_9 : (!empty($params_bridge) ? $params_bridge : $params_4);
+            $candidate_sets = [
+                ['params' => $params_9,        'header' => !empty($header_image_url), 'lang' => $lang_code],
+                ['params' => $params_9,        'header' => false,                     'lang' => $lang_code],
+                ['params' => $params_11,       'header' => false,                     'lang' => $lang_code],
+                ['params' => $params_4,        'header' => false,                     'lang' => $lang_code],
+                ['params' => $params_5,        'header' => false,                     'lang' => $lang_code],
+                ['params' => $params_bridge,   'header' => false,                     'lang' => $lang_code],
+                ['params' => $params_9,        'header' => false,                     'lang' => ($lang_code === 'en' ? 'en_US' : 'en')],
+                ['params' => $params_4,        'header' => false,                     'lang' => ($lang_code === 'en' ? 'en_US' : 'en')],
+            ];
 
-            $payload = $build_payload($tpl_name, $lang_code, $initial_params, !empty($header_image_url));
-            list($result, $http_code, $curl_error) = $send_meta_curl($payload);
-            $meta_response = json_decode($result, true);
+            foreach ($candidate_sets as $candidate) {
+                if (empty($candidate['params'])) continue;
+                $payload = $build_payload($tpl_name, $candidate['lang'], $candidate['params'], $candidate['header']);
+                list($result, $http_code, $curl_error) = $send_meta_curl($payload);
+                $meta_response = json_decode($result, true);
 
-            if ($http_code == 200 && isset($meta_response['messages'])) {
-                $sent_successfully = true;
-            } else {
-                $errMsg     = $meta_response['error']['message'] ?? '';
-                $errDetails = $meta_response['error']['error_data']['details'] ?? '';
-                $errCode    = (int)($meta_response['error']['code'] ?? 0);
-                $fullErr    = $errMsg . ' ' . $errDetails;
-
-                // Smart Recovery: Parameter Count Mismatch
-                if (!$sent_successfully && ($errCode == 132000 || stripos($fullErr, 'parameter') !== false || stripos($fullErr, 'placeholder') !== false)) {
-                    $retry_sets = [$params_9, $params_11, $params_4, $params_5, $params_bridge];
-                    foreach ($retry_sets as $p_set) {
-                        if (empty($p_set)) continue;
-                        $payload = $build_payload($tpl_name, $lang_code, $p_set, false);
-                        list($result, $http_code, $curl_error) = $send_meta_curl($payload);
-                        $meta_response = json_decode($result, true);
-                        if ($http_code == 200 && isset($meta_response['messages'])) {
-                            $sent_successfully = true;
-                            break;
-                        }
-                    }
-                }
-
-                // Smart Recovery: Header Mismatch
-                if (!$sent_successfully && (stripos($fullErr, 'header') !== false || stripos($fullErr, 'components[0]') !== false)) {
-                    if (stripos($fullErr, 'IMAGE') !== false || stripos($fullErr, 'expected') !== false) {
-                        $fallback_img = !empty($header_image_url) ? $header_image_url : 'https://sagarstarters.com/assets/images/auth_banner.jpg';
-                        $payload = $build_payload($tpl_name, $lang_code, $initial_params, true);
-                    } else {
-                        $payload = $build_payload($tpl_name, $lang_code, $initial_params, false);
-                    }
-                    list($result, $http_code, $curl_error) = $send_meta_curl($payload);
-                    $meta_response = json_decode($result, true);
-                    if ($http_code == 200 && isset($meta_response['messages'])) {
-                        $sent_successfully = true;
-                    }
-                }
-
-                // Smart Recovery: Language code mismatch (en vs en_US)
-                if (!$sent_successfully && ($errCode == 132001 || stripos($fullErr, 'does not exist') !== false || stripos($fullErr, 'language') !== false)) {
-                    $alt_lang = ($lang_code === 'en') ? 'en_US' : 'en';
-                    $payload = $build_payload($tpl_name, $alt_lang, $initial_params, false);
-                    list($result, $http_code, $curl_error) = $send_meta_curl($payload);
-                    $meta_response = json_decode($result, true);
-                    if ($http_code == 200 && isset($meta_response['messages'])) {
-                        $sent_successfully = true;
-                    }
+                if ($http_code == 200 && isset($meta_response['messages'])) {
+                    $sent_successfully = true;
+                    break;
                 }
             }
         }
@@ -612,59 +579,28 @@ function sendCustomerOrderStatusWhatsApp($conn, $order_id) {
                 }
             }
 
-            $initial_params = $params_10;
+            $candidate_sets = [
+                ['params' => $params_10,       'header' => !empty($header_image_url), 'lang' => $lang_code],
+                ['params' => $params_10,       'header' => false,                     'lang' => $lang_code],
+                ['params' => $params_5,        'header' => false,                     'lang' => $lang_code],
+                ['params' => $params_5,        'header' => !empty($header_image_url), 'lang' => $lang_code],
+                ['params' => $params_mixed_10, 'header' => false,                     'lang' => $lang_code],
+                ['params' => $params_9,        'header' => false,                     'lang' => $lang_code],
+                ['params' => $params_11,       'header' => false,                     'lang' => $lang_code],
+                ['params' => $params_bridge,   'header' => false,                     'lang' => $lang_code],
+                ['params' => $params_10,       'header' => false,                     'lang' => ($lang_code === 'en' ? 'en_US' : 'en')],
+                ['params' => $params_5,        'header' => false,                     'lang' => ($lang_code === 'en' ? 'en_US' : 'en')],
+            ];
 
-            $payload = $build_payload($meta_template_name, $lang_code, $initial_params, !empty($header_image_url));
-            list($result, $http_code, $curl_error) = $send_meta_curl($payload);
-            $meta_response = json_decode($result, true);
+            foreach ($candidate_sets as $candidate) {
+                if (empty($candidate['params'])) continue;
+                $payload = $build_payload($meta_template_name, $candidate['lang'], $candidate['params'], $candidate['header']);
+                list($result, $http_code, $curl_error) = $send_meta_curl($payload);
+                $meta_response = json_decode($result, true);
 
-            if ($http_code == 200 && isset($meta_response['messages'])) {
-                $sent_successfully = true;
-            } else {
-                $errMsg     = $meta_response['error']['message'] ?? '';
-                $errDetails = $meta_response['error']['error_data']['details'] ?? '';
-                $errCode    = (int)($meta_response['error']['code'] ?? 0);
-                $fullErr    = $errMsg . ' ' . $errDetails;
-
-                // Smart Recovery 1: Parameter Count Mismatch
-                if (!$sent_successfully && ($errCode == 132000 || stripos($fullErr, 'parameter') !== false || stripos($fullErr, 'placeholder') !== false)) {
-                    $retry_sets = [$params_mixed_10, $params_5, $params_bridge];
-                    foreach ($retry_sets as $p_set) {
-                        if (empty($p_set)) continue;
-                        $payload = $build_payload($meta_template_name, $lang_code, $p_set, false);
-                        list($result, $http_code, $curl_error) = $send_meta_curl($payload);
-                        $meta_response = json_decode($result, true);
-                        if ($http_code == 200 && isset($meta_response['messages'])) {
-                            $sent_successfully = true;
-                            break;
-                        }
-                    }
-                }
-
-                // Smart Recovery 2: Header Mismatch
-                if (!$sent_successfully && (stripos($fullErr, 'header') !== false || stripos($fullErr, 'components[0]') !== false)) {
-                    if (stripos($fullErr, 'IMAGE') !== false || stripos($fullErr, 'expected') !== false) {
-                        $fallback_img = !empty($header_image_url) ? $header_image_url : 'https://sagarstarters.com/assets/images/auth_banner.jpg';
-                        $payload = $build_payload($meta_template_name, $lang_code, $initial_params, true);
-                    } else {
-                        $payload = $build_payload($meta_template_name, $lang_code, $initial_params, false);
-                    }
-                    list($result, $http_code, $curl_error) = $send_meta_curl($payload);
-                    $meta_response = json_decode($result, true);
-                    if ($http_code == 200 && isset($meta_response['messages'])) {
-                        $sent_successfully = true;
-                    }
-                }
-
-                // Smart Recovery 3: Language code mismatch
-                if (!$sent_successfully && ($errCode == 132001 || stripos($fullErr, 'does not exist') !== false || stripos($fullErr, 'language') !== false)) {
-                    $alt_lang = ($lang_code === 'en') ? 'en_US' : 'en';
-                    $payload = $build_payload($meta_template_name, $alt_lang, $initial_params, false);
-                    list($result, $http_code, $curl_error) = $send_meta_curl($payload);
-                    $meta_response = json_decode($result, true);
-                    if ($http_code == 200 && isset($meta_response['messages'])) {
-                        $sent_successfully = true;
-                    }
+                if ($http_code == 200 && isset($meta_response['messages'])) {
+                    $sent_successfully = true;
+                    break;
                 }
             }
         }
