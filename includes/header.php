@@ -329,51 +329,31 @@ if (isset($product['slug'])) {
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght@300;400;500;600&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght@300;400;500;600&display=swap"></noscript>
 
-    <!-- Core UI & Layout Framework (Non-blocking with Critical CSS fallback) -->
-    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.css"></noscript>
-    
-    <link rel="preload" href="<?php echo ASSETS_URL; ?>/css/hero-slider-style.css?v=1.5" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="<?php echo ASSETS_URL; ?>/css/hero-slider-style.css?v=1.5"></noscript>
+    <!-- Core UI & Layout Framework (Synchronous for Zero CLS) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.css">
+    <link rel="stylesheet" href="<?php echo ASSETS_URL; ?>/css/hero-slider-style.css?v=1.5">
 
-    <!-- Critical Above-The-Fold Styles (Instant Zero-CLS First Paint) -->
+    <!-- Critical Layout Dimensions (Prevents any Cumulative Layout Shift) -->
     <style>
-        /* Base typography & System font stack */
-        :root { --bs-primary: #0d6efd; --mdb-primary: #0d6efd; }
-        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8f9fa; color: #333; -webkit-font-smoothing: antialiased; }
-        .montserrat, h1, h2, h3, h4, h5, h6 { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 700; }
-        .primary-blue { color: #0d6efd; }
-        .bg-primary-blue { background-color: #0d6efd; }
-        
-        /* Layout Grid Basics */
-        .container, .container-fluid { width: 100%; padding-right: 15px; padding-left: 15px; margin-right: auto; margin-left: auto; box-sizing: border-box; }
-        @media (min-width: 576px) { .container { max-width: 540px; } }
-        @media (min-width: 768px) { .container { max-width: 720px; } }
-        @media (min-width: 992px) { .container { max-width: 960px; } }
-        @media (min-width: 1200px) { .container { max-width: 1140px; } }
-        @media (min-width: 1400px) { .container { max-width: 1320px; } }
-        
+        /* Icon placeholder — prevents icon-font layout jump */
+        .fa, .fas, .far, .fab, .fa-solid, .fa-regular, .fa-brands { display: inline-block; width: 1em; height: 1em; line-height: 1; vertical-align: -0.125em; }
         /* Header & Navbar stability */
         .top-bar-notice { min-height: 38px; }
-        .navbar { position: relative; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; padding: 0.5rem 1rem; min-height: 64px; background: #fff; }
-        .navbar-brand { display: inline-block; padding-top: 0.3125rem; padding-bottom: 0.3125rem; margin-right: 1rem; font-size: 1.25rem; line-height: inherit; white-space: nowrap; }
-        .navbar-brand img { display: block; max-width: 100%; height: auto; }
-        
-        /* Hero slider — locked dimensions for 0.00 CLS */
+        .main-navbar, header.navbar, .navbar { min-height: 64px; }
+        /* Hero slider — locked dimensions, no layout shift */
         .hero-slider-wrapper { width: 100%; min-height: 380px; height: 380px; position: relative; overflow: hidden; background: #0f172a; }
         @media (min-width: 769px) { .hero-slider-wrapper { min-height: 460px; height: 460px; } }
         @media (min-width: 1025px) { .hero-slider-wrapper { min-height: 560px; height: 560px; } }
-        .hero-bg, .hero-bg img { width: 100%; height: 100%; object-fit: cover; object-position: center center; display: block; }
-        
-        /* Icon & Card Aspect-Ratio Locks */
-        .fa, .fas, .far, .fab, .fa-solid, .fa-regular, .fa-brands { display: inline-block; width: 1em; height: 1em; line-height: 1; vertical-align: -0.125em; }
+        .hero-bg img { width: 100%; height: 100%; object-fit: cover; object-position: center center; }
+        /* Trust strip & Card containers — aspect-ratio locks prevent CLS */
         .home-trust-strip { min-height: 80px; }
-        .category-stage { min-height: 180px; width: 100%; aspect-ratio: 260 / 180; overflow: hidden; background: #f1f5f9; }
-        .product-media-stage { min-height: 250px; width: 100%; aspect-ratio: 1 / 1; overflow: hidden; background: #fff; }
-        .product-media-stage img { width: 100%; height: 100%; object-fit: contain; }
-        
-        /* Bottom nav lock */
+        .category-stage { min-height: 180px; width: 100%; aspect-ratio: 260 / 180; }
+        .product-media-stage { min-height: 250px; width: 100%; aspect-ratio: 1 / 1; }
+        /* Bottom nav — fixed, so no layout shift */
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 60px; z-index: 1030; }
+        /* System font stack while Montserrat/Poppins loads asynchronously */
+        body, p, span, a, li, button { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; }
+        .montserrat, h1, h2, h3, h4, h5, h6 { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; }
     </style>
 
     <!-- Font Awesome — non-render-blocking -->
@@ -381,7 +361,7 @@ if (isset($product['slug'])) {
     <noscript><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"></noscript>
 
     <!-- Custom Theme & App CSS (Critical) -->
-    <link href="<?php echo ASSETS_URL; ?>/css/style.css?v=<?php echo file_exists(__DIR__ . '/../assets/css/style.css') ? filemtime(__DIR__ . '/../assets/css/style.css') : '2.1'; ?>" rel="stylesheet">
+    <link href="<?php echo ASSETS_URL; ?>/css/style.css?v=<?php echo file_exists(__DIR__ . '/../assets/css/style.css') ? filemtime(__DIR__ . '/../assets/css/style.css') : '2.0'; ?>" rel="stylesheet">
     <!-- Theme Customizer CSS Variables -->
     <?php
     require_once __DIR__ . '/ThemeService.php';

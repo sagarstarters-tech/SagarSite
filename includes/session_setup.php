@@ -173,7 +173,6 @@ if (!function_exists('resolve_image_url')) {
         
         $clean = ltrim($img, '/');
         $basename = basename($clean);
-        $name_no_ext = pathinfo($basename, PATHINFO_FILENAME);
         
         // Strip common prefix wrappers for relative lookup
         $rel_path = $clean;
@@ -185,31 +184,6 @@ if (!function_exists('resolve_image_url')) {
             $rel_path = substr($rel_path, 15);
         } elseif (strpos($rel_path, 'uploads/') === 0) {
             $rel_path = substr($rel_path, 8);
-        }
-
-        // 0. Auto-WebP Upgrade: Check if optimized .webp or AhaConvert_*.webp version exists
-        if (!empty($name_no_ext)) {
-            $webp_candidates = [
-                $base_path . '/assets/images/' . $name_no_ext . '.webp',
-                $base_path . '/assets/images/AhaConvert_' . $name_no_ext . '.webp',
-                $base_path . '/uploads/media/images/' . $name_no_ext . '.webp',
-                $base_path . '/uploads/images/' . $name_no_ext . '.webp',
-                $base_path . '/uploads/' . $name_no_ext . '.webp'
-            ];
-            foreach ($webp_candidates as $cand) {
-                if (file_exists($cand)) {
-                    $cand_base = basename($cand);
-                    if (strpos($cand, '/assets/images/') !== false) {
-                        return $resolve_cache[$cache_key] = $assets_url . '/images/' . $cand_base;
-                    } elseif (strpos($cand, '/uploads/media/images/') !== false) {
-                        return $resolve_cache[$cache_key] = $site_url . '/uploads/media/images/' . $cand_base;
-                    } elseif (strpos($cand, '/uploads/images/') !== false) {
-                        return $resolve_cache[$cache_key] = $site_url . '/uploads/images/' . $cand_base;
-                    } elseif (strpos($cand, '/uploads/') !== false) {
-                        return $resolve_cache[$cache_key] = $site_url . '/uploads/' . $cand_base;
-                    }
-                }
-            }
         }
         
         // 1. Check in /uploads/
@@ -241,6 +215,7 @@ if (!function_exists('resolve_image_url')) {
         }
         
         // 3. Auto-heal: search for matching file with different extension or location
+        $name_no_ext = pathinfo($basename, PATHINFO_FILENAME);
         if (!empty($name_no_ext)) {
             foreach (['/assets/images/', '/assets/images/slider/', '/assets/images/features/', '/uploads/media/images/', '/uploads/images/'] as $dir) {
                 $matches = glob($base_path . $dir . $name_no_ext . '.*');
@@ -464,29 +439,6 @@ if (!function_exists('resolve_product_image_url')) {
 
             // Strip directory prefixes to get bare filename
             $bare = basename($clean);
-            $name_no_ext = pathinfo($bare, PATHINFO_FILENAME);
-
-            // 0. Auto-WebP Upgrade for Products: Check if optimized .webp exists
-            if (!empty($name_no_ext)) {
-                $webp_prod_candidates = [
-                    $base_path . '/assets/images/' . $name_no_ext . '.webp',
-                    $base_path . '/assets/images/AhaConvert_' . $name_no_ext . '.webp',
-                    $base_path . '/uploads/images/' . $name_no_ext . '.webp',
-                    $base_path . '/uploads/' . $name_no_ext . '.webp'
-                ];
-                foreach ($webp_prod_candidates as $cand) {
-                    if (file_exists($cand)) {
-                        $cand_base = basename($cand);
-                        if (strpos($cand, '/assets/images/') !== false) {
-                            return encode_url_path($assets_url . '/images/' . $cand_base);
-                        } elseif (strpos($cand, '/uploads/images/') !== false) {
-                            return encode_url_path($site_url . '/uploads/images/' . $cand_base);
-                        } elseif (strpos($cand, '/uploads/') !== false) {
-                            return encode_url_path($site_url . '/uploads/' . $cand_base);
-                        }
-                    }
-                }
-            }
 
             // Check in /assets/images/ (git-tracked priority)
             if (file_exists($base_path . '/assets/images/' . $bare)) {
@@ -504,6 +456,7 @@ if (!function_exists('resolve_product_image_url')) {
             }
             
             // Auto-heal extension mismatch (e.g. db says .jpg, file is .webp)
+            $name_no_ext = pathinfo($bare, PATHINFO_FILENAME);
             if (!empty($name_no_ext)) {
                 $matches = glob($base_path . '/assets/images/' . $name_no_ext . '.*');
                 if (!empty($matches)) {

@@ -305,9 +305,8 @@ if (!$chatbot_enabled && isset($conn)) {
 
 if ($chatbot_enabled): 
 ?>
-    <!-- ChatBot Widget CSS & JS (Non-blocking) -->
-    <link rel="preload" href="<?php echo ASSETS_URL; ?>/css/chatbot-widget.css?v=<?php echo file_exists(__DIR__ . '/../assets/css/chatbot-widget.css') ? filemtime(__DIR__ . '/../assets/css/chatbot-widget.css') : '1.0'; ?>" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="<?php echo ASSETS_URL; ?>/css/chatbot-widget.css?v=<?php echo file_exists(__DIR__ . '/../assets/css/chatbot-widget.css') ? filemtime(__DIR__ . '/../assets/css/chatbot-widget.css') : '1.0'; ?>"></noscript>
+    <!-- ChatBot Widget CSS & JS -->
+    <link href="<?php echo ASSETS_URL; ?>/css/chatbot-widget.css?v=<?php echo file_exists(__DIR__ . '/../assets/css/chatbot-widget.css') ? filemtime(__DIR__ . '/../assets/css/chatbot-widget.css') : '1.0'; ?>" rel="stylesheet">
     <script>
         window.sagarChatConfig = {
             apiEndpoint: '<?php echo SITE_URL; ?>/api/chatbot/chat.php'
