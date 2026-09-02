@@ -386,7 +386,7 @@
     }
 
     /**
-     * Initialize listeners and observer
+     * Initialize listeners (Lightweight & Non-blocking)
      */
     function init() {
         if (!isAutoContrastEnabled()) {
@@ -395,23 +395,20 @@
 
         const runScan = () => {
             if ('requestIdleCallback' in window) {
-                requestIdleCallback(scan, { timeout: 1000 });
+                requestIdleCallback(scan, { timeout: 2000 });
             } else {
-                requestAnimationFrame(scan);
+                setTimeout(scan, 200);
             }
         };
 
-        runScan();
-
-        const observer = new MutationObserver(debounce(() => {
-            if (isAutoContrastEnabled()) runScan();
-        }, 300));
-
-        if (document.body) {
-            observer.observe(document.body, { childList: true, subtree: true });
+        // Run only when browser has completed main rendering
+        if (document.readyState === 'complete') {
+            runScan();
+        } else {
+            window.addEventListener('load', runScan, { once: true });
         }
 
-        window.addEventListener('resize', debounce(runScan, 300));
+        window.addEventListener('resize', debounce(runScan, 500));
         window.addEventListener('themeColorChanged', () => {
             document.querySelectorAll('[data-ac-done]').forEach(el => delete el.dataset.acDone);
             runScan();
