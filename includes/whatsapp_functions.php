@@ -211,50 +211,61 @@ function sendCustomerOrderConfirmationWhatsApp($conn, $order_id) {
                 }
             }
 
+            $safe_cust_name  = !empty($customerName) ? $customerName : 'Valued Customer';
+            $safe_order_id   = (string)$order_id;
+            $safe_order_date = !empty($orderDate) ? $orderDate : date('d M Y');
+            $safe_order_time = !empty($orderTime) ? $orderTime : date('h:i A');
+            $safe_amount     = !empty($orderAmount) ? $orderAmount : '0.00';
+            $safe_payment    = !empty($paymentMode) ? $paymentMode : 'COD';
+            $safe_status     = !empty($orderStatus) ? $orderStatus : 'Pending';
+            $safe_items      = !empty($itemsOrdered) ? $itemsOrdered : "Order #$order_id";
+            $safe_addr       = (!empty($deliveryAddress) && $deliveryAddress !== 'N/A') ? $deliveryAddress : 'Customer Delivery Address';
+            $safe_link       = !empty($orderLink) ? $orderLink : 'https://sagarstarters.com/my-orders.php';
+
             $params_9 = [
-                ["type" => "text", "text" => (string)$customerName],    // {{1}} customer_name
-                ["type" => "text", "text" => (string)$order_id],        // {{2}} order_id
-                ["type" => "text", "text" => (string)$orderDate],       // {{3}} order_date
-                ["type" => "text", "text" => (string)$orderAmount],     // {{4}} order_total
-                ["type" => "text", "text" => (string)$paymentMode],     // {{5}} payment_method
-                ["type" => "text", "text" => (string)$orderStatus],     // {{6}} order_status
-                ["type" => "text", "text" => (string)$itemsOrdered],    // {{7}} order_items
-                ["type" => "text", "text" => (string)$deliveryAddress], // {{8}} customer_address
-                ["type" => "text", "text" => (string)$orderLink],       // {{9}} order_link
+                ["type" => "text", "text" => $safe_cust_name],  // {{1}} customer_name
+                ["type" => "text", "text" => $safe_order_id],   // {{2}} order_id
+                ["type" => "text", "text" => $safe_order_date], // {{3}} order_date
+                ["type" => "text", "text" => $safe_amount],     // {{4}} order_total
+                ["type" => "text", "text" => $safe_payment],    // {{5}} payment_method
+                ["type" => "text", "text" => $safe_status],     // {{6}} order_status
+                ["type" => "text", "text" => $safe_items],      // {{7}} order_items
+                ["type" => "text", "text" => $safe_addr],       // {{8}} customer_address
+                ["type" => "text", "text" => $safe_link],       // {{9}} order_link
             ];
 
             $params_11 = [
-                ["type" => "text", "text" => (string)$order_id],
-                ["type" => "text", "text" => (string)$orderDate],
-                ["type" => "text", "text" => (string)$orderTime],
-                ["type" => "text", "text" => (string)$customerName],
+                ["type" => "text", "text" => $safe_order_id],
+                ["type" => "text", "text" => $safe_order_date],
+                ["type" => "text", "text" => $safe_order_time],
+                ["type" => "text", "text" => $safe_cust_name],
                 ["type" => "text", "text" => (string)$customerPhone],
-                ["type" => "text", "text" => (string)$orderAmount],
-                ["type" => "text", "text" => (string)$paymentMode],
-                ["type" => "text", "text" => (string)$orderStatus],
-                ["type" => "text", "text" => (string)$deliveryAddress],
-                ["type" => "text", "text" => (string)$itemsOrdered],
-                ["type" => "text", "text" => (string)$orderLink],
+                ["type" => "text", "text" => $safe_amount],
+                ["type" => "text", "text" => $safe_payment],
+                ["type" => "text", "text" => $safe_status],
+                ["type" => "text", "text" => $safe_addr],
+                ["type" => "text", "text" => $safe_items],
+                ["type" => "text", "text" => $safe_link],
             ];
 
             $params_4 = [
-                ["type" => "text", "text" => (string)$order_id],
-                ["type" => "text", "text" => (string)$customerName],
-                ["type" => "text", "text" => (string)$orderAmount],
-                ["type" => "text", "text" => (string)$paymentMode],
+                ["type" => "text", "text" => $safe_order_id],
+                ["type" => "text", "text" => $safe_cust_name],
+                ["type" => "text", "text" => $safe_amount],
+                ["type" => "text", "text" => $safe_payment],
             ];
 
             $params_5 = [
-                ["type" => "text", "text" => (string)$order_id],
-                ["type" => "text", "text" => (string)$customerName],
+                ["type" => "text", "text" => $safe_order_id],
+                ["type" => "text", "text" => $safe_cust_name],
                 ["type" => "text", "text" => (string)$customerPhone],
-                ["type" => "text", "text" => (string)$orderAmount],
-                ["type" => "text", "text" => (string)$paymentMode],
+                ["type" => "text", "text" => $safe_amount],
+                ["type" => "text", "text" => $safe_payment],
             ];
 
             $candidate_sets = [
-                ['params' => $params_9,        'header' => !empty($header_image_url), 'lang' => $lang_code],
                 ['params' => $params_9,        'header' => false,                     'lang' => $lang_code],
+                ['params' => $params_9,        'header' => !empty($header_image_url), 'lang' => $lang_code],
                 ['params' => $params_11,       'header' => false,                     'lang' => $lang_code],
                 ['params' => $params_4,        'header' => false,                     'lang' => $lang_code],
                 ['params' => $params_5,        'header' => false,                     'lang' => $lang_code],
@@ -263,15 +274,28 @@ function sendCustomerOrderConfirmationWhatsApp($conn, $order_id) {
                 ['params' => $params_4,        'header' => false,                     'lang' => ($lang_code === 'en' ? 'en_US' : 'en')],
             ];
 
-            foreach ($candidate_sets as $candidate) {
-                if (empty($candidate['params'])) continue;
-                $payload = $build_payload($tpl_name, $candidate['lang'], $candidate['params'], $candidate['header']);
-                list($result, $http_code, $curl_error) = $send_meta_curl($payload);
-                $meta_response = json_decode($result, true);
+            $tpl_names_to_try = array_unique(array_filter([
+                $tpl_name,
+                'order_confirmation',
+                'order_confirmation_notification',
+                'new_order_confirmation',
+                'order_confirm'
+            ]));
 
-                if ($http_code == 200 && isset($meta_response['messages'])) {
-                    $sent_successfully = true;
-                    break;
+            foreach ($tpl_names_to_try as $current_tpl_name) {
+                foreach ($candidate_sets as $candidate) {
+                    if (empty($candidate['params'])) continue;
+                    $payload = $build_payload($current_tpl_name, $candidate['lang'], $candidate['params'], $candidate['header']);
+                    list($result, $http_code, $curl_error) = $send_meta_curl($payload);
+                    $meta_response = json_decode($result, true);
+
+                    if ($http_code == 200 && isset($meta_response['messages'])) {
+                        $sent_successfully = true;
+                        if ($current_tpl_name !== $tpl_name && !empty($current_tpl_name)) {
+                            $conn->query("UPDATE whatsapp_settings SET order_confirmation_template_name = '" . $conn->real_escape_string($current_tpl_name) . "' WHERE id = 1");
+                        }
+                        break 2;
+                    }
                 }
             }
         }
@@ -533,77 +557,91 @@ function sendCustomerOrderStatusWhatsApp($conn, $order_id) {
                 ];
             };
 
-            // Standard Sequential 10-Parameter set:
+            $safe_cust_name  = !empty($customerName) ? $customerName : 'Valued Customer';
+            $safe_order_id   = (string)$order_id;
+            $safe_order_date = !empty($orderDate) ? $orderDate : date('d M Y');
+            $safe_order_time = !empty($orderTime) ? $orderTime : date('h:i A');
+            $safe_status     = !empty($orderStatus) ? $orderStatus : 'Processing';
+            $safe_amount     = !empty($orderAmount) ? $orderAmount : '0.00';
+            $safe_payment    = !empty($order['payment_mode']) ? strtoupper($order['payment_mode']) : 'COD';
+            $safe_tracking   = (!empty($trackingID) && $trackingID !== 'N/A') ? $trackingID : 'TRACKING123';
+            $safe_msg        = !empty($statusMessage) ? $statusMessage : "Your order #$order_id status is currently $safe_status.";
+            $safe_items      = !empty($itemsOrdered) ? $itemsOrdered : "Order #$order_id";
+            $safe_addr       = (!empty($deliveryAddress) && $deliveryAddress !== 'N/A') ? $deliveryAddress : 'Customer Delivery Address';
+            $safe_est_date   = !empty($expectedDelivery) ? $expectedDelivery : date('d M Y', strtotime('+4 days'));
+            $safe_link       = !empty($orderLink) ? $orderLink : 'https://sagarstarters.com/my-orders.php';
+
+            // Standard Sequential 10-Parameter set (order_status_updated):
             $params_10 = [
-                ["type" => "text", "text" => (string)$customerName],    // {{1}} customer_name
-                ["type" => "text", "text" => (string)$order_id],        // {{2}} order_id
-                ["type" => "text", "text" => (string)$orderDate],       // {{3}} order_date
-                ["type" => "text", "text" => (string)$orderStatus],     // {{4}} order_status
-                ["type" => "text", "text" => (string)$statusMessage],   // {{5}} status_message
-                ["type" => "text", "text" => (string)$itemsOrdered],    // {{6}} order_items
-                ["type" => "text", "text" => (string)$orderAmount],     // {{7}} order_total
-                ["type" => "text", "text" => (string)$deliveryAddress], // {{8}} customer_address
-                ["type" => "text", "text" => (string)$expectedDelivery],// {{9}} expected_delivery_date
-                ["type" => "text", "text" => (string)$orderLink],       // {{10}} order_link
+                ["type" => "text", "text" => $safe_cust_name], // {{1}} customer_name
+                ["type" => "text", "text" => $safe_order_id],   // {{2}} order_id
+                ["type" => "text", "text" => $safe_order_date], // {{3}} order_date
+                ["type" => "text", "text" => $safe_status],     // {{4}} order_status
+                ["type" => "text", "text" => $safe_msg],        // {{5}} status_message
+                ["type" => "text", "text" => $safe_items],      // {{6}} order_items
+                ["type" => "text", "text" => $safe_amount],     // {{7}} order_total
+                ["type" => "text", "text" => $safe_addr],       // {{8}} customer_address
+                ["type" => "text", "text" => $safe_est_date],   // {{9}} expected_delivery_date
+                ["type" => "text", "text" => $safe_link],       // {{10}} order_link
             ];
 
-            // Mixed parameter set (if user created draft with 1,2,9,3,10,4,5,6,7,8 order):
-            $params_mixed_10 = [
-                ["type" => "text", "text" => (string)$customerName],    // {{1}}
-                ["type" => "text", "text" => (string)$order_id],        // {{2}}
-                ["type" => "text", "text" => (string)$orderStatus],     // {{3}}
-                ["type" => "text", "text" => (string)$itemsOrdered],    // {{4}}
-                ["type" => "text", "text" => (string)$orderAmount],     // {{5}}
-                ["type" => "text", "text" => (string)$deliveryAddress], // {{6}}
-                ["type" => "text", "text" => (string)$expectedDelivery],// {{7}}
-                ["type" => "text", "text" => (string)$orderLink],       // {{8}}
-                ["type" => "text", "text" => (string)$orderDate],       // {{9}}
-                ["type" => "text", "text" => (string)$statusMessage],   // {{10}}
-            ];
-
-            // 5-parameter legacy status set:
+            // 5-parameter legacy status set (new_order_status):
             $params_5 = [
-                ["type" => "text", "text" => (string)$customerName],
-                ["type" => "text", "text" => (string)$order_id],
-                ["type" => "text", "text" => (string)$orderStatus],
-                ["type" => "text", "text" => (string)$trackingID],
-                ["type" => "text", "text" => (string)$orderAmount],
+                ["type" => "text", "text" => $safe_cust_name],
+                ["type" => "text", "text" => $safe_order_id],
+                ["type" => "text", "text" => $safe_status],
+                ["type" => "text", "text" => $safe_tracking],
+                ["type" => "text", "text" => $safe_amount],
             ];
 
-            // 9-parameter set (Order Confirmation structure)
+            // Mixed parameter set:
+            $params_mixed_10 = [
+                ["type" => "text", "text" => $safe_cust_name],
+                ["type" => "text", "text" => $safe_order_id],
+                ["type" => "text", "text" => $safe_status],
+                ["type" => "text", "text" => $safe_items],
+                ["type" => "text", "text" => $safe_amount],
+                ["type" => "text", "text" => $safe_addr],
+                ["type" => "text", "text" => $safe_est_date],
+                ["type" => "text", "text" => $safe_link],
+                ["type" => "text", "text" => $safe_order_date],
+                ["type" => "text", "text" => $safe_msg],
+            ];
+
+            // 9-parameter set:
             $params_9 = [
-                ["type" => "text", "text" => (string)$customerName],
-                ["type" => "text", "text" => (string)$order_id],
-                ["type" => "text", "text" => (string)$orderDate],
-                ["type" => "text", "text" => (string)$orderAmount],
-                ["type" => "text", "text" => (string)($order['payment_mode'] ?? 'COD')],
-                ["type" => "text", "text" => (string)$orderStatus],
-                ["type" => "text", "text" => (string)$itemsOrdered],
-                ["type" => "text", "text" => (string)$deliveryAddress],
-                ["type" => "text", "text" => (string)$orderLink],
+                ["type" => "text", "text" => $safe_cust_name],
+                ["type" => "text", "text" => $safe_order_id],
+                ["type" => "text", "text" => $safe_order_date],
+                ["type" => "text", "text" => $safe_amount],
+                ["type" => "text", "text" => $safe_payment],
+                ["type" => "text", "text" => $safe_status],
+                ["type" => "text", "text" => $safe_items],
+                ["type" => "text", "text" => $safe_addr],
+                ["type" => "text", "text" => $safe_link],
             ];
 
-            // 11-parameter set (Admin structure)
+            // 11-parameter set:
             $params_11 = [
-                ["type" => "text", "text" => (string)$order_id],
-                ["type" => "text", "text" => (string)$orderDate],
-                ["type" => "text", "text" => (string)$orderTime],
-                ["type" => "text", "text" => (string)$customerName],
+                ["type" => "text", "text" => $safe_order_id],
+                ["type" => "text", "text" => $safe_order_date],
+                ["type" => "text", "text" => $safe_order_time],
+                ["type" => "text", "text" => $safe_cust_name],
                 ["type" => "text", "text" => (string)$customerPhone],
-                ["type" => "text", "text" => (string)$orderAmount],
-                ["type" => "text", "text" => (string)($order['payment_mode'] ?? 'COD')],
-                ["type" => "text", "text" => (string)$orderStatus],
-                ["type" => "text", "text" => (string)$deliveryAddress],
-                ["type" => "text", "text" => (string)$itemsOrdered],
-                ["type" => "text", "text" => (string)$orderLink],
+                ["type" => "text", "text" => $safe_amount],
+                ["type" => "text", "text" => $safe_payment],
+                ["type" => "text", "text" => $safe_status],
+                ["type" => "text", "text" => $safe_addr],
+                ["type" => "text", "text" => $safe_items],
+                ["type" => "text", "text" => $safe_link],
             ];
 
-            // 4-parameter set
+            // 4-parameter set:
             $params_4 = [
-                ["type" => "text", "text" => (string)$order_id],
-                ["type" => "text", "text" => (string)$customerName],
-                ["type" => "text", "text" => (string)$orderAmount],
-                ["type" => "text", "text" => (string)($order['payment_mode'] ?? 'COD')],
+                ["type" => "text", "text" => $safe_order_id],
+                ["type" => "text", "text" => $safe_cust_name],
+                ["type" => "text", "text" => $safe_amount],
+                ["type" => "text", "text" => $safe_payment],
             ];
 
             // Dynamic bridge parameters
@@ -611,13 +649,14 @@ function sendCustomerOrderStatusWhatsApp($conn, $order_id) {
             $params_bridge = [];
             if (!empty($matches[0])) {
                 foreach ($matches[0] as $varKey) {
-                    $params_bridge[] = ["type" => "text", "text" => (string)($replacementValues[$varKey] ?? '')];
+                    $val = (string)($replacementValues[$varKey] ?? '');
+                    $params_bridge[] = ["type" => "text", "text" => ($val !== '') ? $val : 'N/A'];
                 }
             }
 
             $candidate_sets = [
-                ['params' => $params_10,       'header' => !empty($header_image_url), 'lang' => $lang_code],
                 ['params' => $params_10,       'header' => false,                     'lang' => $lang_code],
+                ['params' => $params_10,       'header' => !empty($header_image_url), 'lang' => $lang_code],
                 ['params' => $params_5,        'header' => false,                     'lang' => $lang_code],
                 ['params' => $params_5,        'header' => !empty($header_image_url), 'lang' => $lang_code],
                 ['params' => $params_mixed_10, 'header' => false,                     'lang' => $lang_code],
@@ -628,15 +667,28 @@ function sendCustomerOrderStatusWhatsApp($conn, $order_id) {
                 ['params' => $params_5,        'header' => false,                     'lang' => ($lang_code === 'en' ? 'en_US' : 'en')],
             ];
 
-            foreach ($candidate_sets as $candidate) {
-                if (empty($candidate['params'])) continue;
-                $payload = $build_payload($meta_template_name, $candidate['lang'], $candidate['params'], $candidate['header']);
-                list($result, $http_code, $curl_error) = $send_meta_curl($payload);
-                $meta_response = json_decode($result, true);
+            $tpl_names_to_try = array_unique(array_filter([
+                $meta_template_name,
+                'order_status_updated',
+                'new_order_status',
+                'order_status_updates',
+                'order_status_update'
+            ]));
 
-                if ($http_code == 200 && isset($meta_response['messages'])) {
-                    $sent_successfully = true;
-                    break;
+            foreach ($tpl_names_to_try as $current_tpl_name) {
+                foreach ($candidate_sets as $candidate) {
+                    if (empty($candidate['params'])) continue;
+                    $payload = $build_payload($current_tpl_name, $candidate['lang'], $candidate['params'], $candidate['header']);
+                    list($result, $http_code, $curl_error) = $send_meta_curl($payload);
+                    $meta_response = json_decode($result, true);
+
+                    if ($http_code == 200 && isset($meta_response['messages'])) {
+                        $sent_successfully = true;
+                        if ($current_tpl_name !== $meta_template_name && !empty($current_tpl_name)) {
+                            $conn->query("UPDATE whatsapp_settings SET meta_template_name = '" . $conn->real_escape_string($current_tpl_name) . "' WHERE id = 1");
+                        }
+                        break 2;
+                    }
                 }
             }
         }
