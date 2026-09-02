@@ -26,12 +26,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($q && $q->num_rows > 0) {
             $user = $q->fetch_assoc();
             sendOrderStatusEmail($conn, $id, $user['email'], $user['name'], $status);
-            // Trigger automated WhatsApp notification
-            sendCustomerOrderStatusWhatsApp($conn, $id);
-            // Auto-generate invoice on qualifying status change
-            $invoiceService = new InvoiceService($conn);
-            $invoiceService->autoGenerateOnStatusChange($id, $status);
         }
+        
+        // Trigger automated WhatsApp notification
+        sendCustomerOrderStatusWhatsApp($conn, $id);
+        
+        // Auto-generate invoice on qualifying status change
+        $invoiceService = new InvoiceService($conn);
+        $invoiceService->autoGenerateOnStatusChange($id, $status);
         
     } elseif ($action === 'delete') {
         $id = intval($_POST['id']);

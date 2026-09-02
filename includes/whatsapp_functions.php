@@ -392,31 +392,42 @@ function sendCustomerOrderStatusWhatsApp($conn, $order_id) {
             return false;
         }
 
-        // Fetch Order details
+        // Fetch Order details safely
         $order_id = intval($order_id);
         $q = $conn->query("
             SELECT o.id, o.status, o.total_amount, o.created_at, o.payment_mode,
+                   o.tracking_number AS order_tracking_num, o.carrier AS order_carrier,
                    u.name AS customer_name, u.phone AS customer_phone,
-                   u.address AS customer_address, u.city AS customer_city, u.state AS customer_state, u.zip_code AS customer_zip,
-                   (SELECT tracking_number FROM order_tracking WHERE order_id = o.id LIMIT 1) as tracking_number,
-                   (SELECT courier_name FROM order_tracking WHERE order_id = o.id LIMIT 1) as courier_name,
-                   (SELECT estimated_delivery FROM order_tracking WHERE order_id = o.id LIMIT 1) as estimated_delivery
+                   u.address AS customer_address, u.city AS customer_city, u.state AS customer_state, u.zip_code AS customer_zip
             FROM orders o 
-            JOIN users u ON o.user_id = u.id 
+            LEFT JOIN users u ON o.user_id = u.id 
             WHERE o.id = $order_id
         ");
 
         if (!$q || $q->num_rows === 0) return false;
         $order = $q->fetch_assoc();
 
+        // Safely fetch tracking info from order_tracking table if exists
+        $tracking_q = $conn->query("
+            SELECT ot.tracking_number, ot.estimated_delivery_date, cc.name AS courier_name
+            FROM order_tracking ot
+            LEFT JOIN courier_companies cc ON ot.courier_id = cc.id
+            WHERE ot.order_id = $order_id
+            LIMIT 1
+        ");
+        $track = ($tracking_q && $tracking_q->num_rows > 0) ? $tracking_q->fetch_assoc() : [];
+
         $customerName  = trim($order['customer_name'] ?? 'Customer');
         $customerPhone = trim($order['customer_phone'] ?? '');
         $orderStatus   = ucwords(str_replace('_', ' ', $order['status'] ?? 'Processing'));
-        $trackingID    = !empty($order['tracking_number']) ? $order['tracking_number'] : 'N/A';
-        $courierName   = !empty($order['courier_name']) ? $order['courier_name'] : 'Courier';
+        $trackingID    = !empty($track['tracking_number']) ? $track['tracking_number'] : (!empty($order['order_tracking_num']) ? $order['order_tracking_num'] : 'N/A');
+        $courierName   = !empty($track['courier_name']) ? $track['courier_name'] : (!empty($order['order_carrier']) ? $order['order_carrier'] : 'Courier');
         $orderAmount   = number_format((float)($order['total_amount'] ?? 0), 2);
         $orderDate     = date('d M Y', strtotime($order['created_at']));
         $orderTime     = date('h:i A', strtotime($order['created_at']));
+        $expectedDelivery = !empty($track['estimated_delivery_date']) 
+            ? date('d M Y', strtotime($track['estimated_delivery_date'])) 
+            : date('d M Y', strtotime($order['created_at'] . ' + 4 days'));
 
         $clean_number = normalize_whatsapp_phone_number($customerPhone);
         if (empty($clean_number)) return false;

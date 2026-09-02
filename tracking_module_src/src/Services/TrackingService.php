@@ -64,8 +64,16 @@ class TrackingService {
         }
 
         // Optionally notify customer
-        if ($notify_customer && function_exists('sendOrderStatusEmail') && $old_status !== $status) {
-            // Notification logic here
+        if ($notify_customer && $old_status !== $status) {
+            require_once __DIR__ . '/../../../includes/mail_functions.php';
+            require_once __DIR__ . '/../../../includes/whatsapp_functions.php';
+            $conn = $this->repository->getConnection();
+            $q = $conn->query("SELECT u.email, u.name FROM orders o JOIN users u ON o.user_id = u.id WHERE o.id = $order_id");
+            if ($q && $q->num_rows > 0) {
+                $user = $q->fetch_assoc();
+                sendOrderStatusEmail($conn, $order_id, $user['email'], $user['name'], $status);
+            }
+            sendCustomerOrderStatusWhatsApp($conn, $order_id);
         }
 
         return ['success' => true, 'message' => 'Tracking updated successfully'];
