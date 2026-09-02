@@ -128,6 +128,7 @@ if ($sending_mode === 'api') {
         // --- TEMPLATE MODE (24/7 Delivery Bypassing 24h Restriction) ---
         $q = $conn->query("
             SELECT o.id, o.status, o.total_amount, o.payment_mode, o.created_at, u.name, u.phone,
+                   u.address as customer_address, u.city as customer_city, u.state as customer_state, u.zip_code as customer_zip,
                    (SELECT tracking_number FROM order_tracking WHERE order_id = o.id LIMIT 1) as tracking_number
             FROM orders o JOIN users u ON o.user_id = u.id WHERE o.id = $order_id
         ");
@@ -143,6 +144,10 @@ if ($sending_mode === 'api') {
                 'created_at' => date('Y-m-d H:i:s'),
                 'name' => 'Demo Customer',
                 'phone' => '+91 9876543210',
+                'customer_address' => '123 Civil Lines',
+                'customer_city' => 'Varanasi',
+                'customer_state' => 'Uttar Pradesh',
+                'customer_zip' => '221001',
                 'tracking_number' => 'TEST123456789'
             ];
         }
@@ -153,15 +158,54 @@ if ($sending_mode === 'api') {
         $orderStatus   = ucwords(str_replace('_', ' ', $order['status'] ?? 'Processing'));
         $trackingID    = $order['tracking_number'] ?: 'TESTTRACKING123';
         $paymentMode   = strtoupper($order['payment_mode'] ?? 'COD');
+        $orderDate     = date('d M Y', strtotime($order['created_at'] ?? 'now'));
+        $orderTime     = date('h:i A', strtotime($order['created_at'] ?? 'now'));
+
+        // Address
+        $addressParts = array_filter([
+            trim($order['customer_address'] ?? ''),
+            trim($order['customer_city'] ?? ''),
+            trim($order['customer_state'] ?? ''),
+            trim($order['customer_zip'] ?? '')
+        ]);
+        $deliveryAddress = !empty($addressParts) ? implode(', ', $addressParts) : 'Varanasi, UP - 221001';
+
+        // Order Items List
+        $itemsList = [];
+        $items_res = $conn->query("
+            SELECT oi.quantity, oi.price, p.name as product_name
+            FROM order_items oi
+            LEFT JOIN products p ON oi.product_id = p.id
+            WHERE oi.order_id = $order_id
+        ");
+        if ($items_res && $items_res->num_rows > 0) {
+            while ($itm = $items_res->fetch_assoc()) {
+                $pName = trim($itm['product_name'] ?? 'Product');
+                $qty   = (int)($itm['quantity'] ?? 1);
+                $itemsList[] = "• {$pName} ({$qty}x)";
+            }
+        }
+        $itemsOrdered = !empty($itemsList) ? implode("\n", $itemsList) : "• 1-Phase Submersible Panel (1x)";
+
+        // Admin Link
+        $siteUrl = defined('SITE_URL') ? rtrim(SITE_URL, '/') : 'https://sagarstarters.com';
+        $orderLink = $siteUrl . '/admin/order_details.php?id=' . $order_id;
 
         $params = [];
-        // If it's the admin template (or admin test), standard is 4 parameters
+        // If it's the admin template (or admin test), default to 11 parameters
         if ($is_admin_test || (!empty($admin_tpl_override) && $meta_template_name === $admin_tpl_override)) {
             $params = [
-                ["type" => "text", "text" => (string)$order_id],
-                ["type" => "text", "text" => (string)$customerName],
-                ["type" => "text", "text" => (string)$orderAmount],
-                ["type" => "text", "text" => (string)$paymentMode],
+                ["type" => "text", "text" => (string)$order_id],        // {{1}}
+                ["type" => "text", "text" => (string)$orderDate],       // {{2}}
+                ["type" => "text", "text" => (string)$orderTime],       // {{3}}
+                ["type" => "text", "text" => (string)$customerName],    // {{4}}
+                ["type" => "text", "text" => (string)$customerPhone],   // {{5}}
+                ["type" => "text", "text" => (string)$orderAmount],     // {{6}}
+                ["type" => "text", "text" => (string)$paymentMode],     // {{7}}
+                ["type" => "text", "text" => (string)$orderStatus],     // {{8}}
+                ["type" => "text", "text" => (string)$deliveryAddress], // {{9}}
+                ["type" => "text", "text" => (string)$itemsOrdered],    // {{10}}
+                ["type" => "text", "text" => (string)$orderLink],       // {{11}}
             ];
         } else {
             // Customer template parameters mapped from bridge

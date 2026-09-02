@@ -250,7 +250,8 @@ function sendAdminOrderNotification($conn, $order_id) {
         $order_id = intval($order_id);
         $q = $conn->query("
             SELECT o.id, o.status, o.total_amount, o.payment_mode, o.created_at,
-                   u.name AS customer_name, u.phone AS customer_phone, u.email AS customer_email
+                   u.name AS customer_name, u.phone AS customer_phone, u.email AS customer_email,
+                   u.address AS customer_address, u.city AS customer_city, u.state AS customer_state, u.zip_code AS customer_zip
             FROM orders o 
             JOIN users u ON o.user_id = u.id 
             WHERE o.id = $order_id
@@ -259,21 +260,57 @@ function sendAdminOrderNotification($conn, $order_id) {
         if (!$q || $q->num_rows === 0) return false;
         $order = $q->fetch_assoc();
 
-        // Build admin notification message
+        // Build variables
         $customerName  = trim($order['customer_name'] ?? 'Customer');
         $customerPhone = trim($order['customer_phone'] ?? 'N/A');
         $orderAmount   = number_format((float)($order['total_amount'] ?? 0), 2);
-        $paymentMode   = strtoupper($order['payment_mode'] ?? 'N/A');
-        $orderTime     = date('d M Y, h:i A', strtotime($order['created_at']));
+        $paymentMode   = strtoupper($order['payment_mode'] ?? 'COD');
+        $orderStatus   = ucwords(str_replace('_', ' ', $order['status'] ?? 'Pending'));
+        $orderDate     = date('d M Y', strtotime($order['created_at']));
+        $orderTime     = date('h:i A', strtotime($order['created_at']));
+        $orderDateTime = date('d M Y, h:i A', strtotime($order['created_at']));
+
+        // Customer Delivery Address
+        $addressParts = array_filter([
+            trim($order['customer_address'] ?? ''),
+            trim($order['customer_city'] ?? ''),
+            trim($order['customer_state'] ?? ''),
+            trim($order['customer_zip'] ?? '')
+        ]);
+        $deliveryAddress = !empty($addressParts) ? implode(', ', $addressParts) : 'N/A';
+
+        // Order Items List
+        $itemsList = [];
+        $items_res = $conn->query("
+            SELECT oi.quantity, oi.price, p.name as product_name
+            FROM order_items oi
+            LEFT JOIN products p ON oi.product_id = p.id
+            WHERE oi.order_id = $order_id
+        ");
+        if ($items_res && $items_res->num_rows > 0) {
+            while ($itm = $items_res->fetch_assoc()) {
+                $pName = trim($itm['product_name'] ?? 'Product');
+                $qty   = (int)($itm['quantity'] ?? 1);
+                $itemsList[] = "• {$pName} ({$qty}x)";
+            }
+        }
+        $itemsOrdered = !empty($itemsList) ? implode("\n", $itemsList) : "Order #$order_id";
+
+        // Admin Link
+        $siteUrl = defined('SITE_URL') ? rtrim(SITE_URL, '/') : 'https://sagarstarters.com';
+        $orderLink = $siteUrl . '/admin/order_details.php?id=' . $order_id;
 
         $adminMessage  = "🛒 *New Order Alert!*\n\n";
         $adminMessage .= "Order: *#$order_id*\n";
+        $adminMessage .= "Date: $orderDate $orderTime\n";
         $adminMessage .= "Customer: $customerName\n";
         $adminMessage .= "Phone: $customerPhone\n";
         $adminMessage .= "Amount: ₹$orderAmount\n";
         $adminMessage .= "Payment: $paymentMode\n";
-        $adminMessage .= "Time: $orderTime\n\n";
-        $adminMessage .= "Login to admin panel to process this order.";
+        $adminMessage .= "Status: $orderStatus\n";
+        $adminMessage .= "Address: $deliveryAddress\n\n";
+        $adminMessage .= "Items:\n$itemsOrdered\n\n";
+        $adminMessage .= "View Order: $orderLink";
 
         $token    = trim($settings['api_token']);
         $phone_id = trim($settings['phone_number_id']);
@@ -348,14 +385,29 @@ function sendAdminOrderNotification($conn, $order_id) {
             };
 
             // Standard Parameter sets:
-            // 4-param format (Default for recommended admin template: OrderID, Customer, Amount, Payment)
+            // 11-param format (Default for newly designed admin_new_order_alert template)
+            $params_11 = [
+                ["type" => "text", "text" => (string)$order_id],        // {{1}} order_id
+                ["type" => "text", "text" => (string)$orderDate],       // {{2}} order_date
+                ["type" => "text", "text" => (string)$orderTime],       // {{3}} order_time
+                ["type" => "text", "text" => (string)$customerName],    // {{4}} customer_name
+                ["type" => "text", "text" => (string)$customerPhone],   // {{5}} customer_phone
+                ["type" => "text", "text" => (string)$orderAmount],     // {{6}} order_total
+                ["type" => "text", "text" => (string)$paymentMode],     // {{7}} payment_method
+                ["type" => "text", "text" => (string)$orderStatus],     // {{8}} order_status
+                ["type" => "text", "text" => (string)$deliveryAddress], // {{9}} customer_address
+                ["type" => "text", "text" => (string)$itemsOrdered],    // {{10}} order_items
+                ["type" => "text", "text" => (string)$orderLink],       // {{11}} order_link
+            ];
+
+            // 4-param format (Legacy simple format)
             $params_4 = [
                 ["type" => "text", "text" => (string)$order_id],
                 ["type" => "text", "text" => (string)$customerName],
                 ["type" => "text", "text" => (string)$orderAmount],
                 ["type" => "text", "text" => (string)$paymentMode],
             ];
-            // 5-param format (OrderID, Customer, Phone, Amount, Payment)
+            // 5-param format (Legacy format with phone)
             $params_5 = [
                 ["type" => "text", "text" => (string)$order_id],
                 ["type" => "text", "text" => (string)$customerName],
@@ -382,10 +434,10 @@ function sendAdminOrderNotification($conn, $order_id) {
                         $cust_params[] = ["type" => "text", "text" => (string)($replacementValues[$varKey] ?? '')];
                     }
                 }
-                $initial_params = !empty($cust_params) ? $cust_params : $params_4;
+                $initial_params = !empty($cust_params) ? $cust_params : $params_11;
             } else {
-                // For admin_new_order_alert or other dedicated admin templates, standard is 4 params
-                $initial_params = $params_4;
+                // For admin_new_order_alert, default to the 11-variable layout
+                $initial_params = $params_11;
             }
 
             // Attempt 1: Send with initial parameters (without forcing header unless set in settings)
@@ -403,13 +455,16 @@ function sendAdminOrderNotification($conn, $order_id) {
 
                 // Smart Recovery 1: Parameter Count Mismatch (Error 132000 or parameter count issue)
                 if (!$sent_successfully && ($errCode == 132000 || stripos($fullErr, 'parameter') !== false || stripos($fullErr, 'placeholder') !== false)) {
-                    // If we tried 4 params, try 5 params; if we tried 5 params, try 4 params
-                    $alt_params = ($initial_params === $params_4) ? $params_5 : $params_4;
-                    $payload = $build_tpl_payload($admin_tpl_name, $lang_code, $alt_params, false);
-                    list($result, $http_code, $curl_error) = $send_admin_meta($payload);
-                    $meta_response = json_decode($result, true);
-                    if ($http_code == 200 && isset($meta_response['messages'])) {
-                        $sent_successfully = true;
+                    // Try 4 params or 5 params if 11 params didn't match
+                    $try_params = ($initial_params === $params_11) ? [$params_4, $params_5] : [$params_11, $params_4];
+                    foreach ($try_params as $p_set) {
+                        $payload = $build_tpl_payload($admin_tpl_name, $lang_code, $p_set, false);
+                        list($result, $http_code, $curl_error) = $send_admin_meta($payload);
+                        $meta_response = json_decode($result, true);
+                        if ($http_code == 200 && isset($meta_response['messages'])) {
+                            $sent_successfully = true;
+                            break;
+                        }
                     }
                 }
 
