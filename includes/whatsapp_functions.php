@@ -211,6 +211,18 @@ function sendCustomerOrderConfirmationWhatsApp($conn, $order_id) {
                 }
             }
 
+            $params_9 = [
+                ["type" => "text", "text" => (string)$customerName],    // {{1}} customer_name
+                ["type" => "text", "text" => (string)$order_id],        // {{2}} order_id
+                ["type" => "text", "text" => (string)$orderDate],       // {{3}} order_date
+                ["type" => "text", "text" => (string)$orderAmount],     // {{4}} order_total
+                ["type" => "text", "text" => (string)$paymentMode],     // {{5}} payment_method
+                ["type" => "text", "text" => (string)$orderStatus],     // {{6}} order_status
+                ["type" => "text", "text" => (string)$itemsOrdered],    // {{7}} order_items
+                ["type" => "text", "text" => (string)$deliveryAddress], // {{8}} customer_address
+                ["type" => "text", "text" => (string)$orderLink],       // {{9}} order_link
+            ];
+
             $params_11 = [
                 ["type" => "text", "text" => (string)$order_id],
                 ["type" => "text", "text" => (string)$orderDate],
@@ -240,7 +252,7 @@ function sendCustomerOrderConfirmationWhatsApp($conn, $order_id) {
                 ["type" => "text", "text" => (string)$paymentMode],
             ];
 
-            $initial_params = !empty($params_bridge) ? $params_bridge : $params_4;
+            $initial_params = !empty($params_9) ? $params_9 : (!empty($params_bridge) ? $params_bridge : $params_4);
 
             $payload = $build_payload($tpl_name, $lang_code, $initial_params, !empty($header_image_url));
             list($result, $http_code, $curl_error) = $send_meta_curl($payload);
@@ -256,8 +268,9 @@ function sendCustomerOrderConfirmationWhatsApp($conn, $order_id) {
 
                 // Smart Recovery: Parameter Count Mismatch
                 if (!$sent_successfully && ($errCode == 132000 || stripos($fullErr, 'parameter') !== false || stripos($fullErr, 'placeholder') !== false)) {
-                    $retry_sets = [$params_4, $params_5, $params_11];
+                    $retry_sets = [$params_9, $params_11, $params_4, $params_5, $params_bridge];
                     foreach ($retry_sets as $p_set) {
+                        if (empty($p_set)) continue;
                         $payload = $build_payload($tpl_name, $lang_code, $p_set, false);
                         list($result, $http_code, $curl_error) = $send_meta_curl($payload);
                         $meta_response = json_decode($result, true);
