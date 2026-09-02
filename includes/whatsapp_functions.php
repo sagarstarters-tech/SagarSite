@@ -570,6 +570,42 @@ function sendCustomerOrderStatusWhatsApp($conn, $order_id) {
                 ["type" => "text", "text" => (string)$orderAmount],
             ];
 
+            // 9-parameter set (Order Confirmation structure)
+            $params_9 = [
+                ["type" => "text", "text" => (string)$customerName],
+                ["type" => "text", "text" => (string)$order_id],
+                ["type" => "text", "text" => (string)$orderDate],
+                ["type" => "text", "text" => (string)$orderAmount],
+                ["type" => "text", "text" => (string)($order['payment_mode'] ?? 'COD')],
+                ["type" => "text", "text" => (string)$orderStatus],
+                ["type" => "text", "text" => (string)$itemsOrdered],
+                ["type" => "text", "text" => (string)$deliveryAddress],
+                ["type" => "text", "text" => (string)$orderLink],
+            ];
+
+            // 11-parameter set (Admin structure)
+            $params_11 = [
+                ["type" => "text", "text" => (string)$order_id],
+                ["type" => "text", "text" => (string)$orderDate],
+                ["type" => "text", "text" => (string)$orderTime],
+                ["type" => "text", "text" => (string)$customerName],
+                ["type" => "text", "text" => (string)$customerPhone],
+                ["type" => "text", "text" => (string)$orderAmount],
+                ["type" => "text", "text" => (string)($order['payment_mode'] ?? 'COD')],
+                ["type" => "text", "text" => (string)$orderStatus],
+                ["type" => "text", "text" => (string)$deliveryAddress],
+                ["type" => "text", "text" => (string)$itemsOrdered],
+                ["type" => "text", "text" => (string)$orderLink],
+            ];
+
+            // 4-parameter set
+            $params_4 = [
+                ["type" => "text", "text" => (string)$order_id],
+                ["type" => "text", "text" => (string)$customerName],
+                ["type" => "text", "text" => (string)$orderAmount],
+                ["type" => "text", "text" => (string)($order['payment_mode'] ?? 'COD')],
+            ];
+
             // Dynamic bridge parameters
             preg_match_all('/\{(CustomerName|OrderID|OrderStatus|TrackingID|OrderAmount|OrderDate|StatusMessage|ItemsOrdered|DeliveryAddress|ExpectedDelivery|OrderLink)\}/', $bridge_template, $matches);
             $params_bridge = [];
