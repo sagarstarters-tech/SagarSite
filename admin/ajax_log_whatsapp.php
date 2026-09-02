@@ -13,10 +13,13 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
 
 require_once '../includes/whatsapp_functions.php';
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST' && !(isset($_GET['test']) && $_GET['test'] == '1') && !(isset($_GET['test_admin']) && $_GET['test_admin'] == '1')) {
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' && !(isset($_GET['test']) && $_GET['test'] == '1') && !(isset($_GET['test_admin']) && $_GET['test_admin'] == '1') && !(isset($_GET['test_order_confirm']) && $_GET['test_order_confirm'] == '1')) {
     echo json_encode(['success' => false, 'error' => 'Invalid request method']);
     exit;
 }
+
+$is_admin_test         = false;
+$is_order_confirm_test = false;
 
 if (isset($_GET['test_admin']) && $_GET['test_admin'] == '1') {
     // Test Admin Notification
@@ -63,16 +66,28 @@ if (isset($_GET['test_admin']) && $_GET['test_admin'] == '1') {
     $customer_number = $admin_number;
     $message         = $adminMessage;
     $is_admin_test   = true;
+
+} elseif (isset($_GET['test_order_confirm']) && $_GET['test_order_confirm'] == '1') {
+    $sending_mode = 'api';
+    $customer_number = $_GET['number'] ?? '';
+    $message = "Test Customer Order Confirmation notification.";
+    $is_order_confirm_test = true;
+
+    $q = $conn->query("SELECT id FROM orders ORDER BY id DESC LIMIT 1");
+    $order_data = $q ? $q->fetch_assoc() : null;
+    $order_id = $order_data['id'] ?? 1;
+
 } elseif (isset($_GET['test']) && $_GET['test'] == '1') {
     $sending_mode = 'api';
     $customer_number = $_GET['number'] ?? '';
-    $message = "Test message from settings panel.";
+    $message = "Test Customer Order Status notification.";
     $is_admin_test = false;
     
     // Fetch latest order for variables
     $q = $conn->query("SELECT id FROM orders ORDER BY id DESC LIMIT 1");
     $order_data = $q ? $q->fetch_assoc() : null;
     $order_id = $order_data['id'] ?? 1;
+
 } else {
     $order_id        = intval($_POST['order_id'] ?? 0);
     $customer_number = trim($_POST['customer_number'] ?? '');
@@ -112,12 +127,13 @@ if ($sending_mode === 'api') {
     $token = trim($settings['api_token']);
     $phone_id = trim($settings['phone_number_id']);
     
-    // Check if testing admin template or customer template
-    $admin_tpl_override = trim($_GET['admin_template_name'] ?? ($settings['admin_template_name'] ?? ''));
-    if ($is_admin_test && !empty($admin_tpl_override)) {
-        $meta_template_name = $admin_tpl_override;
+    // Check if testing admin template, order confirm template, or status template
+    if ($is_admin_test) {
+        $meta_template_name = trim($_GET['admin_template_name'] ?? ($settings['admin_template_name'] ?? ''));
+    } elseif ($is_order_confirm_test) {
+        $meta_template_name = trim($_GET['template_name'] ?? ($settings['order_confirmation_template_name'] ?? ''));
     } else {
-        $meta_template_name = $settings['meta_template_name'] ?? '';
+        $meta_template_name = trim($_GET['template_name'] ?? ($settings['meta_template_name'] ?? ''));
     }
     
     // Normalize customer/admin number

@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $user = $q->fetch_assoc();
             sendOrderStatusEmail($conn, $id, $user['email'], $user['name'], $status);
             // Trigger automated WhatsApp notification
-            sendAutomatedWhatsApp($conn, $id);
+            sendCustomerOrderStatusWhatsApp($conn, $id);
             // Auto-generate invoice on qualifying status change
             $invoiceService = new InvoiceService($conn);
             $invoiceService->autoGenerateOnStatusChange($id, $status);

@@ -27,174 +27,607 @@ function normalize_whatsapp_phone_number($phone) {
     return $digits;
 }
 
-function sendAutomatedWhatsApp($conn, $order_id) {
-    // Check if feature is globally enabled
-    $set_q = $conn->query("SELECT * FROM whatsapp_settings WHERE id = 1");
-    if (!$set_q || $set_q->num_rows === 0) return false;
-    
-    $settings = $set_q->fetch_assoc();
-    
-    // Auto-notifications ONLY for API mode, and must be enabled
-    if ($settings['is_enabled'] != 1 || $settings['sending_mode'] !== 'api') {
-        return false;
-    }
-    
-    if (empty($settings['api_token']) || empty($settings['phone_number_id'])) {
-        error_log("WhatsApp Auto-Send Failed: Missing API token or Phone ID");
-        return false;
-    }
+/**
+ * Send WhatsApp notification to CUSTOMER when an order is placed/confirmed.
+ *
+ * @param mysqli $conn     Database connection
+ * @param int    $order_id The order ID
+ * @return bool  True if sent successfully
+ */
+function sendCustomerOrderConfirmationWhatsApp($conn, $order_id) {
+    try {
+        // Ensure settings columns exist
+        $conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS order_confirmation_enabled TINYINT(1) NOT NULL DEFAULT 1");
+        $conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS order_confirmation_template_name VARCHAR(100) NOT NULL DEFAULT ''");
+        $conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS order_confirmation_message_template TEXT NOT NULL DEFAULT ''");
 
-    // Fetch Order details
-    $order_id = intval($order_id);
-    $q = $conn->query("
-        SELECT o.status, o.total_amount, u.name, u.phone, 
-               (SELECT tracking_number FROM order_tracking WHERE order_id = o.id LIMIT 1) as tracking_number
-        FROM orders o 
-        JOIN users u ON o.user_id = u.id 
-        WHERE o.id = $order_id
-    ");
-
-    if (!$q || $q->num_rows === 0) return false;
-    $order = $q->fetch_assoc();
-
-    // Prepare variables
-    $customerName = trim($order['name']);
-    $customerPhone = trim($order['phone']);
-    $orderStatus = ucwords(str_replace('_', ' ', $order['status'] ?? 'Processing'));
-    $trackingID = !empty($order['tracking_number']) ? $order['tracking_number'] : 'N/A';
-    $orderAmount = number_format($order['total_amount'] ?? 0, 2);
-
-    $clean_number = normalize_whatsapp_phone_number($customerPhone);
-    if (empty($clean_number)) return false;
-
-    // Parse Template variables for payload and default text message
-    $message = $settings['message_template'];
-    $replacementValues = [
-        '{CustomerName}' => $customerName,
-        '{OrderID}'      => $order_id,
-        '{OrderStatus}'  => $orderStatus,
-        '{TrackingID}'   => $trackingID,
-        '{OrderAmount}'  => $orderAmount
-    ];
-    
-    // Create old style text message for fallback and logging
-    foreach ($replacementValues as $search => $replace) {
-        $message = str_replace($search, $replace, $message);
-    }
-    
-    // Prepare Meta API Payload
-    $token = trim($settings['api_token']);
-    $phone_id = trim($settings['phone_number_id']);
-    $url = "https://graph.facebook.com/v21.0/{$phone_id}/messages";
-    
-    $meta_template_name = trim($settings['meta_template_name'] ?? '');
-    if (!empty($meta_template_name)) {
-        // --- TEMPLATE MODE ---
-        preg_match_all('/\{(CustomerName|OrderID|OrderStatus|TrackingID|OrderAmount)\}/', $settings['message_template'], $matches);
+        // Fetch settings
+        $set_q = $conn->query("SELECT * FROM whatsapp_settings WHERE id = 1");
+        if (!$set_q || $set_q->num_rows === 0) return false;
         
-        $params = [];
-        if (!empty($matches[0])) {
-            foreach ($matches[0] as $varKey) {
-                $params[] = ["type" => "text", "text" => (string)$replacementValues[$varKey]];
+        $settings = $set_q->fetch_assoc();
+        
+        if ($settings['is_enabled'] != 1 || $settings['sending_mode'] !== 'api') {
+            return false;
+        }
+        if (isset($settings['order_confirmation_enabled']) && $settings['order_confirmation_enabled'] == 0) {
+            return false;
+        }
+        if (empty($settings['api_token']) || empty($settings['phone_number_id'])) {
+            error_log("[WhatsApp] Customer Order Confirmation Failed: Missing API token or Phone ID");
+            return false;
+        }
+
+        // Fetch order details
+        $order_id = intval($order_id);
+        $q = $conn->query("
+            SELECT o.id, o.status, o.total_amount, o.payment_mode, o.created_at,
+                   u.name AS customer_name, u.phone AS customer_phone, u.email AS customer_email,
+                   u.address AS customer_address, u.city AS customer_city, u.state AS customer_state, u.zip_code AS customer_zip
+            FROM orders o 
+            JOIN users u ON o.user_id = u.id 
+            WHERE o.id = $order_id
+        ");
+
+        if (!$q || $q->num_rows === 0) return false;
+        $order = $q->fetch_assoc();
+
+        $customerName  = trim($order['customer_name'] ?? 'Customer');
+        $customerPhone = trim($order['customer_phone'] ?? '');
+        $orderAmount   = number_format((float)($order['total_amount'] ?? 0), 2);
+        $paymentMode   = strtoupper($order['payment_mode'] ?? 'COD');
+        $orderStatus   = ucwords(str_replace('_', ' ', $order['status'] ?? 'Pending'));
+        $orderDate     = date('d M Y', strtotime($order['created_at']));
+        $orderTime     = date('h:i A', strtotime($order['created_at']));
+
+        $clean_number = normalize_whatsapp_phone_number($customerPhone);
+        if (empty($clean_number)) return false;
+
+        // Address
+        $addressParts = array_filter([
+            trim($order['customer_address'] ?? ''),
+            trim($order['customer_city'] ?? ''),
+            trim($order['customer_state'] ?? ''),
+            trim($order['customer_zip'] ?? '')
+        ]);
+        $deliveryAddress = !empty($addressParts) ? implode(', ', $addressParts) : 'N/A';
+
+        // Order Items List
+        $itemsList = [];
+        $items_res = $conn->query("
+            SELECT oi.quantity, oi.price, p.name as product_name
+            FROM order_items oi
+            LEFT JOIN products p ON oi.product_id = p.id
+            WHERE oi.order_id = $order_id
+        ");
+        if ($items_res && $items_res->num_rows > 0) {
+            while ($itm = $items_res->fetch_assoc()) {
+                $pName = trim($itm['product_name'] ?? 'Product');
+                $qty   = (int)($itm['quantity'] ?? 1);
+                $itemsList[] = "• {$pName} ({$qty}x)";
+            }
+        }
+        $itemsOrdered = !empty($itemsList) ? implode("\n", $itemsList) : "Order #$order_id";
+
+        $siteUrl = defined('SITE_URL') ? rtrim(SITE_URL, '/') : 'https://sagarstarters.com';
+        $orderLink = $siteUrl . '/my-orders.php';
+
+        // Bridge & Text Message Template
+        $bridge_template = !empty($settings['order_confirmation_message_template']) 
+            ? $settings['order_confirmation_message_template']
+            : "Hello Dear {CustomerName},\n\nThank you for your order! Your Order #{OrderID} has been successfully placed.\n\nOrder Date: {OrderDate}\nTotal Amount: ₹{OrderAmount}\nPayment: {PaymentMethod}\n\nDelivery Address:\n{DeliveryAddress}\n\nThank you for shopping with Sagar Starter's!";
+
+        $replacementValues = [
+            '{CustomerName}'  => $customerName,
+            '{OrderID}'       => $order_id,
+            '{OrderDate}'     => $orderDate,
+            '{OrderTime}'     => $orderTime,
+            '{OrderAmount}'   => $orderAmount,
+            '{PaymentMethod}' => $paymentMode,
+            '{OrderStatus}'   => $orderStatus,
+            '{DeliveryAddress}' => $deliveryAddress,
+            '{ItemsOrdered}'  => $itemsOrdered,
+            '{OrderLink}'     => $orderLink
+        ];
+
+        $message = $bridge_template;
+        foreach ($replacementValues as $k => $v) {
+            $message = str_replace($k, $v, $message);
+        }
+
+        $token    = trim($settings['api_token']);
+        $phone_id = trim($settings['phone_number_id']);
+        $url      = "https://graph.facebook.com/v21.0/{$phone_id}/messages";
+
+        $send_meta_curl = function($pay) use ($url, $token) {
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [
+                CURLOPT_POSTFIELDS     => json_encode($pay),
+                CURLOPT_HTTPHEADER     => [
+                    'Authorization: Bearer ' . $token,
+                    'Content-Type: application/json'
+                ],
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT        => 15,
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_SSL_VERIFYHOST => 0,
+            ]);
+            $res  = curl_exec($ch);
+            $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $err  = curl_error($ch);
+            curl_close($ch);
+            return [$res, $code, $err];
+        };
+
+        $tpl_name = trim($settings['order_confirmation_template_name'] ?? '');
+        $header_image_url = trim($settings['wa_header_image_url'] ?? '');
+        $lang_code = trim($settings['meta_template_lang'] ?? 'en');
+        if (empty($lang_code)) $lang_code = 'en';
+
+        $result = '';
+        $http_code = 0;
+        $curl_error = '';
+        $payload = [];
+        $sent_successfully = false;
+
+        if (!empty($tpl_name)) {
+            $build_payload = function($tName, $lang, $paramList, $includeHeaderImg) use ($clean_number, $header_image_url) {
+                $components = [
+                    [
+                        "type" => "body",
+                        "parameters" => $paramList
+                    ]
+                ];
+                if ($includeHeaderImg && !empty($header_image_url)) {
+                    array_unshift($components, [
+                        "type" => "header",
+                        "parameters" => [
+                            [
+                                "type" => "image",
+                                "image" => ["link" => $header_image_url]
+                            ]
+                        ]
+                    ]);
+                }
+                return [
+                    "messaging_product" => "whatsapp",
+                    "recipient_type"    => "individual",
+                    "to"                => $clean_number,
+                    "type"              => "template",
+                    "template"          => [
+                        "name"       => $tName,
+                        "language"   => ["code" => $lang],
+                        "components" => $components
+                    ]
+                ];
+            };
+
+            // Standard parameter sets for order confirmation:
+            $params_bridge = [];
+            preg_match_all('/\{(CustomerName|OrderID|OrderDate|OrderTime|OrderAmount|PaymentMethod|OrderStatus|DeliveryAddress|ItemsOrdered|OrderLink)\}/', $bridge_template, $matches);
+            if (!empty($matches[0])) {
+                foreach ($matches[0] as $varKey) {
+                    $params_bridge[] = ["type" => "text", "text" => (string)($replacementValues[$varKey] ?? '')];
+                }
+            }
+
+            $params_11 = [
+                ["type" => "text", "text" => (string)$order_id],
+                ["type" => "text", "text" => (string)$orderDate],
+                ["type" => "text", "text" => (string)$orderTime],
+                ["type" => "text", "text" => (string)$customerName],
+                ["type" => "text", "text" => (string)$customerPhone],
+                ["type" => "text", "text" => (string)$orderAmount],
+                ["type" => "text", "text" => (string)$paymentMode],
+                ["type" => "text", "text" => (string)$orderStatus],
+                ["type" => "text", "text" => (string)$deliveryAddress],
+                ["type" => "text", "text" => (string)$itemsOrdered],
+                ["type" => "text", "text" => (string)$orderLink],
+            ];
+
+            $params_4 = [
+                ["type" => "text", "text" => (string)$order_id],
+                ["type" => "text", "text" => (string)$customerName],
+                ["type" => "text", "text" => (string)$orderAmount],
+                ["type" => "text", "text" => (string)$paymentMode],
+            ];
+
+            $params_5 = [
+                ["type" => "text", "text" => (string)$order_id],
+                ["type" => "text", "text" => (string)$customerName],
+                ["type" => "text", "text" => (string)$customerPhone],
+                ["type" => "text", "text" => (string)$orderAmount],
+                ["type" => "text", "text" => (string)$paymentMode],
+            ];
+
+            $initial_params = !empty($params_bridge) ? $params_bridge : $params_4;
+
+            $payload = $build_payload($tpl_name, $lang_code, $initial_params, !empty($header_image_url));
+            list($result, $http_code, $curl_error) = $send_meta_curl($payload);
+            $meta_response = json_decode($result, true);
+
+            if ($http_code == 200 && isset($meta_response['messages'])) {
+                $sent_successfully = true;
+            } else {
+                $errMsg     = $meta_response['error']['message'] ?? '';
+                $errDetails = $meta_response['error']['error_data']['details'] ?? '';
+                $errCode    = (int)($meta_response['error']['code'] ?? 0);
+                $fullErr    = $errMsg . ' ' . $errDetails;
+
+                // Smart Recovery: Parameter Count Mismatch
+                if (!$sent_successfully && ($errCode == 132000 || stripos($fullErr, 'parameter') !== false || stripos($fullErr, 'placeholder') !== false)) {
+                    $retry_sets = [$params_4, $params_5, $params_11];
+                    foreach ($retry_sets as $p_set) {
+                        $payload = $build_payload($tpl_name, $lang_code, $p_set, false);
+                        list($result, $http_code, $curl_error) = $send_meta_curl($payload);
+                        $meta_response = json_decode($result, true);
+                        if ($http_code == 200 && isset($meta_response['messages'])) {
+                            $sent_successfully = true;
+                            break;
+                        }
+                    }
+                }
+
+                // Smart Recovery: Header Mismatch
+                if (!$sent_successfully && (stripos($fullErr, 'header') !== false || stripos($fullErr, 'components[0]') !== false)) {
+                    if (stripos($fullErr, 'IMAGE') !== false || stripos($fullErr, 'expected') !== false) {
+                        $fallback_img = !empty($header_image_url) ? $header_image_url : 'https://sagarstarters.com/assets/images/auth_banner.jpg';
+                        $payload = $build_payload($tpl_name, $lang_code, $initial_params, true);
+                    } else {
+                        $payload = $build_payload($tpl_name, $lang_code, $initial_params, false);
+                    }
+                    list($result, $http_code, $curl_error) = $send_meta_curl($payload);
+                    $meta_response = json_decode($result, true);
+                    if ($http_code == 200 && isset($meta_response['messages'])) {
+                        $sent_successfully = true;
+                    }
+                }
+
+                // Smart Recovery: Language code mismatch (en vs en_US)
+                if (!$sent_successfully && ($errCode == 132001 || stripos($fullErr, 'does not exist') !== false || stripos($fullErr, 'language') !== false)) {
+                    $alt_lang = ($lang_code === 'en') ? 'en_US' : 'en';
+                    $payload = $build_payload($tpl_name, $alt_lang, $initial_params, false);
+                    list($result, $http_code, $curl_error) = $send_meta_curl($payload);
+                    $meta_response = json_decode($result, true);
+                    if ($http_code == 200 && isset($meta_response['messages'])) {
+                        $sent_successfully = true;
+                    }
+                }
+            }
+        }
+
+        // Final Fallback: Direct text message
+        if (!$sent_successfully) {
+            $text_payload = [
+                "messaging_product" => "whatsapp",
+                "recipient_type"    => "individual",
+                "to"                => $clean_number,
+                "type"              => "text",
+                "text"              => ["preview_url" => false, "body" => $message]
+            ];
+            list($text_result, $text_code, $text_err) = $send_meta_curl($text_payload);
+            $text_meta = json_decode($text_result, true);
+            if ($text_code == 200 && isset($text_meta['messages'])) {
+                $payload   = $text_payload;
+                $result    = $text_result;
+                $http_code = $text_code;
+                $sent_successfully = true;
+            }
+        }
+
+        // Log to file
+        $log_dir = __DIR__ . '/../logs';
+        if (!is_dir($log_dir)) mkdir($log_dir, 0755, true);
+        $log_entry  = '[' . date('Y-m-d H:i:s') . "] Customer-OrderConfirm#$order_id HTTP:{$http_code} To:{$clean_number}" . PHP_EOL;
+        $log_entry .= "Payload: " . json_encode($payload) . PHP_EOL;
+        $log_entry .= "Response: " . $result . PHP_EOL;
+        $log_entry .= str_repeat('-', 60) . PHP_EOL;
+        file_put_contents($log_dir . '/whatsapp_api.log', $log_entry, FILE_APPEND);
+
+        $status_msg = '';
+        if ($curl_error) {
+            error_log("[WhatsApp] Customer Order Confirm Error Order#$order_id: $curl_error");
+            $status_msg = 'Order Confirm Failed: cURL - ' . substr($curl_error, 0, 80);
+        } else {
+            $meta_response = json_decode($result, true);
+            if ($http_code == 200 && isset($meta_response['messages'])) {
+                $msg_id     = $meta_response['messages'][0]['id'] ?? 'unknown';
+                $status_msg = 'Customer Order Confirmation Sent (ID: ' . substr($msg_id, 0, 20) . ')';
+            } else {
+                $error_desc = $meta_response['error']['message'] ?? 'Unknown Meta API Error';
+                $error_code = $meta_response['error']['code'] ?? 'N/A';
+                $status_msg = "Order Confirm Failed: (#{$error_code}) " . substr($error_desc, 0, 80);
+                file_put_contents($log_dir . '/whatsapp_errors.log', $log_entry, FILE_APPEND);
+            }
+        }
+
+        $conn->query("INSERT INTO whatsapp_logs (order_id, customer_number, message, sending_mode, status) 
+            VALUES ($order_id, '$clean_number', '" . $conn->real_escape_string($message) . "', 'api', '" . $conn->real_escape_string($status_msg) . "')");
+
+        return $sent_successfully;
+
+    } catch (Exception $e) {
+        error_log("[WhatsApp] Customer Order Confirmation Exception Order#$order_id: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Send WhatsApp notification to CUSTOMER when an order status is updated (Shipped, Delivered, etc.).
+ *
+ * @param mysqli $conn     Database connection
+ * @param int    $order_id The order ID
+ * @return bool  True if sent successfully
+ */
+function sendCustomerOrderStatusWhatsApp($conn, $order_id) {
+    try {
+        $conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS order_status_notify_enabled TINYINT(1) NOT NULL DEFAULT 1");
+
+        $set_q = $conn->query("SELECT * FROM whatsapp_settings WHERE id = 1");
+        if (!$set_q || $set_q->num_rows === 0) return false;
+        
+        $settings = $set_q->fetch_assoc();
+        
+        if ($settings['is_enabled'] != 1 || $settings['sending_mode'] !== 'api') {
+            return false;
+        }
+        if (isset($settings['order_status_notify_enabled']) && $settings['order_status_notify_enabled'] == 0) {
+            return false;
+        }
+        if (empty($settings['api_token']) || empty($settings['phone_number_id'])) {
+            error_log("WhatsApp Status-Send Failed: Missing API token or Phone ID");
+            return false;
+        }
+
+        // Fetch Order details
+        $order_id = intval($order_id);
+        $q = $conn->query("
+            SELECT o.id, o.status, o.total_amount, o.created_at, u.name, u.phone, 
+                   (SELECT tracking_number FROM order_tracking WHERE order_id = o.id LIMIT 1) as tracking_number
+            FROM orders o 
+            JOIN users u ON o.user_id = u.id 
+            WHERE o.id = $order_id
+        ");
+
+        if (!$q || $q->num_rows === 0) return false;
+        $order = $q->fetch_assoc();
+
+        $customerName  = trim($order['name'] ?? 'Customer');
+        $customerPhone = trim($order['phone'] ?? '');
+        $orderStatus   = ucwords(str_replace('_', ' ', $order['status'] ?? 'Processing'));
+        $trackingID    = !empty($order['tracking_number']) ? $order['tracking_number'] : 'N/A';
+        $orderAmount   = number_format((float)($order['total_amount'] ?? 0), 2);
+        $orderDate     = date('d M Y', strtotime($order['created_at']));
+
+        $clean_number = normalize_whatsapp_phone_number($customerPhone);
+        if (empty($clean_number)) return false;
+
+        $bridge_template = !empty($settings['message_template']) 
+            ? $settings['message_template'] 
+            : "Hello Dear {CustomerName},\n\nYour Order No. #{OrderID} status has been updated.\n\nCurrent Status: *{OrderStatus}*\nTracking ID: {TrackingID}\nTotal Amount: ₹{OrderAmount}\n\nThank you for shopping with us.";
+
+        $replacementValues = [
+            '{CustomerName}' => $customerName,
+            '{OrderID}'      => $order_id,
+            '{OrderStatus}'  => $orderStatus,
+            '{TrackingID}'   => $trackingID,
+            '{OrderAmount}'  => $orderAmount,
+            '{OrderDate}'    => $orderDate
+        ];
+        
+        $message = $bridge_template;
+        foreach ($replacementValues as $search => $replace) {
+            $message = str_replace($search, $replace, $message);
+        }
+        
+        $token    = trim($settings['api_token']);
+        $phone_id = trim($settings['phone_number_id']);
+        $url      = "https://graph.facebook.com/v21.0/{$phone_id}/messages";
+
+        $send_meta_curl = function($pay) use ($url, $token) {
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [
+                CURLOPT_POSTFIELDS     => json_encode($pay),
+                CURLOPT_HTTPHEADER     => [
+                    'Authorization: Bearer ' . $token,
+                    'Content-Type: application/json'
+                ],
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT        => 15,
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_SSL_VERIFYHOST => 0,
+            ]);
+            $res  = curl_exec($ch);
+            $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $err  = curl_error($ch);
+            curl_close($ch);
+            return [$res, $code, $err];
+        };
+
+        $meta_template_name = trim($settings['meta_template_name'] ?? '');
+        $header_image_url   = trim($settings['wa_header_image_url'] ?? '');
+        $lang_code          = trim($settings['meta_template_lang'] ?? 'en');
+        if (empty($lang_code)) $lang_code = 'en';
+
+        $result = '';
+        $http_code = 0;
+        $curl_error = '';
+        $payload = [];
+        $sent_successfully = false;
+
+        if (!empty($meta_template_name)) {
+            $build_payload = function($tName, $lang, $paramList, $includeHeaderImg) use ($clean_number, $header_image_url) {
+                $components = [
+                    [
+                        "type" => "body",
+                        "parameters" => $paramList
+                    ]
+                ];
+                if ($includeHeaderImg && !empty($header_image_url)) {
+                    array_unshift($components, [
+                        "type" => "header",
+                        "parameters" => [
+                            [
+                                "type" => "image",
+                                "image" => ["link" => $header_image_url]
+                            ]
+                        ]
+                    ]);
+                }
+                return [
+                    "messaging_product" => "whatsapp",
+                    "recipient_type"    => "individual",
+                    "to"                => $clean_number,
+                    "type"              => "template",
+                    "template"          => [
+                        "name"       => $tName,
+                        "language"   => ["code" => $lang],
+                        "components" => $components
+                    ]
+                ];
+            };
+
+            // Map variables from bridge text order
+            preg_match_all('/\{(CustomerName|OrderID|OrderStatus|TrackingID|OrderAmount|OrderDate)\}/', $bridge_template, $matches);
+            $params_bridge = [];
+            if (!empty($matches[0])) {
+                foreach ($matches[0] as $varKey) {
+                    $params_bridge[] = ["type" => "text", "text" => (string)($replacementValues[$varKey] ?? '')];
+                }
+            }
+
+            $params_default = [
+                ["type" => "text", "text" => (string)$customerName],
+                ["type" => "text", "text" => (string)$order_id],
+                ["type" => "text", "text" => (string)$orderStatus],
+                ["type" => "text", "text" => (string)$trackingID],
+                ["type" => "text", "text" => (string)$orderAmount],
+            ];
+
+            $initial_params = !empty($params_bridge) ? $params_bridge : $params_default;
+
+            $payload = $build_payload($meta_template_name, $lang_code, $initial_params, !empty($header_image_url));
+            list($result, $http_code, $curl_error) = $send_meta_curl($payload);
+            $meta_response = json_decode($result, true);
+
+            if ($http_code == 200 && isset($meta_response['messages'])) {
+                $sent_successfully = true;
+            } else {
+                $errMsg     = $meta_response['error']['message'] ?? '';
+                $errDetails = $meta_response['error']['error_data']['details'] ?? '';
+                $errCode    = (int)($meta_response['error']['code'] ?? 0);
+                $fullErr    = $errMsg . ' ' . $errDetails;
+
+                // Smart Recovery 1: Parameter Count Mismatch
+                if (!$sent_successfully && ($errCode == 132000 || stripos($fullErr, 'parameter') !== false || stripos($fullErr, 'placeholder') !== false)) {
+                    $alt_params = ($initial_params === $params_bridge) ? $params_default : $params_bridge;
+                    $payload = $build_payload($meta_template_name, $lang_code, $alt_params, false);
+                    list($result, $http_code, $curl_error) = $send_meta_curl($payload);
+                    $meta_response = json_decode($result, true);
+                    if ($http_code == 200 && isset($meta_response['messages'])) {
+                        $sent_successfully = true;
+                    }
+                }
+
+                // Smart Recovery 2: Header Mismatch
+                if (!$sent_successfully && (stripos($fullErr, 'header') !== false || stripos($fullErr, 'components[0]') !== false)) {
+                    if (stripos($fullErr, 'IMAGE') !== false || stripos($fullErr, 'expected') !== false) {
+                        $fallback_img = !empty($header_image_url) ? $header_image_url : 'https://sagarstarters.com/assets/images/auth_banner.jpg';
+                        $payload = $build_payload($meta_template_name, $lang_code, $initial_params, true);
+                    } else {
+                        $payload = $build_payload($meta_template_name, $lang_code, $initial_params, false);
+                    }
+                    list($result, $http_code, $curl_error) = $send_meta_curl($payload);
+                    $meta_response = json_decode($result, true);
+                    if ($http_code == 200 && isset($meta_response['messages'])) {
+                        $sent_successfully = true;
+                    }
+                }
+
+                // Smart Recovery 3: Language code mismatch
+                if (!$sent_successfully && ($errCode == 132001 || stripos($fullErr, 'does not exist') !== false || stripos($fullErr, 'language') !== false)) {
+                    $alt_lang = ($lang_code === 'en') ? 'en_US' : 'en';
+                    $payload = $build_payload($meta_template_name, $alt_lang, $initial_params, false);
+                    list($result, $http_code, $curl_error) = $send_meta_curl($payload);
+                    $meta_response = json_decode($result, true);
+                    if ($http_code == 200 && isset($meta_response['messages'])) {
+                        $sent_successfully = true;
+                    }
+                }
+            }
+        }
+
+        // Final Fallback: Direct text message
+        if (!$sent_successfully) {
+            $text_payload = [
+                "messaging_product" => "whatsapp",
+                "recipient_type"    => "individual",
+                "to"                => $clean_number,
+                "type"              => "text",
+                "text"              => ["preview_url" => false, "body" => $message]
+            ];
+            list($text_result, $text_code, $text_err) = $send_meta_curl($text_payload);
+            $text_meta = json_decode($text_result, true);
+            if ($text_code == 200 && isset($text_meta['messages'])) {
+                $payload   = $text_payload;
+                $result    = $text_result;
+                $http_code = $text_code;
+                $sent_successfully = true;
+            }
+        }
+
+        // Always log every API call for diagnosis
+        $log_dir = __DIR__ . '/../logs';
+        if (!is_dir($log_dir)) mkdir($log_dir, 0755, true);
+        $log_entry  = '[' . date('Y-m-d H:i:s') . "] Status-Update Order#$order_id HTTP:{$http_code} To:{$clean_number}" . PHP_EOL;
+        $log_entry .= "Payload: " . json_encode($payload) . PHP_EOL;
+        $log_entry .= "Response: " . $result . PHP_EOL;
+        $log_entry .= str_repeat('-', 60) . PHP_EOL;
+        file_put_contents($log_dir . '/whatsapp_api.log', $log_entry, FILE_APPEND);
+        
+        $status_msg = "";
+        if ($curl_error) {
+            error_log("[WhatsApp] Status-Send cURL Error Order#$order_id: $curl_error");
+            $status_msg = 'Status Failed: cURL - ' . substr($curl_error, 0, 80);
+        } else {
+            $meta_response = json_decode($result, true);
+            if ($http_code == 200 && isset($meta_response['messages'])) {
+                $msg_id     = $meta_response['messages'][0]['id'] ?? 'unknown';
+                $status_msg = "Sent Status Update: {$orderStatus} (ID: " . substr($msg_id, 0, 20) . ')';
+            } else {
+                $error_desc = $meta_response['error']['message'] ?? 'Unknown Meta API Error';
+                $error_code = $meta_response['error']['code'] ?? 'N/A';
+                $status_msg = "Status Failed: (#{$error_code}) " . substr($error_desc, 0, 80);
+                file_put_contents($log_dir . '/whatsapp_errors.log', $log_entry, FILE_APPEND);
             }
         }
         
-        // Build components array (body is always included)
-        $components = [
-            [
-                "type" => "body",
-                "parameters" => $params
-            ]
-        ];
+        // Log to Database
+        $conn->query("INSERT INTO whatsapp_logs (order_id, customer_number, message, sending_mode, status) 
+            VALUES ($order_id, '$clean_number', '" . $conn->real_escape_string($message) . "', 'api', '" . $conn->real_escape_string($status_msg) . "')");
         
-        // Add header image component if configured
-        $header_image_url = trim($settings['wa_header_image_url'] ?? '');
-        if (!empty($header_image_url)) {
-            array_unshift($components, [
-                "type" => "header",
-                "parameters" => [
-                    [
-                        "type" => "image",
-                        "image" => ["link" => $header_image_url]
-                    ]
-                ]
-            ]);
-        }
-        
-        $payload = [
-            "messaging_product" => "whatsapp",
-            "recipient_type"    => "individual",
-            "to"                => $clean_number,
-            "type"              => "template",
-            "template"          => [
-                "name"     => $meta_template_name,
-                "language" => ["code" => trim($settings['meta_template_lang'] ?? 'en')],
-                "components" => $components
-            ]
-        ];
-    } else {
-        // --- TEXT MODE ---
-        $payload = [
-            "messaging_product" => "whatsapp",
-            "recipient_type"    => "individual",
-            "to"                => $clean_number,
-            "type"              => "text",
-            "text"              => ["preview_url" => false, "body" => $message]
-        ];
-    }
+        return $sent_successfully;
 
-    $ch = curl_init($url);
-    curl_setopt_array($ch, [
-        CURLOPT_POSTFIELDS     => json_encode($payload),
-        CURLOPT_HTTPHEADER     => [
-            'Authorization: Bearer ' . $token,
-            'Content-Type: application/json'
-        ],
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT        => 15,
-        CURLOPT_SSL_VERIFYPEER => false,
-        CURLOPT_SSL_VERIFYHOST => 0,
-    ]);
-    
-    $result     = curl_exec($ch);
-    $http_code  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curl_error = curl_error($ch);
-    curl_close($ch);
-    
-    // Always log every API call for diagnosis
-    $log_dir = __DIR__ . '/../logs';
-    if (!is_dir($log_dir)) mkdir($log_dir, 0755, true);
-    $log_entry = '[' . date('Y-m-d H:i:s') . "] Auto-Send Order#$order_id HTTP:{$http_code} To:{$clean_number}" . PHP_EOL;
-    $log_entry .= "Payload: " . json_encode($payload) . PHP_EOL;
-    $log_entry .= "Response: " . $result . PHP_EOL;
-    $log_entry .= str_repeat('-', 60) . PHP_EOL;
-    file_put_contents($log_dir . '/whatsapp_api.log', $log_entry, FILE_APPEND);
-    
-    if ($curl_error) {
-        error_log("[WhatsApp] cURL Error Order#$order_id: $curl_error");
-        $conn->query("INSERT INTO whatsapp_logs (order_id, customer_number, message, sending_mode, status) VALUES ($order_id, '$clean_number', '" . $conn->real_escape_string($message) . "', 'api', 'Failed: cURL - " . $conn->real_escape_string(substr($curl_error,0,80)) . "')");
+    } catch (Exception $e) {
+        error_log("[WhatsApp] Status-Send Exception Order#$order_id: " . $e->getMessage());
         return false;
     }
-    
-    $meta_response = json_decode($result, true);
-    $status_msg = "";
+}
 
-    if ($http_code == 200 && isset($meta_response['messages'])) {
-        $msg_id  = $meta_response['messages'][0]['id'] ?? 'unknown';
-        $status_msg = 'Sent via Meta API (Auto) ID:' . substr($msg_id, 0, 20);
-    } else {
-        $error_desc = $meta_response['error']['message'] ?? 'Connection error or unknown Meta API Error';
-        $error_code = $meta_response['error']['code'] ?? 'N/A';
-        $status_msg = "Failed API (Auto): (#{$error_code}) " . substr($error_desc, 0, 100);
-        
-        // Log deep error for admin
-        file_put_contents($log_dir . '/whatsapp_errors.log', $log_entry, FILE_APPEND);
+/**
+ * Unified Automated WhatsApp dispatcher.
+ * Backwards compatible with all existing call sites.
+ *
+ * @param mysqli $conn     Database connection
+ * @param int    $order_id The order ID
+ * @param string $type     'order_confirmation' or 'status_update'
+ * @return bool  True if sent successfully
+ */
+function sendAutomatedWhatsApp($conn, $order_id, $type = 'status_update') {
+    if ($type === 'order_confirmation') {
+        return sendCustomerOrderConfirmationWhatsApp($conn, $order_id);
     }
-    
-    // Log to Database
-    $conn->query("INSERT INTO whatsapp_logs (order_id, customer_number, message, sending_mode, status) VALUES ($order_id, '$clean_number', '" . $conn->real_escape_string($message) . "', 'api', '$status_msg')");
-    
-    return $http_code == 200;
+    return sendCustomerOrderStatusWhatsApp($conn, $order_id);
 }
 
 /**

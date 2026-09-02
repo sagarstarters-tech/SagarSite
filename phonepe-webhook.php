@@ -115,7 +115,7 @@ if ($finalStatus === 'SUCCESS') {
 
         // WhatsApp Notifications (Customer & Admin)
         require_once 'includes/whatsapp_functions.php';
-        sendAutomatedWhatsApp($conn, $order_id);
+        sendCustomerOrderConfirmationWhatsApp($conn, $order_id);
         sendAdminOrderNotification($conn, $order_id);
 
         // Queue for background courier sync (fail-safe)

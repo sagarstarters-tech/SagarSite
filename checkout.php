@@ -404,7 +404,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             sendOrderConfirmationEmail($conn, $order_id, $customer_email, $customer_name, $cart_items, $grand_total, $global_currency, $payment_method);
             
             require_once __DIR__ . '/includes/whatsapp_functions.php';
-            sendAutomatedWhatsApp($conn, $order_id);
+            sendCustomerOrderConfirmationWhatsApp($conn, $order_id);
             sendAdminOrderNotification($conn, $order_id);
             
             require_once 'tracking_module_src/src/Config/TrackingConfig.php';

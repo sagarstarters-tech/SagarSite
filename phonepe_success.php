@@ -122,7 +122,7 @@ if (strtoupper($code) === 'PAYMENT_SUCCESS' || strtoupper($code) === 'SUCCESS') 
 
             // WhatsApp Hook
             require_once 'includes/whatsapp_functions.php';
-            sendAutomatedWhatsApp($conn, $order_id);
+            sendCustomerOrderConfirmationWhatsApp($conn, $order_id);
             sendAdminOrderNotification($conn, $order_id);
 
             // Queue for background courier sync (fail-safe)

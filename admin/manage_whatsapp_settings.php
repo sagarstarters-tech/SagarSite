@@ -1,7 +1,7 @@
 <?php
 require_once 'admin_header.php';
 
-// Ensure chat widget columns exist (safe to run every time)
+// Ensure all settings columns exist (safe migration on load)
 $conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS chat_widget_enabled TINYINT(1) NOT NULL DEFAULT 1");
 $conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS chat_widget_number VARCHAR(20) NOT NULL DEFAULT ''");
 $conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS chat_widget_message VARCHAR(255) NOT NULL DEFAULT 'Hello, I have a question about your products.'");
@@ -10,64 +10,99 @@ $conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS meta_templa
 $conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS meta_template_lang VARCHAR(10) NOT NULL DEFAULT 'en'");
 $conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS waba_id VARCHAR(50) NOT NULL DEFAULT ''");
 $conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS wa_header_image_url VARCHAR(500) NOT NULL DEFAULT ''");
-// Admin notification columns (safe migration)
 $conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS admin_whatsapp_number VARCHAR(20) NOT NULL DEFAULT ''");
 $conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS admin_notify_on_new_order TINYINT(1) NOT NULL DEFAULT 1");
+$conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS admin_template_name VARCHAR(100) NOT NULL DEFAULT ''");
+$conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS order_confirmation_enabled TINYINT(1) NOT NULL DEFAULT 1");
+$conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS order_confirmation_template_name VARCHAR(100) NOT NULL DEFAULT ''");
+$conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS order_confirmation_message_template TEXT NOT NULL DEFAULT ''");
+$conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS order_status_notify_enabled TINYINT(1) NOT NULL DEFAULT 1");
 
 // Fetch current settings
 $settings_query = "SELECT * FROM whatsapp_settings WHERE id = 1";
 $result = $conn->query($settings_query);
-$settings = $result->fetch_assoc();
+$settings = $result ? $result->fetch_assoc() : null;
+
+$default_order_confirm_tpl = "Hello Dear {CustomerName},\n\nThank you for your order! Your Order #{OrderID} has been successfully placed.\n\nOrder Date: {OrderDate}\nTotal Amount: ₹{OrderAmount}\nPayment Method: {PaymentMethod}\n\nDelivery Address:\n{DeliveryAddress}\n\nThank you for shopping with Sagar Starter's!";
 
 if (!$settings) {
-    // Failsafe insert if missing
-    $conn->query("INSERT IGNORE INTO whatsapp_settings (id, message_template) VALUES (1, 'Hello Dear {CustomerName},\n\nYour Order No. #{OrderID} status has been updated.\n\nCurrent Status: *{OrderStatus}*\nTracking ID: {TrackingID}\nTotal Amount: ₹{OrderAmount}\n\n{CustomerName} Thank you for shopping with us.')");
-    $settings = ['is_enabled'=>1, 'sender_number'=>'', 'api_token'=>'', 'sending_mode'=>'web', 'message_template'=>'Hello Dear {CustomerName},\n\nYour Order No. #{OrderID} status has been updated.\n\nCurrent Status: *{OrderStatus}*\nTracking ID: {TrackingID}\nTotal Amount: ₹{OrderAmount}\n\n{CustomerName} Thank you for shopping with us.', 'chat_widget_enabled'=>1, 'chat_widget_number'=>'', 'chat_widget_message'=>'Hello, I have a question about your products.'];
+    // Failsafe insert if table is empty
+    $conn->query("INSERT IGNORE INTO whatsapp_settings (id, message_template, order_confirmation_message_template) VALUES (1, 'Hello Dear {CustomerName},\n\nYour Order No. #{OrderID} status has been updated.\n\nCurrent Status: *{OrderStatus}*\nTracking ID: {TrackingID}\nTotal Amount: ₹{OrderAmount}\n\nThank you for shopping with us.', '" . $conn->real_escape_string($default_order_confirm_tpl) . "')");
+    $settings = [
+        'is_enabled' => 1,
+        'sender_number' => '',
+        'api_token' => '',
+        'sending_mode' => 'web',
+        'message_template' => "Hello Dear {CustomerName},\n\nYour Order No. #{OrderID} status has been updated.\n\nCurrent Status: *{OrderStatus}*\nTracking ID: {TrackingID}\nTotal Amount: ₹{OrderAmount}\n\nThank you for shopping with us.",
+        'order_confirmation_enabled' => 1,
+        'order_confirmation_template_name' => '',
+        'order_confirmation_message_template' => $default_order_confirm_tpl,
+        'order_status_notify_enabled' => 1,
+        'chat_widget_enabled' => 1,
+        'chat_widget_number' => '',
+        'chat_widget_message' => 'Hello, I have a question about your products.'
+    ];
+}
+
+if (empty($settings['order_confirmation_message_template'])) {
+    $settings['order_confirmation_message_template'] = $default_order_confirm_tpl;
 }
 
 $success_msg = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_settings') {
-    $sender_number = $conn->real_escape_string($_POST['sender_number']);
-    $api_token = $conn->real_escape_string($_POST['api_token']);
-    $phone_number_id = $conn->real_escape_string($_POST['phone_number_id'] ?? '');
-    $sending_mode = $conn->real_escape_string($_POST['sending_mode']);
-    $message_template = $conn->real_escape_string($_POST['message_template']);
-    $is_enabled = isset($_POST['is_enabled']) ? 1 : 0;
+    $sender_number    = $conn->real_escape_string($_POST['sender_number'] ?? '');
+    $api_token        = $conn->real_escape_string($_POST['api_token'] ?? '');
+    $phone_number_id  = $conn->real_escape_string($_POST['phone_number_id'] ?? '');
+    $sending_mode     = $conn->real_escape_string($_POST['sending_mode'] ?? 'api');
+    $is_enabled       = isset($_POST['is_enabled']) ? 1 : 0;
+
+    // Customer Order Confirmation Fields
+    $order_confirmation_enabled          = isset($_POST['order_confirmation_enabled']) ? 1 : 0;
+    $order_confirmation_template_name    = $conn->real_escape_string(trim($_POST['order_confirmation_template_name'] ?? ''));
+    $order_confirmation_message_template = $conn->real_escape_string($_POST['order_confirmation_message_template'] ?? '');
+
+    // Customer Order Status Update Fields
+    $order_status_notify_enabled = isset($_POST['order_status_notify_enabled']) ? 1 : 0;
+    $meta_template_name          = $conn->real_escape_string(trim($_POST['meta_template_name'] ?? ''));
+    $message_template            = $conn->real_escape_string($_POST['message_template'] ?? '');
+
+    // General Meta API Meta Fields
+    $meta_template_lang = $conn->real_escape_string(trim($_POST['meta_template_lang'] ?? 'en'));
+    $waba_id            = $conn->real_escape_string(trim($_POST['waba_id'] ?? ''));
+    $wa_header_image_url = $conn->real_escape_string(trim($_POST['wa_header_image_url'] ?? ''));
+
+    // Admin Notification Fields
+    $admin_whatsapp_number     = $conn->real_escape_string(trim($_POST['admin_whatsapp_number'] ?? ''));
+    $admin_notify_on_new_order = isset($_POST['admin_notify_on_new_order']) ? 1 : 0;
+    $admin_template_name       = $conn->real_escape_string(trim($_POST['admin_template_name'] ?? ''));
 
     // Chat Widget fields
     $chat_widget_enabled = isset($_POST['chat_widget_enabled']) ? 1 : 0;
-    $chat_widget_number  = $conn->real_escape_string($_POST['chat_widget_number'] ?? '');
+    $chat_widget_number  = $conn->real_escape_string(trim($_POST['chat_widget_number'] ?? ''));
     $chat_widget_message = $conn->real_escape_string($_POST['chat_widget_message'] ?? 'Hello, I have a question about your products.');
-    $meta_template_name = $conn->real_escape_string($_POST['meta_template_name'] ?? '');
-    $meta_template_lang = $conn->real_escape_string($_POST['meta_template_lang'] ?? 'en');
-    $waba_id = $conn->real_escape_string($_POST['waba_id'] ?? '');
-    $wa_header_image_url = $conn->real_escape_string(trim($_POST['wa_header_image_url'] ?? ''));
-    // Admin notification fields
-    $admin_whatsapp_number = $conn->real_escape_string(trim($_POST['admin_whatsapp_number'] ?? ''));
-    $admin_notify_on_new_order = isset($_POST['admin_notify_on_new_order']) ? 1 : 0;
-    $admin_template_name = $conn->real_escape_string(trim($_POST['admin_template_name'] ?? ''));
-
-    // Auto add admin_template_name column if not exists
-    $conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS admin_template_name VARCHAR(100) NOT NULL DEFAULT ''");
 
     $update_query = "UPDATE whatsapp_settings SET 
         is_enabled = $is_enabled,
         sender_number = '$sender_number',
         api_token = '$api_token',
         sending_mode = '$sending_mode',
-        message_template = '$message_template',
         phone_number_id = '$phone_number_id',
-        chat_widget_enabled = $chat_widget_enabled,
-        chat_widget_number = '$chat_widget_number',
-        chat_widget_message = '$chat_widget_message',
-        meta_template_name = '$meta_template_name',
         meta_template_lang = '$meta_template_lang',
         waba_id = '$waba_id',
         wa_header_image_url = '$wa_header_image_url',
+        order_confirmation_enabled = $order_confirmation_enabled,
+        order_confirmation_template_name = '$order_confirmation_template_name',
+        order_confirmation_message_template = '$order_confirmation_message_template',
+        order_status_notify_enabled = $order_status_notify_enabled,
+        meta_template_name = '$meta_template_name',
+        message_template = '$message_template',
         admin_whatsapp_number = '$admin_whatsapp_number',
         admin_notify_on_new_order = $admin_notify_on_new_order,
-        admin_template_name = '$admin_template_name'
+        admin_template_name = '$admin_template_name',
+        chat_widget_enabled = $chat_widget_enabled,
+        chat_widget_number = '$chat_widget_number',
+        chat_widget_message = '$chat_widget_message'
         WHERE id = 1";
 
     if ($conn->query($update_query)) {
@@ -75,262 +110,397 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         // Refresh settings
         $result = $conn->query($settings_query);
         $settings = $result->fetch_assoc();
+    } else {
+        $error_msg = "Database Error: " . $conn->error;
     }
 }
 
 // Fetch logs
-$logs_query = "SELECT wl.*, o.id as order_number, u.name as customer_name FROM whatsapp_logs wl JOIN orders o ON wl.order_id = o.id JOIN users u ON o.user_id = u.id ORDER BY wl.sent_at DESC LIMIT 50";
+$logs_query = "SELECT wl.*, o.id as order_number, u.name as customer_name FROM whatsapp_logs wl LEFT JOIN orders o ON wl.order_id = o.id LEFT JOIN users u ON o.user_id = u.id ORDER BY wl.sent_at DESC LIMIT 50";
 $logs = $conn->query($logs_query);
 ?>
 
 <div class="row mb-4 align-items-center">
     <div class="col-md-6">
         <h2 class="mb-0 text-dark fw-bold"><i class="fab fa-whatsapp me-2 text-success"></i> WhatsApp Notifications</h2>
-        <p class="text-muted mb-0">Manage automated order status updates via WhatsApp.</p>
+        <p class="text-muted mb-0">Configure automated customer order confirmation, status updates, and admin WhatsApp alerts.</p>
+    </div>
+    <div class="col-md-6 text-end">
+        <button type="button" class="btn btn-outline-success px-3 py-2 fw-bold rounded-pill shadow-sm" onclick="openMetaTemplatePicker('meta_template_name')">
+            <i class="fas fa-cloud-download-alt me-1"></i> Fetch Meta Templates
+        </button>
+        <a href="whatsapp_debug.php" target="_blank" class="btn btn-outline-secondary px-3 py-2 fw-bold rounded-pill shadow-sm ms-2">
+            <i class="fas fa-bug me-1"></i> API Diagnostics
+        </a>
     </div>
 </div>
 
 <?php if ($success_msg): ?>
-<div class="alert alert-success alert-dismissible fade show" role="alert">
+<div class="alert alert-success alert-dismissible fade show shadow-sm border-0" role="alert">
     <i class="fas fa-check-circle me-2"></i> <?php echo $success_msg; ?>
     <button type="button" class="btn-close" data-mdb-dismiss="alert" aria-label="Close"></button>
 </div>
 <?php endif; ?>
 
-<div class="row">
-    <div class="col-md-7">
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-body p-4">
-                <form method="POST">
-                    <?php echo csrf_input(); ?>
-                    <input type="hidden" name="action" value="update_settings">
-                    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
-                        <h5 class="fw-bold m-0">General Configuration</h5>
-                        <div class="form-check form-switch fs-5 m-0">
-                            <input class="form-check-input" type="checkbox" role="switch" name="is_enabled" id="enableWhatsapp" <?php echo ($settings['is_enabled']) ? 'checked' : ''; ?>>
-                            <label class="form-check-label ms-2 fs-6 fw-bold" for="enableWhatsapp">Enable Feature</label>
-                        </div>
-                    </div>
+<form method="POST">
+    <?php echo csrf_input(); ?>
+    <input type="hidden" name="action" value="update_settings">
 
+    <div class="row">
+        <!-- Left Column: Settings Configuration -->
+        <div class="col-lg-8 col-md-12">
+            
+            <!-- 1. GENERAL & META API CREDENTIALS CARD -->
+            <div class="card shadow-sm border-0 mb-4 rounded-4 overflow-hidden">
+                <div class="card-header bg-white border-bottom p-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="fw-bold m-0 text-dark"><i class="fas fa-plug text-primary me-2"></i>Meta Cloud API Credentials</h5>
+                        <small class="text-muted">Official WhatsApp Business Platform connection.</small>
+                    </div>
+                    <div class="form-check form-switch fs-5 m-0">
+                        <input class="form-check-input" type="checkbox" role="switch" name="is_enabled" id="enableWhatsapp" <?php echo (!empty($settings['is_enabled'])) ? 'checked' : ''; ?>>
+                        <label class="form-check-label ms-2 fs-6 fw-bold" for="enableWhatsapp">Enable Feature</label>
+                    </div>
+                </div>
+                <div class="card-body p-4">
                     <div class="mb-4">
                         <label class="form-label fw-bold">Sending Mode</label>
                         <select name="sending_mode" class="form-select bg-light">
+                            <option value="api" <?php echo ($settings['sending_mode'] === 'api') ? 'selected' : ''; ?>>WhatsApp Business API (Automated 24/7 Delivery)</option>
                             <option value="web" <?php echo ($settings['sending_mode'] === 'web') ? 'selected' : ''; ?>>WhatsApp Web (Manual Redirect)</option>
-                            <option value="api" <?php echo ($settings['sending_mode'] === 'api') ? 'selected' : ''; ?>>WhatsApp Business API (Automated)</option>
                         </select>
-                        <small class="text-muted">Web mode opens WhatsApp Web/Desktop safely. API mode requires official Meta credentials.</small>
+                        <small class="text-muted">API mode enables 24/7 automated delivery directly via official Meta API.</small>
                     </div>
 
-                    <div class="row mb-4">
-                        <div class="col-md-4 text-start">
+                    <div class="row mb-3">
+                        <div class="col-md-4 mb-3 text-start">
                             <label class="form-label fw-bold d-block">Sender Number</label>
                             <?php echo render_phone_input('sender_number', $settings['sender_number'], true); ?>
                         </div>
-                        <div class="col-md-4 text-start">
+                        <div class="col-md-4 mb-3 text-start">
                             <label class="form-label fw-bold d-block">Phone Number ID (Meta Graph)</label>
-                            <input type="text" name="phone_number_id" class="form-control bg-light" placeholder="E.g. 1045612345678" value="<?php echo htmlspecialchars($settings['phone_number_id'] ?? ''); ?>">
+                            <input type="text" name="phone_number_id" id="phone_number_id_input" class="form-control bg-light" placeholder="E.g. 1045612345678" value="<?php echo htmlspecialchars($settings['phone_number_id'] ?? ''); ?>">
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold">Business API Token <small class="text-muted">(Optional)</small></label>
-                            <input type="password" name="api_token" class="form-control bg-light" placeholder="EAAI..." value="<?php echo htmlspecialchars($settings['api_token']); ?>">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">Business API Token</label>
+                            <input type="password" name="api_token" id="api_token_input" class="form-control bg-light" placeholder="EAAI..." value="<?php echo htmlspecialchars($settings['api_token'] ?? ''); ?>">
                             <div class="form-check mt-1">
                                 <input class="form-check-input show-password-toggle" type="checkbox" id="showPwWhatsapp">
-                                <label class="form-check-label small text-muted" for="showPwWhatsapp">Show</label>
+                                <label class="form-check-label small text-muted" for="showPwWhatsapp">Show Token</label>
                             </div>
                         </div>
                     </div>
 
-                    <div class="row mb-4">
-                        <div class="col-md-5 mb-3">
-                            <label class="form-label fw-bold">Meta Template Name</label>
-                            <div class="input-group">
-                                <input type="text" name="meta_template_name" id="metaTplName" class="form-control bg-light" placeholder="e.g. order_update_v1" value="<?php echo htmlspecialchars($settings['meta_template_name'] ?? ''); ?>">
-                                <button type="button" class="btn btn-outline-primary" id="btnSyncTpl" title="Sync from Meta API"><i class="fas fa-sync-alt"></i></button>
-                            </div>
-                            <div id="tplSyncStatus" class="small mt-1 d-none"></div>
-                            <small class="text-muted">Must EXACTLY match your approved Meta template name. Leave empty to use legacy text messages.</small>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">WABA ID <small class="text-muted">(Optional)</small></label>
+                            <input type="text" name="waba_id" id="metaWabaId" class="form-control bg-light" placeholder="Business Account ID" value="<?php echo htmlspecialchars($settings['waba_id'] ?? ''); ?>">
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label fw-bold">Meta Template Language</label>
                             <input type="text" name="meta_template_lang" id="metaTplLang" class="form-control bg-light" placeholder="e.g. en or en_US" value="<?php echo htmlspecialchars($settings['meta_template_lang'] ?? 'en'); ?>">
-                            <small class="text-muted">Language code of approved Meta template.</small>
                         </div>
-                        <div class="col-md-3 mb-3">
-                             <label class="form-label fw-bold">WABA ID <small class="text-muted">(Optional)</small></label>
-                             <input type="text" name="waba_id" id="metaWabaId" class="form-control bg-light" placeholder="Business Account ID" value="<?php echo htmlspecialchars($settings['waba_id'] ?? ''); ?>">
-                             <small class="text-muted">Enter manually if sync fails.</small>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">Template Header Image <small class="text-muted">(Optional)</small></label>
+                            <input type="url" id="waHeaderImgInput" name="wa_header_image_url" class="form-control bg-light" placeholder="https://..." value="<?php echo htmlspecialchars($settings['wa_header_image_url'] ?? ''); ?>">
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    <div class="mb-4">
-                        <label class="form-label fw-bold"><i class="fas fa-image text-info me-1"></i>Template Header Image URL <small class="text-muted">(Required if template has image header)</small></label>
-                        <div class="input-group">
-                            <input type="url" id="waHeaderImgInput" name="wa_header_image_url" class="form-control bg-light" placeholder="https://sagarstarters.com/assets/images/admin_order_alert_banner.jpg" value="<?php echo htmlspecialchars($settings['wa_header_image_url'] ?? 'https://sagarstarters.com/assets/images/admin_order_alert_banner.jpg'); ?>">
-                            <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('waHeaderImgInput').value='https://sagarstarters.com/assets/images/admin_order_alert_banner.jpg'" title="Set to New Order Received Banner">
-                                <i class="fas fa-magic me-1"></i> Use Order Banner
+            <!-- 2. CUSTOMER NOTIFICATIONS CARD (TWO TEMPLATES) -->
+            <div class="card shadow-sm border-0 mb-4 rounded-4 overflow-hidden">
+                <div class="card-header bg-white border-bottom p-4">
+                    <h5 class="fw-bold m-0 text-dark"><i class="fas fa-users text-success me-2"></i>Customer WhatsApp Notification Templates</h5>
+                    <small class="text-muted">Customer ko bheje jaane wale 2 alag-alag Meta Approved Templates.</small>
+                </div>
+                <div class="card-body p-4">
+                    
+                    <!-- ── TEMPLATE 1: CUSTOMER ORDER CONFIRMATION ── -->
+                    <div class="p-3 border rounded-3 bg-light bg-opacity-50 mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <span class="badge bg-primary px-2 py-1 mb-1">1. New Order Confirmation</span>
+                                <h6 class="fw-bold m-0 text-dark">Order Confirmation Template (Customer)</h6>
+                                <small class="text-muted">Jab bhi koi customer naya order place karega, ye Meta template turant send hoga.</small>
+                            </div>
+                            <div class="form-check form-switch fs-5 m-0">
+                                <input class="form-check-input" type="checkbox" role="switch" name="order_confirmation_enabled" id="enableOrderConfirm" <?php echo (!empty($settings['order_confirmation_enabled'])) ? 'checked' : ''; ?>>
+                                <label class="form-check-label ms-2 small fw-bold" for="enableOrderConfirm">Enable</label>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-uppercase tracking-wider">Meta Approved Template Name</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white"><i class="fab fa-whatsapp text-success"></i></span>
+                                <input type="text" name="order_confirmation_template_name" id="orderConfirmTplInput" class="form-control bg-white" placeholder="e.g. order_confirmation" value="<?php echo htmlspecialchars($settings['order_confirmation_template_name'] ?? ''); ?>">
+                                <button type="button" class="btn btn-outline-primary fw-bold" onclick="openMetaTemplatePicker('orderConfirmTplInput')">
+                                    <i class="fas fa-search me-1"></i> Fetch from Meta
+                                </button>
+                            </div>
+                            <div class="form-text small">Meta WhatsApp Manager me approved template ka exact name (e.g. <code>order_confirmation</code> ya <code>admin_new_order_alert</code>).</div>
+                        </div>
+
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label fw-bold small mb-0">Bridge & Fallback Message Template</label>
+                                <div class="btn-group btn-group-sm">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('orderConfirmMsgInput', '{CustomerName}')">+Name</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('orderConfirmMsgInput', '{OrderID}')">+OrderID</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('orderConfirmMsgInput', '{OrderDate}')">+Date</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('orderConfirmMsgInput', '{OrderAmount}')">+Amount</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('orderConfirmMsgInput', '{PaymentMethod}')">+Payment</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('orderConfirmMsgInput', '{DeliveryAddress}')">+Address</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('orderConfirmMsgInput', '{ItemsOrdered}')">+Items</button>
+                                </div>
+                            </div>
+                            <textarea name="order_confirmation_message_template" id="orderConfirmMsgInput" class="form-control bg-white" rows="5"><?php echo htmlspecialchars($settings['order_confirmation_message_template'] ?? $default_order_confirm_tpl); ?></textarea>
+                            <div class="form-text small">
+                                <strong>Dynamic Variables:</strong> <code>{CustomerName}</code>, <code>{OrderID}</code>, <code>{OrderDate}</code>, <code>{OrderTime}</code>, <code>{OrderAmount}</code>, <code>{PaymentMethod}</code>, <code>{DeliveryAddress}</code>, <code>{ItemsOrdered}</code>
+                            </div>
+                        </div>
+
+                        <div class="mt-2 text-end">
+                            <button type="button" class="btn btn-sm btn-outline-success rounded-pill fw-bold" onclick="openTestModal('order_confirm')">
+                                <i class="fas fa-paper-plane me-1"></i> Send Test Order Confirmation
                             </button>
                         </div>
-                        <small class="text-muted">Public HTTPS URL of the image shown in template header (e.g. <code>https://sagarstarters.com/assets/images/admin_order_alert_banner.jpg</code>).</small>
                     </div>
 
-                    <div id="metaTemplatesList" class="mb-4 d-none p-3 border rounded-3 bg-white shadow-sm overflow-auto" style="max-height: 250px;">
-                        <h6 class="fw-bold mb-2">Select Approved Template</h6>
-                        <table class="table table-sm table-hover mb-0">
-                            <thead>
+                    <!-- ── TEMPLATE 2: CUSTOMER ORDER STATUS UPDATE ── -->
+                    <div class="p-3 border rounded-3 bg-light bg-opacity-50">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <span class="badge bg-info text-dark px-2 py-1 mb-1">2. Status Update</span>
+                                <h6 class="fw-bold m-0 text-dark">Order Status Update Template (Customer)</h6>
+                                <small class="text-muted">Jab Admin order status change karega (Shipped, Delivered etc.), tab ye template send hoga.</small>
+                            </div>
+                            <div class="form-check form-switch fs-5 m-0">
+                                <input class="form-check-input" type="checkbox" role="switch" name="order_status_notify_enabled" id="enableOrderStatusNotify" <?php echo (!empty($settings['order_status_notify_enabled'])) ? 'checked' : ''; ?>>
+                                <label class="form-check-label ms-2 small fw-bold" for="enableOrderStatusNotify">Enable</label>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-uppercase tracking-wider">Meta Approved Template Name</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white"><i class="fab fa-whatsapp text-info"></i></span>
+                                <input type="text" name="meta_template_name" id="statusTplInput" class="form-control bg-white" placeholder="e.g. order_status_updates" value="<?php echo htmlspecialchars($settings['meta_template_name'] ?? ''); ?>">
+                                <button type="button" class="btn btn-outline-primary fw-bold" onclick="openMetaTemplatePicker('statusTplInput')">
+                                    <i class="fas fa-search me-1"></i> Fetch from Meta
+                                </button>
+                            </div>
+                            <div class="form-text small">Meta WhatsApp Manager me approved status template ka name (e.g. <code>order_status_updates</code> ya <code>new_order_status</code>).</div>
+                        </div>
+
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label fw-bold small mb-0">Bridge & Fallback Message Template</label>
+                                <div class="btn-group btn-group-sm">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('statusMsgInput', '{CustomerName}')">+Name</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('statusMsgInput', '{OrderID}')">+OrderID</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('statusMsgInput', '{OrderStatus}')">+Status</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('statusMsgInput', '{TrackingID}')">+Tracking</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('statusMsgInput', '{OrderAmount}')">+Amount</button>
+                                </div>
+                            </div>
+                            <textarea name="message_template" id="statusMsgInput" class="form-control bg-white" rows="5"><?php echo htmlspecialchars($settings['message_template'] ?? ''); ?></textarea>
+                            <div class="form-text small">
+                                <strong>Dynamic Variables:</strong> <code>{CustomerName}</code>, <code>{OrderID}</code>, <code>{OrderStatus}</code>, <code>{TrackingID}</code>, <code>{OrderAmount}</code>
+                            </div>
+                        </div>
+
+                        <div class="mt-2 text-end">
+                            <button type="button" class="btn btn-sm btn-outline-info rounded-pill fw-bold" onclick="openTestModal('status_update')">
+                                <i class="fas fa-paper-plane me-1"></i> Send Test Status Update
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- 3. ADMIN ORDER NOTIFICATION CARD -->
+            <div class="card shadow-sm border-0 mb-4 rounded-4 overflow-hidden">
+                <div class="card-header bg-white border-bottom p-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="fw-bold m-0 text-dark"><i class="fas fa-bell text-warning me-2"></i>Admin New Order WhatsApp Alert</h5>
+                        <small class="text-muted">Naye order aane par admin ke personal WhatsApp number par instant alert.</small>
+                    </div>
+                    <div class="form-check form-switch fs-5 m-0">
+                        <input class="form-check-input" type="checkbox" role="switch" name="admin_notify_on_new_order" id="enableAdminNotify" <?php echo (!empty($settings['admin_notify_on_new_order'])) ? 'checked' : ''; ?>>
+                        <label class="form-check-label ms-2 fs-6 fw-bold" for="enableAdminNotify">Enable</label>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row">
+                        <div class="col-md-6 mb-3 text-start">
+                            <label class="form-label fw-bold d-block">Admin WhatsApp Number</label>
+                            <?php echo render_phone_input('admin_whatsapp_number', $settings['admin_whatsapp_number'] ?? '', true); ?>
+                            <small class="text-muted d-block mt-1">Admin ka WhatsApp number with country code (e.g. <code>+91 8573934013</code>).</small>
+
+                            <div class="mt-3">
+                                <label class="form-label fw-bold small text-uppercase tracking-wider">Admin Meta Template Name</label>
+                                <div class="input-group">
+                                    <input type="text" name="admin_template_name" id="adminTplInput" class="form-control bg-light" placeholder="e.g. admin_new_order_alert" value="<?php echo htmlspecialchars($settings['admin_template_name'] ?? ''); ?>">
+                                    <button type="button" class="btn btn-outline-primary" onclick="openMetaTemplatePicker('adminTplInput')">
+                                        <i class="fas fa-search me-1"></i> Fetch
+                                    </button>
+                                </div>
+                                <small class="text-muted">Approved template (e.g. <code>admin_new_order_alert</code>).</small>
+                            </div>
+
+                            <button type="button" class="btn btn-sm btn-outline-success mt-3 fw-bold rounded-pill" id="btnQuickTestAdmin">
+                                <i class="fab fa-whatsapp me-1"></i> Send Test Admin Alert to this number
+                            </button>
+                            <div id="adminTestResult" class="small mt-2 d-none"></div>
+                        </div>
+
+                        <div class="col-md-6 mb-3 d-flex align-items-center">
+                            <div class="alert alert-success py-3 px-3 mb-0 small w-100 border-0 bg-success bg-opacity-10 rounded-3">
+                                <h6 class="fw-bold text-success mb-2"><i class="fas fa-bolt me-1"></i> 24/7 Automated Delivery</h6>
+                                <p class="mb-2 text-dark">Meta approved template use karne par 24/7 bina kisi "Hi" ke direct delivery hoti hai.</p>
+                                <hr class="my-2 border-success border-opacity-25">
+                                <strong>Variables Supported (11-Point Detailed Layout):</strong>
+                                <div class="bg-white p-2 rounded border small text-muted font-monospace mt-1" style="font-size:0.75rem;">
+                                    {{1}} Order ID &nbsp; {{2}} Date &nbsp; {{3}} Time<br>
+                                    {{4}} Customer &nbsp; {{5}} Phone &nbsp; {{6}} Total Amount<br>
+                                    {{7}} Payment &nbsp; {{8}} Status &nbsp; {{9}} Full Address<br>
+                                    {{10}} Ordered Items &nbsp; {{11}} Admin Link
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. CHAT WIDGET CARD -->
+            <div class="card shadow-sm border-0 mb-4 rounded-4 overflow-hidden">
+                <div class="card-header bg-white border-bottom p-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="fw-bold m-0 text-dark"><i class="fas fa-comment-dots text-success me-2"></i>Storefront WhatsApp Chat Widget</h5>
+                        <small class="text-muted">Controls the floating WhatsApp chat button on your customer website.</small>
+                    </div>
+                    <div class="form-check form-switch fs-5 m-0">
+                        <input class="form-check-input" type="checkbox" role="switch" name="chat_widget_enabled" id="enableChatWidget" <?php echo (!empty($settings['chat_widget_enabled'])) ? 'checked' : ''; ?>>
+                        <label class="form-check-label ms-2 fs-6 fw-bold" for="enableChatWidget">Enable Widget</label>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row">
+                        <div class="col-md-6 mb-3 text-start">
+                            <label class="form-label fw-bold d-block">Support WhatsApp Number</label>
+                            <?php echo render_phone_input('chat_widget_number', $settings['chat_widget_number'] ?? '', true); ?>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Pre-filled Chat Message</label>
+                            <input type="text" name="chat_widget_message" class="form-control bg-light" placeholder="Hello, I have a question..." value="<?php echo htmlspecialchars($settings['chat_widget_message'] ?? 'Hello, I have a question about your products.'); ?>">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUBMIT BUTTON -->
+            <div class="text-end mb-5">
+                <button type="submit" class="btn btn-primary px-5 py-3 fw-bold rounded-pill shadow">
+                    <i class="fas fa-save me-2"></i> Save All WhatsApp Configurations
+                </button>
+            </div>
+
+        </div>
+
+        <!-- Right Column: Live Message Logs -->
+        <div class="col-lg-4 col-md-12">
+            <div class="card shadow-sm border-0 mb-4 rounded-4 overflow-hidden sticky-top" style="top: 20px;">
+                <div class="card-header bg-white border-bottom p-4 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold m-0"><i class="fas fa-history text-secondary me-2"></i>Recent Message Logs</h5>
+                    <span class="badge bg-light text-dark border">Last 50</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+                        <table class="table table-hover align-middle mb-0" style="font-size:0.85rem;">
+                            <thead class="bg-light sticky-top">
                                 <tr>
-                                    <th>Name</th>
-                                    <th>Language</th>
-                                    <th>Category</th>
-                                    <th class="text-end">Action</th>
+                                    <th class="ps-3">Order</th>
+                                    <th>Recipient</th>
+                                    <th>Status</th>
                                 </tr>
                             </thead>
-                            <tbody id="tplTableBody"></tbody>
+                            <tbody>
+                                <?php if ($logs && $logs->num_rows > 0): ?>
+                                    <?php while($log = $logs->fetch_assoc()): ?>
+                                    <tr>
+                                        <td class="ps-3">
+                                            <a href="manage_orders.php" class="text-primary fw-bold text-decoration-none">#<?php echo $log['order_number'] ?? $log['order_id']; ?></a>
+                                            <div class="small text-muted text-truncate" style="max-width:90px;"><?php echo htmlspecialchars($log['customer_name'] ?? 'N/A'); ?></div>
+                                        </td>
+                                        <td>
+                                            <div><?php echo htmlspecialchars($log['customer_number']); ?></div>
+                                            <span class="badge bg-<?php echo $log['sending_mode'] == 'api' ? 'info' : 'secondary'; ?>" style="font-size:0.65rem;"><?php echo strtoupper($log['sending_mode']); ?></span>
+                                        </td>
+                                        <td>
+                                            <?php 
+                                            $is_err = stripos($log['status'], 'Failed') !== false;
+                                            $badge_cls = $is_err ? 'text-danger' : 'text-success';
+                                            $icon = $is_err ? 'fa-times-circle' : 'fa-check-double';
+                                            ?>
+                                            <div class="<?php echo $badge_cls; ?> fw-bold text-wrap" style="word-break:break-word; max-width:130px; font-size:0.75rem;">
+                                                <i class="fas <?php echo $icon; ?> me-1"></i><?php echo htmlspecialchars($log['status']); ?>
+                                            </div>
+                                            <div class="text-muted" style="font-size: 0.7rem;"><?php echo date('M d, H:i', strtotime($log['sent_at'])); ?></div>
+                                        </td>
+                                    </tr>
+                                    <?php endwhile; ?>
+                                <?php else: ?>
+                                    <tr>
+                                        <td colspan="3" class="text-center py-5 text-muted">No WhatsApp logs yet.</td>
+                                    </tr>
+                                <?php endif; ?>
+                            </tbody>
                         </table>
                     </div>
-
-                    <div class="mb-4">
-                        <div class="d-flex justify-content-between align-items-end mb-1">
-                             <label class="form-label fw-bold mb-0">Bridge & Variable Mapping</label>
-                             <div class="small text-primary fw-bold" style="cursor:help;" title="This field serves two purposes: 
-1. It is the message sent in 'Web Mode'.
-2. In 'API Template Mode', the ORDER of {Variables} in this text MUST match the index {{1}}, {{2}}... of your Meta Template placeholders.">
-                                <i class="fas fa-info-circle me-1"></i>How mapping works?
-                             </div>
-                        </div>
-                        <textarea name="message_template" class="form-control bg-light" rows="6" required><?php echo htmlspecialchars($settings['message_template']); ?></textarea>
-                        <div class="form-text mt-2">
-                            <strong>Available Variables (Dynamic Data):</strong>
-                            <code>{CustomerName}</code>, <code>{OrderID}</code>, <code>{OrderStatus}</code>, <code>{TrackingID}</code>, <code>{OrderAmount}</code>
-                        </div>
-                    </div>
-
-                    <!-- ===== Admin Order Notification Section ===== -->
-                    <div class="border-top pt-4 mt-2">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <div>
-                                <h5 class="fw-bold m-0"><i class="fas fa-bell text-warning me-2"></i>Admin Order Notification</h5>
-                                <small class="text-muted">Get WhatsApp alert on admin's phone when a new order is placed.</small>
-                            </div>
-                            <div class="form-check form-switch fs-5 m-0">
-                                <input class="form-check-input" type="checkbox" role="switch" name="admin_notify_on_new_order" id="enableAdminNotify" <?php echo ($settings['admin_notify_on_new_order'] ?? 1) ? 'checked' : ''; ?>>
-                                <label class="form-check-label ms-2 fs-6 fw-bold" for="enableAdminNotify">Enable</label>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3 text-start">
-                                <label class="form-label fw-bold d-block">Admin WhatsApp Number</label>
-                                <?php echo render_phone_input('admin_whatsapp_number', $settings['admin_whatsapp_number'] ?? '', true); ?>
-                                <small class="text-muted d-block">Admin's WhatsApp number with country code. New order alerts will be sent here.</small>
-                                
-                                <div class="mt-3">
-                                    <label class="form-label fw-bold small text-uppercase tracking-wider">Admin Meta Template Name <span class="badge bg-light text-muted border">Optional</span></label>
-                                    <input type="text" name="admin_template_name" class="form-control bg-light" placeholder="e.g. admin_new_order_alert" value="<?php echo htmlspecialchars($settings['admin_template_name'] ?? ''); ?>">
-                                    <small class="text-muted">Enter specific approved template for admin alerts (e.g. <code>admin_new_order_alert</code>). If empty, customer template (<code><?php echo htmlspecialchars($settings['meta_template_name'] ?? 'new_order_status'); ?></code>) is used.</small>
-                                </div>
-
-                                <button type="button" class="btn btn-sm btn-outline-success mt-3 fw-bold rounded-pill" id="btnQuickTestAdmin">
-                                    <i class="fab fa-whatsapp me-1"></i> Send Test Admin Alert to this number
-                                </button>
-                                <div id="adminTestResult" class="small mt-2 d-none"></div>
-                            </div>
-                            <div class="col-md-6 mb-3 d-flex align-items-center">
-                                <div class="alert alert-success py-3 px-3 mb-0 small w-100 border-0 bg-success bg-opacity-10">
-                                    <h6 class="fw-bold text-success mb-2"><i class="fas fa-bolt me-1"></i> 24/7 Automated Delivery</h6>
-                                    <p class="mb-2 text-dark">Customer ki tarah Admin ko bhi bina kisi "Hi" ke direct 24/7 alert receive hoga.</p>
-                                    <hr class="my-2 border-success border-opacity-25">
-                                    <strong>Recommended Admin Template Structure (in Meta):</strong>
-                                    <div class="bg-white p-2 rounded border small text-muted font-monospace mt-1">
-                                        🛒 *New Order Alert!*<br>
-                                        Order: *#{{1}}*<br>
-                                        Customer: {{2}}<br>
-                                        Amount: ₹{{3}}<br>
-                                        Payment: {{4}}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- ===== End Admin Order Notification Section ===== -->
-
-                    <!-- ===== WhatsApp Chat Widget Section ===== -->
-                    <div class="border-top pt-4 mt-2">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <div>
-                                <h5 class="fw-bold m-0"><i class="fas fa-comment-dots text-success me-2"></i>Chat Widget (Floating Button)</h5>
-                                <small class="text-muted">Controls the WhatsApp chat bubble shown on your storefront.</small>
-                            </div>
-                            <div class="form-check form-switch fs-5 m-0">
-                                <input class="form-check-input" type="checkbox" role="switch" name="chat_widget_enabled" id="enableChatWidget" <?php echo ($settings['chat_widget_enabled'] ?? 1) ? 'checked' : ''; ?>>
-                                <label class="form-check-label ms-2 fs-6 fw-bold" for="enableChatWidget">Enable Widget</label>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3 text-start">
-                                <label class="form-label fw-bold d-block">Widget Phone Number</label>
-                                <?php echo render_phone_input('chat_widget_number', $settings['chat_widget_number'], true); ?>
-                                <small class="text-muted">Select country code and enter number.</small>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Pre-fill Message</label>
-                                <input type="text" name="chat_widget_message" class="form-control bg-light" placeholder="Hello, I have a question..." value="<?php echo htmlspecialchars($settings['chat_widget_message'] ?? 'Hello, I have a question about your products.'); ?>">
-                                <small class="text-muted">Message auto-filled when customer taps the button.</small>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- ===== End Chat Widget Section ===== -->
-
-                    <div class="text-end mt-4">
-                        <button type="submit" class="btn btn-primary px-5 py-2 fw-bold rounded-3 shadow-sm me-2">
-                            <i class="fas fa-save me-2"></i>Save Configuration
-                        </button>
-                        <button type="button" class="btn btn-outline-warning px-4 py-2 fw-bold rounded-3 shadow-sm" data-mdb-toggle="modal" data-mdb-target="#testWhatsappModal">
-                            <i class="fas fa-vial me-2"></i>Test Notification
-                        </button>
-                    </div>
-                </form>
+                </div>
             </div>
         </div>
     </div>
-    
-    <div class="col-md-5">
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-white border-bottom pt-4 pb-3">
-                <h5 class="fw-bold m-0"><i class="fas fa-history text-secondary me-2"></i>Recent Message Logs</h5>
+</form>
+
+<!-- ===== UNIVERSAL META TEMPLATE PICKER MODAL ===== -->
+<div class="modal fade" id="metaTemplatePickerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-bottom p-4">
+                <div>
+                    <h5 class="modal-title fw-bold text-primary"><i class="fab fa-whatsapp me-2"></i>Select Meta Approved Template</h5>
+                    <small class="text-muted">Live sync from your WhatsApp Business Account (WABA).</small>
+                </div>
+                <button type="button" class="btn-close" data-mdb-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="card-body p-0">
-                <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+            <div class="modal-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <input type="text" id="tplSearchFilter" class="form-control form-control-sm w-50 bg-light" placeholder="🔍 Search template by name...">
+                    <button type="button" id="btnRefreshModalTpl" class="btn btn-sm btn-outline-primary fw-bold rounded-pill">
+                        <i class="fas fa-sync-alt me-1"></i> Refresh from Meta
+                    </button>
+                </div>
+                
+                <div id="modalTplStatus" class="alert alert-info py-2 small d-none"></div>
+
+                <div class="table-responsive border rounded-3 bg-white" style="max-height: 380px; overflow-y: auto;">
                     <table class="table table-hover align-middle mb-0">
                         <thead class="bg-light sticky-top">
                             <tr>
-                                <th class="ps-4">Order</th>
-                                <th>Sent To</th>
-                                <th>Mode</th>
+                                <th>Template Name & Preview</th>
+                                <th>Lang</th>
                                 <th>Status</th>
+                                <th class="text-end pe-3">Action</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <?php if ($logs && $logs->num_rows > 0): ?>
-                                <?php while($log = $logs->fetch_assoc()): ?>
-                                <tr>
-                                    <td class="ps-4">
-                                        <a href="manage_orders.php" class="text-primary fw-bold text-decoration-none">#<?php echo $log['order_number']; ?></a>
-                                        <div class="small text-muted"><?php echo htmlspecialchars($log['customer_name']); ?></div>
-                                    </td>
-                                    <td><?php echo htmlspecialchars($log['customer_number']); ?></td>
-                                    <td><span class="badge bg-<?php echo $log['sending_mode'] == 'api' ? 'info' : 'secondary'; ?>"><?php echo strtoupper($log['sending_mode']); ?></span></td>
-                                    <td>
-                                        <div class="text-success small fw-bold"><i class="fas fa-check-double me-1"></i><?php echo htmlspecialchars($log['status']); ?></div>
-                                        <div class="text-muted" style="font-size: 0.75rem;"><?php echo date('M d, H:i', strtotime($log['sent_at'])); ?></div>
-                                    </td>
-                                </tr>
-                                <?php endwhile; ?>
-                            <?php else: ?>
-                                <tr>
-                                    <td colspan="4" class="text-center py-5 text-muted">No WhatsApp messages have been sent yet.</td>
-                                </tr>
-                            <?php endif; ?>
+                        <tbody id="modalTplTableBody">
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-muted">Click "Refresh from Meta" to load templates.</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -339,129 +509,26 @@ $logs = $conn->query($logs_query);
     </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Show/Hide password toggle
-    document.getElementById('showPwWhatsapp').addEventListener('change', function() {
-        const input = document.querySelector('input[name="api_token"]');
-        input.type = this.checked ? 'text' : 'password';
-    });
-
-    // Sync Templates Logic
-    const btnSync = document.getElementById('btnSyncTpl');
-    const tplStatus = document.getElementById('tplSyncStatus');
-    const tplList = document.getElementById('metaTemplatesList');
-    const tplTableBody = document.getElementById('tplTableBody');
-
-    btnSync.addEventListener('click', function() {
-        const currentWabaId = document.getElementById('metaWabaId')?.value.trim() || '';
-        const currentToken = document.querySelector('input[name="api_token"]')?.value.trim() || '';
-        const currentPhoneId = document.querySelector('input[name="phone_number_id"]')?.value.trim() || '';
-
-        if (!currentToken) {
-            alert('Please enter your Business API Token first.');
-            return;
-        }
-
-        btnSync.disabled = true;
-        btnSync.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-        tplStatus.className = 'small mt-1 text-info';
-        tplStatus.innerText = 'Connecting to Meta Graph API...';
-        tplStatus.classList.remove('d-none');
-        tplList.classList.add('d-none');
-
-        const params = new URLSearchParams({
-            waba_id: currentWabaId,
-            token: currentToken,
-            phone_id: currentPhoneId
-        });
-
-        fetch('ajax_sync_meta_templates.php?' + params.toString())
-            .then(res => res.json())
-            .then(data => {
-                btnSync.disabled = false;
-                btnSync.innerHTML = '<i class="fas fa-sync-alt"></i>';
-
-                if (data.error) {
-                    tplStatus.className = 'small mt-1 text-danger';
-                    tplStatus.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i> ' + data.error;
-                } else if (data.templates && data.templates.length > 0) {
-                    if (data.waba_id && document.getElementById('metaWabaId')) {
-                        document.getElementById('metaWabaId').value = data.waba_id;
-                    }
-                    tplStatus.className = 'small mt-1 text-success';
-                    tplStatus.innerHTML = `<i class="fas fa-check-circle me-1"></i> Found <strong>${data.templates.length}</strong> template(s)! Click "Select" to use.`;
-                    
-                    tplTableBody.innerHTML = '';
-                    data.templates.forEach(tpl => {
-                        const statusBadge = tpl.status === 'APPROVED' 
-                            ? '<span class="badge bg-success">APPROVED</span>' 
-                            : `<span class="badge bg-warning text-dark">${tpl.status}</span>`;
-                        
-                        const bodySnippet = tpl.body_text 
-                            ? `<div class="small text-muted font-monospace mt-1 text-truncate" style="max-width:280px;" title="${tpl.body_text.replace(/"/g, '&quot;')}">${tpl.body_text}</div>` 
-                            : '';
-
-                        const row = `
-                            <tr>
-                                <td>
-                                    <div class="fw-bold">${tpl.name}</div>
-                                    ${bodySnippet}
-                                </td>
-                                <td><span class="badge bg-light text-dark border">${tpl.language}</span></td>
-                                <td>${statusBadge}</td>
-                                <td class="text-end">
-                                    <button type="button" class="btn btn-sm btn-primary py-1 px-3 fw-bold rounded-pill" onclick="selectTemplate('${tpl.name}', '${tpl.language}')">Select</button>
-                                </td>
-                            </tr>
-                        `;
-                        tplTableBody.insertAdjacentHTML('beforeend', row);
-                    });
-                    tplList.classList.remove('d-none');
-                } else {
-                    tplStatus.className = 'small mt-1 text-warning';
-                    tplStatus.innerHTML = '<i class="fas fa-info-circle me-1"></i> No message templates found in this WhatsApp Business Account.';
-                }
-            })
-            .catch(err => {
-                btnSync.disabled = false;
-                btnSync.innerHTML = '<i class="fas fa-sync-alt"></i>';
-                tplStatus.className = 'small mt-1 text-danger';
-                tplStatus.innerText = 'Network error: ' + err.message;
-            });
-    });
-});
-
-function selectTemplate(name, lang) {
-    document.getElementById('metaTplName').value = name;
-    document.getElementById('metaTplLang').value = lang;
-    document.getElementById('metaTemplatesList').classList.add('d-none');
-    document.getElementById('tplSyncStatus').innerText = 'Template selected: ' + name;
-}
-</script>
-
-<!-- Test WhatsApp Modal -->
-<div class="modal fade" id="testWhatsappModal" tabindex="-1" aria-hidden="true">
+<!-- ===== TEST NOTIFICATION MODAL ===== -->
+<div class="modal fade" id="universalTestModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg rounded-4">
             <div class="modal-header border-0 pb-0 px-4 pt-4">
-                <h5 class="modal-title fw-bold text-primary"><i class="fas fa-paper-plane me-2"></i>Send Test Notification</h5>
+                <h5 class="modal-title fw-bold text-primary" id="testModalTitle"><i class="fas fa-paper-plane me-2"></i>Send Test Notification</h5>
                 <button type="button" class="btn-close" data-mdb-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
-                <p class="text-muted small mb-4">Testing will use a most recent order to populate variables like {CustomerName}.</p>
-                <div class="mb-4">
+                <p class="text-muted small mb-3" id="testModalDesc">Send a test notification to verify Meta delivery.</p>
+                <div class="mb-3">
                     <label class="form-label small fw-bold text-uppercase tracking-wider">Recipient Phone Number</label>
                     <div class="input-group">
-                        <span class="input-group-text bg-white border-end-0"><i class="fas fa-phone-alt text-muted"></i></span>
-                        <input type="text" id="testPhone" class="form-control border-start-0 py-2" placeholder="e.g. 919876543210" value="">
+                        <span class="input-group-text bg-white"><i class="fas fa-phone-alt text-muted"></i></span>
+                        <input type="text" id="universalTestPhone" class="form-control py-2" placeholder="e.g. 919876543210" value="">
                     </div>
-                    <div class="form-text mt-2" style="font-size:0.75rem;">
-                        <i class="fas fa-info-circle me-1"></i> Include country code (e.g. <strong>91</strong> for India). Do NOT include +.
-                    </div>
+                    <div class="form-text small mt-1">Include country code (e.g. <strong>91</strong> for India).</div>
                 </div>
-                <div id="testResult" class="d-none mb-3"></div>
-                <button type="button" id="btnRunTest" class="btn btn-primary w-100 py-3 fw-bold rounded-3 shadow-sm border-0">
+                <div id="universalTestResult" class="d-none mb-3"></div>
+                <button type="button" id="btnRunUniversalTest" class="btn btn-primary w-100 py-3 fw-bold rounded-pill shadow-sm border-0">
                     Send Test Message
                 </button>
             </div>
@@ -470,53 +537,198 @@ function selectTemplate(name, lang) {
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const btnRunTest = document.getElementById('btnRunTest');
-    const testPhone = document.getElementById('testPhone');
-    const testResult = document.getElementById('testResult');
+let currentTargetInputId = '';
+let currentTestType = 'order_confirm';
 
-    btnRunTest.addEventListener('click', function() {
-        const phone = testPhone.value.replace(/\D/g, '');
-        if (!phone) { alert('Please enter a valid number (e.g. 919876543210)'); return; }
+function insertVar(textareaId, tag) {
+    const el = document.getElementById(textareaId);
+    if (!el) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const val = el.value;
+    el.value = val.substring(0, start) + tag + val.substring(end);
+    el.selectionStart = el.selectionEnd = start + tag.length;
+    el.focus();
+}
 
-        btnRunTest.disabled = true;
-        btnRunTest.innerText = 'Sending...';
-        testResult.className = 'alert alert-info py-2 small';
-        testResult.innerText = 'Calling API...';
-        testResult.classList.remove('d-none');
+function openMetaTemplatePicker(targetInputId) {
+    currentTargetInputId = targetInputId;
+    const modalEl = document.getElementById('metaTemplatePickerModal');
+    const modal = new mdb.Modal(modalEl);
+    modal.show();
+    fetchMetaTemplates();
+}
 
-        // Note: we use order_id=1 or latest order if possible. Here we just hardcode a placeholder.
-        fetch('ajax_log_whatsapp.php?test=1&number=' + phone)
-            .then(res => res.text()) // Get raw text first to handle PHP errors
-            .then(text => {
-                let data;
-                try {
-                    data = JSON.parse(text);
-                } catch(e) {
-                    throw new Error('Invalid JSON response: ' + text.substring(0, 100));
+function fetchMetaTemplates() {
+    const statusEl = document.getElementById('modalTplStatus');
+    const tbodyEl = document.getElementById('modalTplTableBody');
+    const token = document.getElementById('api_token_input')?.value.trim() || '';
+    const phoneId = document.getElementById('phone_number_id_input')?.value.trim() || '';
+    const wabaId = document.getElementById('metaWabaId')?.value.trim() || '';
+
+    if (!token) {
+        statusEl.className = 'alert alert-danger py-2 small';
+        statusEl.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i> Please enter your Business API Token first.';
+        statusEl.classList.remove('d-none');
+        return;
+    }
+
+    statusEl.className = 'alert alert-info py-2 small';
+    statusEl.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Connecting to Meta Graph API...';
+    statusEl.classList.remove('d-none');
+
+    const params = new URLSearchParams({ token, phone_id: phoneId, waba_id: wabaId });
+
+    fetch('ajax_sync_meta_templates.php?' + params.toString())
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) {
+                statusEl.className = 'alert alert-danger py-2 small';
+                statusEl.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i> ' + data.error;
+            } else if (data.templates && data.templates.length > 0) {
+                if (data.waba_id && document.getElementById('metaWabaId')) {
+                    document.getElementById('metaWabaId').value = data.waba_id;
                 }
-                
-                btnRunTest.disabled = false;
-                btnRunTest.innerText = 'Send Test Message';
+                statusEl.className = 'alert alert-success py-2 small';
+                statusEl.innerHTML = `<i class="fas fa-check-circle me-1"></i> Found <strong>${data.templates.length}</strong> template(s) in Meta Account!`;
+
+                tbodyEl.innerHTML = '';
+                data.templates.forEach(tpl => {
+                    const isApproved = tpl.status === 'APPROVED';
+                    const statusBadge = isApproved 
+                        ? '<span class="badge bg-success">APPROVED</span>' 
+                        : `<span class="badge bg-warning text-dark">${tpl.status}</span>`;
+
+                    const bodyText = tpl.body_text || '';
+                    const bodyPreview = bodyText ? `<div class="small text-muted font-monospace mt-1 text-truncate" style="max-width:320px;" title="${bodyText.replace(/"/g, '&quot;')}">${bodyText}</div>` : '';
+
+                    const row = `
+                        <tr class="tpl-row" data-name="${tpl.name.toLowerCase()}">
+                            <td>
+                                <div class="fw-bold text-dark">${tpl.name}</div>
+                                ${bodyPreview}
+                            </td>
+                            <td><span class="badge bg-light text-dark border">${tpl.language}</span></td>
+                            <td>${statusBadge}</td>
+                            <td class="text-end pe-3">
+                                <button type="button" class="btn btn-sm btn-primary py-1 px-3 fw-bold rounded-pill" onclick="applyTemplate('${tpl.name}', '${tpl.language}')">
+                                    Select
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                    tbodyEl.insertAdjacentHTML('beforeend', row);
+                });
+            } else {
+                statusEl.className = 'alert alert-warning py-2 small';
+                statusEl.innerHTML = '<i class="fas fa-info-circle me-1"></i> No templates found in this Meta WhatsApp Business Account.';
+            }
+        })
+        .catch(err => {
+            statusEl.className = 'alert alert-danger py-2 small';
+            statusEl.innerText = 'Network error: ' + err.message;
+        });
+}
+
+function applyTemplate(name, lang) {
+    if (currentTargetInputId && document.getElementById(currentTargetInputId)) {
+        document.getElementById(currentTargetInputId).value = name;
+    }
+    if (document.getElementById('metaTplLang')) {
+        document.getElementById('metaTplLang').value = lang;
+    }
+    const modalEl = document.getElementById('metaTemplatePickerModal');
+    const modalInstance = mdb.Modal.getInstance(modalEl);
+    if (modalInstance) modalInstance.hide();
+}
+
+function openTestModal(type) {
+    currentTestType = type;
+    const modalTitle = document.getElementById('testModalTitle');
+    const modalDesc  = document.getElementById('testModalDesc');
+    const resEl      = document.getElementById('universalTestResult');
+    resEl.classList.add('d-none');
+
+    if (type === 'order_confirm') {
+        modalTitle.innerHTML = '<i class="fas fa-cart-arrow-down me-2 text-primary"></i>Test Order Confirmation';
+        modalDesc.innerText = 'Send a simulated Order Confirmation WhatsApp notification using the current template and variables.';
+    } else {
+        modalTitle.innerHTML = '<i class="fas fa-truck me-2 text-info"></i>Test Order Status Update';
+        modalDesc.innerText = 'Send a simulated Order Status Update WhatsApp notification using the current status template.';
+    }
+
+    const modalEl = document.getElementById('universalTestModal');
+    const modal = new mdb.Modal(modalEl);
+    modal.show();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Show/Hide password toggle
+    const pwToggle = document.getElementById('showPwWhatsapp');
+    if (pwToggle) {
+        pwToggle.addEventListener('change', function() {
+            const input = document.getElementById('api_token_input');
+            if (input) input.type = this.checked ? 'text' : 'password';
+        });
+    }
+
+    // Refresh inside template modal
+    document.getElementById('btnRefreshModalTpl')?.addEventListener('click', fetchMetaTemplates);
+
+    // Search filter inside template modal
+    document.getElementById('tplSearchFilter')?.addEventListener('input', function() {
+        const q = this.value.toLowerCase().trim();
+        document.querySelectorAll('.tpl-row').forEach(row => {
+            const name = row.getAttribute('data-name') || '';
+            row.style.display = name.includes(q) ? '' : 'none';
+        });
+    });
+
+    // Universal Test Button runner
+    const btnRunUniversalTest = document.getElementById('btnRunUniversalTest');
+    btnRunUniversalTest?.addEventListener('click', function() {
+        const phone = document.getElementById('universalTestPhone')?.value.replace(/\D/g, '');
+        const resEl = document.getElementById('universalTestResult');
+        if (!phone || phone.length < 10) {
+            alert('Please enter a valid phone number with country code (e.g. 919876543210).');
+            return;
+        }
+
+        btnRunUniversalTest.disabled = true;
+        btnRunUniversalTest.innerText = 'Sending via Meta API...';
+        resEl.className = 'alert alert-info py-2 small';
+        resEl.innerText = 'Contacting Meta Graph API...';
+        resEl.classList.remove('d-none');
+
+        let url = '';
+        if (currentTestType === 'order_confirm') {
+            const tplName = document.getElementById('orderConfirmTplInput')?.value.trim() || '';
+            url = 'ajax_log_whatsapp.php?test_order_confirm=1&number=' + phone + '&template_name=' + encodeURIComponent(tplName);
+        } else {
+            const tplName = document.getElementById('statusTplInput')?.value.trim() || '';
+            url = 'ajax_log_whatsapp.php?test=1&number=' + phone + '&template_name=' + encodeURIComponent(tplName);
+        }
+
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                btnRunUniversalTest.disabled = false;
+                btnRunUniversalTest.innerText = 'Send Test Message';
+
                 if (data.success) {
-                    const msgId = data.message_id ? `<div class="mt-1"><span class="badge bg-success bg-opacity-75 text-wrap font-monospace fw-normal text-start" style="font-size:0.75rem; word-break:break-all; max-width:100%; display:inline-block;">ID: ${data.message_id}</span></div>` : '';
-                    const msgStatus = data.message_status ? `<br><small class="text-muted">Status: <strong>${data.message_status}</strong></small>` : '';
-                    testResult.className = 'alert alert-success py-2 small';
-                    testResult.innerHTML = `✅ <strong>API Accepted!</strong> Message queued for delivery.${msgId}${msgStatus}`
-                        + `<br><small class="text-muted mt-1 d-block">If NOT received: check <a href="whatsapp_debug.php" target="_blank">WhatsApp Debug Tool</a></small>`;
+                    const msgId = data.message_id ? `<div class="mt-1 font-monospace small">Message ID: ${data.message_id}</div>` : '';
+                    resEl.className = 'alert alert-success py-2 small';
+                    resEl.innerHTML = `✅ <strong>Success!</strong> Meta accepted the message for delivery.${msgId}`;
                 } else {
-                    const errCode = data.error_code ? ` [Code: ${data.error_code}]` : '';
-                    const details = data.details ? `<br><small>${data.details}</small>` : '';
-                    testResult.className = 'alert alert-danger py-2 small';
-                    testResult.innerHTML = `❌ <strong>FAILED${errCode}:</strong> ${data.error || 'Unknown error'}${details}`
-                        + `<br><small class="mt-1 d-block"><a href="whatsapp_debug.php" target="_blank">→ Open Debug Tool for full details</a></small>`;
+                    resEl.className = 'alert alert-danger py-2 small';
+                    resEl.innerHTML = `❌ <strong>Failed:</strong> ${data.error || 'Meta API rejected message'}`;
                 }
             })
             .catch(err => {
-                btnRunTest.disabled = false;
-                btnRunTest.innerText = 'Send Test Message';
-                testResult.className = 'alert alert-danger py-2 small';
-                testResult.innerText = 'Network error: ' + err.message;
+                btnRunUniversalTest.disabled = false;
+                btnRunUniversalTest.innerText = 'Send Test Message';
+                resEl.className = 'alert alert-danger py-2 small';
+                resEl.innerText = 'Network error: ' + err.message;
             });
     });
 
@@ -524,67 +736,44 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnQuickTestAdmin = document.getElementById('btnQuickTestAdmin');
     const adminTestResult   = document.getElementById('adminTestResult');
 
-    if (btnQuickTestAdmin) {
-        btnQuickTestAdmin.addEventListener('click', function() {
-            // Read admin number from the hidden phone input or text input
-            const adminPhoneInput = document.querySelector('input[name="admin_whatsapp_number"]') || document.querySelector('.phone-hidden-final');
-            let rawNumber = adminPhoneInput ? adminPhoneInput.value : '';
-            
-            if (!rawNumber || rawNumber.replace(/\D/g, '').length < 10) {
-                alert('Please enter a valid Admin WhatsApp Number (at least 10 digits) before testing.');
-                return;
-            }
+    btnQuickTestAdmin?.addEventListener('click', function() {
+        const adminPhoneInput = document.querySelector('input[name="admin_whatsapp_number"]') || document.querySelector('.phone-hidden-final');
+        let rawNumber = adminPhoneInput ? adminPhoneInput.value : '';
+        
+        if (!rawNumber || rawNumber.replace(/\D/g, '').length < 10) {
+            alert('Please enter a valid Admin WhatsApp Number (at least 10 digits) before testing.');
+            return;
+        }
 
-            btnQuickTestAdmin.disabled = true;
-            btnQuickTestAdmin.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Sending Test Alert...';
-            const adminTpl = document.querySelector('input[name="admin_template_name"]')?.value.trim() || '';
-            fetch('ajax_log_whatsapp.php?test_admin=1&number=' + encodeURIComponent(rawNumber) + '&admin_template_name=' + encodeURIComponent(adminTpl))
-                .then(res => res.text())
-                .then(text => {
-                    btnQuickTestAdmin.disabled = false;
-                    btnQuickTestAdmin.innerHTML = '<i class="fab fa-whatsapp me-1"></i> Send Test Admin Alert to this number';
-                    
-                    let data;
-                    try {
-                        data = JSON.parse(text);
-                    } catch(e) {
-                        adminTestResult.className = 'alert alert-danger py-2 small mt-2';
-                        adminTestResult.innerText = 'Invalid response: ' + text.substring(0, 150);
-                        return;
-                    }
+        btnQuickTestAdmin.disabled = true;
+        btnQuickTestAdmin.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Sending Test Alert...';
+        const adminTpl = document.getElementById('adminTplInput')?.value.trim() || '';
+        
+        fetch('ajax_log_whatsapp.php?test_admin=1&number=' + encodeURIComponent(rawNumber) + '&admin_template_name=' + encodeURIComponent(adminTpl))
+            .then(res => res.json())
+            .then(data => {
+                btnQuickTestAdmin.disabled = false;
+                btnQuickTestAdmin.innerHTML = '<i class="fab fa-whatsapp me-1"></i> Send Test Admin Alert to this number';
 
-                    if (data.success) {
-                        const msgId = data.message_id ? `<div class="mt-1"><span class="badge bg-success bg-opacity-75 text-wrap font-monospace fw-normal text-start" style="font-size:0.75rem; word-break:break-all; max-width:100%; display:inline-block;">ID: ${data.message_id}</span></div>` : '';
-                        adminTestResult.className = 'alert alert-success py-3 small mt-2 shadow-sm rounded-3';
-                        adminTestResult.innerHTML = `
-                            <div class="fw-bold text-success"><i class="fas fa-check-circle me-1"></i> Meta API Accepted Message!</div>
-                            ${msgId}
-                            <div class="mt-2 pt-2 border-top border-success border-opacity-25 text-dark" style="font-size:0.82rem; line-height:1.45;">
-                                <strong>⚠️ Agar WhatsApp par turant receive na ho, toh ye 2 baatein check karein:</strong>
-                                <ol class="mb-0 ps-3 mt-1 text-dark">
-                                    <li><strong>24-Hour Window Rule:</strong> Apne personal phone (<code>${rawNumber}</code>) se apne Business number (<strong>+91 9721083003</strong>) par WhatsApp par <strong>"Hi"</strong> message send kijiye taki Meta incoming session open ho sake.</li>
-                                    <li><strong>Meta App "Development Mode":</strong> Agar Meta Developer Console (<code>developers.facebook.com</code>) me aapka App <em>Development Mode</em> me hai, toh <em>WhatsApp &gt; API Setup &gt; Step 5</em> me <code>${rawNumber}</code> number add hona zaroori hai, ya App ko <strong>Live Mode</strong> me switch karein.</li>
-                                </ol>
-                                <div class="mt-2 text-end">
-                                    <a href="whatsapp_debug.php" target="_blank" class="fw-bold text-success text-decoration-underline"><i class="fas fa-external-link-alt me-1"></i>Open Full Meta Debug Log</a>
-                                </div>
-                            </div>
-                        `;
-                    } else {
-                        adminTestResult.className = 'alert alert-danger py-2 small mt-2';
-                        adminTestResult.innerHTML = `❌ <strong>Alert Failed:</strong> ${data.error || 'Unknown error'}`
-                            + (data.details ? `<br><small>${data.details}</small>` : '')
-                            + `<br><small class="mt-1 d-block">Check <a href="whatsapp_debug.php" target="_blank" class="alert-link">WhatsApp Debug Tool</a> for details.</small>`;
-                    }
-                })
-                .catch(err => {
-                    btnQuickTestAdmin.disabled = false;
-                    btnQuickTestAdmin.innerHTML = '<i class="fab fa-whatsapp me-1"></i> Send Test Admin Alert to this number';
+                if (data.success) {
+                    const msgId = data.message_id ? `<div class="mt-1 font-monospace small">Message ID: ${data.message_id}</div>` : '';
+                    adminTestResult.className = 'alert alert-success py-2 small mt-2';
+                    adminTestResult.innerHTML = `✅ <strong>Admin Alert Sent!</strong> Meta accepted message.${msgId}`;
+                    adminTestResult.classList.remove('d-none');
+                } else {
                     adminTestResult.className = 'alert alert-danger py-2 small mt-2';
-                    adminTestResult.innerText = 'Network error: ' + err.message;
-                });
-        });
-    }
+                    adminTestResult.innerHTML = `❌ <strong>Failed:</strong> ${data.error || 'Meta API error'}`;
+                    adminTestResult.classList.remove('d-none');
+                }
+            })
+            .catch(err => {
+                btnQuickTestAdmin.disabled = false;
+                btnQuickTestAdmin.innerHTML = '<i class="fab fa-whatsapp me-1"></i> Send Test Admin Alert to this number';
+                adminTestResult.className = 'alert alert-danger py-2 small mt-2';
+                adminTestResult.innerText = 'Network error: ' + err.message;
+                adminTestResult.classList.remove('d-none');
+            });
+    });
 });
 </script>
 
