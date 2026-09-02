@@ -382,8 +382,12 @@ function sendCustomerOrderStatusWhatsApp($conn, $order_id) {
         // Fetch Order details
         $order_id = intval($order_id);
         $q = $conn->query("
-            SELECT o.id, o.status, o.total_amount, o.created_at, u.name, u.phone, 
-                   (SELECT tracking_number FROM order_tracking WHERE order_id = o.id LIMIT 1) as tracking_number
+            SELECT o.id, o.status, o.total_amount, o.created_at, o.payment_mode,
+                   u.name AS customer_name, u.phone AS customer_phone,
+                   u.address AS customer_address, u.city AS customer_city, u.state AS customer_state, u.zip_code AS customer_zip,
+                   (SELECT tracking_number FROM order_tracking WHERE order_id = o.id LIMIT 1) as tracking_number,
+                   (SELECT courier_name FROM order_tracking WHERE order_id = o.id LIMIT 1) as courier_name,
+                   (SELECT estimated_delivery FROM order_tracking WHERE order_id = o.id LIMIT 1) as estimated_delivery
             FROM orders o 
             JOIN users u ON o.user_id = u.id 
             WHERE o.id = $order_id
@@ -392,27 +396,78 @@ function sendCustomerOrderStatusWhatsApp($conn, $order_id) {
         if (!$q || $q->num_rows === 0) return false;
         $order = $q->fetch_assoc();
 
-        $customerName  = trim($order['name'] ?? 'Customer');
-        $customerPhone = trim($order['phone'] ?? '');
+        $customerName  = trim($order['customer_name'] ?? 'Customer');
+        $customerPhone = trim($order['customer_phone'] ?? '');
         $orderStatus   = ucwords(str_replace('_', ' ', $order['status'] ?? 'Processing'));
         $trackingID    = !empty($order['tracking_number']) ? $order['tracking_number'] : 'N/A';
+        $courierName   = !empty($order['courier_name']) ? $order['courier_name'] : 'Courier';
         $orderAmount   = number_format((float)($order['total_amount'] ?? 0), 2);
         $orderDate     = date('d M Y', strtotime($order['created_at']));
+        $orderTime     = date('h:i A', strtotime($order['created_at']));
 
         $clean_number = normalize_whatsapp_phone_number($customerPhone);
         if (empty($clean_number)) return false;
+
+        // Status description / message
+        $statusMessage = "Your order #$order_id is currently $orderStatus.";
+        if (strtolower($order['status']) === 'shipped') {
+            $statusMessage = "Your order has been dispatched via $courierName. Tracking ID: $trackingID";
+        } elseif (strtolower($order['status']) === 'delivered') {
+            $statusMessage = "Your order has been successfully delivered. Thank you for shopping with us!";
+        } elseif (strtolower($order['status']) === 'cancelled') {
+            $statusMessage = "Your order has been cancelled. Please contact support for assistance.";
+        }
+
+        // Address
+        $addressParts = array_filter([
+            trim($order['customer_address'] ?? ''),
+            trim($order['customer_city'] ?? ''),
+            trim($order['customer_state'] ?? ''),
+            trim($order['customer_zip'] ?? '')
+        ]);
+        $deliveryAddress = !empty($addressParts) ? implode(', ', $addressParts) : 'N/A';
+
+        // Order Items List
+        $itemsList = [];
+        $items_res = $conn->query("
+            SELECT oi.quantity, oi.price, p.name as product_name
+            FROM order_items oi
+            LEFT JOIN products p ON oi.product_id = p.id
+            WHERE oi.order_id = $order_id
+        ");
+        if ($items_res && $items_res->num_rows > 0) {
+            while ($itm = $items_res->fetch_assoc()) {
+                $pName = trim($itm['product_name'] ?? 'Product');
+                $qty   = (int)($itm['quantity'] ?? 1);
+                $itemsList[] = "• {$pName} ({$qty}x)";
+            }
+        }
+        $itemsOrdered = !empty($itemsList) ? implode("\n", $itemsList) : "Order #$order_id";
+
+        // Expected Delivery Date
+        $expectedDelivery = !empty($order['estimated_delivery']) 
+            ? date('d M Y', strtotime($order['estimated_delivery'])) 
+            : date('d M Y', strtotime($order['created_at'] . ' + 4 days'));
+
+        $siteUrl = defined('SITE_URL') ? rtrim(SITE_URL, '/') : 'https://sagarstarters.com';
+        $orderLink = $siteUrl . '/my-orders.php';
 
         $bridge_template = !empty($settings['message_template']) 
             ? $settings['message_template'] 
             : "Hello Dear {CustomerName},\n\nYour Order No. #{OrderID} status has been updated.\n\nCurrent Status: *{OrderStatus}*\nTracking ID: {TrackingID}\nTotal Amount: ₹{OrderAmount}\n\nThank you for shopping with us.";
 
         $replacementValues = [
-            '{CustomerName}' => $customerName,
-            '{OrderID}'      => $order_id,
-            '{OrderStatus}'  => $orderStatus,
-            '{TrackingID}'   => $trackingID,
-            '{OrderAmount}'  => $orderAmount,
-            '{OrderDate}'    => $orderDate
+            '{CustomerName}'     => $customerName,
+            '{OrderID}'          => $order_id,
+            '{OrderStatus}'      => $orderStatus,
+            '{TrackingID}'       => $trackingID,
+            '{OrderAmount}'      => $orderAmount,
+            '{OrderDate}'        => $orderDate,
+            '{StatusMessage}'    => $statusMessage,
+            '{ItemsOrdered}'     => $itemsOrdered,
+            '{DeliveryAddress}'  => $deliveryAddress,
+            '{ExpectedDelivery}' => $expectedDelivery,
+            '{OrderLink}'        => $orderLink
         ];
         
         $message = $bridge_template;
@@ -487,16 +542,36 @@ function sendCustomerOrderStatusWhatsApp($conn, $order_id) {
                 ];
             };
 
-            // Map variables from bridge text order
-            preg_match_all('/\{(CustomerName|OrderID|OrderStatus|TrackingID|OrderAmount|OrderDate)\}/', $bridge_template, $matches);
-            $params_bridge = [];
-            if (!empty($matches[0])) {
-                foreach ($matches[0] as $varKey) {
-                    $params_bridge[] = ["type" => "text", "text" => (string)($replacementValues[$varKey] ?? '')];
-                }
-            }
+            // Standard Sequential 10-Parameter set:
+            $params_10 = [
+                ["type" => "text", "text" => (string)$customerName],    // {{1}} customer_name
+                ["type" => "text", "text" => (string)$order_id],        // {{2}} order_id
+                ["type" => "text", "text" => (string)$orderDate],       // {{3}} order_date
+                ["type" => "text", "text" => (string)$orderStatus],     // {{4}} order_status
+                ["type" => "text", "text" => (string)$statusMessage],   // {{5}} status_message
+                ["type" => "text", "text" => (string)$itemsOrdered],    // {{6}} order_items
+                ["type" => "text", "text" => (string)$orderAmount],     // {{7}} order_total
+                ["type" => "text", "text" => (string)$deliveryAddress], // {{8}} customer_address
+                ["type" => "text", "text" => (string)$expectedDelivery],// {{9}} expected_delivery_date
+                ["type" => "text", "text" => (string)$orderLink],       // {{10}} order_link
+            ];
 
-            $params_default = [
+            // Mixed parameter set (if user created draft with 1,2,9,3,10,4,5,6,7,8 order):
+            $params_mixed_10 = [
+                ["type" => "text", "text" => (string)$customerName],    // {{1}}
+                ["type" => "text", "text" => (string)$order_id],        // {{2}}
+                ["type" => "text", "text" => (string)$orderStatus],     // {{3}}
+                ["type" => "text", "text" => (string)$itemsOrdered],    // {{4}}
+                ["type" => "text", "text" => (string)$orderAmount],     // {{5}}
+                ["type" => "text", "text" => (string)$deliveryAddress], // {{6}}
+                ["type" => "text", "text" => (string)$expectedDelivery],// {{7}}
+                ["type" => "text", "text" => (string)$orderLink],       // {{8}}
+                ["type" => "text", "text" => (string)$orderDate],       // {{9}}
+                ["type" => "text", "text" => (string)$statusMessage],   // {{10}}
+            ];
+
+            // 5-parameter legacy status set:
+            $params_5 = [
                 ["type" => "text", "text" => (string)$customerName],
                 ["type" => "text", "text" => (string)$order_id],
                 ["type" => "text", "text" => (string)$orderStatus],
@@ -504,7 +579,16 @@ function sendCustomerOrderStatusWhatsApp($conn, $order_id) {
                 ["type" => "text", "text" => (string)$orderAmount],
             ];
 
-            $initial_params = !empty($params_bridge) ? $params_bridge : $params_default;
+            // Dynamic bridge parameters
+            preg_match_all('/\{(CustomerName|OrderID|OrderStatus|TrackingID|OrderAmount|OrderDate|StatusMessage|ItemsOrdered|DeliveryAddress|ExpectedDelivery|OrderLink)\}/', $bridge_template, $matches);
+            $params_bridge = [];
+            if (!empty($matches[0])) {
+                foreach ($matches[0] as $varKey) {
+                    $params_bridge[] = ["type" => "text", "text" => (string)($replacementValues[$varKey] ?? '')];
+                }
+            }
+
+            $initial_params = $params_10;
 
             $payload = $build_payload($meta_template_name, $lang_code, $initial_params, !empty($header_image_url));
             list($result, $http_code, $curl_error) = $send_meta_curl($payload);
@@ -520,12 +604,16 @@ function sendCustomerOrderStatusWhatsApp($conn, $order_id) {
 
                 // Smart Recovery 1: Parameter Count Mismatch
                 if (!$sent_successfully && ($errCode == 132000 || stripos($fullErr, 'parameter') !== false || stripos($fullErr, 'placeholder') !== false)) {
-                    $alt_params = ($initial_params === $params_bridge) ? $params_default : $params_bridge;
-                    $payload = $build_payload($meta_template_name, $lang_code, $alt_params, false);
-                    list($result, $http_code, $curl_error) = $send_meta_curl($payload);
-                    $meta_response = json_decode($result, true);
-                    if ($http_code == 200 && isset($meta_response['messages'])) {
-                        $sent_successfully = true;
+                    $retry_sets = [$params_mixed_10, $params_5, $params_bridge];
+                    foreach ($retry_sets as $p_set) {
+                        if (empty($p_set)) continue;
+                        $payload = $build_payload($meta_template_name, $lang_code, $p_set, false);
+                        list($result, $http_code, $curl_error) = $send_meta_curl($payload);
+                        $meta_response = json_decode($result, true);
+                        if ($http_code == 200 && isset($meta_response['messages'])) {
+                            $sent_successfully = true;
+                            break;
+                        }
                     }
                 }
 
