@@ -155,12 +155,11 @@ if ($sending_mode === 'api') {
         $paymentMode   = strtoupper($order['payment_mode'] ?? 'COD');
 
         $params = [];
-        // If it's the admin template (or admin test), pass the 5 standard admin parameters
-        if ($is_admin_test || $meta_template_name === $admin_tpl_override) {
+        // If it's the admin template (or admin test), standard is 4 parameters
+        if ($is_admin_test || (!empty($admin_tpl_override) && $meta_template_name === $admin_tpl_override)) {
             $params = [
                 ["type" => "text", "text" => (string)$order_id],
                 ["type" => "text", "text" => (string)$customerName],
-                ["type" => "text", "text" => (string)$customerPhone],
                 ["type" => "text", "text" => (string)$orderAmount],
                 ["type" => "text", "text" => (string)$paymentMode],
             ];
@@ -190,12 +189,8 @@ if ($sending_mode === 'api') {
             ]
         ];
         
-        // Add header image component if configured or if admin template
+        // Add header image component ONLY if configured in settings
         $header_image_url = trim($settings['wa_header_image_url'] ?? '');
-        if (empty($header_image_url) && ($is_admin_test || $meta_template_name === 'admin_new_order_alert')) {
-            $header_image_url = 'https://sagarstarters.com/assets/images/admin_order_alert_banner.jpg';
-        }
-
         if (!empty($header_image_url)) {
             array_unshift($components, [
                 "type" => "header",
@@ -253,34 +248,89 @@ if ($sending_mode === 'api') {
     list($result, $http_code, $curl_error) = $send_to_meta($payload);
     $meta_response = json_decode($result, true);
 
-    // Smart Auto-Recovery: if Meta failed because header was expected or unexpected
+    // Smart Auto-Recovery: if Meta failed, retry with parameter adjustments or header fixes
     if ($http_code != 200 && isset($payload['template'])) {
-        $errMsg = $meta_response['error']['message'] ?? '';
+        $errMsg     = $meta_response['error']['message'] ?? '';
         $errDetails = $meta_response['error']['error_data']['details'] ?? '';
-        $fullErr = $errMsg . ' ' . $errDetails;
+        $errCode    = (int)($meta_response['error']['code'] ?? 0);
+        $fullErr    = $errMsg . ' ' . $errDetails;
 
-        if (stripos($fullErr, 'expected IMAGE') !== false) {
-            // Add image header and retry
-            $fallback_img = 'https://sagarstarters.com/assets/images/auth_banner.jpg';
-            $has_header = false;
-            foreach ($payload['template']['components'] as $c) {
-                if (($c['type'] ?? '') === 'header') { $has_header = true; break; }
-            }
-            if (!$has_header) {
-                array_unshift($payload['template']['components'], [
-                    "type" => "header",
-                    "parameters" => [["type" => "image", "image" => ["link" => $fallback_img]]]
-                ]);
+        // Auto-Recovery A: Parameter count mismatch
+        if ($errCode == 132000 || stripos($fullErr, 'parameter') !== false || stripos($fullErr, 'placeholder') !== false) {
+            if (count($payload['template']['components'][0]['parameters']) === 4) {
+                // Try 5 parameters (including Phone)
+                $payload['template']['components'][0]['parameters'] = [
+                    ["type" => "text", "text" => (string)$order_id],
+                    ["type" => "text", "text" => (string)$customerName],
+                    ["type" => "text", "text" => (string)$customerPhone],
+                    ["type" => "text", "text" => (string)$orderAmount],
+                    ["type" => "text", "text" => (string)$paymentMode],
+                ];
+                list($result, $http_code, $curl_error) = $send_to_meta($payload);
+                $meta_response = json_decode($result, true);
+            } elseif (count($payload['template']['components'][0]['parameters']) === 5) {
+                // Try 4 parameters
+                $payload['template']['components'][0]['parameters'] = [
+                    ["type" => "text", "text" => (string)$order_id],
+                    ["type" => "text", "text" => (string)$customerName],
+                    ["type" => "text", "text" => (string)$orderAmount],
+                    ["type" => "text", "text" => (string)$paymentMode],
+                ];
                 list($result, $http_code, $curl_error) = $send_to_meta($payload);
                 $meta_response = json_decode($result, true);
             }
-        } elseif (stripos($fullErr, 'expected NO_HEADER') !== false || stripos($fullErr, 'unexpected header') !== false) {
-            // Remove header and retry
-            $payload['template']['components'] = array_values(array_filter($payload['template']['components'], function($c) {
-                return ($c['type'] ?? '') !== 'header';
-            }));
+        }
+
+        // Auto-Recovery B: Header expected or unexpected
+        if ($http_code != 200) {
+            if (stripos($fullErr, 'expected IMAGE') !== false || (stripos($fullErr, 'header') !== false && stripos($fullErr, 'expected') !== false)) {
+                $fallback_img = !empty($header_image_url) ? $header_image_url : 'https://sagarstarters.com/assets/images/auth_banner.jpg';
+                $has_header = false;
+                foreach ($payload['template']['components'] as $c) {
+                    if (($c['type'] ?? '') === 'header') { $has_header = true; break; }
+                }
+                if (!$has_header) {
+                    array_unshift($payload['template']['components'], [
+                        "type" => "header",
+                        "parameters" => [["type" => "image", "image" => ["link" => $fallback_img]]]
+                    ]);
+                    list($result, $http_code, $curl_error) = $send_to_meta($payload);
+                    $meta_response = json_decode($result, true);
+                }
+            } elseif (stripos($fullErr, 'expected NO_HEADER') !== false || stripos($fullErr, 'unexpected header') !== false || stripos($fullErr, 'format: TEXT') !== false || stripos($fullErr, 'components[0]') !== false) {
+                $payload['template']['components'] = array_values(array_filter($payload['template']['components'], function($c) {
+                    return ($c['type'] ?? '') !== 'header';
+                }));
+                list($result, $http_code, $curl_error) = $send_to_meta($payload);
+                $meta_response = json_decode($result, true);
+            }
+        }
+
+        // Auto-Recovery C: Language code mismatch (en vs en_US)
+        if ($http_code != 200 && ($errCode == 132001 || stripos($fullErr, 'does not exist') !== false || stripos($fullErr, 'language') !== false)) {
+            $curr_lang = $payload['template']['language']['code'] ?? 'en';
+            $payload['template']['language']['code'] = ($curr_lang === 'en') ? 'en_US' : 'en';
             list($result, $http_code, $curl_error) = $send_to_meta($payload);
             $meta_response = json_decode($result, true);
+        }
+
+        // Auto-Recovery D: Final Fallback to Text Message
+        if ($http_code != 200 && $is_admin_test) {
+            $text_payload = [
+                "messaging_product" => "whatsapp",
+                "recipient_type"    => "individual",
+                "to"                => $clean_number,
+                "type"              => "text",
+                "text"              => ["preview_url" => false, "body" => $message]
+            ];
+            list($text_result, $text_code, $text_err) = $send_to_meta($text_payload);
+            $text_meta = json_decode($text_result, true);
+            if ($text_code == 200 && isset($text_meta['messages'])) {
+                $payload   = $text_payload;
+                $result    = $text_result;
+                $http_code = $text_code;
+                $meta_response = $text_meta;
+            }
         }
     }
 

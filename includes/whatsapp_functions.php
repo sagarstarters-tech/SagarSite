@@ -205,11 +205,20 @@ function sendAutomatedWhatsApp($conn, $order_id) {
  * @param int    $order_id The order ID
  * @return bool  True if sent successfully
  */
+/**
+ * Send WhatsApp notification to ADMIN when a new order is placed.
+ * Fail-safe: errors are logged but never block order completion.
+ *
+ * @param mysqli $conn    Database connection
+ * @param int    $order_id The order ID
+ * @return bool  True if sent successfully
+ */
 function sendAdminOrderNotification($conn, $order_id) {
     try {
         // Ensure admin notification columns exist
         $conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS admin_whatsapp_number VARCHAR(20) NOT NULL DEFAULT ''");
         $conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS admin_notify_on_new_order TINYINT(1) NOT NULL DEFAULT 1");
+        $conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS admin_template_name VARCHAR(100) NOT NULL DEFAULT ''");
 
         // Check if feature is enabled and admin number is configured
         $set_q = $conn->query("SELECT * FROM whatsapp_settings WHERE id = 1");
@@ -251,9 +260,9 @@ function sendAdminOrderNotification($conn, $order_id) {
         $order = $q->fetch_assoc();
 
         // Build admin notification message
-        $customerName  = trim($order['customer_name']);
-        $customerPhone = trim($order['customer_phone']);
-        $orderAmount   = number_format($order['total_amount'] ?? 0, 2);
+        $customerName  = trim($order['customer_name'] ?? 'Customer');
+        $customerPhone = trim($order['customer_phone'] ?? 'N/A');
+        $orderAmount   = number_format((float)($order['total_amount'] ?? 0), 2);
         $paymentMode   = strtoupper($order['payment_mode'] ?? 'N/A');
         $orderTime     = date('d M Y, h:i A', strtotime($order['created_at']));
 
@@ -266,91 +275,9 @@ function sendAdminOrderNotification($conn, $order_id) {
         $adminMessage .= "Time: $orderTime\n\n";
         $adminMessage .= "Login to admin panel to process this order.";
 
-        // Check if Meta Template is configured to enable 24/7 delivery without requiring "Hi"
-        $admin_tpl_name = trim($settings['admin_template_name'] ?? '');
-        if (empty($admin_tpl_name)) {
-            $admin_tpl_name = trim($settings['meta_template_name'] ?? '');
-        }
-
-        if (!empty($admin_tpl_name)) {
-            // ── 24/7 TEMPLATE MODE (Bypasses 24-hour restriction) ──
-            $params = [];
-            
-            // If it's a dedicated admin template (e.g. admin_new_order_alert)
-            if ($admin_tpl_name !== ($settings['meta_template_name'] ?? '')) {
-                $params = [
-                    ["type" => "text", "text" => (string)$order_id],
-                    ["type" => "text", "text" => (string)$customerName],
-                    ["type" => "text", "text" => (string)$customerPhone],
-                    ["type" => "text", "text" => (string)$orderAmount],
-                    ["type" => "text", "text" => (string)$paymentMode],
-                ];
-            } else {
-                // Fallback mapping if using customer template
-                $orderStatus = ucwords(str_replace('_', ' ', $order['status'] ?? 'Processing'));
-                $trackingID  = 'N/A';
-                
-                $replacementValues = [
-                    '{CustomerName}' => $customerName,
-                    '{OrderID}'      => $order_id,
-                    '{OrderStatus}'  => $orderStatus,
-                    '{TrackingID}'   => $trackingID,
-                    '{OrderAmount}'  => $orderAmount
-                ];
-
-                preg_match_all('/\{(CustomerName|OrderID|OrderStatus|TrackingID|OrderAmount)\}/', $settings['message_template'], $matches);
-                if (!empty($matches[0])) {
-                    foreach ($matches[0] as $varKey) {
-                        $params[] = ["type" => "text", "text" => (string)$replacementValues[$varKey]];
-                    }
-                }
-            }
-            
-            $components = [
-                [
-                    "type" => "body",
-                    "parameters" => $params
-                ]
-            ];
-
-            $header_image_url = trim($settings['wa_header_image_url'] ?? '');
-            if (empty($header_image_url) && $admin_tpl_name === 'admin_new_order_alert') {
-                $header_image_url = 'https://sagarstarters.com/assets/images/admin_order_alert_banner.jpg';
-            }
-
-            if (!empty($header_image_url)) {
-                array_unshift($components, [
-                    "type" => "header",
-                    "parameters" => [
-                        [
-                            "type" => "image",
-                            "image" => ["link" => $header_image_url]
-                        ]
-                    ]
-                ]);
-            }
-
-            $payload = [
-                "messaging_product" => "whatsapp",
-                "recipient_type"    => "individual",
-                "to"                => $clean_admin,
-                "type"              => "template",
-                "template"          => [
-                    "name"       => $admin_tpl_name,
-                    "language"   => ["code" => trim($settings['meta_template_lang'] ?? 'en')],
-                    "components" => $components
-                ]
-            ];
-        } else {
-            // ── TEXT MODE (Requires 24-hour conversation window) ──
-            $payload = [
-                "messaging_product" => "whatsapp",
-                "recipient_type"    => "individual",
-                "to"                => $clean_admin,
-                "type"              => "text",
-                "text"              => ["preview_url" => false, "body" => $adminMessage]
-            ];
-        }
+        $token    = trim($settings['api_token']);
+        $phone_id = trim($settings['phone_number_id']);
+        $url      = "https://graph.facebook.com/v21.0/{$phone_id}/messages";
 
         $send_admin_meta = function($pay) use ($url, $token) {
             $ch = curl_init($url);
@@ -372,35 +299,172 @@ function sendAdminOrderNotification($conn, $order_id) {
             return [$res, $code, $err];
         };
 
-        list($result, $http_code, $curl_error) = $send_admin_meta($payload);
-        $meta_response = json_decode($result, true);
+        $admin_tpl_name = trim($settings['admin_template_name'] ?? '');
+        if (empty($admin_tpl_name)) {
+            $admin_tpl_name = trim($settings['meta_template_name'] ?? '');
+        }
 
-        // Smart Auto-Recovery for header mismatch
-        if ($http_code != 200 && isset($payload['template'])) {
-            $errMsg = $meta_response['error']['message'] ?? '';
-            $errDetails = $meta_response['error']['error_data']['details'] ?? '';
-            $fullErr = $errMsg . ' ' . $errDetails;
+        $header_image_url = trim($settings['wa_header_image_url'] ?? '');
+        $lang_code = trim($settings['meta_template_lang'] ?? 'en');
+        if (empty($lang_code)) $lang_code = 'en';
 
-            if (stripos($fullErr, 'expected IMAGE') !== false) {
-                $fallback_img = 'https://sagarstarters.com/assets/images/auth_banner.jpg';
-                $has_header = false;
-                foreach ($payload['template']['components'] as $c) {
-                    if (($c['type'] ?? '') === 'header') { $has_header = true; break; }
-                }
-                if (!$has_header) {
-                    array_unshift($payload['template']['components'], [
+        $result = '';
+        $http_code = 0;
+        $curl_error = '';
+        $payload = [];
+        $sent_successfully = false;
+
+        if (!empty($admin_tpl_name)) {
+            // Helper to build template payload
+            $build_tpl_payload = function($tplName, $lang, $paramList, $includeHeaderImg) use ($clean_admin, $header_image_url) {
+                $components = [
+                    [
+                        "type" => "body",
+                        "parameters" => $paramList
+                    ]
+                ];
+                if ($includeHeaderImg && !empty($header_image_url)) {
+                    array_unshift($components, [
                         "type" => "header",
-                        "parameters" => [["type" => "image", "image" => ["link" => $fallback_img]]]
+                        "parameters" => [
+                            [
+                                "type" => "image",
+                                "image" => ["link" => $header_image_url]
+                            ]
+                        ]
                     ]);
+                }
+                return [
+                    "messaging_product" => "whatsapp",
+                    "recipient_type"    => "individual",
+                    "to"                => $clean_admin,
+                    "type"              => "template",
+                    "template"          => [
+                        "name"       => $tplName,
+                        "language"   => ["code" => $lang],
+                        "components" => $components
+                    ]
+                ];
+            };
+
+            // Standard Parameter sets:
+            // 4-param format (Default for recommended admin template: OrderID, Customer, Amount, Payment)
+            $params_4 = [
+                ["type" => "text", "text" => (string)$order_id],
+                ["type" => "text", "text" => (string)$customerName],
+                ["type" => "text", "text" => (string)$orderAmount],
+                ["type" => "text", "text" => (string)$paymentMode],
+            ];
+            // 5-param format (OrderID, Customer, Phone, Amount, Payment)
+            $params_5 = [
+                ["type" => "text", "text" => (string)$order_id],
+                ["type" => "text", "text" => (string)$customerName],
+                ["type" => "text", "text" => (string)$customerPhone],
+                ["type" => "text", "text" => (string)$orderAmount],
+                ["type" => "text", "text" => (string)$paymentMode],
+            ];
+
+            // If using customer template placeholders mapping
+            if ($admin_tpl_name === ($settings['meta_template_name'] ?? '')) {
+                $orderStatus = ucwords(str_replace('_', ' ', $order['status'] ?? 'Processing'));
+                $trackingID  = 'N/A';
+                $replacementValues = [
+                    '{CustomerName}' => $customerName,
+                    '{OrderID}'      => $order_id,
+                    '{OrderStatus}'  => $orderStatus,
+                    '{TrackingID}'   => $trackingID,
+                    '{OrderAmount}'  => $orderAmount
+                ];
+                $cust_params = [];
+                preg_match_all('/\{(CustomerName|OrderID|OrderStatus|TrackingID|OrderAmount)\}/', $settings['message_template'], $matches);
+                if (!empty($matches[0])) {
+                    foreach ($matches[0] as $varKey) {
+                        $cust_params[] = ["type" => "text", "text" => (string)($replacementValues[$varKey] ?? '')];
+                    }
+                }
+                $initial_params = !empty($cust_params) ? $cust_params : $params_4;
+            } else {
+                // For admin_new_order_alert or other dedicated admin templates, standard is 4 params
+                $initial_params = $params_4;
+            }
+
+            // Attempt 1: Send with initial parameters (without forcing header unless set in settings)
+            $payload = $build_tpl_payload($admin_tpl_name, $lang_code, $initial_params, !empty($header_image_url));
+            list($result, $http_code, $curl_error) = $send_admin_meta($payload);
+            $meta_response = json_decode($result, true);
+
+            if ($http_code == 200 && isset($meta_response['messages'])) {
+                $sent_successfully = true;
+            } else {
+                $errMsg     = $meta_response['error']['message'] ?? '';
+                $errDetails = $meta_response['error']['error_data']['details'] ?? '';
+                $errCode    = (int)($meta_response['error']['code'] ?? 0);
+                $fullErr    = $errMsg . ' ' . $errDetails;
+
+                // Smart Recovery 1: Parameter Count Mismatch (Error 132000 or parameter count issue)
+                if (!$sent_successfully && ($errCode == 132000 || stripos($fullErr, 'parameter') !== false || stripos($fullErr, 'placeholder') !== false)) {
+                    // If we tried 4 params, try 5 params; if we tried 5 params, try 4 params
+                    $alt_params = ($initial_params === $params_4) ? $params_5 : $params_4;
+                    $payload = $build_tpl_payload($admin_tpl_name, $lang_code, $alt_params, false);
                     list($result, $http_code, $curl_error) = $send_admin_meta($payload);
                     $meta_response = json_decode($result, true);
+                    if ($http_code == 200 && isset($meta_response['messages'])) {
+                        $sent_successfully = true;
+                    }
                 }
-            } elseif (stripos($fullErr, 'expected NO_HEADER') !== false || stripos($fullErr, 'unexpected header') !== false) {
-                $payload['template']['components'] = array_values(array_filter($payload['template']['components'], function($c) {
-                    return ($c['type'] ?? '') !== 'header';
-                }));
-                list($result, $http_code, $curl_error) = $send_admin_meta($payload);
-                $meta_response = json_decode($result, true);
+
+                // Smart Recovery 2: Header Mismatch (Header expected vs unexpected)
+                if (!$sent_successfully && (stripos($fullErr, 'header') !== false || stripos($fullErr, 'components[0]') !== false)) {
+                    if (stripos($fullErr, 'IMAGE') !== false || stripos($fullErr, 'expected') !== false) {
+                        // Template expects a header image
+                        $fallback_img = !empty($header_image_url) ? $header_image_url : 'https://sagarstarters.com/assets/images/admin_order_alert_banner.jpg';
+                        $payload = $build_tpl_payload($admin_tpl_name, $lang_code, $initial_params, true);
+                        if (empty($payload['template']['components'][0]) || $payload['template']['components'][0]['type'] !== 'header') {
+                            array_unshift($payload['template']['components'], [
+                                "type" => "header",
+                                "parameters" => [["type" => "image", "image" => ["link" => $fallback_img]]]
+                            ]);
+                        }
+                    } else {
+                        // Template does NOT support header
+                        $payload = $build_tpl_payload($admin_tpl_name, $lang_code, $initial_params, false);
+                    }
+                    list($result, $http_code, $curl_error) = $send_admin_meta($payload);
+                    $meta_response = json_decode($result, true);
+                    if ($http_code == 200 && isset($meta_response['messages'])) {
+                        $sent_successfully = true;
+                    }
+                }
+
+                // Smart Recovery 3: Language code mismatch (en vs en_US)
+                if (!$sent_successfully && ($errCode == 132001 || stripos($fullErr, 'does not exist') !== false || stripos($fullErr, 'language') !== false)) {
+                    $alt_lang = ($lang_code === 'en') ? 'en_US' : 'en';
+                    $payload = $build_tpl_payload($admin_tpl_name, $alt_lang, $initial_params, false);
+                    list($result, $http_code, $curl_error) = $send_admin_meta($payload);
+                    $meta_response = json_decode($result, true);
+                    if ($http_code == 200 && isset($meta_response['messages'])) {
+                        $sent_successfully = true;
+                    }
+                }
+            }
+        }
+
+        // Final Fallback: Direct text message if template mode was disabled or failed
+        if (!$sent_successfully) {
+            $text_payload = [
+                "messaging_product" => "whatsapp",
+                "recipient_type"    => "individual",
+                "to"                => $clean_admin,
+                "type"              => "text",
+                "text"              => ["preview_url" => false, "body" => $adminMessage]
+            ];
+            list($text_result, $text_code, $text_err) = $send_admin_meta($text_payload);
+            $text_meta = json_decode($text_result, true);
+            if ($text_code == 200 && isset($text_meta['messages'])) {
+                $payload   = $text_payload;
+                $result    = $text_result;
+                $http_code = $text_code;
+                $sent_successfully = true;
             }
         }
 
@@ -441,7 +505,7 @@ function sendAdminOrderNotification($conn, $order_id) {
         $conn->query("INSERT INTO whatsapp_logs (order_id, customer_number, message, sending_mode, status) 
             VALUES ($order_id, '$clean_admin', '" . $conn->real_escape_string($adminMessage) . "', 'api', '" . $conn->real_escape_string($status_msg) . "')");
 
-        return $http_code == 200;
+        return $sent_successfully;
 
     } catch (Exception $e) {
         error_log("[WhatsApp Admin] Exception Order#$order_id: " . $e->getMessage());
