@@ -88,16 +88,19 @@ if (strtoupper($code) === 'PAYMENT_SUCCESS' || strtoupper($code) === 'SUCCESS') 
         $ord = ($ord_q && $ord_q->num_rows > 0) ? $ord_q->fetch_assoc() : [];
         $is_partial_cod_order = isset($ord['payment_mode']) && $ord['payment_mode'] === 'COD_PARTIAL';
 
+        $just_transitioned = false;
         if ($is_partial_cod_order) {
             // Partial COD: advance paid. Keep status=pending, payment_method=cod, payment_mode=COD_PARTIAL
             $conn->query("UPDATE orders SET status='pending', payment_method='cod', payment_mode='COD_PARTIAL' WHERE id=$order_id AND status='pending'");
+            $just_transitioned = ($conn->affected_rows > 0);
         } else {
             // Standard PhonePe full payment
             $conn->query("UPDATE orders SET status='processing', payment_method='phonepe', payment_mode='phonepe' WHERE id=$order_id AND status='pending'");
+            $just_transitioned = ($conn->affected_rows > 0);
         }
         
-        // ── Order Confirmation Email ──────────────────────────────────
-        if (!empty($ord)) {
+        // ── Order Confirmation Email & WhatsApp (Trigger only on initial transition) ──
+        if ($just_transitioned && !empty($ord)) {
             $user_id   = $ord['user_id'];
             $grand_total = $ord['total_amount'];
     

@@ -131,7 +131,27 @@ function sendCustomerOrderConfirmationWhatsApp($conn, $order_id) {
         $clean_number = normalize_whatsapp_phone_number($customerPhone);
         if (empty($clean_number)) return false;
 
-        // Address
+        // ── Deduplication Guard: Prevent duplicate customer order confirmations ──
+        $cust_lock_name = "wa_cust_confirm_" . intval($order_id);
+        $conn->query("SELECT GET_LOCK('$cust_lock_name', 5)");
+
+        $already_sent_cust = false;
+        $chk_cust = $conn->query("
+            SELECT id FROM whatsapp_logs 
+            WHERE order_id = $order_id 
+              AND customer_number = '$clean_number'
+              AND (status LIKE '%Customer Order Confirmation Sent%' OR status LIKE '%Order Confirmation Sent%' OR status LIKE '%Sent via Meta API%')
+            LIMIT 1
+        ");
+        if ($chk_cust && $chk_cust->num_rows > 0) {
+            $already_sent_cust = true;
+        }
+
+        if ($already_sent_cust) {
+            $conn->query("SELECT RELEASE_LOCK('$cust_lock_name')");
+            error_log("[WhatsApp] Customer Order Confirmation already sent for Order #$order_id. Skipping duplicate dispatch.");
+            return true;
+        }
         $addressParts = array_filter([
             trim($order['customer_address'] ?? ''),
             trim($order['customer_city'] ?? ''),
@@ -396,9 +416,16 @@ function sendCustomerOrderConfirmationWhatsApp($conn, $order_id) {
         $conn->query("INSERT INTO whatsapp_logs (order_id, customer_number, message, sending_mode, status) 
             VALUES ($order_id, '$clean_number', '" . $conn->real_escape_string($message) . "', 'api', '" . $conn->real_escape_string($status_msg) . "')");
 
+        if (isset($cust_lock_name)) {
+            $conn->query("SELECT RELEASE_LOCK('$cust_lock_name')");
+        }
+
         return $sent_successfully;
 
     } catch (Exception $e) {
+        if (isset($cust_lock_name)) {
+            $conn->query("SELECT RELEASE_LOCK('$cust_lock_name')");
+        }
         error_log("[WhatsApp] Customer Order Confirmation Exception Order#$order_id: " . $e->getMessage());
         return false;
     }
@@ -866,6 +893,28 @@ function sendAdminOrderNotification($conn, $order_id) {
         $clean_admin = normalize_whatsapp_phone_number($admin_number);
         if (empty($clean_admin)) return false;
 
+        // ── Deduplication Guard: Prevent duplicate admin new order alerts ──
+        $admin_lock_name = "wa_admin_alert_" . intval($order_id);
+        $conn->query("SELECT GET_LOCK('$admin_lock_name', 5)");
+
+        $already_sent_admin = false;
+        $chk_admin = $conn->query("
+            SELECT id FROM whatsapp_logs 
+            WHERE order_id = $order_id 
+              AND customer_number = '$clean_admin'
+              AND (status LIKE '%Admin Alert Sent%' OR status LIKE '%Admin Sent%')
+            LIMIT 1
+        ");
+        if ($chk_admin && $chk_admin->num_rows > 0) {
+            $already_sent_admin = true;
+        }
+
+        if ($already_sent_admin) {
+            $conn->query("SELECT RELEASE_LOCK('$admin_lock_name')");
+            error_log("[WhatsApp Admin] Admin order alert already sent for Order #$order_id. Skipping duplicate dispatch.");
+            return true;
+        }
+
         // Fetch order details for admin message
         $order_id = intval($order_id);
         $q = $conn->query("
@@ -1177,9 +1226,16 @@ function sendAdminOrderNotification($conn, $order_id) {
         $conn->query("INSERT INTO whatsapp_logs (order_id, customer_number, message, sending_mode, status) 
             VALUES ($order_id, '$clean_admin', '" . $conn->real_escape_string($adminMessage) . "', 'api', '" . $conn->real_escape_string($status_msg) . "')");
 
+        if (isset($admin_lock_name)) {
+            $conn->query("SELECT RELEASE_LOCK('$admin_lock_name')");
+        }
+
         return $sent_successfully;
 
     } catch (Exception $e) {
+        if (isset($admin_lock_name)) {
+            $conn->query("SELECT RELEASE_LOCK('$admin_lock_name')");
+        }
         error_log("[WhatsApp Admin] Exception Order#$order_id: " . $e->getMessage());
         return false;
     }

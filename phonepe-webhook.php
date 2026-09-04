@@ -79,15 +79,18 @@ if ($finalStatus === 'SUCCESS') {
     $ord = ($ord_q && $ord_q->num_rows > 0) ? $ord_q->fetch_assoc() : [];
     $is_partial_cod = isset($ord['payment_mode']) && $ord['payment_mode'] === 'COD_PARTIAL';
 
+    $just_transitioned = false;
     if ($is_partial_cod) {
         // Partial COD: advance paid. Keep as pending COD (delivery will collect remainder).
-        $conn->query("UPDATE orders SET status='pending', payment_method='cod', payment_mode='COD_PARTIAL' WHERE id=$order_id");
+        $conn->query("UPDATE orders SET status='pending', payment_method='cod', payment_mode='COD_PARTIAL' WHERE id=$order_id AND status='pending'");
+        $just_transitioned = ($conn->affected_rows > 0);
     } else {
         // Standard PhonePe: mark as processing
-        $conn->query("UPDATE orders SET status='processing', payment_method='phonepe', payment_mode='phonepe' WHERE id=$order_id");
+        $conn->query("UPDATE orders SET status='processing', payment_method='phonepe', payment_mode='phonepe' WHERE id=$order_id AND status='pending'");
+        $just_transitioned = ($conn->affected_rows > 0);
     }
 
-    if (!empty($ord)) {
+    if ($just_transitioned && !empty($ord)) {
         $user_id    = $ord['user_id'];
         $grand_total = $ord['total_amount'];
 

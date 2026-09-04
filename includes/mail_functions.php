@@ -217,6 +217,15 @@ function sendOrderConfirmationEmail($conn, $order_id, $customer_email, $customer
     
     $settings_q2 = $conn->query("SELECT setting_value FROM settings WHERE setting_key = 'admin_email'");
     $admin_email = $settings_q2->fetch_assoc()['setting_value'] ?? SMTP_USER;
+
+    // Prevent duplicate order confirmation emails for the same order
+    if ($conn && !empty($order_id)) {
+        $chk_email = $conn->query("SELECT id FROM email_logs WHERE order_id = " . intval($order_id) . " AND email_type = 'customer_order' AND status = 'sent' LIMIT 1");
+        if ($chk_email && $chk_email->num_rows > 0) {
+            error_log("[Email] Order confirmation email already sent for Order #$order_id. Skipping duplicate.");
+            return true;
+        }
+    }
     
     // Validate recipient emails
     if (!filter_var($customer_email, FILTER_VALIDATE_EMAIL)) {
