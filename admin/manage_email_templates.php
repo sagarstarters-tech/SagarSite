@@ -240,6 +240,27 @@ foreach ($defaults as $d) {
     }
 }
 
+// Auto-upgrade legacy order templates if found in DB
+$legacy_cust = $conn->query("SELECT id, body FROM email_templates WHERE tpl_key = 'order_confirmation_customer' LIMIT 1");
+if ($legacy_cust && $row_c = $legacy_cust->fetch_assoc()) {
+    if (strpos($row_c['body'], 'Order Instructions') !== false || strpos($row_c['body'], 'background-color: #0d6efd; padding: 20px;') !== false) {
+        $stmt_u = $conn->prepare("UPDATE email_templates SET body = ?, placeholders = ? WHERE id = ?");
+        $stmt_u->bind_param("ssi", $defaults[2][3], $defaults[2][4], $row_c['id']);
+        $stmt_u->execute();
+        $stmt_u->close();
+    }
+}
+
+$legacy_adm = $conn->query("SELECT id, body FROM email_templates WHERE tpl_key = 'order_confirmation_admin' LIMIT 1");
+if ($legacy_adm && $row_a = $legacy_adm->fetch_assoc()) {
+    if (strpos($row_a['body'], 'Ordered Products</h3>') !== false || strpos($row_a['body'], 'background-color: #198754;') !== false) {
+        $stmt_u = $conn->prepare("UPDATE email_templates SET body = ?, placeholders = ? WHERE id = ?");
+        $stmt_u->bind_param("ssi", $defaults[3][3], $defaults[3][4], $row_a['id']);
+        $stmt_u->execute();
+        $stmt_u->close();
+    }
+}
+
 // Fetch all templates
 $res = $conn->query("SELECT * FROM email_templates ORDER BY label ASC");
 $templates = [];

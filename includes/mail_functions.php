@@ -169,7 +169,43 @@ function getMailerInstance($conn = null) {
  */
 function sendOrderConfirmationEmail($conn, $order_id, $customer_email, $customer_name, $order_details, $subtotal, $currency, $payment_method = 'card') {
     
-    $payment_text = ($payment_method === 'cod') ? 'Cash On Delivery (COD)' : 'Credit / Debit Card';
+    // Determine accurate human-readable payment method name
+    $raw_method = strtolower(trim((string)$payment_method));
+    
+    // Check orders table if order_id is provided to detect authoritative payment info
+    if ($conn && !empty($order_id)) {
+        $ord_q = $conn->query("SELECT payment_method, payment_mode FROM orders WHERE id = " . intval($order_id) . " LIMIT 1");
+        if ($ord_q && $ord_row = $ord_q->fetch_assoc()) {
+            $db_m = strtolower(trim((string)($ord_row['payment_method'] ?? '')));
+            $db_mode = strtolower(trim((string)($ord_row['payment_mode'] ?? '')));
+            if (!empty($db_m) && ($raw_method === 'card' || empty($raw_method))) {
+                $raw_method = $db_m;
+            }
+            if ($db_mode === 'partial_cod' || $db_m === 'partial_cod') {
+                $raw_method = 'partial_cod';
+            } elseif ($db_mode === 'phonepe' || $db_m === 'phonepe') {
+                $raw_method = 'phonepe';
+            }
+        }
+    }
+
+    if ($raw_method === 'phonepe' || $raw_method === 'phonepe_upi' || $raw_method === 'upi') {
+        $payment_text = 'PhonePe UPI';
+    } elseif ($raw_method === 'partial_cod') {
+        $payment_text = 'Partial COD (Advance via PhonePe UPI + Cash On Delivery)';
+    } elseif ($raw_method === 'cod') {
+        $payment_text = 'Cash On Delivery (COD)';
+    } elseif ($raw_method === 'card' || $raw_method === 'credit_card' || $raw_method === 'debit_card') {
+        $payment_text = 'Credit / Debit Card';
+    } elseif ($raw_method === 'netbanking') {
+        $payment_text = 'Net Banking';
+    } elseif ($raw_method === 'razorpay') {
+        $payment_text = 'Razorpay Online';
+    } elseif (!empty($raw_method)) {
+        $payment_text = ucwords(str_replace(['_', '-'], ' ', $raw_method));
+    } else {
+        $payment_text = 'Online Payment';
+    }
     
     // 1. Check if emails are enabled globally
     $settings_q = $conn->query("SELECT setting_value FROM settings WHERE setting_key = 'enable_email_notifications'");
@@ -239,34 +275,8 @@ function sendOrderConfirmationEmail($conn, $order_id, $customer_email, $customer
     }
     $admin_order_url = $site_url . '/admin/manage_orders.php';
 
-    // --- 1. SEND CUSTOMER EMAIL ---
-    if ($customer_email) {
-        try {
-            $customer_mail = getMailerInstance();
-            $customer_mail->addAddress($customer_email, $customer_name);
-            $customer_mail->isHTML(true);
-
-            // Fetch template
-            $tpl = getEmailTemplate($conn, 'order_confirmation_customer');
-            $vars = [
-                'customer_name' => htmlspecialchars($customer_name),
-                'order_id' => $order_id,
-                'date_str' => $date_str,
-                'payment_method' => $payment_text,
-                'total_amount' => $currency . number_format($subtotal, 2),
-                'items_table' => $items_html,
-                'site_url' => $site_url,
-                'current_year' => date('Y')
-            ];
-
-            if ($tpl) {
-                $customer_mail->Subject = parseTemplate($tpl['subject'], $vars);
-                $customer_mail->Body = parseTemplate($tpl['body'], $vars);
-            } else {
-                // FALLBACK Case
-                $customer_mail->Subject = "Your Order #{$order_id} Has Been Confirmed";
-                $body = '
-<div style="background-color: #f1f5f9; padding: 30px 15px; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Helvetica, Arial, sans-serif;">
+    // Canonical executive layout for Customer Order Confirmation
+    $exec_customer_body = '<div style="background-color: #f1f5f9; padding: 30px 15px; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Helvetica, Arial, sans-serif;">
     <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06); line-height: 1.5;">
         <!-- Top Brand Bar -->
         <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 20px 25px; text-align: left; border-bottom: 1px solid #334155;">
@@ -301,7 +311,7 @@ function sendOrderConfirmationEmail($conn, $order_id, $customer_email, $customer
         <!-- Main Content -->
         <div style="padding: 26px;">
             <p style="font-size: 15px; color: #1e293b; margin: 0 0 12px;">
-                Hello <strong>' . htmlspecialchars($customer_name) . '</strong>,
+                Hello <strong>{customer_name}</strong>,
             </p>
             <p style="font-size: 14px; color: #475569; margin: 0 0 20px; line-height: 1.6;">
                 We are pleased to confirm your order details below. Our technical team is inspecting and packing your unit with utmost care. You will receive live courier tracking as soon as it ships.
@@ -312,17 +322,17 @@ function sendOrderConfirmationEmail($conn, $order_id, $customer_email, $customer
                 <tr>
                     <td width="50%" style="padding: 13px 16px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
                         <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Order Number</span>
-                        <strong style="font-size: 16px; color: #0284c7;">#' . $order_id . '</strong>
+                        <strong style="font-size: 16px; color: #0284c7;">#{order_id}</strong>
                     </td>
                     <td width="50%" style="padding: 13px 16px; border-bottom: 1px solid #e2e8f0;">
                         <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Order Date</span>
-                        <span style="font-size: 13px; color: #1e293b; font-weight: 600;">' . $date_str . '</span>
+                        <span style="font-size: 13px; color: #1e293b; font-weight: 600;">{date_str}</span>
                     </td>
                 </tr>
                 <tr>
                     <td width="50%" style="padding: 13px 16px; border-right: 1px solid #e2e8f0;">
                         <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Payment Method</span>
-                        <span style="font-size: 13px; color: #1e293b; font-weight: 600;">' . $payment_text . '</span>
+                        <span style="font-size: 13px; color: #1e293b; font-weight: 600;">{payment_method}</span>
                     </td>
                     <td width="50%" style="padding: 13px 16px;">
                         <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Order Status</span>
@@ -338,14 +348,14 @@ function sendOrderConfirmationEmail($conn, $order_id, $customer_email, $customer
                 <div style="font-size: 13px; font-weight: 700; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
                     📦 Order Summary
                 </div>
-                ' . $items_html . '
+                {items_table}
             </div>
 
             <!-- Call To Actions -->
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0 10px;">
                 <tr>
                     <td align="center">
-                        <a href="https://wa.me/918573934013?text=Hi%20Sagar%20Starters,%20I%20have%20a%20query%20about%20Order%20%23' . $order_id . '" style="display: inline-block; background-color: #25d366; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 700; padding: 12px 28px; border-radius: 50px; box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35);">
+                        <a href="https://wa.me/918573934013?text=Hi%20Sagar%20Starters,%20I%20have%20a%20query%20about%20Order%20%23{order_id}" style="display: inline-block; background-color: #25d366; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 700; padding: 12px 28px; border-radius: 50px; box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35);">
                             💬 WhatsApp Support
                         </a>
                     </td>
@@ -373,53 +383,14 @@ function sendOrderConfirmationEmail($conn, $order_id, $customer_email, $customer
                 Email: <a href="mailto:sagarstarters@gmail.com" style="color: #38bdf8; text-decoration: none;">sagarstarters@gmail.com</a> &nbsp;|&nbsp; Phone: <a href="tel:+918573934013" style="color: #38bdf8; text-decoration: none;">+91 85739 34013</a>
             </p>
             <p style="margin: 0; font-size: 11px; color: #475569;">
-                &copy; ' . date('Y') . ' Sagar Starter\'s. All rights reserved.
+                &copy; {current_year} Sagar Starter\'s. All rights reserved.
             </p>
         </div>
     </div>
 </div>';
-                $customer_mail->Body = $body;
-            }
-            
-            $customer_mail->send();
-            logEmailAttempt($conn, $order_id, $customer_email, 'customer_order', 'success');
-            
-        } catch (Exception $e) {
-            logEmailAttempt($conn, $order_id, $customer_email, 'customer_order', 'failed', "PHPMailer Error: {$customer_mail->ErrorInfo}");
-        }
-    }
-    
-    // --- 2. SEND ADMIN EMAIL ---
-    if ($admin_email) {
-        try {
-            $admin_mail = getMailerInstance();
-            $admin_mail->addAddress($admin_email, 'Store Administrator');
-            $admin_mail->addReplyTo($customer_email ?? SMTP_USER, $customer_name);
-            $admin_mail->isHTML(true);
 
-            // Fetch template
-            $tpl = getEmailTemplate($conn, 'order_confirmation_admin');
-            $vars = [
-                'order_id' => $order_id,
-                'customer_name' => htmlspecialchars($customer_name),
-                'customer_email' => htmlspecialchars($customer_email),
-                'date_str' => $date_str,
-                'payment_method' => $payment_text,
-                'total_amount' => $currency . number_format($subtotal, 2),
-                'items_table' => $items_html,
-                'admin_order_url' => $admin_order_url,
-                'site_url' => $site_url,
-                'current_year' => date('Y')
-            ];
-
-            if ($tpl) {
-                $admin_mail->Subject = parseTemplate($tpl['subject'], $vars);
-                $admin_mail->Body = parseTemplate($tpl['body'], $vars);
-            } else {
-                // FALLBACK Case
-                $admin_mail->Subject = "New Order Received – Order #{$order_id}";
-                $admin_body = '
-<div style="background-color: #f1f5f9; padding: 30px 15px; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Helvetica, Arial, sans-serif;">
+    // Canonical executive layout for Admin Order Notification
+    $exec_admin_body = '<div style="background-color: #f1f5f9; padding: 30px 15px; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Helvetica, Arial, sans-serif;">
     <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06); line-height: 1.5;">
         <!-- Top Admin Bar -->
         <div style="background: linear-gradient(135deg, #064e3b 0%, #065f46 100%); padding: 18px 25px; text-align: left; border-bottom: 1px solid #047857;">
@@ -448,7 +419,7 @@ function sendOrderConfirmationEmail($conn, $order_id, $customer_email, $customer
                 🛒
             </div>
             <h2 style="margin: 0 0 4px; font-size: 23px; font-weight: 800; color: #ffffff;">New Order Received!</h2>
-            <p style="margin: 0; font-size: 14px; color: #d1fae5;">Order #' . $order_id . ' has been placed and requires fulfillment.</p>
+            <p style="margin: 0; font-size: 14px; color: #d1fae5;">Order #{order_id} has been placed and requires fulfillment.</p>
         </div>
 
         <!-- Main Content -->
@@ -458,31 +429,31 @@ function sendOrderConfirmationEmail($conn, $order_id, $customer_email, $customer
                 <tr>
                     <td width="50%" style="padding: 13px 16px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
                         <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Order ID</span>
-                        <strong style="font-size: 16px; color: #059669;">#' . $order_id . '</strong>
+                        <strong style="font-size: 16px; color: #059669;">#{order_id}</strong>
                     </td>
                     <td width="50%" style="padding: 13px 16px; border-bottom: 1px solid #e2e8f0;">
                         <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Total Amount</span>
-                        <strong style="font-size: 16px; color: #0f172a;">' . $currency . number_format($subtotal, 2) . '</strong>
+                        <strong style="font-size: 16px; color: #0f172a;">{total_amount}</strong>
                     </td>
                 </tr>
                 <tr>
                     <td width="50%" style="padding: 13px 16px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
                         <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Customer Name</span>
-                        <strong style="font-size: 14px; color: #1e293b;">' . htmlspecialchars($customer_name) . '</strong>
+                        <strong style="font-size: 14px; color: #1e293b;">{customer_name}</strong>
                     </td>
                     <td width="50%" style="padding: 13px 16px; border-bottom: 1px solid #e2e8f0;">
                         <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Customer Email</span>
-                        <a href="mailto:' . htmlspecialchars($customer_email) . '" style="font-size: 13px; color: #0284c7; text-decoration: none; font-weight: 600;">' . htmlspecialchars($customer_email) . '</a>
+                        <a href="mailto:{customer_email}" style="font-size: 13px; color: #0284c7; text-decoration: none; font-weight: 600;">{customer_email}</a>
                     </td>
                 </tr>
                 <tr>
                     <td width="50%" style="padding: 13px 16px; border-right: 1px solid #e2e8f0;">
                         <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Date & Time</span>
-                        <span style="font-size: 13px; color: #1e293b; font-weight: 500;">' . $date_str . '</span>
+                        <span style="font-size: 13px; color: #1e293b; font-weight: 500;">{date_str}</span>
                     </td>
                     <td width="50%" style="padding: 13px 16px;">
                         <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Payment Method</span>
-                        <span style="font-size: 13px; color: #1e293b; font-weight: 600;">' . $payment_text . '</span>
+                        <span style="font-size: 13px; color: #1e293b; font-weight: 600;">{payment_method}</span>
                     </td>
                 </tr>
             </table>
@@ -492,17 +463,17 @@ function sendOrderConfirmationEmail($conn, $order_id, $customer_email, $customer
                 <div style="font-size: 13px; font-weight: 700; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
                     📋 Ordered Products
                 </div>
-                ' . $items_html . '
+                {items_table}
             </div>
 
             <!-- Admin Action Buttons -->
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 24px;">
                 <tr>
                     <td align="center">
-                        <a href="' . $admin_order_url . '" style="display: inline-block; background: linear-gradient(135deg, #059669 0%, #047857 100%); color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 700; padding: 12px 28px; border-radius: 50px; box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35); margin: 4px;">
+                        <a href="{admin_order_url}" style="display: inline-block; background: linear-gradient(135deg, #059669 0%, #047857 100%); color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 700; padding: 12px 28px; border-radius: 50px; box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35); margin: 4px;">
                             ⚙️ View in Admin Panel &rarr;
                         </a>
-                        <a href="mailto:' . htmlspecialchars($customer_email) . '?subject=Order%20%23' . $order_id . '%20Update" style="display: inline-block; background-color: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; text-decoration: none; font-size: 14px; font-weight: 600; padding: 11px 22px; border-radius: 50px; margin: 4px;">
+                        <a href="mailto:{customer_email}?subject=Order%20%23{order_id}%20Update" style="display: inline-block; background-color: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; text-decoration: none; font-size: 14px; font-weight: 600; padding: 11px 22px; border-radius: 50px; margin: 4px;">
                             ✉️ Email Customer
                         </a>
                     </td>
@@ -516,9 +487,88 @@ function sendOrderConfirmationEmail($conn, $order_id, $customer_email, $customer
         </div>
     </div>
 </div>';
-                $admin_mail->Body = $admin_body;
-            }
+
+    // --- 1. SEND CUSTOMER EMAIL ---
+    if ($customer_email) {
+        try {
+            $customer_mail = getMailerInstance();
+            $customer_mail->addAddress($customer_email, $customer_name);
+            $customer_mail->isHTML(true);
+
+            // Fetch template
+            $tpl = getEmailTemplate($conn, 'order_confirmation_customer');
             
+            // Check if template in DB is legacy or missing
+            if (!$tpl || empty($tpl['body']) || strpos($tpl['body'], 'Order Instructions') !== false || strpos($tpl['body'], 'background-color: #0d6efd; padding: 20px;') !== false) {
+                if ($conn) {
+                    $conn->query("UPDATE email_templates SET body = '" . $conn->real_escape_string($exec_customer_body) . "' WHERE tpl_key = 'order_confirmation_customer'");
+                }
+                $cust_subject = !empty($tpl['subject']) ? $tpl['subject'] : "Your Order #{order_id} Has Been Confirmed";
+                $cust_body = $exec_customer_body;
+            } else {
+                $cust_subject = $tpl['subject'];
+                $cust_body = $tpl['body'];
+            }
+
+            $vars = [
+                'customer_name' => htmlspecialchars($customer_name),
+                'order_id' => $order_id,
+                'date_str' => $date_str,
+                'payment_method' => $payment_text,
+                'total_amount' => $currency . number_format($subtotal, 2),
+                'items_table' => $items_html,
+                'site_url' => $site_url,
+                'current_year' => date('Y')
+            ];
+
+            $customer_mail->Subject = parseTemplate($cust_subject, $vars);
+            $customer_mail->Body = parseTemplate($cust_body, $vars);
+            $customer_mail->send();
+            logEmailAttempt($conn, $order_id, $customer_email, 'customer_order', 'success');
+            
+        } catch (Exception $e) {
+            logEmailAttempt($conn, $order_id, $customer_email, 'customer_order', 'failed', "PHPMailer Error: {$customer_mail->ErrorInfo}");
+        }
+    }
+    
+    // --- 2. SEND ADMIN EMAIL ---
+    if ($admin_email) {
+        try {
+            $admin_mail = getMailerInstance();
+            $admin_mail->addAddress($admin_email, 'Store Administrator');
+            $admin_mail->addReplyTo($customer_email ?? SMTP_USER, $customer_name);
+            $admin_mail->isHTML(true);
+
+            // Fetch template
+            $tpl = getEmailTemplate($conn, 'order_confirmation_admin');
+            
+            // Check if template in DB is legacy or missing
+            if (!$tpl || empty($tpl['body']) || strpos($tpl['body'], 'background-color: #198754;') !== false || strpos($tpl['body'], 'Ordered Products</h3>') !== false) {
+                if ($conn) {
+                    $conn->query("UPDATE email_templates SET body = '" . $conn->real_escape_string($exec_admin_body) . "' WHERE tpl_key = 'order_confirmation_admin'");
+                }
+                $admin_subject = !empty($tpl['subject']) ? $tpl['subject'] : "New Order Received – Order #{order_id}";
+                $admin_body = $exec_admin_body;
+            } else {
+                $admin_subject = $tpl['subject'];
+                $admin_body = $tpl['body'];
+            }
+
+            $vars = [
+                'order_id' => $order_id,
+                'customer_name' => htmlspecialchars($customer_name),
+                'customer_email' => htmlspecialchars($customer_email),
+                'date_str' => $date_str,
+                'payment_method' => $payment_text,
+                'total_amount' => $currency . number_format($subtotal, 2),
+                'items_table' => $items_html,
+                'admin_order_url' => $admin_order_url,
+                'site_url' => $site_url,
+                'current_year' => date('Y')
+            ];
+
+            $admin_mail->Subject = parseTemplate($admin_subject, $vars);
+            $admin_mail->Body = parseTemplate($admin_body, $vars);
             $admin_mail->send();
             logEmailAttempt($conn, $order_id, $admin_email, 'admin_order', 'success');
             
