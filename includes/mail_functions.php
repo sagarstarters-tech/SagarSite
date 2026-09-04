@@ -195,14 +195,14 @@ function sendOrderConfirmationEmail($conn, $order_id, $customer_email, $customer
 
     $date_str = date('F j, Y, g:i a');
     
-    // Common HTML Parts
-    $items_html = '<table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+    // Common HTML Parts - Professional Responsive Items Table
+    $items_html = '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-top: 10px;">
                     <thead>
-                        <tr style="background-color: #f8f9fa;">
-                            <th style="padding: 10px; border: 1px solid #dee2e6; text-align: left;">Product</th>
-                            <th style="padding: 10px; border: 1px solid #dee2e6; text-align: center;">Qty</th>
-                            <th style="padding: 10px; border: 1px solid #dee2e6; text-align: right;">Price</th>
-                            <th style="padding: 10px; border: 1px solid #dee2e6; text-align: right;">Total</th>
+                        <tr style="background-color: #f8fafc;">
+                            <th style="padding: 12px 14px; border-bottom: 1px solid #e2e8f0; text-align: left; font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Product</th>
+                            <th style="padding: 12px 14px; border-bottom: 1px solid #e2e8f0; text-align: center; font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Qty</th>
+                            <th style="padding: 12px 14px; border-bottom: 1px solid #e2e8f0; text-align: right; font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Price</th>
+                            <th style="padding: 12px 14px; border-bottom: 1px solid #e2e8f0; text-align: right; font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Total</th>
                         </tr>
                     </thead>
                     <tbody>';
@@ -210,22 +210,34 @@ function sendOrderConfirmationEmail($conn, $order_id, $customer_email, $customer
     foreach ($order_details as $item) {
         $item_total = $item['price'] * $item['qty'];
         $items_html .= '<tr>
-                            <td style="padding: 10px; border: 1px solid #dee2e6;">' . htmlspecialchars($item['name']) . '</td>
-                            <td style="padding: 10px; border: 1px solid #dee2e6; text-align: center;">' . $item['qty'] . '</td>
-                            <td style="padding: 10px; border: 1px solid #dee2e6; text-align: right;">' . $currency . number_format($item['price'], 2) . '</td>
-                            <td style="padding: 10px; border: 1px solid #dee2e6; text-align: right;">' . $currency . number_format($item_total, 2) . '</td>
+                            <td style="padding: 12px 14px; border-bottom: 1px solid #f1f5f9; text-align: left; vertical-align: middle;">
+                                <div style="font-weight: 600; font-size: 13px; color: #1e293b; line-height: 1.4;">' . htmlspecialchars($item['name']) . '</div>
+                            </td>
+                            <td style="padding: 12px 14px; border-bottom: 1px solid #f1f5f9; text-align: center; vertical-align: middle;">
+                                <span style="display: inline-block; background-color: #f1f5f9; color: #334155; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 6px; border: 1px solid #e2e8f0;">' . $item['qty'] . '</span>
+                            </td>
+                            <td style="padding: 12px 14px; border-bottom: 1px solid #f1f5f9; text-align: right; vertical-align: middle; font-size: 13px; color: #64748b;">' . $currency . number_format($item['price'], 2) . '</td>
+                            <td style="padding: 12px 14px; border-bottom: 1px solid #f1f5f9; text-align: right; vertical-align: middle; font-weight: 700; font-size: 13px; color: #0f172a;">' . $currency . number_format($item_total, 2) . '</td>
                         </tr>';
     }
     
     $items_html .= '</tbody>
                     <tfoot>
-                        <tr>
-                            <td colspan="3" style="padding: 10px; border: 1px solid #dee2e6; text-align: right; font-weight: bold;">Grand Total:</td>
-                            <td style="padding: 10px; border: 1px solid #dee2e6; text-align: right; font-weight: bold; color: #0d6efd;">' . $currency . number_format($subtotal, 2) . '</td>
+                        <tr style="background-color: #f8fafc;">
+                            <td colspan="3" style="padding: 12px 14px; text-align: right; font-weight: 700; font-size: 13px; color: #1e293b; text-transform: uppercase; letter-spacing: 0.5px; border-top: 1px solid #e2e8f0;">Grand Total:</td>
+                            <td style="padding: 12px 14px; text-align: right; font-weight: 800; font-size: 16px; color: #0284c7; border-top: 1px solid #e2e8f0;">' . $currency . number_format($subtotal, 2) . '</td>
                         </tr>
                     </tfoot>
                    </table>';
                    
+    // Resolve base site url and admin order url
+    $proto = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $site_url = defined('SITE_URL') && !empty(SITE_URL) ? rtrim(SITE_URL, '/') : ($proto . $host . '/SagarSite');
+    if (!preg_match('~^https?://~i', $site_url)) {
+        $site_url = $proto . $host . '/' . ltrim($site_url, '/');
+    }
+    $admin_order_url = $site_url . '/admin/manage_orders.php';
 
     // --- 1. SEND CUSTOMER EMAIL ---
     if ($customer_email) {
@@ -236,47 +248,136 @@ function sendOrderConfirmationEmail($conn, $order_id, $customer_email, $customer
 
             // Fetch template
             $tpl = getEmailTemplate($conn, 'order_confirmation_customer');
+            $vars = [
+                'customer_name' => htmlspecialchars($customer_name),
+                'order_id' => $order_id,
+                'date_str' => $date_str,
+                'payment_method' => $payment_text,
+                'total_amount' => $currency . number_format($subtotal, 2),
+                'items_table' => $items_html,
+                'site_url' => $site_url,
+                'current_year' => date('Y')
+            ];
+
             if ($tpl) {
-                $vars = [
-                    'customer_name' => htmlspecialchars($customer_name),
-                    'order_id' => $order_id,
-                    'date_str' => $date_str,
-                    'payment_method' => $payment_text,
-                    'items_table' => $items_html,
-                    'current_year' => date('Y')
-                ];
                 $customer_mail->Subject = parseTemplate($tpl['subject'], $vars);
                 $customer_mail->Body = parseTemplate($tpl['body'], $vars);
             } else {
                 // FALLBACK Case
                 $customer_mail->Subject = "Your Order #{$order_id} Has Been Confirmed";
                 $body = '
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333; border: 1px solid #eaeaea; border-radius: 8px; overflow: hidden;">
-                    <div style="background-color: #0d6efd; padding: 20px; text-align: center; color: white;">
-                        <h2 style="margin: 0;">Order Confirmed!</h2>
-                    </div>
-                    <div style="padding: 20px;">
-                        <p style="font-size: 16px;">Hello <strong>' . htmlspecialchars($customer_name) . '</strong>,</p>
-                        <p>Thank you for your purchase. We are pleased to confirm your order details below. We are now processing your order and will notify you once it has shipped.</p>
-                        
-                        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                            <p style="margin: 5px 0;"><strong>Order ID:</strong> #' . $order_id . '</p>
-                            <p style="margin: 5px 0;"><strong>Date:</strong> ' . $date_str . '</p>
-                            <p style="margin: 5px 0;"><strong>Payment Method:</strong> ' . $payment_text . '</p>
-                            <p style="margin: 5px 0;"><strong>Order Status:</strong> Pending</p>
+<div style="background-color: #f1f5f9; padding: 30px 15px; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Helvetica, Arial, sans-serif;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06); line-height: 1.5;">
+        <!-- Top Brand Bar -->
+        <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 20px 25px; text-align: left; border-bottom: 1px solid #334155;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                    <td style="vertical-align: middle;">
+                        <div style="font-size: 18px; font-weight: 800; letter-spacing: 0.5px; color: #ffffff;">
+                            SAGAR <span style="color: #38bdf8;">STARTER\'S</span>
                         </div>
-                        
-                        <h3 style="border-bottom: 1px solid #eaeaea; padding-bottom: 5px; color: #0d6efd;">Order Instructions</h3>
-                        ' . $items_html . '
-                        
-                        <p style="margin-top: 30px; font-size: 14px; color: #6c757d; text-align: center;">
-                            If you have any questions about your order, please reply to this email or contact our support team.
-                        </p>
-                    </div>
-                    <div style="background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 12px; border-top: 1px solid #eaeaea;">
-                        &copy; ' . date('Y') . ' Sagar Starter\'s. All rights reserved.
-                    </div>
-                </div>';
+                        <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; margin-top: 2px;">
+                            Industrial & Agricultural Starters
+                        </div>
+                    </td>
+                    <td style="text-align: right; vertical-align: middle;">
+                        <span style="display: inline-block; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35); color: #38bdf8; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase;">
+                            ✓ Verified Order
+                        </span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Hero Confirmation Banner -->
+        <div style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); padding: 30px 25px; text-align: center; color: #ffffff;">
+            <div style="display: inline-block; width: 50px; height: 50px; line-height: 48px; border-radius: 50%; background: rgba(255, 255, 255, 0.2); font-size: 24px; margin-bottom: 10px; border: 2px solid rgba(255, 255, 255, 0.35);">
+                ✓
+            </div>
+            <h2 style="margin: 0 0 6px; font-size: 24px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px;">Order Confirmed!</h2>
+            <p style="margin: 0; font-size: 14px; color: #e0f2fe;">Thank you for your purchase. We are preparing your order for dispatch.</p>
+        </div>
+
+        <!-- Main Content -->
+        <div style="padding: 26px;">
+            <p style="font-size: 15px; color: #1e293b; margin: 0 0 12px;">
+                Hello <strong>' . htmlspecialchars($customer_name) . '</strong>,
+            </p>
+            <p style="font-size: 14px; color: #475569; margin: 0 0 20px; line-height: 1.6;">
+                We are pleased to confirm your order details below. Our technical team is inspecting and packing your unit with utmost care. You will receive live courier tracking as soon as it ships.
+            </p>
+
+            <!-- Order Highlights Grid -->
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 24px; overflow: hidden;">
+                <tr>
+                    <td width="50%" style="padding: 13px 16px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
+                        <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Order Number</span>
+                        <strong style="font-size: 16px; color: #0284c7;">#' . $order_id . '</strong>
+                    </td>
+                    <td width="50%" style="padding: 13px 16px; border-bottom: 1px solid #e2e8f0;">
+                        <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Order Date</span>
+                        <span style="font-size: 13px; color: #1e293b; font-weight: 600;">' . $date_str . '</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td width="50%" style="padding: 13px 16px; border-right: 1px solid #e2e8f0;">
+                        <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Payment Method</span>
+                        <span style="font-size: 13px; color: #1e293b; font-weight: 600;">' . $payment_text . '</span>
+                    </td>
+                    <td width="50%" style="padding: 13px 16px;">
+                        <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Order Status</span>
+                        <span style="display: inline-block; background-color: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 12px;">
+                            Pending / In Progress
+                        </span>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Order Items Section -->
+            <div style="margin-bottom: 24px;">
+                <div style="font-size: 13px; font-weight: 700; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
+                    📦 Order Summary
+                </div>
+                ' . $items_html . '
+            </div>
+
+            <!-- Call To Actions -->
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0 10px;">
+                <tr>
+                    <td align="center">
+                        <a href="https://wa.me/918573934013?text=Hi%20Sagar%20Starters,%20I%20have%20a%20query%20about%20Order%20%23' . $order_id . '" style="display: inline-block; background-color: #25d366; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 700; padding: 12px 28px; border-radius: 50px; box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35);">
+                            💬 WhatsApp Support
+                        </a>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Guarantee Box -->
+            <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px 16px; margin-top: 20px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                        <td width="28" style="vertical-align: top; font-size: 18px;">🛡️</td>
+                        <td style="padding-left: 8px; vertical-align: top;">
+                            <div style="font-size: 13px; font-weight: 700; color: #166534;">Genuine Manufacturer Assurance</div>
+                            <div style="font-size: 12px; color: #15803d; margin-top: 2px;">All motor starters are 100% factory inspected and tested. Have questions? Reply directly to this email.</div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="background-color: #0f172a; padding: 20px 25px; text-align: center; color: #94a3b8; font-size: 12px; border-top: 1px solid #1e293b;">
+            <p style="margin: 0 0 6px; font-size: 13px; font-weight: 700; color: #f8fafc;">Sagar Starter\'s Support Team</p>
+            <p style="margin: 0 0 10px; color: #64748b;">
+                Email: <a href="mailto:sagarstarters@gmail.com" style="color: #38bdf8; text-decoration: none;">sagarstarters@gmail.com</a> &nbsp;|&nbsp; Phone: <a href="tel:+918573934013" style="color: #38bdf8; text-decoration: none;">+91 85739 34013</a>
+            </p>
+            <p style="margin: 0; font-size: 11px; color: #475569;">
+                &copy; ' . date('Y') . ' Sagar Starter\'s. All rights reserved.
+            </p>
+        </div>
+    </div>
+</div>';
                 $customer_mail->Body = $body;
             }
             
@@ -298,48 +399,123 @@ function sendOrderConfirmationEmail($conn, $order_id, $customer_email, $customer
 
             // Fetch template
             $tpl = getEmailTemplate($conn, 'order_confirmation_admin');
+            $vars = [
+                'order_id' => $order_id,
+                'customer_name' => htmlspecialchars($customer_name),
+                'customer_email' => htmlspecialchars($customer_email),
+                'date_str' => $date_str,
+                'payment_method' => $payment_text,
+                'total_amount' => $currency . number_format($subtotal, 2),
+                'items_table' => $items_html,
+                'admin_order_url' => $admin_order_url,
+                'site_url' => $site_url,
+                'current_year' => date('Y')
+            ];
+
             if ($tpl) {
-                $vars = [
-                    'order_id' => $order_id,
-                    'customer_name' => htmlspecialchars($customer_name),
-                    'customer_email' => htmlspecialchars($customer_email),
-                    'date_str' => $date_str,
-                    'payment_method' => $payment_text,
-                    'total_amount' => $currency . number_format($subtotal, 2),
-                    'items_table' => $items_html,
-                    'admin_order_url' => 'https://' . $_SERVER['HTTP_HOST'] . '/admin/manage_orders.php'
-                ];
                 $admin_mail->Subject = parseTemplate($tpl['subject'], $vars);
                 $admin_mail->Body = parseTemplate($tpl['body'], $vars);
             } else {
                 // FALLBACK Case
                 $admin_mail->Subject = "New Order Received – Order #{$order_id}";
                 $admin_body = '
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333; border: 1px solid #eaeaea;">
-                    <div style="background-color: #198754; padding: 15px; text-align: center; color: white;">
-                        <h2 style="margin: 0;">New Order Notification</h2>
-                    </div>
-                    <div style="padding: 20px;">
-                        <p>A new order has been placed in the store.</p>
-                        
-                        <div style="background-color: #f8f9fa; padding: 15px; margin: 20px 0;">
-                            <p style="margin: 5px 0;"><strong>Order ID:</strong> #' . $order_id . '</p>
-                            <p style="margin: 5px 0;"><strong>Customer Name:</strong> ' . htmlspecialchars($customer_name) . '</p>
-                            <p style="margin: 5px 0;"><strong>Customer Email:</strong> ' . htmlspecialchars($customer_email) . '</p>
-                            <p style="margin: 5px 0;"><strong>Date:</strong> ' . $date_str . '</p>
-                            <p style="margin: 5px 0;"><strong>Payment Method:</strong> ' . $payment_text . '</p>
-                            <p style="margin: 5px 0;"><strong>Total Amount:</strong> ' . $currency . number_format($subtotal, 2) . '</p>
-                            <p style="margin: 5px 0;"><strong>Status:</strong> New / Pending</p>
+<div style="background-color: #f1f5f9; padding: 30px 15px; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Helvetica, Arial, sans-serif;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06); line-height: 1.5;">
+        <!-- Top Admin Bar -->
+        <div style="background: linear-gradient(135deg, #064e3b 0%, #065f46 100%); padding: 18px 25px; text-align: left; border-bottom: 1px solid #047857;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                    <td style="vertical-align: middle;">
+                        <div style="font-size: 17px; font-weight: 800; color: #ffffff;">
+                            SAGAR <span style="color: #34d399;">STARTER\'S</span> ADMIN
                         </div>
-                        
-                        <h3 style="border-bottom: 1px solid #eaeaea; padding-bottom: 5px;">Ordered Products</h3>
-                        ' . $items_html . '
-                        
-                        <div style="margin-top: 20px;">
-                            <a href="https://' . $_SERVER['HTTP_HOST'] . '/admin/manage_orders.php" style="display: inline-block; padding: 10px 20px; background-color: #0d6efd; color: white; text-decoration: none; border-radius: 5px;">View Order in Admin Panel</a>
+                        <div style="font-size: 11px; color: #a7f3d0; text-transform: uppercase; letter-spacing: 0.8px; margin-top: 2px;">
+                            New Order Placement Alert
                         </div>
-                    </div>
-                </div>';
+                    </td>
+                    <td style="text-align: right; vertical-align: middle;">
+                        <span style="display: inline-block; background: rgba(52, 211, 153, 0.2); border: 1px solid #34d399; color: #ffffff; padding: 3px 11px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase;">
+                            ⚡ Action Required
+                        </span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Alert Hero Banner -->
+        <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); padding: 26px 25px; text-align: center; color: #ffffff;">
+            <div style="display: inline-block; width: 46px; height: 46px; line-height: 44px; border-radius: 50%; background: rgba(255, 255, 255, 0.2); font-size: 22px; margin-bottom: 8px; border: 2px solid rgba(255, 255, 255, 0.35);">
+                🛒
+            </div>
+            <h2 style="margin: 0 0 4px; font-size: 23px; font-weight: 800; color: #ffffff;">New Order Received!</h2>
+            <p style="margin: 0; font-size: 14px; color: #d1fae5;">Order #' . $order_id . ' has been placed and requires fulfillment.</p>
+        </div>
+
+        <!-- Main Content -->
+        <div style="padding: 26px;">
+            <!-- Order Meta Grid -->
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 24px; overflow: hidden;">
+                <tr>
+                    <td width="50%" style="padding: 13px 16px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
+                        <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Order ID</span>
+                        <strong style="font-size: 16px; color: #059669;">#' . $order_id . '</strong>
+                    </td>
+                    <td width="50%" style="padding: 13px 16px; border-bottom: 1px solid #e2e8f0;">
+                        <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Total Amount</span>
+                        <strong style="font-size: 16px; color: #0f172a;">' . $currency . number_format($subtotal, 2) . '</strong>
+                    </td>
+                </tr>
+                <tr>
+                    <td width="50%" style="padding: 13px 16px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
+                        <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Customer Name</span>
+                        <strong style="font-size: 14px; color: #1e293b;">' . htmlspecialchars($customer_name) . '</strong>
+                    </td>
+                    <td width="50%" style="padding: 13px 16px; border-bottom: 1px solid #e2e8f0;">
+                        <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Customer Email</span>
+                        <a href="mailto:' . htmlspecialchars($customer_email) . '" style="font-size: 13px; color: #0284c7; text-decoration: none; font-weight: 600;">' . htmlspecialchars($customer_email) . '</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td width="50%" style="padding: 13px 16px; border-right: 1px solid #e2e8f0;">
+                        <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Date & Time</span>
+                        <span style="font-size: 13px; color: #1e293b; font-weight: 500;">' . $date_str . '</span>
+                    </td>
+                    <td width="50%" style="padding: 13px 16px;">
+                        <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Payment Method</span>
+                        <span style="font-size: 13px; color: #1e293b; font-weight: 600;">' . $payment_text . '</span>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Ordered Items -->
+            <div style="margin-bottom: 24px;">
+                <div style="font-size: 13px; font-weight: 700; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
+                    📋 Ordered Products
+                </div>
+                ' . $items_html . '
+            </div>
+
+            <!-- Admin Action Buttons -->
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 24px;">
+                <tr>
+                    <td align="center">
+                        <a href="' . $admin_order_url . '" style="display: inline-block; background: linear-gradient(135deg, #059669 0%, #047857 100%); color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 700; padding: 12px 28px; border-radius: 50px; box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35); margin: 4px;">
+                            ⚙️ View in Admin Panel &rarr;
+                        </a>
+                        <a href="mailto:' . htmlspecialchars($customer_email) . '?subject=Order%20%23' . $order_id . '%20Update" style="display: inline-block; background-color: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; text-decoration: none; font-size: 14px; font-weight: 600; padding: 11px 22px; border-radius: 50px; margin: 4px;">
+                            ✉️ Email Customer
+                        </a>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Footer -->
+        <div style="background-color: #f8fafc; padding: 16px 25px; text-align: center; color: #64748b; font-size: 12px; border-top: 1px solid #e2e8f0;">
+            Automated store notification for Sagar Starter\'s Administrators.
+        </div>
+    </div>
+</div>';
                 $admin_mail->Body = $admin_body;
             }
             
