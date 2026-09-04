@@ -88,11 +88,11 @@ if (strtoupper($code) === 'PAYMENT_SUCCESS' || strtoupper($code) === 'SUCCESS') 
         $is_partial_cod_order = isset($ord['payment_mode']) && $ord['payment_mode'] === 'COD_PARTIAL';
 
         if ($is_partial_cod_order) {
-            // Partial COD: advance paid. Keep status=pending, payment_method=cod.
-            $conn->query("UPDATE orders SET status='pending', payment_method='cod' WHERE id=$order_id AND status='pending'");
+            // Partial COD: advance paid. Keep status=pending, payment_method=cod, payment_mode=COD_PARTIAL
+            $conn->query("UPDATE orders SET status='pending', payment_method='cod', payment_mode='COD_PARTIAL' WHERE id=$order_id AND status='pending'");
         } else {
             // Standard PhonePe full payment
-            $conn->query("UPDATE orders SET status='processing', payment_method='phonepe' WHERE id=$order_id AND status='pending'");
+            $conn->query("UPDATE orders SET status='processing', payment_method='phonepe', payment_mode='phonepe' WHERE id=$order_id AND status='pending'");
         }
         
         // ── Order Confirmation Email ──────────────────────────────────

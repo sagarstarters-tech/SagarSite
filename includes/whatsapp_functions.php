@@ -28,6 +28,54 @@ function normalize_whatsapp_phone_number($phone) {
 }
 
 /**
+ * Safely format payment method/mode label for WhatsApp notifications.
+ *
+ * @param string $method Value from orders.payment_method (e.g. 'phonepe', 'cod', 'card')
+ * @param string $mode   Value from orders.payment_mode (e.g. 'COD_PARTIAL', 'phonepe')
+ * @return string Clean formatted payment title (e.g. 'PhonePe UPI', 'Partial COD', 'COD')
+ */
+if (!function_exists('formatWhatsAppPaymentMethod')) {
+    function formatWhatsAppPaymentMethod($method, $mode = '') {
+        $m = strtolower(trim((string)$method));
+        $mode = strtolower(trim((string)$mode));
+
+        // Check Partial COD
+        if ($mode === 'cod_partial' || $mode === 'partial_cod' || $m === 'partial_cod' || $m === 'cod_partial') {
+            return 'Partial COD';
+        }
+
+        // Check PhonePe / UPI
+        if ($mode === 'phonepe' || $mode === 'phonepe_upi' || $mode === 'upi' ||
+            $m === 'phonepe' || $m === 'phonepe_upi' || $m === 'upi') {
+            return 'PhonePe UPI';
+        }
+
+        // Check COD
+        if ($mode === 'cod' || $m === 'cod') {
+            return 'COD';
+        }
+
+        // Check Card / Net Banking / Razorpay
+        if ($m === 'card' || $m === 'credit_card' || $m === 'debit_card' || $mode === 'card') {
+            return 'Card';
+        }
+        if ($m === 'netbanking' || $mode === 'netbanking') {
+            return 'Net Banking';
+        }
+        if ($m === 'razorpay' || $mode === 'razorpay') {
+            return 'Razorpay';
+        }
+
+        $val = !empty($mode) ? $mode : $m;
+        if (!empty($val)) {
+            return ucwords(str_replace(['_', '-'], ' ', $val));
+        }
+
+        return 'COD';
+    }
+}
+
+/**
  * Send WhatsApp notification to CUSTOMER when an order is placed/confirmed.
  *
  * @param mysqli $conn     Database connection
@@ -61,7 +109,7 @@ function sendCustomerOrderConfirmationWhatsApp($conn, $order_id) {
         // Fetch order details
         $order_id = intval($order_id);
         $q = $conn->query("
-            SELECT o.id, o.status, o.total_amount, o.payment_mode, o.created_at,
+            SELECT o.id, o.status, o.total_amount, o.payment_method, o.payment_mode, o.created_at,
                    u.name AS customer_name, u.phone AS customer_phone, u.email AS customer_email,
                    u.address AS customer_address, u.city AS customer_city, u.state AS customer_state, u.zip_code AS customer_zip
             FROM orders o 
@@ -75,7 +123,7 @@ function sendCustomerOrderConfirmationWhatsApp($conn, $order_id) {
         $customerName  = trim($order['customer_name'] ?? 'Customer');
         $customerPhone = trim($order['customer_phone'] ?? '');
         $orderAmount   = number_format((float)($order['total_amount'] ?? 0), 2);
-        $paymentMode   = strtoupper($order['payment_mode'] ?? 'COD');
+        $paymentMode   = formatWhatsAppPaymentMethod($order['payment_method'] ?? '', $order['payment_mode'] ?? '');
         $orderStatus   = ucwords(str_replace('_', ' ', $order['status'] ?? 'Pending'));
         $orderDate     = date('d M Y', strtotime($order['created_at']));
         $orderTime     = date('h:i A', strtotime($order['created_at']));
@@ -386,7 +434,7 @@ function sendCustomerOrderStatusWhatsApp($conn, $order_id) {
         // Fetch Order details safely
         $order_id = intval($order_id);
         $q = $conn->query("
-            SELECT o.id, o.status, o.total_amount, o.created_at, o.payment_mode,
+            SELECT o.id, o.status, o.total_amount, o.created_at, o.payment_method, o.payment_mode,
                    o.tracking_number AS order_tracking_num, o.carrier AS order_carrier,
                    u.name AS customer_name, u.phone AS customer_phone,
                    u.address AS customer_address, u.city AS customer_city, u.state AS customer_state, u.zip_code AS customer_zip
@@ -467,6 +515,8 @@ function sendCustomerOrderStatusWhatsApp($conn, $order_id) {
         $siteUrl = defined('SITE_URL') ? rtrim(SITE_URL, '/') : 'https://sagarstarters.com';
         $orderLink = $siteUrl . '/my-orders.php';
 
+        $paymentMode = formatWhatsAppPaymentMethod($order['payment_method'] ?? '', $order['payment_mode'] ?? '');
+
         $bridge_template = !empty($settings['message_template']) 
             ? $settings['message_template'] 
             : "Hello Dear {CustomerName},\n\nYour Order No. #{OrderID} status has been updated.\n\nCurrent Status: *{OrderStatus}*\nTracking ID: {TrackingID}\nTotal Amount: ₹{OrderAmount}\n\nThank you for shopping with us.";
@@ -478,6 +528,7 @@ function sendCustomerOrderStatusWhatsApp($conn, $order_id) {
             '{TrackingID}'       => $trackingID,
             '{OrderAmount}'      => $orderAmount,
             '{OrderDate}'        => $orderDate,
+            '{PaymentMethod}'    => $paymentMode,
             '{StatusMessage}'    => $statusMessage,
             '{ItemsOrdered}'     => $itemsOrdered,
             '{DeliveryAddress}'  => $deliveryAddress,
@@ -563,7 +614,7 @@ function sendCustomerOrderStatusWhatsApp($conn, $order_id) {
             $safe_order_time = !empty($orderTime) ? $orderTime : date('h:i A');
             $safe_status     = !empty($orderStatus) ? $orderStatus : 'Processing';
             $safe_amount     = !empty($orderAmount) ? $orderAmount : '0.00';
-            $safe_payment    = !empty($order['payment_mode']) ? strtoupper($order['payment_mode']) : 'COD';
+            $safe_payment    = !empty($paymentMode) ? $paymentMode : 'COD';
             $safe_tracking   = (!empty($trackingID) && $trackingID !== 'N/A') ? $trackingID : 'TRACKING123';
             $safe_msg        = !empty($statusMessage) ? $statusMessage : "Your order #$order_id status is currently $safe_status.";
             $safe_items      = !empty($itemsOrdered) ? $itemsOrdered : "Order #$order_id";
@@ -818,7 +869,7 @@ function sendAdminOrderNotification($conn, $order_id) {
         // Fetch order details for admin message
         $order_id = intval($order_id);
         $q = $conn->query("
-            SELECT o.id, o.status, o.total_amount, o.payment_mode, o.created_at,
+            SELECT o.id, o.status, o.total_amount, o.payment_method, o.payment_mode, o.created_at,
                    u.name AS customer_name, u.phone AS customer_phone, u.email AS customer_email,
                    u.address AS customer_address, u.city AS customer_city, u.state AS customer_state, u.zip_code AS customer_zip
             FROM orders o 
@@ -833,7 +884,7 @@ function sendAdminOrderNotification($conn, $order_id) {
         $customerName  = trim($order['customer_name'] ?? 'Customer');
         $customerPhone = trim($order['customer_phone'] ?? 'N/A');
         $orderAmount   = number_format((float)($order['total_amount'] ?? 0), 2);
-        $paymentMode   = strtoupper($order['payment_mode'] ?? 'COD');
+        $paymentMode   = formatWhatsAppPaymentMethod($order['payment_method'] ?? '', $order['payment_mode'] ?? '');
         $orderStatus   = ucwords(str_replace('_', ' ', $order['status'] ?? 'Pending'));
         $orderDate     = date('d M Y', strtotime($order['created_at']));
         $orderTime     = date('h:i A', strtotime($order['created_at']));
