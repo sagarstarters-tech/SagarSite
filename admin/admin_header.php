@@ -40,9 +40,9 @@ $__admin_menu = require __DIR__ . '/config/menu.php';
     <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet"/>
     <!-- Custom CSS -->
-    <link href="<?php echo ASSETS_URL; ?>/css/style.css" rel="stylesheet">
-    <link href="<?php echo ASSETS_URL; ?>/css/admin-sidebar.css" rel="stylesheet">
-    <link href="<?php echo ASSETS_URL; ?>/css/admin-responsive.css" rel="stylesheet">
+    <link href="<?php echo ASSETS_URL; ?>/css/style.css?v=<?php echo file_exists(__DIR__ . '/../assets/css/style.css') ? filemtime(__DIR__ . '/../assets/css/style.css') : time(); ?>" rel="stylesheet">
+    <link href="<?php echo ASSETS_URL; ?>/css/admin-sidebar.css?v=<?php echo file_exists(__DIR__ . '/../assets/css/admin-sidebar.css') ? filemtime(__DIR__ . '/../assets/css/admin-sidebar.css') : time(); ?>" rel="stylesheet">
+    <link href="<?php echo ASSETS_URL; ?>/css/admin-responsive.css?v=<?php echo file_exists(__DIR__ . '/../assets/css/admin-responsive.css') ? filemtime(__DIR__ . '/../assets/css/admin-responsive.css') : time(); ?>" rel="stylesheet">
     <?php
     require_once __DIR__ . '/../includes/ThemeService.php';
     ThemeService::injectCSS($conn);
