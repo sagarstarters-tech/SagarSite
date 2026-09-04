@@ -49,6 +49,7 @@ if (strtoupper($code) === 'PAYMENT_SUCCESS' || strtoupper($code) === 'SUCCESS') 
     $txn_q = $conn->query("SELECT order_id, amount, status FROM phonepe_transactions WHERE transaction_id = '$txn_val'");
     
     $order_id = 0;
+    $txn = [];
     if ($txn_q && $txn_q->num_rows > 0) {
         $txn = $txn_q->fetch_assoc();
         $order_id = (int)$txn['order_id'];
@@ -134,17 +135,28 @@ if (strtoupper($code) === 'PAYMENT_SUCCESS' || strtoupper($code) === 'SUCCESS') 
             }
         }
     }
-    // PhonePe returns amount in paisa
-    $displayAmount = number_format($amount / 100, 2);
-
     // Re-fetch order details if not already fetched above
-    if (empty($ord)) {
+    if (empty($ord) && $order_id > 0) {
         $ord_q2 = $conn->query("SELECT * FROM orders WHERE id=$order_id");
         $ord = ($ord_q2 && $ord_q2->num_rows > 0) ? $ord_q2->fetch_assoc() : [];
     }
     $is_partial_cod_order = isset($ord['payment_mode']) && $ord['payment_mode'] === 'COD_PARTIAL';
     $remaining_cod = isset($ord['remaining_amount']) ? (float)$ord['remaining_amount'] : 0;
     $currency_sym = $global_settings['currency_symbol'] ?? '₹';
+
+    // Calculate actual display amount paid (in Rupees)
+    $paid_amount_val = 0.0;
+    if ($is_partial_cod_order && isset($ord['advance_amount']) && (float)$ord['advance_amount'] > 0) {
+        $paid_amount_val = (float)$ord['advance_amount'];
+    } elseif (!empty($ord['total_amount']) && (float)$ord['total_amount'] > 0) {
+        $paid_amount_val = (float)$ord['total_amount'];
+    } elseif (!empty($txn['amount']) && (float)$txn['amount'] > 0) {
+        $paid_amount_val = (float)$txn['amount'];
+    } elseif (!empty($amount) && (float)$amount > 0) {
+        // Fallback: If amount came from PhonePe API payload in paisa
+        $paid_amount_val = (float)$amount / 100;
+    }
+    $displayAmount = number_format($paid_amount_val, 2);
 
     ?>
     <div class="container mt-5 pt-5 mb-5 text-center px-3">
@@ -170,7 +182,7 @@ if (strtoupper($code) === 'PAYMENT_SUCCESS' || strtoupper($code) === 'SUCCESS') 
                     <span class="fw-bold text-dark"><?php echo htmlspecialchars($merchantTransactionId); ?></span>
                 </div>
                 <div class="d-flex justify-content-between <?php echo $is_partial_cod_order ? 'mb-2' : ''; ?>">
-                    <span class="text-secondary fw-bold">Advance Paid:</span>
+                    <span class="text-secondary fw-bold"><?php echo $is_partial_cod_order ? 'Advance Paid:' : 'Amount Paid:'; ?></span>
                     <span class="fw-bold text-dark"><?php echo htmlspecialchars($currency_sym); ?><?php echo $displayAmount; ?></span>
                 </div>
                 <?php if ($is_partial_cod_order && $remaining_cod > 0): ?>

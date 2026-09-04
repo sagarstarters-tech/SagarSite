@@ -70,7 +70,7 @@ $verifyHeader = hash('sha256', $base64Payload . $checksumPath . $saltKey) . "###
 
 // Insert pending transaction into phonepe_transactions
 $stmt_trans = $conn->prepare("INSERT INTO phonepe_transactions (order_id, transaction_id, amount, status) VALUES (?, ?, ?, 'PENDING')");
-$stmt_trans->bind_param("isd", $order_id, $merchantTransactionId, $grand_total);
+$stmt_trans->bind_param("isd", $order_id, $merchantTransactionId, $charge_amount);
 $stmt_trans->execute();
 
 // Store in session for recovery if redirect parameters are lost
