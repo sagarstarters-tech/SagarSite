@@ -31,6 +31,10 @@ $__admin_menu = require __DIR__ . '/config/menu.php';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel - <?php echo htmlspecialchars($global_settings['site_name'] ?? "Sagar Starter's"); ?></title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- MDBootstrap CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.css" rel="stylesheet"/>
     <!-- Font Awesome -->
@@ -39,6 +43,10 @@ $__admin_menu = require __DIR__ . '/config/menu.php';
     <link href="<?php echo ASSETS_URL; ?>/css/style.css" rel="stylesheet">
     <link href="<?php echo ASSETS_URL; ?>/css/admin-sidebar.css" rel="stylesheet">
     <link href="<?php echo ASSETS_URL; ?>/css/admin-responsive.css" rel="stylesheet">
+    <?php
+    require_once __DIR__ . '/../includes/ThemeService.php';
+    ThemeService::injectCSS($conn);
+    ?>
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- Chart.js -->

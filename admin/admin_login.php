@@ -45,41 +45,150 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 ?>
-<div class="container mt-5 pt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-5">
-            <div class="card shadow border-0" style="border-radius: 15px;">
-                <div class="card-body p-5">
-                    <div class="text-center mb-4">
-                        <i class="fas fa-lock fa-3x text-primary mb-3"></i>
-                        <h3 class="montserrat fw-bold">Admin Portal</h3>
-                        <p class="text-muted">Secure access only</p>
-                    </div>
-                    <?php if(isset($error)): ?>
-                        <div class="alert alert-danger px-3 py-2 text-center"><?php echo $error; ?></div>
-                    <?php endif; ?>
-                    <form method="POST">
-                        <?php echo csrf_input(); ?>
-                        <div class="mb-4">
-                            <label class="form-label fw-bold">Admin Email</label>
-                            <input type="email" name="email" class="form-control form-control-lg" placeholder="admin@store.com" required>
-                        </div>
-                        <div class="mb-4">
-                            <label class="form-label fw-bold">Password</label>
-                            <input type="password" name="password" class="form-control form-control-lg" placeholder="••••••••" required>
-                            <div class="form-check mt-1">
-                                <input class="form-check-input show-password-toggle" type="checkbox" id="showPwAdmin">
-                                <label class="form-check-label small text-muted" for="showPwAdmin">Show password</label>
+
+<div class="auth-page-bg" style="min-height: 100vh;">
+    <div class="container py-3">
+        <div class="auth-master-card">
+            <div class="row g-0">
+                <!-- ════════ LEFT PANE: VISUAL HERO ARTWORK ════════ -->
+                <div class="col-lg-5 d-none d-lg-block">
+                    <div class="auth-hero-pane">
+                        <div class="auth-hero-content">
+                            <div class="auth-brand-badge">
+                                <i class="fas fa-bolt"></i> <?php echo htmlspecialchars($global_settings['site_name'] ?? 'Sagar Starters'); ?>
+                            </div>
+                            <h2 class="auth-hero-title">Smart Power &amp; Motor Control</h2>
+                            <p class="auth-hero-desc">
+                                Centralized Management Console for inventory, live orders, customer relations, and business analytics.
+                            </p>
+
+                            <div class="auth-feature-pills">
+                                <div class="auth-feature-pill">
+                                    <i class="fas fa-shield-alt"></i>
+                                    <span>Enterprise-Grade Security &amp; Protection</span>
+                                </div>
+                                <div class="auth-feature-pill">
+                                    <i class="fas fa-truck-fast"></i>
+                                    <span>Live Order Processing &amp; Logistics</span>
+                                </div>
+                                <div class="auth-feature-pill">
+                                    <i class="fas fa-headset"></i>
+                                    <span>24/7 Expert Technical Support</span>
+                                </div>
                             </div>
                         </div>
-                        <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold" style="border-radius: 25px;">Login to Dashboard</button>
-                    </form>
-                    <div class="text-center mt-4">
-                        <a href="<?php echo store_url('index.php'); ?>" class="text-muted text-decoration-none"><i class="fas fa-arrow-left me-1"></i> Back to Store</a>
+
+                        <div class="auth-hero-footer">
+                            <span>&copy; <?php echo date('Y'); ?> <?php echo htmlspecialchars($global_settings['site_name'] ?? 'Sagar Starters'); ?></span>
+                            <div class="auth-social-icons">
+                                <?php if(!empty($global_settings['social_facebook'])): ?>
+                                    <a href="<?php echo htmlspecialchars($global_settings['social_facebook']); ?>" target="_blank" rel="noopener noreferrer" class="auth-social-btn" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+                                <?php endif; ?>
+                                <?php if(!empty($global_settings['social_instagram'])): ?>
+                                    <a href="<?php echo htmlspecialchars($global_settings['social_instagram']); ?>" target="_blank" rel="noopener noreferrer" class="auth-social-btn" title="Instagram"><i class="fab fa-instagram"></i></a>
+                                <?php endif; ?>
+                                <?php if(!empty($global_settings['social_whatsapp'])): ?>
+                                    <a href="<?php echo htmlspecialchars($global_settings['social_whatsapp']); ?>" target="_blank" rel="noopener noreferrer" class="auth-social-btn" title="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+                                <?php endif; ?>
+                                <?php if(!empty($global_settings['social_youtube'])): ?>
+                                    <a href="<?php echo htmlspecialchars($global_settings['social_youtube']); ?>" target="_blank" rel="noopener noreferrer" class="auth-social-btn" title="YouTube"><i class="fab fa-youtube"></i></a>
+                                <?php endif; ?>
+                                <?php if(!empty($global_settings['social_twitter'])): ?>
+                                    <a href="<?php echo htmlspecialchars($global_settings['social_twitter']); ?>" target="_blank" rel="noopener noreferrer" class="auth-social-btn" title="Twitter"><i class="fab fa-twitter"></i></a>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ════════ RIGHT PANE: LOGIN FORM ════════ -->
+                <div class="col-lg-7">
+                    <div class="auth-form-pane">
+                        <!-- Mobile Brand Header (< 992px) -->
+                        <div class="d-lg-none text-center mb-3">
+                            <span class="auth-brand-badge mb-2 d-inline-flex bg-dark text-warning">
+                                <i class="fas fa-bolt text-warning"></i> <?php echo htmlspecialchars($global_settings['site_name'] ?? 'Sagar Starters'); ?>
+                            </span>
+                        </div>
+
+                        <!-- Top Switcher Tab -->
+                        <div class="auth-tab-nav">
+                            <a href="admin_login.php" class="auth-tab-link active">Sign In</a>
+                            <a href="<?php echo store_url('user/login.php'); ?>" class="auth-tab-link">Store Login</a>
+                        </div>
+
+                        <div class="auth-form-header">
+                            <h3>Welcome Back! 👋</h3>
+                            <p>Enter your admin credentials to access the control dashboard.</p>
+                        </div>
+
+                        <?php if(isset($error)): ?>
+                            <div class="alert alert-danger rounded-3 py-2 px-3 mb-3 d-flex align-items-center gap-2">
+                                <i class="fas fa-exclamation-circle text-danger flex-shrink-0"></i>
+                                <span><?php echo htmlspecialchars($error); ?></span>
+                            </div>
+                        <?php endif; ?>
+
+                        <form method="POST" autocomplete="on">
+                            <?php echo csrf_input(); ?>
+
+                            <!-- Email Field -->
+                            <div class="auth-field-wrapper">
+                                <label class="auth-field-label" for="admin_email">Email Address</label>
+                                <div class="auth-input-container">
+                                    <i class="fas fa-envelope auth-input-icon"></i>
+                                    <input type="email" name="email" id="admin_email" class="auth-input-control" placeholder="name@example.com" value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>" autocomplete="email" required>
+                                </div>
+                            </div>
+
+                            <!-- Password Field -->
+                            <div class="auth-field-wrapper">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label class="auth-field-label mb-0" for="admin_password">Password</label>
+                                </div>
+                                <div class="auth-input-container">
+                                    <i class="fas fa-lock auth-input-icon"></i>
+                                    <input type="password" name="password" id="admin_password" class="auth-input-control pe-5" placeholder="Enter your password" autocomplete="current-password" required>
+                                    <button type="button" class="auth-pw-toggle-btn" onclick="togglePasswordVisibility('admin_password', this)" title="Show/Hide Password">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <button type="submit" class="btn btn-auth-submit">
+                                <i class="fas fa-sign-in-alt me-2"></i>Sign In to Dashboard
+                            </button>
+                        </form>
+
+                        <!-- Back to Store Link -->
+                        <div class="text-center mt-4">
+                            <a href="<?php echo store_url('index.php'); ?>" class="text-muted small text-decoration-none d-inline-flex align-items-center gap-1">
+                                <i class="fas fa-arrow-left me-1"></i> Back to Store
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+function togglePasswordVisibility(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const icon = btn.querySelector('i');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+}
+</script>
+
 <?php include 'admin_footer.php'; ?>
