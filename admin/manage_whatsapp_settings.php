@@ -756,9 +756,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 btnQuickTestAdmin.innerHTML = '<i class="fab fa-whatsapp me-1"></i> Send Test Admin Alert to this number';
 
                 if (data.success) {
-                    const msgId = data.message_id ? `<div class="mt-1 font-monospace small">Message ID: ${data.message_id}</div>` : '';
-                    adminTestResult.className = 'alert alert-success py-2 small mt-2';
-                    adminTestResult.innerHTML = `✅ <strong>Admin Alert Sent!</strong> Meta accepted message.${msgId}`;
+                    const msgId = data.message_id ? `<div class="mt-1 font-monospace text-muted" style="font-size:0.75rem;">Message ID: ${data.message_id}</div>` : '';
+                    if (data.delivery_type === 'template' || data.bypasses_24h) {
+                        adminTestResult.className = 'alert alert-success py-2 small mt-2';
+                        adminTestResult.innerHTML = `✅ <strong>Success! Delivered via Meta Template (<code>${data.template_name || 'Approved Template'}</code>)</strong><br>` +
+                            `<span class="text-success fw-bold"><i class="fas fa-shield-alt me-1"></i> 24/7 Guaranteed:</span> कल या 24 घंटे बाद भी नया ऑर्डर आने पर बिना किसी "Hi" के ऑटोमैटिक अलर्ट आएगा।${msgId}`;
+                        // If input was empty and auto-discovery found the template, populate input
+                        if (data.template_name && document.getElementById('adminTplInput') && !document.getElementById('adminTplInput').value) {
+                            document.getElementById('adminTplInput').value = data.template_name;
+                        }
+                    } else {
+                        adminTestResult.className = 'alert alert-warning py-2 small mt-2';
+                        adminTestResult.innerHTML = `⚠️ <strong>Delivered as Direct Text:</strong> अभी 24 घंटे का सेशन खुला है इसलिए मिल गया, लेकिन कल 24 घंटे बाद नए ऑर्डर पर रुक सकता है। कृपया ऊपर <strong>Admin Meta Template Name</strong> में Approved Template चुनें।${msgId}`;
+                    }
                     adminTestResult.classList.remove('d-none');
                 } else {
                     adminTestResult.className = 'alert alert-danger py-2 small mt-2';

@@ -131,6 +131,9 @@ if ($sending_mode === 'api') {
     $post_tpl_type = trim($_POST['template_type'] ?? '');
     if ($is_admin_test) {
         $meta_template_name = trim($_GET['admin_template_name'] ?? ($settings['admin_template_name'] ?? ''));
+        if (empty($meta_template_name)) {
+            $meta_template_name = trim($settings['order_confirmation_template_name'] ?? ($settings['meta_template_name'] ?? 'order_confirmation'));
+        }
     } elseif ($is_order_confirm_test || $post_tpl_type === 'confirmation') {
         $meta_template_name = trim($_POST['template_name'] ?? ($_GET['template_name'] ?? ($settings['order_confirmation_template_name'] ?? 'order_confirmation')));
     } else {
@@ -487,10 +490,22 @@ if ($sending_mode === 'api') {
         $status     = 'Sent via Meta API (ID: ' . substr($msg_id, 0, 30) . ')';
         $stmt->bind_param("issss", $order_id, $customer_number, $message, $sending_mode, $status);
         $stmt->execute(); $stmt->close();
+
+        $is_template_sent = isset($payload['template']['name']);
+        $used_template    = $is_template_sent ? $payload['template']['name'] : '';
+
+        // Auto-save working template name into DB so future orders use it directly
+        if ($is_admin_test && $is_template_sent && !empty($used_template)) {
+            $conn->query("UPDATE whatsapp_settings SET admin_template_name = '" . $conn->real_escape_string($used_template) . "' WHERE id = 1");
+        }
+
         echo json_encode([
             'success'        => true,
             'message_id'     => $msg_id,
             'message_status' => $msg_status,
+            'delivery_type'  => $is_template_sent ? 'template' : 'text',
+            'template_name'  => $used_template,
+            'bypasses_24h'   => $is_template_sent,
         ]);
 
     } else {
