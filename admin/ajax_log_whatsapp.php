@@ -437,6 +437,33 @@ if ($sending_mode === 'api') {
             list($result, $http_code, $curl_error) = $send_to_meta($payload);
             $meta_response = json_decode($result, true);
         }
+
+        // Auto-Recovery D: Template does not exist (Error 132001) — Try approved order_confirmation or status template fallback
+        if ($http_code != 200 && ($errCode == 132001 || stripos($fullErr, 'does not exist') !== false)) {
+            $fallback_tpl_candidates = array_unique(array_filter([
+                trim($settings['order_confirmation_template_name'] ?? ''),
+                'order_confirmation',
+                trim($settings['meta_template_name'] ?? ''),
+                'order_status_updates'
+            ]));
+            foreach ($fallback_tpl_candidates as $fb_tpl) {
+                if ($fb_tpl === $meta_template_name) continue;
+                $payload['template']['name'] = $fb_tpl;
+                $fb_params = (stripos($fb_tpl, 'confirm') !== false) ? $params_9 : $params_10;
+                $payload['template']['components'] = [
+                    [
+                        "type" => "body",
+                        "parameters" => $fb_params
+                    ]
+                ];
+                list($result, $http_code, $curl_error) = $send_to_meta($payload);
+                $meta_response = json_decode($result, true);
+                if ($http_code == 200 && isset($meta_response['messages'])) {
+                    $meta_template_name = $fb_tpl;
+                    break;
+                }
+            }
+        }
     }
 
     // Always log every API call for diagnosis

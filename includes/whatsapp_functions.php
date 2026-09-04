@@ -1004,8 +1004,10 @@ function sendAdminOrderNotification($conn, $order_id) {
                 ];
             };
 
-            // Standard Parameter sets:
-            // 11-param format (Default for newly designed admin_new_order_alert template)
+            // Clean items representation (both newline-separated and comma-separated without newlines for strict Meta templates)
+            $clean_items_inline = !empty($itemsList) ? implode(", ", $itemsList) : $itemsOrdered;
+
+            // 11-param format (Default for admin_new_order_alert template)
             $params_11 = [
                 ["type" => "text", "text" => (string)$order_id],        // {{1}} order_id
                 ["type" => "text", "text" => (string)$orderDate],       // {{2}} order_date
@@ -1016,8 +1018,35 @@ function sendAdminOrderNotification($conn, $order_id) {
                 ["type" => "text", "text" => (string)$paymentMode],     // {{7}} payment_method
                 ["type" => "text", "text" => (string)$orderStatus],     // {{8}} order_status
                 ["type" => "text", "text" => (string)$deliveryAddress], // {{9}} customer_address
-                ["type" => "text", "text" => (string)$itemsOrdered],    // {{10}} order_items
+                ["type" => "text", "text" => (string)$clean_items_inline], // {{10}} order_items (clean inline)
                 ["type" => "text", "text" => (string)$orderLink],       // {{11}} order_link
+            ];
+
+            // 9-param format (Proven working order_confirmation template)
+            $params_9 = [
+                ["type" => "text", "text" => (string)$customerName],    // {{1}} customer_name
+                ["type" => "text", "text" => (string)$order_id],        // {{2}} order_id
+                ["type" => "text", "text" => (string)$orderDate],       // {{3}} order_date
+                ["type" => "text", "text" => (string)$orderAmount],     // {{4}} order_total
+                ["type" => "text", "text" => (string)$paymentMode],     // {{5}} payment_method
+                ["type" => "text", "text" => (string)$orderStatus],     // {{6}} order_status
+                ["type" => "text", "text" => (string)$clean_items_inline], // {{7}} order_items
+                ["type" => "text", "text" => (string)$deliveryAddress], // {{8}} customer_address
+                ["type" => "text", "text" => (string)$orderLink],       // {{9}} order_link
+            ];
+
+            // 10-param format (order_status_updates template)
+            $params_10 = [
+                ["type" => "text", "text" => (string)$customerName],    // {{1}}
+                ["type" => "text", "text" => (string)$order_id],        // {{2}}
+                ["type" => "text", "text" => (string)$orderDate],       // {{3}}
+                ["type" => "text", "text" => (string)$orderStatus],     // {{4}}
+                ["type" => "text", "text" => "New order received! Total: ₹{$orderAmount} via {$paymentMode}"], // {{5}}
+                ["type" => "text", "text" => (string)$clean_items_inline], // {{6}}
+                ["type" => "text", "text" => (string)$orderAmount],     // {{7}}
+                ["type" => "text", "text" => (string)$deliveryAddress], // {{8}}
+                ["type" => "text", "text" => (string)$orderDate],       // {{9}}
+                ["type" => "text", "text" => (string)$orderLink],       // {{10}}
             ];
 
             // 4-param format (Legacy simple format)
@@ -1036,89 +1065,51 @@ function sendAdminOrderNotification($conn, $order_id) {
                 ["type" => "text", "text" => (string)$paymentMode],
             ];
 
-            // If using customer template placeholders mapping
-            if ($admin_tpl_name === ($settings['meta_template_name'] ?? '')) {
-                $orderStatus = ucwords(str_replace('_', ' ', $order['status'] ?? 'Processing'));
-                $trackingID  = 'N/A';
-                $replacementValues = [
-                    '{CustomerName}' => $customerName,
-                    '{OrderID}'      => $order_id,
-                    '{OrderStatus}'  => $orderStatus,
-                    '{TrackingID}'   => $trackingID,
-                    '{OrderAmount}'  => $orderAmount
-                ];
-                $cust_params = [];
-                preg_match_all('/\{(CustomerName|OrderID|OrderStatus|TrackingID|OrderAmount)\}/', $settings['message_template'], $matches);
-                if (!empty($matches[0])) {
-                    foreach ($matches[0] as $varKey) {
-                        $cust_params[] = ["type" => "text", "text" => (string)($replacementValues[$varKey] ?? '')];
-                    }
+            // List of candidate template names to try in order of relevance
+            $tpl_names_to_try = array_unique(array_filter([
+                $admin_tpl_name,
+                trim($settings['order_confirmation_template_name'] ?? ''),
+                'order_confirmation',
+                'order_confirmation_notification',
+                'new_order_confirmation',
+                trim($settings['meta_template_name'] ?? ''),
+                'order_status_updates',
+                'new_order_status',
+                'admin_new_order_alert'
+            ]));
+
+            // Build smart candidate payload variations
+            foreach ($tpl_names_to_try as $current_tpl_name) {
+                // Determine best parameter priority for current template
+                if (stripos($current_tpl_name, 'confirm') !== false) {
+                    $try_param_sets = [$params_9, $params_11, $params_4, $params_5];
+                } elseif (stripos($current_tpl_name, 'status') !== false || stripos($current_tpl_name, 'update') !== false) {
+                    $try_param_sets = [$params_10, $params_9, $params_11, $params_4, $params_5];
+                } else {
+                    $try_param_sets = [$params_11, $params_9, $params_4, $params_5];
                 }
-                $initial_params = !empty($cust_params) ? $cust_params : $params_11;
-            } else {
-                // For admin_new_order_alert, default to the 11-variable layout
-                $initial_params = $params_11;
-            }
 
-            // Attempt 1: Send with initial parameters (without forcing header unless set in settings)
-            $payload = $build_tpl_payload($admin_tpl_name, $lang_code, $initial_params, !empty($header_image_url));
-            list($result, $http_code, $curl_error) = $send_admin_meta($payload);
-            $meta_response = json_decode($result, true);
+                $languages_to_try = array_unique([$lang_code, ($lang_code === 'en' ? 'en_US' : 'en')]);
 
-            if ($http_code == 200 && isset($meta_response['messages'])) {
-                $sent_successfully = true;
-            } else {
-                $errMsg     = $meta_response['error']['message'] ?? '';
-                $errDetails = $meta_response['error']['error_data']['details'] ?? '';
-                $errCode    = (int)($meta_response['error']['code'] ?? 0);
-                $fullErr    = $errMsg . ' ' . $errDetails;
+                foreach ($languages_to_try as $current_lang) {
+                    foreach ($try_param_sets as $current_params) {
+                        // Try without header first (most compatible), then with header if configured
+                        $header_options = [false];
+                        if (!empty($header_image_url)) $header_options[] = true;
 
-                // Smart Recovery 1: Parameter Count Mismatch (Error 132000 or parameter count issue)
-                if (!$sent_successfully && ($errCode == 132000 || stripos($fullErr, 'parameter') !== false || stripos($fullErr, 'placeholder') !== false)) {
-                    // Try 4 params or 5 params if 11 params didn't match
-                    $try_params = ($initial_params === $params_11) ? [$params_4, $params_5] : [$params_11, $params_4];
-                    foreach ($try_params as $p_set) {
-                        $payload = $build_tpl_payload($admin_tpl_name, $lang_code, $p_set, false);
-                        list($result, $http_code, $curl_error) = $send_admin_meta($payload);
-                        $meta_response = json_decode($result, true);
-                        if ($http_code == 200 && isset($meta_response['messages'])) {
-                            $sent_successfully = true;
-                            break;
+                        foreach ($header_options as $with_header) {
+                            $payload = $build_tpl_payload($current_tpl_name, $current_lang, $current_params, $with_header);
+                            list($result, $http_code, $curl_error) = $send_admin_meta($payload);
+                            $meta_response = json_decode($result, true);
+
+                            if ($http_code == 200 && isset($meta_response['messages'])) {
+                                $sent_successfully = true;
+                                if ($current_tpl_name !== $admin_tpl_name && empty($admin_tpl_name)) {
+                                    $conn->query("UPDATE whatsapp_settings SET admin_template_name = '" . $conn->real_escape_string($current_tpl_name) . "' WHERE id = 1");
+                                }
+                                break 4; // Successfully delivered! Break all loops.
+                            }
                         }
-                    }
-                }
-
-                // Smart Recovery 2: Header Mismatch (Header expected vs unexpected)
-                if (!$sent_successfully && (stripos($fullErr, 'header') !== false || stripos($fullErr, 'components[0]') !== false)) {
-                    if (stripos($fullErr, 'IMAGE') !== false || stripos($fullErr, 'expected') !== false) {
-                        // Template expects a header image
-                        $fallback_img = !empty($header_image_url) ? $header_image_url : 'https://sagarstarters.com/assets/images/admin_order_alert_banner.jpg';
-                        $payload = $build_tpl_payload($admin_tpl_name, $lang_code, $initial_params, true);
-                        if (empty($payload['template']['components'][0]) || $payload['template']['components'][0]['type'] !== 'header') {
-                            array_unshift($payload['template']['components'], [
-                                "type" => "header",
-                                "parameters" => [["type" => "image", "image" => ["link" => $fallback_img]]]
-                            ]);
-                        }
-                    } else {
-                        // Template does NOT support header
-                        $payload = $build_tpl_payload($admin_tpl_name, $lang_code, $initial_params, false);
-                    }
-                    list($result, $http_code, $curl_error) = $send_admin_meta($payload);
-                    $meta_response = json_decode($result, true);
-                    if ($http_code == 200 && isset($meta_response['messages'])) {
-                        $sent_successfully = true;
-                    }
-                }
-
-                // Smart Recovery 3: Language code mismatch (en vs en_US)
-                if (!$sent_successfully && ($errCode == 132001 || stripos($fullErr, 'does not exist') !== false || stripos($fullErr, 'language') !== false)) {
-                    $alt_lang = ($lang_code === 'en') ? 'en_US' : 'en';
-                    $payload = $build_tpl_payload($admin_tpl_name, $alt_lang, $initial_params, false);
-                    list($result, $http_code, $curl_error) = $send_admin_meta($payload);
-                    $meta_response = json_decode($result, true);
-                    if ($http_code == 200 && isset($meta_response['messages'])) {
-                        $sent_successfully = true;
                     }
                 }
             }
