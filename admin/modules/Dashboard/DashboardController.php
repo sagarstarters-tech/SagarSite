@@ -14,8 +14,8 @@ class DashboardController extends BaseController
             'recent_orders' => $service->getRecentOrders(),
         ];
 
-        include 'admin_header.php';
+        include_once __DIR__ . '/../../admin_header.php';
         $this->render(__DIR__ . '/views/index.php', $data);
-        include 'admin_footer.php';
+        include_once __DIR__ . '/../../admin_footer.php';
     }
 }

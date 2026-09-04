@@ -21,7 +21,7 @@ if ($result && $result->num_rows > 0) {
                         <i class="fas fa-exclamation-triangle fa-4x text-warning mb-4"></i>
                         <h2 class="fw-bold">404 - Page Not Found</h2>
                         <p class="text-muted">The page you are looking for does not exist or has been moved.</p>
-                        <a href="/index.php" class="btn btn-primary btn-custom mt-3">Return to Home</a>
+                        <a href="index.php" class="btn btn-primary btn-custom mt-3">Return to Home</a>
                       </div>'
     ];
     $page_meta_title = '404 Not Found';

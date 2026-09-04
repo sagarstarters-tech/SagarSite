@@ -1,12 +1,13 @@
 <?php
-include '../includes/config.php';
+require_once __DIR__ . '/../includes/session_setup.php';
+require_once __DIR__ . '/../includes/db_connect.php';
 
 if (!isset($_SESSION['user_id'])) {
-    header("Location: ../login.php");
+    header("Location: login.php");
     exit;
 }
 
-$user_id = $_SESSION['user_id'];
+$user_id = intval($_SESSION['user_id']);
 $page_title = "My Downloads";
 include '../includes/header.php';
 
@@ -22,14 +23,21 @@ $downloads = $conn->query($query);
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="../index.php">Home</a></li>
-            <li class="breadcrumb-item"><a href="order_history.php">My Account</a></li>
+            <li class="breadcrumb-item"><a href="orders.php">My Account</a></li>
             <li class="breadcrumb-item active">My Downloads</li>
         </ol>
     </nav>
 
     <div class="row">
-        <div class="col-md-3">
-            <?php include 'sidebar.php'; ?>
+        <div class="col-md-3 mb-4">
+            <div class="card product-card">
+                <div class="list-group list-group-flush rounded border-0">
+                    <a href="profile.php" class="list-group-item list-group-item-action py-3 fw-bold text-muted"><i class="fas fa-user me-2"></i> My Profile</a>
+                    <a href="orders.php" class="list-group-item list-group-item-action py-3 fw-bold text-muted"><i class="fas fa-box me-2"></i> My Orders</a>
+                    <a href="downloads.php" class="list-group-item list-group-item-action active py-3 bg-primary-blue border-0 fw-bold"><i class="fas fa-download me-2"></i> My Downloads</a>
+                    <a href="../includes/auth.php?action=logout" class="list-group-item list-group-item-action text-danger py-3 fw-bold"><i class="fas fa-sign-out-alt me-2"></i> Logout</a>
+                </div>
+            </div>
         </div>
         <div class="col-md-9">
             <div class="card border-0 shadow-sm rounded-4">

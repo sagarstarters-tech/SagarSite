@@ -78,7 +78,7 @@ foreach ($queries as $i => $sql) {
                     <?php endforeach; ?>
                     
                     <div class="text-center mt-4">
-                        <a href="manage_backups.php" class="btn btn-primary btn-custom rounded-pill px-4">
+                        <a href="../manage_backups.php" class="btn btn-primary btn-custom rounded-pill px-4">
                             <i class="fas fa-shield-alt me-2"></i>Go to Backup Manager
                         </a>
                     </div>
@@ -88,4 +88,4 @@ foreach ($queries as $i => $sql) {
     </div>
 </div>
 
-<?php include 'admin_footer.php'; ?>
+<?php include_once __DIR__ . '/../admin_footer.php'; ?>

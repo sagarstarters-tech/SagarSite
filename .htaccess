@@ -33,7 +33,7 @@ RewriteRule ^ https://www.%1%{REQUEST_URI} [L,R=301]
 # ══════════════════════════════════════════════════════════════
 
 # Block .env files
-<FilesMatch "^\.env(\..*)? $">
+<FilesMatch "^\.env(\..*)?$">
     <IfModule mod_authz_core.c>
         Require all denied
     </IfModule>

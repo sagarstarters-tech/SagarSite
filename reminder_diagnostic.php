@@ -5,9 +5,9 @@
  * URL: /scratch/reminder_diagnostic.php?key=sagar_cart_recovery_cron_secret
  */
 
-require_once dirname(__DIR__) . '/includes/session_setup.php';
-require_once dirname(__DIR__) . '/includes/db_connect.php';
-require_once dirname(__DIR__) . '/includes/AbandonedCartService.php';
+require_once __DIR__ . '/includes/session_setup.php';
+require_once __DIR__ . '/includes/db_connect.php';
+require_once __DIR__ . '/includes/AbandonedCartService.php';
 
 // Secret key check
 $secretKey = 'sagar_cart_recovery_cron_secret';

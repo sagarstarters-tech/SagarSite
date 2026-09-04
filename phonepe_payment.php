@@ -1,6 +1,10 @@
 <?php
 // phonepe_payment.php
 // This is included directly from checkout.php, so $conn, $order_id, $user_id, $grand_total, $global_settings, $user_data are available
+if (!isset($order_id)) {
+    header("Location: checkout.php");
+    exit;
+}
 
 // Fetch PhonePe settings
 $merchantId = trim($global_settings['phonepe_merchant_id'] ?? '');

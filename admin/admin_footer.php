@@ -404,7 +404,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Gentle Admin Background Queue Processor (Protected by Anti-Backlog Guard)
     function triggerAdminSocialQueue() {
         if (navigator.onLine) {
-            fetch('<?php echo defined("ADMIN_BASE_URL") ? ADMIN_BASE_URL : SITE_URL . "/admin"; ?>/social-media/ajax/ajax_process_queue.php', {
+            fetch('<?php echo defined("ADMIN_BASE_URL") ? ADMIN_BASE_URL : (defined("SITE_URL") ? rtrim(SITE_URL, "/") . "/admin" : "../admin"); ?>/social-media/ajax/ajax_process_queue.php', {
                 method: 'POST',
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             }).catch(function(err) {});

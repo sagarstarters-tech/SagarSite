@@ -37,8 +37,15 @@ if ($result->num_rows === 0 && isset($_GET['slug'])) {
 }
 
 if ($result->num_rows === 0) {
-    echo "<div class='container mt-5 py-5 text-center'><h2>Product not found</h2></div>";
+    http_response_code(404);
+    $page_title = "Product Not Found";
     include 'includes/header.php';
+    echo "<div class='container my-5 py-5 text-center' style='min-height: 50vh;'>";
+    echo "<i class='fas fa-box-open fa-4x text-muted mb-3'></i>";
+    echo "<h2 class='fw-bold mb-3'>Product Not Found</h2>";
+    echo "<p class='text-muted mb-4'>The product you are looking for does not exist or has been removed.</p>";
+    echo "<a href='shop.php' class='btn btn-primary rounded-pill px-4'><i class='fas fa-arrow-left me-2'></i>Browse Products</a>";
+    echo "</div>";
     include 'includes/footer.php';
     exit;
 }

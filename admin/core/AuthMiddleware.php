@@ -44,7 +44,9 @@ class AuthMiddleware
                 $stmt->bind_param('i', $uid);
                 $stmt->execute();
                 $res = $stmt->get_result()->fetch_assoc();
-                $_SESSION['profile_photo'] = trim($res['profile_photo'] ?: ($res['google_avatar'] ?? ''));
+                if ($res) {
+                    $_SESSION['profile_photo'] = trim(($res['profile_photo'] ?? '') ?: ($res['google_avatar'] ?? ''));
+                }
                 $stmt->close();
             }
         }

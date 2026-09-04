@@ -53,10 +53,10 @@ if ($pages_q) {
 }
 
 // ── Categories ────────────────────────────────────────────────
-$cats_q = $conn->query("SELECT slug, updated_at FROM categories WHERE status = 'active' OR status IS NULL");
+$cats_q = $conn->query("SELECT slug FROM categories");
 if ($cats_q) {
     while ($cat = $cats_q->fetch_assoc()) {
-        $lastmod = date('Y-m-d', strtotime($cat['updated_at'] ?? $today));
+        $lastmod = $today;
         echo "  <url>\n";
         echo "    <loc>" . htmlspecialchars($base_url . '/category/' . $cat['slug']) . "</loc>\n";
         echo "    <lastmod>{$lastmod}</lastmod>\n";
@@ -67,10 +67,10 @@ if ($cats_q) {
 }
 
 // ── Products ─────────────────────────────────────────────────
-$prods_q = $conn->query("SELECT slug, updated_at FROM products WHERE status = 'active' OR status IS NULL");
+$prods_q = $conn->query("SELECT slug, created_at FROM products");
 if ($prods_q) {
     while ($prod = $prods_q->fetch_assoc()) {
-        $lastmod = date('Y-m-d', strtotime($prod['updated_at'] ?? $today));
+        $lastmod = !empty($prod['created_at']) ? date('Y-m-d', strtotime($prod['created_at'])) : $today;
         echo "  <url>\n";
         echo "    <loc>" . htmlspecialchars($base_url . '/product/' . $prod['slug']) . "</loc>\n";
         echo "    <lastmod>{$lastmod}</lastmod>\n";
