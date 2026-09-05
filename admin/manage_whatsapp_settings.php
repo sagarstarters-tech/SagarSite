@@ -342,7 +342,18 @@ $logs = $conn->query($logs_query);
                         <div class="col-md-6 mb-3 text-start">
                             <label class="form-label fw-bold d-block">Admin WhatsApp Number</label>
                             <?php echo render_phone_input('admin_whatsapp_number', $settings['admin_whatsapp_number'] ?? '', true); ?>
-                            <small class="text-muted d-block mt-1">Admin ka WhatsApp number with country code (e.g. <code>+91 8573934013</code>).</small>
+                            <?php 
+                                $clean_adm_num = normalize_whatsapp_phone_number($settings['admin_whatsapp_number'] ?? '');
+                                $clean_snd_num = normalize_whatsapp_phone_number($settings['sender_number'] ?? '');
+                                $is_same_as_sender = (!empty($clean_adm_num) && !empty($clean_snd_num) && $clean_adm_num === $clean_snd_num);
+                            ?>
+                            <div class="small mt-1">
+                                <span class="text-muted">Admin ka Personal/Alternate WhatsApp number (e.g. <code>+91 9876543210</code>).</span>
+                                <div id="sameNumberWarningBox" class="alert alert-warning border border-warning py-2 px-3 mt-2 mb-1 small rounded-3 <?php echo $is_same_as_sender ? '' : 'd-none'; ?>">
+                                    <i class="fas fa-exclamation-triangle text-warning me-1"></i>
+                                    <strong>Self-Messaging Rule:</strong> Yeh number Store ke API Sender number (<code>+<?php echo htmlspecialchars($clean_snd_num); ?></code>) se <strong>alag</strong> hona chahiye. Meta WhatsApp Cloud API ek number se <u>usi number par</u> message deliver nahi karta.
+                                </div>
+                            </div>
 
                             <div class="mt-3">
                                 <label class="form-label fw-bold small text-uppercase tracking-wider">Admin Meta Template Name</label>
@@ -355,9 +366,14 @@ $logs = $conn->query($logs_query);
                                 <small class="text-muted">Approved template (e.g. <code>admin_new_order_alert</code>).</small>
                             </div>
 
-                            <button type="button" class="btn btn-sm btn-outline-success mt-3 fw-bold rounded-pill" id="btnQuickTestAdmin">
-                                <i class="fab fa-whatsapp me-1"></i> Send Test Admin Alert to this number
-                            </button>
+                            <div class="d-flex flex-wrap gap-2 mt-3">
+                                <button type="button" class="btn btn-sm btn-outline-success fw-bold rounded-pill" id="btnQuickTestAdmin">
+                                    <i class="fab fa-whatsapp me-1"></i> Send Test Admin Alert to this number
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-primary fw-bold rounded-pill" onclick="openTestModal('admin_alert')">
+                                    <i class="fas fa-paper-plane me-1"></i> Test on Another Number
+                                </button>
+                            </div>
                             <div id="adminTestResult" class="small mt-2 d-none"></div>
                         </div>
 
@@ -656,6 +672,9 @@ function openTestModal(type) {
     if (type === 'order_confirm') {
         modalTitle.innerHTML = '<i class="fas fa-cart-arrow-down me-2 text-primary"></i>Test Order Confirmation';
         modalDesc.innerText = 'Send a simulated Order Confirmation WhatsApp notification using the current template and variables.';
+    } else if (type === 'admin_alert') {
+        modalTitle.innerHTML = '<i class="fas fa-bell me-2 text-warning"></i>Test Admin Order Alert';
+        modalDesc.innerText = 'Send a simulated Admin New Order Alert WhatsApp notification to ANY phone number to verify template delivery.';
     } else {
         modalTitle.innerHTML = '<i class="fas fa-truck me-2 text-info"></i>Test Order Status Update';
         modalDesc.innerText = 'Send a simulated Order Status Update WhatsApp notification using the current status template.';
@@ -708,6 +727,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (currentTestType === 'order_confirm') {
             const tplName = document.getElementById('orderConfirmTplInput')?.value.trim() || '';
             url = 'ajax_log_whatsapp.php?test_order_confirm=1&number=' + phone + '&template_name=' + encodeURIComponent(tplName);
+        } else if (currentTestType === 'admin_alert') {
+            const tplName = document.getElementById('adminTplInput')?.value.trim() || '';
+            url = 'ajax_log_whatsapp.php?test_admin=1&number=' + phone + '&admin_template_name=' + encodeURIComponent(tplName);
         } else {
             const tplName = document.getElementById('statusTplInput')?.value.trim() || '';
             url = 'ajax_log_whatsapp.php?test=1&number=' + phone + '&template_name=' + encodeURIComponent(tplName);
@@ -721,8 +743,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if (data.success) {
                     const msgId = data.message_id ? `<div class="mt-1 font-monospace small">Message ID: ${data.message_id}</div>` : '';
-                    resEl.className = 'alert alert-success py-2 small';
-                    resEl.innerHTML = `✅ <strong>Success!</strong> Meta accepted the message for delivery.${msgId}`;
+                    if (data.same_number_warning) {
+                        resEl.className = 'alert alert-warning py-2 small';
+                        resEl.innerHTML = `⚠️ <strong>Accepted by Meta, but recipient is same as sender (+${data.recipient_number})!</strong> WhatsApp blocks self-messaging. Test with a different phone number.${msgId}`;
+                    } else {
+                        resEl.className = 'alert alert-success py-2 small';
+                        resEl.innerHTML = `✅ <strong>Success!</strong> Meta accepted the message for delivery.${msgId}`;
+                    }
                 } else {
                     resEl.className = 'alert alert-danger py-2 small';
                     resEl.innerHTML = `❌ <strong>Failed:</strong> ${data.error || 'Meta API rejected message'}`;
@@ -761,7 +788,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if (data.success) {
                     const msgId = data.message_id ? `<div class="mt-1 font-monospace text-muted" style="font-size:0.75rem;">Message ID: ${data.message_id}</div>` : '';
-                    if (data.delivery_type === 'template' || data.bypasses_24h) {
+                    if (data.same_number_warning) {
+                        adminTestResult.className = 'alert alert-warning py-3 small mt-2 border-warning shadow-sm';
+                        adminTestResult.innerHTML = `
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-exclamation-triangle text-warning fs-5 me-2 mt-1"></i>
+                                <div>
+                                    <strong class="text-dark">Meta API ने Message Accept किया, लेकिन Delivery Self-Number पर Block है!</strong><br>
+                                    <span class="text-muted">आपकी WhatsApp Business API का Sender Number और Admin Alert Number दोनों एक ही हैं (<code>+${data.recipient_number}</code>)।</span>
+                                    <div class="mt-2 p-2 bg-white rounded border border-warning text-dark">
+                                        <strong>⚠️ WhatsApp Rule:</strong> Meta WhatsApp Cloud API एक Business Account से <u>उसी के अपने नंबर पर</u> मैसेज डिलीवर नहीं करता (Self-Messaging Blocked)।<br>
+                                        <strong>💡 Solution:</strong> ऊपर <strong>Admin WhatsApp Number</strong> फ़ील्ड में अपना कोई <strong>दूसरा / पर्सनल WhatsApp नंबर</strong> (जैसे पर्सनल SIM या कोई अन्य मोबाइल नंबर) डालें और दोबारा टेस्ट करें। वहां तुरंत मैसेज प्राप्त होगा!
+                                    </div>
+                                    ${msgId}
+                                </div>
+                            </div>
+                        `;
+                    } else if (data.delivery_type === 'template' || data.bypasses_24h) {
                         adminTestResult.className = 'alert alert-success py-2 small mt-2';
                         adminTestResult.innerHTML = `✅ <strong>Success! Delivered via Meta Template (<code>${data.template_name || 'Approved Template'}</code>)</strong><br>` +
                             `<span class="text-success fw-bold"><i class="fas fa-shield-alt me-1"></i> 24/7 Guaranteed:</span> कल या 24 घंटे बाद भी नया ऑर्डर आने पर बिना किसी "Hi" के ऑटोमैटिक अलर्ट आएगा।${msgId}`;

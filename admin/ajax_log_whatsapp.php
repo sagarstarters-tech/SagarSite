@@ -499,13 +499,19 @@ if ($sending_mode === 'api') {
             $conn->query("UPDATE whatsapp_settings SET admin_template_name = '" . $conn->real_escape_string($used_template) . "' WHERE id = 1");
         }
 
+        $clean_sender = normalize_whatsapp_phone_number($settings['sender_number'] ?? '');
+        $is_same_number = (!empty($clean_sender) && $clean_number === $clean_sender);
+
         echo json_encode([
-            'success'        => true,
-            'message_id'     => $msg_id,
-            'message_status' => $msg_status,
-            'delivery_type'  => $is_template_sent ? 'template' : 'text',
-            'template_name'  => $used_template,
-            'bypasses_24h'   => $is_template_sent,
+            'success'             => true,
+            'message_id'          => $msg_id,
+            'message_status'      => $msg_status,
+            'delivery_type'       => $is_template_sent ? 'template' : 'text',
+            'template_name'       => $used_template,
+            'bypasses_24h'        => $is_template_sent,
+            'same_number_warning' => $is_same_number,
+            'sender_number'       => $clean_sender,
+            'recipient_number'    => $clean_number,
         ]);
 
     } else {

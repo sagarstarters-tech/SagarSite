@@ -893,6 +893,16 @@ function sendAdminOrderNotification($conn, $order_id) {
         $clean_admin = normalize_whatsapp_phone_number($admin_number);
         if (empty($clean_admin)) return false;
 
+        // ── Self-messaging Guard: Meta Cloud API cannot deliver a message from a number to itself ──
+        $clean_sender = normalize_whatsapp_phone_number($settings['sender_number'] ?? '');
+        if (!empty($clean_sender) && $clean_admin === $clean_sender) {
+            $skip_msg = "Admin Alert Skipped: Admin WhatsApp number is same as API Sender number ($clean_sender). Meta Cloud API blocks self-messaging. Please set an alternate personal WhatsApp number for admin in WhatsApp Settings.";
+            error_log("[WhatsApp Admin] " . $skip_msg);
+            $conn->query("INSERT INTO whatsapp_logs (order_id, customer_number, message, sending_mode, status) 
+                VALUES ($order_id, '$clean_admin', 'Admin New Order Alert', 'api', 'Admin Skipped: Same as Sender Number (Meta blocks self-messaging)')");
+            return false;
+        }
+
         // ── Deduplication Guard: Prevent duplicate admin new order alerts ──
         $admin_lock_name = "wa_admin_alert_" . intval($order_id);
         $conn->query("SELECT GET_LOCK('$admin_lock_name', 5)");
