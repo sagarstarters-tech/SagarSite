@@ -39,7 +39,7 @@ Aapko client ya agency ko kya message bhejna hai, uske ready templates yahan diy
 > 🔹 **WhatsApp Notification API Integration** (Automated order confirmation, shipping & delivery triggers)
 > 🔹 **Automated Courier Tracking Module** (Live tracking for customers)
 > 🔹 **Abandoned Cart Recovery System** (Auto reminder for incomplete orders)
-> 🔹 **Comprehensive Admin Dashboard** (Catalog, Orders, Inventory, Dynamic Settings, SEO Metadata)
+> 🔹 **Executive Dark Navy Admin Dashboard** (Modern KPI cards, Catalog, Orders, Courier Tracking, SEO Suite & Social Automation)
 > 🔹 **Zero Framework Bloat:** Super fast, lightweight vanilla PHP/MySQL stack with modern UI.
 > 
 > We are offering the full source code + clean database schema + setup documentation at a very reasonable one-time agency price.
