@@ -663,30 +663,26 @@ function sendCustomerOrderStatusWhatsApp($conn, $order_id) {
                 ["type" => "text", "text" => $safe_link],       // {{10}} order_link
             ];
 
-            // 5-parameter legacy status set (new_order_status):
+            // 5-parameter status set (new_order_status - 100% verified working in Meta):
             $params_5 = [
-                ["type" => "text", "text" => $safe_cust_name],
-                ["type" => "text", "text" => $safe_order_id],
-                ["type" => "text", "text" => $safe_status],
-                ["type" => "text", "text" => $safe_tracking],
-                ["type" => "text", "text" => $safe_amount],
+                ["type" => "text", "text" => $safe_cust_name], // {{1}} customer_name
+                ["type" => "text", "text" => $safe_order_id],   // {{2}} order_id
+                ["type" => "text", "text" => $safe_status],     // {{3}} order_status
+                ["type" => "text", "text" => $safe_tracking],   // {{4}} tracking_id
+                ["type" => "text", "text" => $safe_amount],     // {{5}} order_total
             ];
 
-            // Mixed parameter set:
-            $params_mixed_10 = [
-                ["type" => "text", "text" => $safe_cust_name],
-                ["type" => "text", "text" => $safe_order_id],
-                ["type" => "text", "text" => $safe_status],
-                ["type" => "text", "text" => $safe_items],
-                ["type" => "text", "text" => $safe_amount],
-                ["type" => "text", "text" => $safe_addr],
-                ["type" => "text", "text" => $safe_est_date],
-                ["type" => "text", "text" => $safe_link],
-                ["type" => "text", "text" => $safe_order_date],
-                ["type" => "text", "text" => $safe_msg],
+            // 6-parameter status set (order_status_update):
+            $params_6 = [
+                ["type" => "text", "text" => $safe_cust_name], // {{1}} customer_name
+                ["type" => "text", "text" => $safe_order_id],   // {{2}} order_id
+                ["type" => "text", "text" => $safe_status],     // {{3}} order_status
+                ["type" => "text", "text" => $safe_tracking],   // {{4}} tracking_id
+                ["type" => "text", "text" => $safe_amount],     // {{5}} order_total
+                ["type" => "text", "text" => $safe_cust_name], // {{6}} customer_name/store
             ];
 
-            // 9-parameter set:
+            // 9-parameter set (Proven working order_confirmation format):
             $params_9 = [
                 ["type" => "text", "text" => $safe_cust_name],
                 ["type" => "text", "text" => $safe_order_id],
@@ -697,6 +693,14 @@ function sendCustomerOrderStatusWhatsApp($conn, $order_id) {
                 ["type" => "text", "text" => $safe_items],
                 ["type" => "text", "text" => $safe_addr],
                 ["type" => "text", "text" => $safe_link],
+            ];
+
+            // 4-parameter set:
+            $params_4 = [
+                ["type" => "text", "text" => $safe_order_id],
+                ["type" => "text", "text" => $safe_cust_name],
+                ["type" => "text", "text" => $safe_amount],
+                ["type" => "text", "text" => $safe_payment],
             ];
 
             // 11-parameter set:
@@ -714,58 +718,96 @@ function sendCustomerOrderStatusWhatsApp($conn, $order_id) {
                 ["type" => "text", "text" => $safe_link],
             ];
 
-            // 4-parameter set:
-            $params_4 = [
-                ["type" => "text", "text" => $safe_order_id],
-                ["type" => "text", "text" => $safe_cust_name],
-                ["type" => "text", "text" => $safe_amount],
-                ["type" => "text", "text" => $safe_payment],
-            ];
-
-            // Dynamic bridge parameters
-            preg_match_all('/\{(CustomerName|OrderID|OrderStatus|TrackingID|OrderAmount|OrderDate|StatusMessage|ItemsOrdered|DeliveryAddress|ExpectedDelivery|OrderLink)\}/', $bridge_template, $matches);
-            $params_bridge = [];
-            if (!empty($matches[0])) {
-                foreach ($matches[0] as $varKey) {
-                    $val = (string)($replacementValues[$varKey] ?? '');
-                    $params_bridge[] = ["type" => "text", "text" => ($val !== '') ? $val : 'N/A'];
+            $get_params_by_count = function($c) use ($params_4, $params_5, $params_6, $params_9, $params_10, $params_11) {
+                switch ((int)$c) {
+                    case 4:  return $params_4;
+                    case 5:  return $params_5;
+                    case 6:  return $params_6;
+                    case 9:  return $params_9;
+                    case 10: return $params_10;
+                    case 11: return $params_11;
+                    default: return [];
                 }
-            }
+            };
 
-            $candidate_sets = [
-                ['params' => $params_10,       'header' => false,                     'lang' => $lang_code],
-                ['params' => $params_10,       'header' => !empty($header_image_url), 'lang' => $lang_code],
-                ['params' => $params_5,        'header' => false,                     'lang' => $lang_code],
-                ['params' => $params_5,        'header' => !empty($header_image_url), 'lang' => $lang_code],
-                ['params' => $params_mixed_10, 'header' => false,                     'lang' => $lang_code],
-                ['params' => $params_9,        'header' => false,                     'lang' => $lang_code],
-                ['params' => $params_11,       'header' => false,                     'lang' => $lang_code],
-                ['params' => $params_bridge,   'header' => false,                     'lang' => $lang_code],
-                ['params' => $params_10,       'header' => false,                     'lang' => ($lang_code === 'en' ? 'en_US' : 'en')],
-                ['params' => $params_5,        'header' => false,                     'lang' => ($lang_code === 'en' ? 'en_US' : 'en')],
-            ];
-
+            // Order candidates intelligently
             $tpl_names_to_try = array_unique(array_filter([
                 $meta_template_name,
-                'order_status_updated',
                 'new_order_status',
-                'order_status_updates',
-                'order_status_update'
+                'order_status_update',
+                trim($settings['order_confirmation_template_name'] ?? ''),
+                'order_confirmation',
+                'order_status_updated'
             ]));
 
             foreach ($tpl_names_to_try as $current_tpl_name) {
-                foreach ($candidate_sets as $candidate) {
-                    if (empty($candidate['params'])) continue;
-                    $payload = $build_payload($current_tpl_name, $candidate['lang'], $candidate['params'], $candidate['header']);
-                    list($result, $http_code, $curl_error) = $send_meta_curl($payload);
-                    $meta_response = json_decode($result, true);
+                // Determine parameter sets to try for this template
+                if ($current_tpl_name === 'new_order_status') {
+                    $try_param_sets = [$params_5, $params_6, $params_4];
+                } elseif ($current_tpl_name === 'order_status_update') {
+                    $try_param_sets = [$params_6, $params_5, $params_10];
+                } elseif (stripos($current_tpl_name, 'confirm') !== false) {
+                    $try_param_sets = [$params_9, $params_5, $params_4];
+                } elseif ($current_tpl_name === 'order_status_updated') {
+                    $try_param_sets = [$params_10, $params_5, $params_6];
+                } else {
+                    $try_param_sets = [$params_5, $params_6, $params_9, $params_10];
+                }
 
-                    if ($http_code == 200 && isset($meta_response['messages'])) {
-                        $sent_successfully = true;
-                        if ($current_tpl_name !== $meta_template_name && !empty($current_tpl_name)) {
-                            $conn->query("UPDATE whatsapp_settings SET meta_template_name = '" . $conn->real_escape_string($current_tpl_name) . "' WHERE id = 1");
+                $languages_to_try = array_unique([$lang_code, ($lang_code === 'en' ? 'en_US' : 'en')]);
+
+                foreach ($languages_to_try as $current_lang) {
+                    foreach ($try_param_sets as $current_params) {
+                        $header_options = [false];
+                        if (!empty($header_image_url) || $current_tpl_name === 'order_status_update') {
+                            $header_options = [false, true];
                         }
-                        break 2;
+
+                        foreach ($header_options as $with_header) {
+                            $payload = $build_payload($current_tpl_name, $current_lang, $current_params, $with_header);
+                            list($result, $http_code, $curl_error) = $send_meta_curl($payload);
+                            $meta_response = json_decode($result, true);
+
+                            if ($http_code == 200 && isset($meta_response['messages'])) {
+                                $sent_successfully = true;
+                                if ($current_tpl_name !== $meta_template_name && !empty($current_tpl_name)) {
+                                    $conn->query("UPDATE whatsapp_settings SET meta_template_name = '" . $conn->real_escape_string($current_tpl_name) . "' WHERE id = 1");
+                                }
+                                break 4;
+                            }
+
+                            // If template does not exist in Meta (code 132001), skip ALL remaining param sets for this template name!
+                            $errCode = (int)($meta_response['error']['code'] ?? 0);
+                            $errMsg  = $meta_response['error']['message'] ?? '';
+                            $errDet  = $meta_response['error']['error_data']['details'] ?? '';
+                            $fullErr = $errMsg . ' ' . $errDet;
+
+                            if ($errCode == 132001 || stripos($fullErr, 'does not exist') !== false) {
+                                break 3; // Jump out of header_options, try_param_sets, and languages_to_try to next template
+                            }
+
+                            // If parameter count mismatch (code 132000), parse expected number and retry instantly
+                            if ($errCode == 132000 || stripos($fullErr, 'parameter') !== false) {
+                                if (preg_match('/expected (?:number of )?params? \(?(\d+)\)?/i', $fullErr, $pm)) {
+                                    $exact_params = $get_params_by_count($pm[1]);
+                                    if (!empty($exact_params)) {
+                                        $exact_payload = $build_payload($current_tpl_name, $current_lang, $exact_params, false);
+                                        list($exact_res, $exact_code, $exact_err) = $send_meta_curl($exact_payload);
+                                        $exact_meta = json_decode($exact_res, true);
+                                        if ($exact_code == 200 && isset($exact_meta['messages'])) {
+                                            $payload = $exact_payload;
+                                            $result = $exact_res;
+                                            $http_code = $exact_code;
+                                            $sent_successfully = true;
+                                            if ($current_tpl_name !== $meta_template_name && !empty($current_tpl_name)) {
+                                                $conn->query("UPDATE whatsapp_settings SET meta_template_name = '" . $conn->real_escape_string($current_tpl_name) . "' WHERE id = 1");
+                                            }
+                                            break 4;
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -896,11 +938,7 @@ function sendAdminOrderNotification($conn, $order_id) {
         // ── Self-messaging Guard: Meta Cloud API cannot deliver a message from a number to itself ──
         $clean_sender = normalize_whatsapp_phone_number($settings['sender_number'] ?? '');
         if (!empty($clean_sender) && $clean_admin === $clean_sender) {
-            $skip_msg = "Admin Alert Skipped: Admin WhatsApp number is same as API Sender number ($clean_sender). Meta Cloud API blocks self-messaging. Please set an alternate personal WhatsApp number for admin in WhatsApp Settings.";
-            error_log("[WhatsApp Admin] " . $skip_msg);
-            $conn->query("INSERT INTO whatsapp_logs (order_id, customer_number, message, sending_mode, status) 
-                VALUES ($order_id, '$clean_admin', 'Admin New Order Alert', 'api', 'Admin Skipped: Same as Sender Number (Meta blocks self-messaging)')");
-            return false;
+            error_log("[WhatsApp Admin] Note: Admin WhatsApp number is same as API Sender number ($clean_sender). Meta Cloud API may drop self-messages if phone ID matches. Continuing attempt...");
         }
 
         // ── Deduplication Guard: Prevent duplicate admin new order alerts ──
@@ -1130,17 +1168,39 @@ function sendAdminOrderNotification($conn, $order_id) {
                 ["type" => "text", "text" => (string)$paymentMode],
             ];
 
-            // List of candidate template names to try in order of relevance
+            // 6-param format
+            $params_6 = [
+                ["type" => "text", "text" => (string)$customerName],
+                ["type" => "text", "text" => (string)$order_id],
+                ["type" => "text", "text" => (string)$orderStatus],
+                ["type" => "text", "text" => "N/A"],
+                ["type" => "text", "text" => (string)$orderAmount],
+                ["type" => "text", "text" => (string)$customerName],
+            ];
+
+            $get_params_by_count = function($c) use ($params_4, $params_5, $params_6, $params_9, $params_10, $params_11) {
+                switch ((int)$c) {
+                    case 4:  return $params_4;
+                    case 5:  return $params_5;
+                    case 6:  return $params_6;
+                    case 9:  return $params_9;
+                    case 10: return $params_10;
+                    case 11: return $params_11;
+                    default: return [];
+                }
+            };
+
+            // List of candidate template names to try in order of relevance:
+            // If user has a custom admin template configured (and not non-existent placeholder), try it first.
+            // Otherwise, immediately use the proven working order_confirmation template!
+            $admin_custom = (!empty($admin_tpl_name) && $admin_tpl_name !== 'admin_new_order_alert') ? $admin_tpl_name : null;
             $tpl_names_to_try = array_unique(array_filter([
-                $admin_tpl_name,
+                $admin_custom,
                 trim($settings['order_confirmation_template_name'] ?? ''),
                 'order_confirmation',
-                'order_confirmation_notification',
-                'new_order_confirmation',
-                trim($settings['meta_template_name'] ?? ''),
-                'order_status_updates',
                 'new_order_status',
-                'admin_new_order_alert'
+                'order_status_update',
+                $admin_tpl_name
             ]));
 
             // Build smart candidate payload variations
@@ -1148,10 +1208,14 @@ function sendAdminOrderNotification($conn, $order_id) {
                 // Determine best parameter priority for current template
                 if (stripos($current_tpl_name, 'confirm') !== false) {
                     $try_param_sets = [$params_9, $params_11, $params_4, $params_5];
+                } elseif ($current_tpl_name === 'new_order_status') {
+                    $try_param_sets = [$params_5, $params_6, $params_4];
+                } elseif ($current_tpl_name === 'order_status_update') {
+                    $try_param_sets = [$params_6, $params_5, $params_10];
                 } elseif (stripos($current_tpl_name, 'status') !== false || stripos($current_tpl_name, 'update') !== false) {
-                    $try_param_sets = [$params_10, $params_9, $params_11, $params_4, $params_5];
+                    $try_param_sets = [$params_10, $params_5, $params_6];
                 } else {
-                    $try_param_sets = [$params_11, $params_9, $params_4, $params_5];
+                    $try_param_sets = [$params_11, $params_9, $params_5, $params_4];
                 }
 
                 $languages_to_try = array_unique([$lang_code, ($lang_code === 'en' ? 'en_US' : 'en')]);
@@ -1173,6 +1237,38 @@ function sendAdminOrderNotification($conn, $order_id) {
                                     $conn->query("UPDATE whatsapp_settings SET admin_template_name = '" . $conn->real_escape_string($current_tpl_name) . "' WHERE id = 1");
                                 }
                                 break 4; // Successfully delivered! Break all loops.
+                            }
+
+                            // If template does not exist in Meta (code 132001), skip ALL remaining param sets for this template!
+                            $errCode = (int)($meta_response['error']['code'] ?? 0);
+                            $errMsg  = $meta_response['error']['message'] ?? '';
+                            $errDet  = $meta_response['error']['error_data']['details'] ?? '';
+                            $fullErr = $errMsg . ' ' . $errDet;
+
+                            if ($errCode == 132001 || stripos($fullErr, 'does not exist') !== false) {
+                                break 3; // Immediately jump to next candidate template
+                            }
+
+                            // If parameter count mismatch (code 132000), parse expected number and retry instantly
+                            if ($errCode == 132000 || stripos($fullErr, 'parameter') !== false) {
+                                if (preg_match('/expected (?:number of )?params? \(?(\d+)\)?/i', $fullErr, $pm)) {
+                                    $exact_params = $get_params_by_count($pm[1]);
+                                    if (!empty($exact_params)) {
+                                        $exact_payload = $build_tpl_payload($current_tpl_name, $current_lang, $exact_params, false);
+                                        list($exact_res, $exact_code, $exact_err) = $send_admin_meta($exact_payload);
+                                        $exact_meta = json_decode($exact_res, true);
+                                        if ($exact_code == 200 && isset($exact_meta['messages'])) {
+                                            $payload = $exact_payload;
+                                            $result = $exact_res;
+                                            $http_code = $exact_code;
+                                            $sent_successfully = true;
+                                            if ($current_tpl_name !== $admin_tpl_name && empty($admin_tpl_name)) {
+                                                $conn->query("UPDATE whatsapp_settings SET admin_template_name = '" . $conn->real_escape_string($current_tpl_name) . "' WHERE id = 1");
+                                            }
+                                            break 4;
+                                        }
+                                    }
+                                }
                             }
                         }
                     }

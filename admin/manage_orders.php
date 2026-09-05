@@ -446,7 +446,7 @@ document.addEventListener('DOMContentLoaded', () => {
             badgeEl.innerText = waOrderPayload.confirm_template_name || 'order_confirmation';
             msgEl.value = waOrderPayload.confirm_preview || '';
         } else {
-            badgeEl.innerText = waOrderPayload.status_template_name || 'order_status_updated';
+            badgeEl.innerText = waOrderPayload.status_template_name || 'new_order_status';
             msgEl.value = waOrderPayload.status_preview || '';
         }
     });
@@ -536,12 +536,12 @@ function openWhatsAppModal(orderId) {
             document.getElementById('waOrderId').value = orderId;
             document.getElementById('waCustomerPhone').value = (data.customer_phone || '').replace(/[^0-9]/g, '');
             document.getElementById('waMode').value = data.sending_mode || 'api';
-            document.getElementById('waStatusTplName').value = data.status_template_name || 'order_status_updated';
+            document.getElementById('waStatusTplName').value = data.status_template_name || 'new_order_status';
             document.getElementById('waConfirmTplName').value = data.confirm_template_name || 'order_confirmation';
             
             // Set initial preview
             document.getElementById('waTemplateType').value = 'status';
-            document.getElementById('waTplNameText').innerText = data.status_template_name || 'order_status_updated';
+            document.getElementById('waTplNameText').innerText = data.status_template_name || 'new_order_status';
             document.getElementById('waMessage').value = data.status_preview || data.message || '';
             
             // Show Form

@@ -132,12 +132,12 @@ if ($sending_mode === 'api') {
     if ($is_admin_test) {
         $meta_template_name = trim($_GET['admin_template_name'] ?? ($settings['admin_template_name'] ?? ''));
         if (empty($meta_template_name)) {
-            $meta_template_name = trim($settings['order_confirmation_template_name'] ?? ($settings['meta_template_name'] ?? 'order_confirmation'));
+            $meta_template_name = trim($settings['order_confirmation_template_name'] ?? 'order_confirmation');
         }
     } elseif ($is_order_confirm_test || $post_tpl_type === 'confirmation') {
         $meta_template_name = trim($_POST['template_name'] ?? ($_GET['template_name'] ?? ($settings['order_confirmation_template_name'] ?? 'order_confirmation')));
     } else {
-        $meta_template_name = trim($_POST['template_name'] ?? ($_GET['template_name'] ?? ($settings['meta_template_name'] ?? 'order_status_updated')));
+        $meta_template_name = trim($_POST['template_name'] ?? ($_GET['template_name'] ?? ($settings['meta_template_name'] ?? 'new_order_status')));
     }
     
     // Normalize customer/admin number
@@ -263,7 +263,7 @@ if ($sending_mode === 'api') {
             ["type" => "text", "text" => (string)$orderLink],       // {{11}}
         ];
 
-        // 4. Legacy 4 and 5 Parameters
+        // 4. Legacy 4, 5, and 6 Parameters
         $params_4 = [
             ["type" => "text", "text" => (string)$order_id],
             ["type" => "text", "text" => (string)$customerName],
@@ -271,46 +271,59 @@ if ($sending_mode === 'api') {
             ["type" => "text", "text" => (string)$paymentMode],
         ];
 
+        // 5-parameter set (new_order_status - 100% verified working in Meta)
         $params_5 = [
-            ["type" => "text", "text" => (string)$customerName],
-            ["type" => "text", "text" => (string)$order_id],
-            ["type" => "text", "text" => (string)$orderStatus],
-            ["type" => "text", "text" => (string)$trackingID],
-            ["type" => "text", "text" => (string)$orderAmount],
+            ["type" => "text", "text" => (string)$customerName], // {{1}} customer_name
+            ["type" => "text", "text" => (string)$order_id],     // {{2}} order_id
+            ["type" => "text", "text" => (string)$orderStatus], // {{3}} order_status
+            ["type" => "text", "text" => (string)$trackingID],  // {{4}} tracking_id
+            ["type" => "text", "text" => (string)$orderAmount], // {{5}} order_total
         ];
+
+        // 6-parameter set (order_status_update)
+        $params_6 = [
+            ["type" => "text", "text" => (string)$customerName], // {{1}} customer_name
+            ["type" => "text", "text" => (string)$order_id],     // {{2}} order_id
+            ["type" => "text", "text" => (string)$orderStatus], // {{3}} order_status
+            ["type" => "text", "text" => (string)$trackingID],  // {{4}} tracking_id
+            ["type" => "text", "text" => (string)$orderAmount], // {{5}} order_total
+            ["type" => "text", "text" => (string)$customerName], // {{6}} customer_name/store
+        ];
+
+        $get_params_by_count = function($c) use ($params_4, $params_5, $params_6, $params_9, $params_10, $params_11) {
+            switch ((int)$c) {
+                case 4:  return $params_4;
+                case 5:  return $params_5;
+                case 6:  return $params_6;
+                case 9:  return $params_9;
+                case 10: return $params_10;
+                case 11: return $params_11;
+                default: return [];
+            }
+        };
 
         // Select initial parameter set based on test type and template name
         $params = [];
-        if ($is_admin_test || (!empty($admin_tpl_override) && $meta_template_name === $admin_tpl_override)) {
-            $params = $params_11;
-        } elseif ($is_order_confirm_test || stripos($meta_template_name, 'confirm') !== false) {
+        if ($is_order_confirm_test || stripos($meta_template_name, 'confirm') !== false) {
             $params = $params_9;
-        } elseif (stripos($meta_template_name, 'status') !== false || stripos($meta_template_name, 'update') !== false) {
+        } elseif ($meta_template_name === 'new_order_status') {
+            $params = $params_5;
+        } elseif ($meta_template_name === 'order_status_update') {
+            $params = $params_6;
+        } elseif ($meta_template_name === 'order_status_updated') {
             $params = $params_10;
-        } else {
-            // Customer template parameters mapped from bridge
-            $replacementValues = [
-                '{CustomerName}'     => $customerName,
-                '{OrderID}'          => $order['id'] ?? $order_id,
-                '{OrderStatus}'      => $orderStatus,
-                '{TrackingID}'       => $trackingID,
-                '{OrderAmount}'      => $orderAmount,
-                '{OrderDate}'        => $orderDate,
-                '{PaymentMethod}'    => $paymentMode,
-                '{DeliveryAddress}'  => $deliveryAddress,
-                '{ItemsOrdered}'     => $itemsOrdered,
-                '{ExpectedDelivery}' => $expectedDelivery,
-                '{OrderLink}'        => $orderLink
-            ];
-
-            preg_match_all('/\{(CustomerName|OrderID|OrderStatus|TrackingID|OrderAmount|OrderDate|PaymentMethod|DeliveryAddress|ItemsOrdered|ExpectedDelivery|OrderLink)\}/', $settings['message_template'], $matches);
-            if (!empty($matches[0])) {
-                foreach ($matches[0] as $varKey) {
-                    $params[] = ["type" => "text", "text" => (string)($replacementValues[$varKey] ?? '')];
-                }
+        } elseif ($is_admin_test) {
+            if ($meta_template_name === 'admin_new_order_alert') {
+                $params = $params_11;
+            } elseif ($meta_template_name === 'new_order_status') {
+                $params = $params_5;
             } else {
-                $params = $params_10;
+                $params = $params_9; // order_confirmation 9 parameters
             }
+        } elseif (stripos($meta_template_name, 'status') !== false || stripos($meta_template_name, 'update') !== false) {
+            $params = $params_5; // Default status to tested working 5-param format
+        } else {
+            $params = $params_9;
         }
 
         // Build components array (body is always included)
@@ -389,21 +402,39 @@ if ($sending_mode === 'api') {
 
         // Auto-Recovery A: Parameter count mismatch
         if ($errCode == 132000 || stripos($fullErr, 'parameter') !== false || stripos($fullErr, 'placeholder') !== false) {
-            $all_param_sets = [$params_9, $params_10, $params_11, $params_5, $params_4];
-            foreach ($all_param_sets as $try_set) {
-                if ($try_set === $params) continue; // Already tried
-                $payload['template']['components'] = array_values(array_filter($payload['template']['components'], function($c) {
-                    return ($c['type'] ?? '') !== 'header'; // Strip header during retry to avoid header conflict
-                }));
-                // Set body parameters
-                $payload['template']['components'][0] = [
-                    "type" => "body",
-                    "parameters" => $try_set
-                ];
-                list($result, $http_code, $curl_error) = $send_to_meta($payload);
-                $meta_response = json_decode($result, true);
-                if ($http_code == 200 && isset($meta_response['messages'])) {
-                    break;
+            // First: check if Meta error message specifies the exact number of expected params
+            if (preg_match('/expected (?:number of )?params? \(?(\d+)\)?/i', $fullErr, $pm)) {
+                $matched_params = $get_params_by_count($pm[1]);
+                if (!empty($matched_params)) {
+                    $payload['template']['components'] = array_values(array_filter($payload['template']['components'], function($c) {
+                        return ($c['type'] ?? '') !== 'header';
+                    }));
+                    $payload['template']['components'][0] = [
+                        "type" => "body",
+                        "parameters" => $matched_params
+                    ];
+                    list($result, $http_code, $curl_error) = $send_to_meta($payload);
+                    $meta_response = json_decode($result, true);
+                }
+            }
+
+            // If still not delivered, systematically test verified candidates
+            if ($http_code != 200) {
+                $all_param_sets = [$params_5, $params_9, $params_6, $params_10, $params_11, $params_4];
+                foreach ($all_param_sets as $try_set) {
+                    if ($try_set === $params) continue; // Already tried
+                    $payload['template']['components'] = array_values(array_filter($payload['template']['components'], function($c) {
+                        return ($c['type'] ?? '') !== 'header'; // Strip header during retry
+                    }));
+                    $payload['template']['components'][0] = [
+                        "type" => "body",
+                        "parameters" => $try_set
+                    ];
+                    list($result, $http_code, $curl_error) = $send_to_meta($payload);
+                    $meta_response = json_decode($result, true);
+                    if ($http_code == 200 && isset($meta_response['messages'])) {
+                        break;
+                    }
                 }
             }
         }
@@ -441,18 +472,26 @@ if ($sending_mode === 'api') {
             $meta_response = json_decode($result, true);
         }
 
-        // Auto-Recovery D: Template does not exist (Error 132001) — Try approved order_confirmation or status template fallback
+        // Auto-Recovery D: Template does not exist (Error 132001) — Try verified approved templates
         if ($http_code != 200 && ($errCode == 132001 || stripos($fullErr, 'does not exist') !== false)) {
             $fallback_tpl_candidates = array_unique(array_filter([
+                'new_order_status',
                 trim($settings['order_confirmation_template_name'] ?? ''),
                 'order_confirmation',
-                trim($settings['meta_template_name'] ?? ''),
-                'order_status_updates'
+                'order_status_update'
             ]));
             foreach ($fallback_tpl_candidates as $fb_tpl) {
                 if ($fb_tpl === $meta_template_name) continue;
                 $payload['template']['name'] = $fb_tpl;
-                $fb_params = (stripos($fb_tpl, 'confirm') !== false) ? $params_9 : $params_10;
+                if ($fb_tpl === 'new_order_status') {
+                    $fb_params = $params_5;
+                } elseif (stripos($fb_tpl, 'confirm') !== false) {
+                    $fb_params = $params_9;
+                } elseif ($fb_tpl === 'order_status_update') {
+                    $fb_params = $params_6;
+                } else {
+                    $fb_params = $params_10;
+                }
                 $payload['template']['components'] = [
                     [
                         "type" => "body",

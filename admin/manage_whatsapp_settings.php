@@ -291,12 +291,21 @@ $logs = $conn->query($logs_query);
                             <label class="form-label fw-bold small text-uppercase tracking-wider">Meta Approved Template Name</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-white"><i class="fab fa-whatsapp text-info"></i></span>
-                                <input type="text" name="meta_template_name" id="statusTplInput" class="form-control bg-white" placeholder="e.g. order_status_updates" value="<?php echo htmlspecialchars($settings['meta_template_name'] ?? ''); ?>">
+                                <input type="text" name="meta_template_name" id="statusTplInput" class="form-control bg-white" placeholder="e.g. new_order_status" value="<?php echo htmlspecialchars($settings['meta_template_name'] ?? ''); ?>">
                                 <button type="button" class="btn btn-outline-primary fw-bold" onclick="openMetaTemplatePicker('statusTplInput')">
                                     <i class="fas fa-search me-1"></i> Fetch from Meta
                                 </button>
                             </div>
-                            <div class="form-text small">Meta WhatsApp Manager me approved status template ka name (e.g. <code>order_status_updates</code> ya <code>new_order_status</code>).</div>
+                            <div class="mt-2 d-flex flex-wrap gap-2 align-items-center">
+                                <span class="small text-muted fw-bold">Quick Select:</span>
+                                <button type="button" class="btn btn-sm btn-outline-info py-0 px-2 rounded-pill small" onclick="document.getElementById('statusTplInput').value='new_order_status'">
+                                    <i class="fas fa-check-circle me-1"></i> new_order_status (5 Params - Tested)
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 rounded-pill small" onclick="document.getElementById('statusTplInput').value='order_confirmation'">
+                                    <i class="fas fa-check-circle me-1"></i> order_confirmation (9 Params - Working)
+                                </button>
+                            </div>
+                            <div class="form-text small mt-1">Meta WhatsApp Manager me approved status template ka name (e.g. <code>new_order_status</code> ya <code>order_status_update</code>).</div>
                         </div>
 
                         <div class="mb-2">
@@ -362,12 +371,18 @@ $logs = $conn->query($logs_query);
                             <div class="mt-3">
                                 <label class="form-label fw-bold small text-uppercase tracking-wider">Admin Meta Template Name</label>
                                 <div class="input-group">
-                                    <input type="text" name="admin_template_name" id="adminTplInput" class="form-control bg-light" placeholder="e.g. admin_new_order_alert" value="<?php echo htmlspecialchars($settings['admin_template_name'] ?? ''); ?>">
+                                    <input type="text" name="admin_template_name" id="adminTplInput" class="form-control bg-light" placeholder="e.g. order_confirmation" value="<?php echo htmlspecialchars(!empty($settings['admin_template_name']) ? $settings['admin_template_name'] : 'order_confirmation'); ?>">
                                     <button type="button" class="btn btn-outline-primary" onclick="openMetaTemplatePicker('adminTplInput')">
                                         <i class="fas fa-search me-1"></i> Fetch
                                     </button>
                                 </div>
-                                <small class="text-muted">Approved template (e.g. <code>admin_new_order_alert</code>).</small>
+                                <div class="mt-2 d-flex flex-wrap gap-2 align-items-center">
+                                    <span class="small text-muted fw-bold">Recommended:</span>
+                                    <button type="button" class="btn btn-sm btn-outline-success py-0 px-2 rounded-pill small" onclick="document.getElementById('adminTplInput').value='order_confirmation'">
+                                        <i class="fas fa-check-circle me-1"></i> Use 'order_confirmation' (100% Working)
+                                    </button>
+                                </div>
+                                <small class="text-muted d-block mt-1">Approved template in Meta (default <code>order_confirmation</code> use karne par 24/7 bina issue alert aayega).</small>
                             </div>
 
                             <div class="d-flex flex-wrap gap-2 mt-3">
@@ -384,14 +399,12 @@ $logs = $conn->query($logs_query);
                         <div class="col-md-6 mb-3 d-flex align-items-center">
                             <div class="alert alert-success py-3 px-3 mb-0 small w-100 border-0 bg-success bg-opacity-10 rounded-3">
                                 <h6 class="fw-bold text-success mb-2"><i class="fas fa-bolt me-1"></i> 24/7 Automated Delivery</h6>
-                                <p class="mb-2 text-dark">Meta approved template use karne par 24/7 bina kisi "Hi" ke direct delivery hoti hai.</p>
+                                <p class="mb-2 text-dark">Meta approved template use karne par 24/7 bina kisi customer chat session ke instant admin alert deliver hota hai.</p>
                                 <hr class="my-2 border-success border-opacity-25">
-                                <strong>Variables Supported (11-Point Detailed Layout):</strong>
-                                <div class="bg-white p-2 rounded border small text-muted font-monospace mt-1" style="font-size:0.75rem;">
-                                    {{1}} Order ID &nbsp; {{2}} Date &nbsp; {{3}} Time<br>
-                                    {{4}} Customer &nbsp; {{5}} Phone &nbsp; {{6}} Total Amount<br>
-                                    {{7}} Payment &nbsp; {{8}} Status &nbsp; {{9}} Full Address<br>
-                                    {{10}} Ordered Items &nbsp; {{11}} Admin Link
+                                <strong>Supported Templates:</strong>
+                                <div class="bg-white p-2 rounded border small text-muted mt-1" style="font-size:0.78rem;">
+                                    <div class="mb-1"><span class="badge bg-success">Recommended</span> <strong>order_confirmation:</strong> Yeh template Meta me approved hai. Isme Customer Name, Order ID, Date, Amount, Payment, Status, Items, Address aur Admin Link sab receive hota hai!</div>
+                                    <div><span class="badge bg-secondary">Dedicated</span> <strong>admin_new_order_alert:</strong> 11-Parameter dedicated template (agar Meta me approve karwaya ho).</div>
                                 </div>
                             </div>
                         </div>
@@ -623,13 +636,22 @@ function fetchMetaTemplates() {
                         ? '<span class="badge bg-success">APPROVED</span>' 
                         : `<span class="badge bg-warning text-dark">${tpl.status}</span>`;
 
+                    const paramBadge = (tpl.param_count && tpl.param_count > 0)
+                        ? `<span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 ms-1">${tpl.param_count} params</span>`
+                        : '';
+                    const headerBadge = (tpl.header_type && tpl.header_type !== 'NONE')
+                        ? `<span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 ms-1"><i class="fas fa-image me-1"></i>${tpl.header_type}</span>`
+                        : '';
+
                     const bodyText = tpl.body_text || '';
                     const bodyPreview = bodyText ? `<div class="small text-muted font-monospace mt-1 text-truncate" style="max-width:320px;" title="${bodyText.replace(/"/g, '&quot;')}">${bodyText}</div>` : '';
 
                     const row = `
                         <tr class="tpl-row" data-name="${tpl.name.toLowerCase()}">
                             <td>
-                                <div class="fw-bold text-dark">${tpl.name}</div>
+                                <div class="fw-bold text-dark d-flex align-items-center">
+                                    ${tpl.name} ${paramBadge} ${headerBadge}
+                                </div>
                                 ${bodyPreview}
                             </td>
                             <td><span class="badge bg-light text-dark border">${tpl.language}</span></td>

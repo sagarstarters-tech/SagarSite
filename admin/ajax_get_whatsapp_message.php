@@ -135,7 +135,7 @@ foreach ($replacementValues as $k => $v) {
 }
 
 // Meta template names
-$status_tpl_name  = !empty($settings['meta_template_name']) ? $settings['meta_template_name'] : 'order_status_updated';
+$status_tpl_name  = !empty($settings['meta_template_name']) ? $settings['meta_template_name'] : 'new_order_status';
 $confirm_tpl_name = !empty($settings['order_confirmation_template_name']) ? $settings['order_confirmation_template_name'] : 'order_confirmation';
 
 echo json_encode([

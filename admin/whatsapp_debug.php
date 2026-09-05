@@ -126,7 +126,7 @@ if ($run_test):
     ];
     
     $url = "https://graph.facebook.com/v21.0/{$phone_id}/messages";
-    $selected_tpl = trim($_POST['test_template'] ?? ($tpl_name ?: 'hello_world'));
+    $selected_tpl = trim($_POST['test_template'] ?? ($tpl_name ?: 'order_confirmation'));
 
     if ($selected_tpl === 'hello_world') {
         $payload = [
@@ -137,6 +137,75 @@ if ($run_test):
             "template"          => [
                 "name"     => "hello_world",
                 "language" => ["code" => "en_US"]
+            ]
+        ];
+    } elseif ($selected_tpl === 'order_confirmation') {
+        $orderDate = date('d M Y');
+        $params_9 = [
+            ["type" => "text", "text" => (string)($order['name'] ?: 'Valued Customer')],
+            ["type" => "text", "text" => (string)$order['id']],
+            ["type" => "text", "text" => (string)$orderDate],
+            ["type" => "text", "text" => (string)number_format($order['total_amount'], 2)],
+            ["type" => "text", "text" => "COD"],
+            ["type" => "text", "text" => "Confirmed"],
+            ["type" => "text", "text" => "• 1-Phase Submersible Starter Panel (1x)"],
+            ["type" => "text", "text" => "Varanasi, UP - 221001"],
+            ["type" => "text", "text" => "https://sagarstarters.com/my-orders.php"],
+        ];
+        $payload = [
+            "messaging_product" => "whatsapp",
+            "recipient_type"    => "individual",
+            "to"                => $clean_number,
+            "type"              => "template",
+            "template"          => [
+                "name"       => "order_confirmation",
+                "language"   => ["code" => $tpl_lang ?: "en"],
+                "components" => [["type" => "body", "parameters" => $params_9]]
+            ]
+        ];
+    } elseif ($selected_tpl === 'new_order_status') {
+        $params_5 = [
+            ["type" => "text", "text" => (string)($order['name'] ?: 'Valued Customer')],
+            ["type" => "text", "text" => (string)$order['id']],
+            ["type" => "text", "text" => ucwords(str_replace('_', ' ', $order['status']))],
+            ["type" => "text", "text" => $order['tracking_number'] ?: 'TESTTRACKING123'],
+            ["type" => "text", "text" => (string)number_format($order['total_amount'], 2)],
+        ];
+        $payload = [
+            "messaging_product" => "whatsapp",
+            "recipient_type"    => "individual",
+            "to"                => $clean_number,
+            "type"              => "template",
+            "template"          => [
+                "name"       => "new_order_status",
+                "language"   => ["code" => $tpl_lang ?: "en"],
+                "components" => [["type" => "body", "parameters" => $params_5]]
+            ]
+        ];
+    } elseif ($selected_tpl === 'order_status_update') {
+        $params_6 = [
+            ["type" => "text", "text" => (string)($order['name'] ?: 'Valued Customer')],
+            ["type" => "text", "text" => (string)$order['id']],
+            ["type" => "text", "text" => ucwords(str_replace('_', ' ', $order['status']))],
+            ["type" => "text", "text" => $order['tracking_number'] ?: 'TESTTRACKING123'],
+            ["type" => "text", "text" => (string)number_format($order['total_amount'], 2)],
+            ["type" => "text", "text" => (string)($order['name'] ?: 'Sagar Starters')],
+        ];
+        $components = [["type" => "body", "parameters" => $params_6]];
+        $fallback_img = !empty($img_url) ? $img_url : 'https://sagarstarters.com/assets/images/auth_banner.jpg';
+        array_unshift($components, [
+            "type" => "header",
+            "parameters" => [["type" => "image", "image" => ["link" => $fallback_img]]]
+        ]);
+        $payload = [
+            "messaging_product" => "whatsapp",
+            "recipient_type"    => "individual",
+            "to"                => $clean_number,
+            "type"              => "template",
+            "template"          => [
+                "name"       => "order_status_update",
+                "language"   => ["code" => $tpl_lang ?: "en"],
+                "components" => $components
             ]
         ];
     } elseif ($selected_tpl === 'admin_new_order_alert') {
@@ -336,9 +405,11 @@ if ($is_success) {
     <div class="mb-3">
         <label class="form-label fw-bold">Template to Test</label>
         <select name="test_template" class="form-select bg-light">
+            <option value="order_confirmation" <?= (($_POST['test_template'] ?? '') === 'order_confirmation') ? 'selected' : '' ?>>order_confirmation (9 Parameters - Customer Confirm & Admin [100% Working])</option>
+            <option value="new_order_status" <?= (($_POST['test_template'] ?? '') === 'new_order_status') ? 'selected' : '' ?>>new_order_status (5 Parameters - Customer Status Update [100% Working])</option>
+            <option value="order_status_update" <?= (($_POST['test_template'] ?? '') === 'order_status_update') ? 'selected' : '' ?>>order_status_update (6 Parameters + Image Header - Status Update)</option>
             <option value="admin_new_order_alert" <?= (($_POST['test_template'] ?? '') === 'admin_new_order_alert') ? 'selected' : '' ?>>admin_new_order_alert (11 Parameters - Admin Alert)</option>
-            <option value="<?= htmlspecialchars($tpl_name) ?>" <?= (($_POST['test_template'] ?? '') === $tpl_name) ? 'selected' : '' ?>><?= htmlspecialchars($tpl_name) ?> (Default Stored Template)</option>
-            <option value="order_confirmation" <?= (($_POST['test_template'] ?? '') === 'order_confirmation') ? 'selected' : '' ?>>order_confirmation (9 Parameters - Customer Confirm)</option>
+            <option value="<?= htmlspecialchars($tpl_name) ?>" <?= (($_POST['test_template'] ?? '') === $tpl_name) ? 'selected' : '' ?>><?= htmlspecialchars($tpl_name) ?> (Default Stored Status Template)</option>
             <option value="hello_world" <?= (($_POST['test_template'] ?? '') === 'hello_world') ? 'selected' : '' ?>>hello_world (Meta Default Sandbox Template)</option>
         </select>
     </div>

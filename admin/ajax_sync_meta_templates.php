@@ -101,24 +101,35 @@ if (isset($data['error'])) {
 $templates = [];
 if (!empty($data['data']) && is_array($data['data'])) {
     foreach ($data['data'] as $tpl) {
-        // Extract body text preview if available
         $body_text = '';
+        $param_count = 0;
+        $header_type = 'NONE';
+
         if (!empty($tpl['components']) && is_array($tpl['components'])) {
             foreach ($tpl['components'] as $comp) {
-                if (($comp['type'] ?? '') === 'BODY') {
+                $compType = strtoupper($comp['type'] ?? '');
+                if ($compType === 'HEADER') {
+                    $header_type = strtoupper($comp['format'] ?? 'TEXT');
+                }
+                if ($compType === 'BODY') {
                     $body_text = $comp['text'] ?? '';
-                    break;
+                    preg_match_all('/\{\{(\d+)\}\}/', $body_text, $pm);
+                    if (!empty($pm[1])) {
+                        $param_count = max(array_map('intval', $pm[1]));
+                    }
                 }
             }
         }
 
         $templates[] = [
-            'name'       => $tpl['name'] ?? '',
-            'language'   => $tpl['language'] ?? 'en',
-            'status'     => $tpl['status'] ?? 'UNKNOWN',
-            'category'   => $tpl['category'] ?? 'UTILITY',
-            'body_text'  => $body_text,
-            'components' => $tpl['components'] ?? []
+            'name'        => $tpl['name'] ?? '',
+            'language'    => $tpl['language'] ?? 'en',
+            'status'      => $tpl['status'] ?? 'UNKNOWN',
+            'category'    => $tpl['category'] ?? 'UTILITY',
+            'body_text'   => $body_text,
+            'param_count' => $param_count,
+            'header_type' => $header_type,
+            'components'  => $tpl['components'] ?? []
         ];
     }
 }
