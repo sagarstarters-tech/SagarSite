@@ -176,6 +176,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $download_url = $conn->real_escape_string($_POST['download_url'] ?? '');
         $download_limit = !empty($_POST['download_limit']) ? intval($_POST['download_limit']) : "NULL";
         $download_expiry = !empty($_POST['download_expiry_days']) ? intval($_POST['download_expiry_days']) : "NULL";
+        $license_key = $conn->real_escape_string($_POST['license_key'] ?? '');
         
         $download_file = '';
         if (isset($_FILES['download_file']) && $_FILES['download_file']['error'] === 0) {
@@ -212,7 +213,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Use NULL in SQL when no image is uploaded, not empty string
         $image_sql = ($image !== null) ? "'" . $conn->real_escape_string($image) . "'" : "NULL";
-        $sql = "INSERT INTO products (name, slug, short_description, description, features, meta_description, category_id, product_type, download_file, download_url, download_limit, download_expiry_days, regular_price, sale_price, bulk_price, bulk_min_qty, bulk_shipping_cost, bulk_cod_available, price, sku, brand, stock, min_order_qty, shipping_cost, weight, length, width, height, cod_available, is_trending, cod_charge, image, image_fit) VALUES ('$name', '$slug', '$short_desc', '$desc', '$features', '$meta_desc', $cat_id, '$product_type', '$download_file', '$download_url', $download_limit, $download_expiry, $regular_price, $sale_price, $bulk_price_sql, $bulk_min_qty_sql, $bulk_shipping_cost_sql, $bulk_cod_available, $price, '$sku', '$brand', $stock, $min_order_qty, $shipping_cost, $weight, $length, $width, $height, $cod_available, $is_trending, $cod_charge_sql, $image_sql, '$image_fit')";
+        $sql = "INSERT INTO products (name, slug, short_description, description, features, meta_description, category_id, product_type, download_file, download_url, download_limit, download_expiry_days, license_key, regular_price, sale_price, bulk_price, bulk_min_qty, bulk_shipping_cost, bulk_cod_available, price, sku, brand, stock, min_order_qty, shipping_cost, weight, length, width, height, cod_available, is_trending, cod_charge, image, image_fit) VALUES ('$name', '$slug', '$short_desc', '$desc', '$features', '$meta_desc', $cat_id, '$product_type', '$download_file', '$download_url', $download_limit, $download_expiry, '$license_key', $regular_price, $sale_price, $bulk_price_sql, $bulk_min_qty_sql, $bulk_shipping_cost_sql, $bulk_cod_available, $price, '$sku', '$brand', $stock, $min_order_qty, $shipping_cost, $weight, $length, $width, $height, $cod_available, $is_trending, $cod_charge_sql, $image_sql, '$image_fit')";
 
         if ($conn->query($sql)) {
             $product_id = $conn->insert_id;
@@ -312,6 +313,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $download_url = $conn->real_escape_string($_POST['download_url'] ?? '');
         $download_limit = !empty($_POST['download_limit']) ? intval($_POST['download_limit']) : "NULL";
         $download_expiry = !empty($_POST['download_expiry_days']) ? intval($_POST['download_expiry_days']) : "NULL";
+        $license_key = $conn->real_escape_string($_POST['license_key'] ?? '');
         
         $dl_file_query = "";
         if (isset($_FILES['download_file']) && $_FILES['download_file']['error'] === 0) {
@@ -364,7 +366,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        $sql = "UPDATE products SET name='$name', slug='$slug', short_description='$short_desc', description='$desc', features='$features', meta_description='$meta_desc', category_id=$cat_id, product_type='$product_type', download_url='$download_url', download_limit=$download_limit, download_expiry_days=$download_expiry, regular_price=$regular_price, sale_price=$sale_price, bulk_price=$bulk_price_sql, bulk_min_qty=$bulk_min_qty_sql, bulk_shipping_cost=$bulk_shipping_cost_sql, bulk_cod_available=$bulk_cod_available, price=$price, sku='$sku', brand='$brand', stock=$stock, min_order_qty=$min_order_qty, shipping_cost=$shipping_cost, weight=$weight, length=$length, width=$width, height=$height, cod_available=$cod_available, is_trending=$is_trending, cod_charge=$cod_charge_sql, image_fit='$image_fit' $image_query $dl_file_query WHERE id=$id";
+        $sql = "UPDATE products SET name='$name', slug='$slug', short_description='$short_desc', description='$desc', features='$features', meta_description='$meta_desc', category_id=$cat_id, product_type='$product_type', download_url='$download_url', download_limit=$download_limit, download_expiry_days=$download_expiry, license_key='$license_key', regular_price=$regular_price, sale_price=$sale_price, bulk_price=$bulk_price_sql, bulk_min_qty=$bulk_min_qty_sql, bulk_shipping_cost=$bulk_shipping_cost_sql, bulk_cod_available=$bulk_cod_available, price=$price, sku='$sku', brand='$brand', stock=$stock, min_order_qty=$min_order_qty, shipping_cost=$shipping_cost, weight=$weight, length=$length, width=$width, height=$height, cod_available=$cod_available, is_trending=$is_trending, cod_charge=$cod_charge_sql, image_fit='$image_fit' $image_query $dl_file_query WHERE id=$id";
 
 
 
@@ -713,6 +715,7 @@ $current_home_prods_count = isset($global_settings['home_prods_count']) && $glob
                                         data-download-url="<?php echo htmlspecialchars($p['download_url'] ?? ''); ?>"
                                         data-download-limit="<?php echo $p['download_limit']; ?>"
                                         data-download-expiry="<?php echo $p['download_expiry_days']; ?>"
+                                        data-license-key="<?php echo htmlspecialchars($p['license_key'] ?? ''); ?>"
                                         data-regular-price="<?php echo $p['regular_price']; ?>"
                                         data-sale-price="<?php echo $p['sale_price']; ?>"
                                         data-bulk-price="<?php echo htmlspecialchars($p['bulk_price'] ?? ''); ?>"
@@ -839,6 +842,11 @@ $current_home_prods_count = isset($global_settings['home_prods_count']) && $glob
                 <div class="col-md-6 mb-3">
                     <label class="form-label fw-bold">Download Expiry Days</label>
                     <input type="number" name="download_expiry_days" id="edit_p_download_expiry_days" class="form-control">
+                </div>
+                <div class="col-12 mb-2">
+                    <label class="form-label fw-bold"><i class="fas fa-key me-1 text-warning"></i>Software License Key / Serial Code (Optional)</label>
+                    <textarea name="license_key" id="edit_p_license_key" class="form-control font-monospace" rows="3" placeholder="e.g. SSS-PRO-XXXX-XXXX-XXXX or custom license key/instructions"></textarea>
+                    <div class="form-text text-muted small">Buyers will be able to download this license key file upon purchasing this item.</div>
                 </div>
             </div>
 
@@ -1107,6 +1115,11 @@ $current_home_prods_count = isset($global_settings['home_prods_count']) && $glob
                     <label class="form-label fw-bold">Download Expiry Days</label>
                     <input type="number" name="download_expiry_days" class="form-control" placeholder="Never expires if empty">
                 </div>
+                <div class="col-12 mb-2">
+                    <label class="form-label fw-bold"><i class="fas fa-key me-1 text-warning"></i>Software License Key / Serial Code (Optional)</label>
+                    <textarea name="license_key" class="form-control font-monospace" rows="3" placeholder="e.g. SSS-PRO-XXXX-XXXX-XXXX or custom license key/instructions"></textarea>
+                    <div class="form-text text-muted small">Buyers will be able to download this license key file upon purchasing this item.</div>
+                </div>
             </div>
 
             <div class="row">
@@ -1328,6 +1341,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('edit_p_download_url').value = this.dataset.downloadUrl;
             document.getElementById('edit_p_download_limit').value = this.dataset.downloadLimit || '';
             document.getElementById('edit_p_download_expiry_days').value = this.dataset.downloadExpiry || '';
+            document.getElementById('edit_p_license_key').value = this.dataset.licenseKey || '';
             document.getElementById('edit_p_cod_available').checked = this.dataset.codAvailable == 1;
             document.getElementById('edit_p_is_trending').checked = this.dataset.isTrending == 1;
             document.getElementById('edit_p_cod_charge').value = this.dataset.codCharge || '';

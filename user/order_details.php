@@ -39,7 +39,7 @@ $order = $order_q->fetch_assoc();
 
 // Fetch order items
 $stmt = $conn->prepare("
-    SELECT oi.*, p.name as product_name, p.image as product_image, p.product_type, p.image_fit 
+    SELECT oi.*, p.name as product_name, p.image as product_image, p.product_type, p.image_fit, p.license_key 
     FROM order_items oi 
     LEFT JOIN products p ON oi.product_id = p.id 
     WHERE oi.order_id = ?
@@ -159,10 +159,18 @@ $stageIndex = $info['progress_stage_index'];
                                                 <h6 class="mb-0 fw-bold"><?php echo htmlspecialchars($item['product_name']); ?></h6>
                                                 <small class="text-muted">ID: #<?php echo $item['product_id']; ?></small>
                                                 <?php if ($dl_token): ?>
-                                                    <div class="mt-2 text-danger">
-                                                        <a href="../download.php?token=<?php echo $dl_token; ?>" class="btn btn-sm btn-primary rounded-pill px-3 py-1 scale-up">
+                                                    <div class="mt-2 d-flex flex-wrap align-items-center gap-1">
+                                                        <a href="../download.php?token=<?php echo $dl_token; ?>" class="btn btn-sm btn-primary rounded-pill px-3 py-1 scale-up shadow-sm">
                                                             <i class="fas fa-download me-1"></i> Download File
                                                         </a>
+                                                        <?php if (!empty(trim($item['license_key'] ?? ''))): ?>
+                                                            <a href="../download.php?token=<?php echo $dl_token; ?>&type=license" class="btn btn-sm btn-outline-success rounded-pill px-3 py-1 scale-up">
+                                                                <i class="fas fa-key me-1"></i> Download License Key
+                                                            </a>
+                                                            <button type="button" class="btn btn-sm btn-light rounded-pill px-2 py-1 text-muted border copy-lic-btn" data-key="<?php echo htmlspecialchars($item['license_key']); ?>">
+                                                                <i class="fas fa-copy me-1"></i> Copy Key
+                                                            </button>
+                                                        <?php endif; ?>
                                                     </div>
                                                 <?php elseif ($item['product_type'] === 'virtual'): ?>
                                                     <div class="mt-1"><span class="badge bg-info bg-opacity-10 text-info border border-info">Virtual Product</span></div>
@@ -316,7 +324,24 @@ $stageIndex = $info['progress_stage_index'];
                 <a href="../contact.php" class="btn btn-light btn-custom rounded-pill w-100 fw-bold">Contact Support</a>
             </div>
         </div>
-    </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.copy-lic-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const key = this.getAttribute('data-key');
+            if (!key) return;
+            navigator.clipboard.writeText(key).then(() => {
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check text-success me-1"></i> Copied!';
+                setTimeout(() => { btn.innerHTML = originalHtml; }, 2000);
+            }).catch(() => {
+                prompt('Copy your license key manually:', key);
+            });
+        });
+    });
+});
+</script>
 
 <?php include '../includes/footer.php'; ?>
