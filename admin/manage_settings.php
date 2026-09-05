@@ -363,38 +363,37 @@ $top_menus = $conn->query("SELECT * FROM menus WHERE parent_id IS NULL ORDER BY 
 $active_tab = isset($_GET['tab']) ? $_GET['tab'] : 'general';
 ?>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="fw-bold mb-0">System Configuration</h4>
-</div>
+<div class="container-fluid px-4 py-4 adm-wrapper">
+    <!-- Hero Header -->
+    <div class="adm-hero">
+        <div class="adm-hero-content">
+            <div class="adm-hero-badge">
+                <i class="fas fa-sliders-h"></i> Core Architecture
+            </div>
+            <h1 class="adm-hero-title">System & Global Store Configuration</h1>
+            <p class="adm-hero-subtitle">Manage payment gateways, shipping thresholds, navigation menus, brand logos, and OAuth providers.</p>
+        </div>
+        <div class="adm-hero-actions">
+            <a href="system_optimize.php" class="adm-btn-white me-2">
+                <i class="fas fa-gauge-high me-2 text-warning"></i>System Optimize
+            </a>
+        </div>
+    </div>
 
-<?php if(isset($success)): ?>
-    <div class="alert alert-success py-2"><i class="fas fa-check-circle me-2"></i><?php echo $success; ?></div>
-<?php endif; ?>
+    <?php if(isset($success)): ?>
+        <div class="alert alert-success border-0 shadow-sm rounded-3 py-3 mb-4"><i class="fas fa-check-circle me-2"></i><?php echo $success; ?></div>
+    <?php endif; ?>
 
-<!-- Tabs Nav -->
-<ul class="nav nav-tabs mb-4 border-bottom-0" id="settingsTabs" role="tablist">
-  <li class="nav-item" role="presentation">
-    <a class="nav-link fs-6 fw-bold border-0 bg-transparent <?php echo $active_tab == 'general' ? 'active shadow-sm bg-white rounded-top-4 text-primary border-bottom border-primary border-3' : 'text-muted'; ?>" href="?tab=general">General</a>
-  </li>
-  <li class="nav-item" role="presentation">
-    <a class="nav-link fs-6 fw-bold border-0 bg-transparent <?php echo $active_tab == 'payment' ? 'active shadow-sm bg-white rounded-top-4 text-primary border-bottom border-primary border-3' : 'text-muted'; ?>" href="?tab=payment">Payments</a>
-  </li>
-  <li class="nav-item" role="presentation">
-    <a class="nav-link fs-6 fw-bold border-0 bg-transparent <?php echo $active_tab == 'shipping' ? 'active shadow-sm bg-white rounded-top-4 text-primary border-bottom border-primary border-3' : 'text-muted'; ?>" href="?tab=shipping">Shipping Logic</a>
-  </li>
-  <li class="nav-item" role="presentation">
-    <a class="nav-link fs-6 fw-bold border-0 bg-transparent <?php echo $active_tab == 'menus' ? 'active shadow-sm bg-white rounded-top-4 text-primary border-bottom border-primary border-3' : 'text-muted'; ?>" href="?tab=menus">User Menus</a>
-  </li>
-  <li class="nav-item" role="presentation">
-    <a class="nav-link fs-6 fw-bold border-0 bg-transparent <?php echo $active_tab == 'banners' ? 'active shadow-sm bg-white rounded-top-4 text-primary border-bottom border-primary border-3' : 'text-muted'; ?>" href="?tab=banners">Page Hero Banners</a>
-  </li>
-  <li class="nav-item" role="presentation">
-    <a class="nav-link fs-6 fw-bold border-0 bg-transparent <?php echo $active_tab == 'social_login' ? 'active shadow-sm bg-white rounded-top-4 text-primary border-bottom border-primary border-3' : 'text-muted'; ?>" href="?tab=social_login">Social Login</a>
-  </li>
-  <li class="nav-item" role="presentation">
-    <a class="nav-link fs-6 fw-bold border-0 bg-transparent <?php echo $active_tab == 'frontend' ? 'active shadow-sm bg-white rounded-top-4 text-primary border-bottom border-primary border-3' : 'text-muted'; ?>" href="?tab=frontend">Frontend Content</a>
-  </li>
-</ul>
+    <!-- Tabs Nav -->
+    <div class="adm-filter-tabs mb-4">
+        <a class="adm-filter-tab <?php echo $active_tab == 'general' ? 'active' : ''; ?>" href="?tab=general"><i class="fas fa-cog me-1"></i>General</a>
+        <a class="adm-filter-tab <?php echo $active_tab == 'payment' ? 'active' : ''; ?>" href="?tab=payment"><i class="fas fa-credit-card me-1"></i>Payments</a>
+        <a class="adm-filter-tab <?php echo $active_tab == 'shipping' ? 'active' : ''; ?>" href="?tab=shipping"><i class="fas fa-truck me-1"></i>Shipping Logic</a>
+        <a class="adm-filter-tab <?php echo $active_tab == 'menus' ? 'active' : ''; ?>" href="?tab=menus"><i class="fas fa-bars me-1"></i>User Menus</a>
+        <a class="adm-filter-tab <?php echo $active_tab == 'banners' ? 'active' : ''; ?>" href="?tab=banners"><i class="fas fa-images me-1"></i>Page Hero Banners</a>
+        <a class="adm-filter-tab <?php echo $active_tab == 'social_login' ? 'active' : ''; ?>" href="?tab=social_login"><i class="fas fa-user-lock me-1"></i>Social Login</a>
+        <a class="adm-filter-tab <?php echo $active_tab == 'frontend' ? 'active' : ''; ?>" href="?tab=frontend"><i class="fas fa-desktop me-1"></i>Frontend Content</a>
+    </div>
 
 <div class="tab-content" id="settingsTabContent">
 
@@ -1555,5 +1554,5 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
-
+</div>
 <?php include 'admin_footer.php'; ?>

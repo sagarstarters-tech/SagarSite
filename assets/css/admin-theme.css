@@ -1,0 +1,400 @@
+/* ══════════════════════════════════════════════════════════════════
+   SAGAR STARTER'S ADMIN PANEL - UNIFIED EXECUTIVE DESIGN SYSTEM
+   Matches Executive Screenshots: Analytics, Orders Hub, Abandoned Carts
+   ══════════════════════════════════════════════════════════════════ */
+
+:root {
+    --adm-primary: #2563eb;
+    --adm-primary-dark: #1d4ed8;
+    --adm-success: #10b981;
+    --adm-warning: #f59e0b;
+    --adm-danger: #ef4444;
+    --adm-purple: #8b5cf6;
+    --adm-dark-navy: #0f172a;
+    --adm-slate-card: #1e293b;
+    --adm-body-bg: #f8fafc;
+    --adm-card-bg: #ffffff;
+    --adm-border: #e2e8f0;
+    --adm-border-light: #f1f5f9;
+    --adm-text-main: #1e293b;
+    --adm-text-muted: #64748b;
+    --adm-radius-lg: 20px;
+    --adm-radius-md: 16px;
+    --adm-radius-sm: 10px;
+}
+
+body.bg-light {
+    background-color: #f1f5f9 !important;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: var(--adm-text-main);
+}
+
+.adm-wrapper {
+    padding-top: 1.25rem;
+    padding-bottom: 3rem;
+}
+
+/* ── 1. Dark Hero Header Banner ─────────────────────────────── */
+.adm-hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+    border-radius: var(--adm-radius-lg);
+    padding: 26px 32px;
+    color: #ffffff;
+    box-shadow: 0 15px 35px -10px rgba(15, 23, 42, 0.28);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 24px;
+}
+.adm-hero::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -10%;
+    width: 340px;
+    height: 340px;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.16) 0%, rgba(255, 255, 255, 0) 70%);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.adm-hero-badge {
+    background: rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+    border: 1px solid rgba(59, 130, 246, 0.4);
+    padding: 4px 12px;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.adm-hero-badge.badge-success {
+    background: rgba(16, 185, 129, 0.2);
+    color: #6ee7b7;
+    border-color: rgba(16, 185, 129, 0.4);
+}
+.adm-hero-badge.badge-warning {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fcd34d;
+    border-color: rgba(245, 158, 11, 0.4);
+}
+.adm-hero-badge.badge-purple {
+    background: rgba(139, 92, 246, 0.2);
+    color: #c4b5fd;
+    border-color: rgba(139, 92, 246, 0.4);
+}
+
+.adm-hero-title {
+    font-size: 1.65rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin-bottom: 4px;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+}
+.adm-hero-subtitle {
+    color: #94a3b8;
+    font-size: 0.875rem;
+    margin-bottom: 0;
+    max-width: 750px;
+}
+
+/* ── 2. Buttons ──────────────────────────────────────────────── */
+.adm-btn-white,
+a.adm-btn-white {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border: 1px solid #ffffff !important;
+    font-weight: 700 !important;
+    font-size: 0.85rem !important;
+    padding: 8px 18px !important;
+    border-radius: var(--adm-radius-sm) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    text-decoration: none !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.adm-btn-white *,
+a.adm-btn-white * {
+    background: transparent !important;
+    color: #0f172a !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+.adm-btn-white:hover,
+a.adm-btn-white:hover {
+    background-color: #f8fafc !important;
+    color: #2563eb !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22) !important;
+}
+.adm-btn-white:hover * {
+    color: #2563eb !important;
+}
+
+.adm-btn-primary,
+button.adm-btn-primary,
+a.adm-btn-primary {
+    background: #2563eb !important;
+    color: #ffffff !important;
+    border: 1px solid #2563eb !important;
+    font-weight: 700 !important;
+    font-size: 0.85rem !important;
+    padding: 8px 18px !important;
+    border-radius: var(--adm-radius-sm) !important;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    text-decoration: none !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.adm-btn-primary:hover,
+a.adm-btn-primary:hover {
+    background: #1d4ed8 !important;
+    border-color: #1d4ed8 !important;
+    color: #ffffff !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 18px rgba(29, 78, 216, 0.4) !important;
+}
+
+/* ── 3. Stat Cards ───────────────────────────────────────────── */
+.adm-stat-card {
+    background: #ffffff;
+    border: 1px solid var(--adm-border);
+    border-radius: var(--adm-radius-md);
+    padding: 22px 24px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+    position: relative;
+    overflow: hidden;
+    height: 100%;
+}
+.adm-stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+    border-color: #cbd5e1;
+}
+
+.adm-icon-box {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+    flex-shrink: 0;
+}
+.adm-icon-blue   { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); color: #2563eb; }
+.adm-icon-green  { background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); color: #059669; }
+.adm-icon-amber  { background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); color: #d97706; }
+.adm-icon-purple { background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%); color: #7c3aed; }
+.adm-icon-rose   { background: linear-gradient(135deg, #fff1f2 0%, #fecdd3 100%); color: #e11d48; }
+.adm-icon-cyan   { background: linear-gradient(135deg, #ecfeff 0%, #cffafe 100%); color: #0891b2; }
+
+.adm-stat-val {
+    font-size: 1.85rem;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    color: #0f172a;
+}
+.adm-stat-lbl {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #64748b;
+    margin-bottom: 4px;
+}
+.adm-stat-sub {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-top: 4px;
+}
+
+/* ── 4. Filter Tabs & Pills ──────────────────────────────────── */
+.adm-filter-tabs {
+    background: #ffffff;
+    border: 1px solid var(--adm-border);
+    border-radius: 14px;
+    padding: 6px;
+    display: inline-flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    margin-bottom: 20px;
+}
+.adm-filter-tab {
+    padding: 8px 18px;
+    border-radius: 9px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #64748b;
+    text-decoration: none;
+    background: transparent;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+.adm-filter-tab:hover {
+    color: #0f172a;
+    background: #f1f5f9;
+}
+.adm-filter-tab.active {
+    background: #0f172a !important;
+    color: #ffffff !important;
+    box-shadow: 0 3px 8px rgba(15, 23, 42, 0.2) !important;
+}
+
+/* ── 5. Executive Content Cards ──────────────────────────────── */
+.adm-card {
+    background: #ffffff;
+    border-radius: var(--adm-radius-md);
+    border: 1px solid var(--adm-border);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+    overflow: hidden;
+    margin-bottom: 24px;
+}
+.adm-card-header {
+    background: #ffffff;
+    border-bottom: 1px solid var(--adm-border-light);
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.adm-card-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.adm-card-body {
+    padding: 24px;
+}
+
+/* ── 6. Executive Data Tables ────────────────────────────────── */
+.adm-table-container {
+    background: #ffffff;
+    border-radius: var(--adm-radius-md);
+    border: 1px solid var(--adm-border);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
+    overflow: hidden;
+    margin-bottom: 24px;
+}
+.adm-table {
+    margin-bottom: 0;
+    width: 100%;
+}
+.adm-table thead th {
+    background: #f8fafc;
+    color: #475569;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--adm-border);
+    white-space: nowrap;
+}
+.adm-table tbody td {
+    padding: 15px 18px;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--adm-border-light);
+    color: #334155;
+    font-size: 0.88rem;
+}
+.adm-table tbody tr:last-child td {
+    border-bottom: none;
+}
+.adm-table tbody tr:hover td {
+    background-color: #f8fafc;
+}
+
+/* Badges & Pills */
+.adm-badge {
+    padding: 5px 10px;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+.adm-badge-success { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
+.adm-badge-warning { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
+.adm-badge-danger  { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+.adm-badge-info    { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+.adm-badge-dark    { background: #0f172a; color: #ffffff; border: 1px solid #0f172a; }
+
+/* Customer Avatar Circle */
+.adm-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* Action Icon Buttons */
+.adm-btn-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+    font-size: 0.85rem;
+    text-decoration: none;
+}
+.adm-btn-icon-blue  { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
+.adm-btn-icon-blue:hover { background: #2563eb; color: #ffffff; }
+.adm-btn-icon-green { background: #ecfdf5; color: #059669; border-color: #a7f3d0; }
+.adm-btn-icon-green:hover { background: #059669; color: #ffffff; }
+.adm-btn-icon-red   { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+.adm-btn-icon-red:hover { background: #dc2626; color: #ffffff; }
+.adm-btn-icon-amber { background: #fffbeb; color: #d97706; border-color: #fde68a; }
+.adm-btn-icon-amber:hover { background: #d97706; color: #ffffff; }
+
+/* ── 7. Input Controls ───────────────────────────────────────── */
+.form-control,
+.form-select {
+    border-radius: 10px;
+    border: 1px solid #cbd5e1;
+    padding: 9px 14px;
+    font-size: 0.9rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.form-control:focus,
+.form-select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+label.form-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 6px;
+}

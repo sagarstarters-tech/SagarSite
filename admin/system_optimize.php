@@ -2,14 +2,29 @@
 include 'admin_header.php';
 ?>
 
-<div class="container-fluid">
-    <div class="row g-4 mt-1">
+<div class="container-fluid px-4 py-4 adm-wrapper">
+    <div class="adm-hero">
+        <div class="adm-hero-content">
+            <div class="adm-hero-badge">
+                <i class="fas fa-gauge-high"></i> Performance & Cache
+            </div>
+            <h1 class="adm-hero-title">System Optimization & Acceleration</h1>
+            <p class="adm-hero-subtitle">Reclaim database storage, prime bytecode OPcache, clear expired session garbage, and boost store TTFB response speed.</p>
+        </div>
+        <div class="adm-hero-actions">
+            <a href="manage_settings.php" class="adm-btn-white me-2">
+                <i class="fas fa-sliders-h me-2"></i>Global Config
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
         <!-- Existing Card: Refresh & Optimize System -->
         <div class="col-lg-6">
-            <div class="card border-0 shadow-sm rounded-4 h-100">
-                <div class="card-header bg-white border-0 pt-4 pb-0">
+            <div class="adm-card h-100">
+                <div class="p-4 border-bottom bg-light">
                     <h4 class="fw-bold mb-0 text-primary"><i class="fas fa-broom me-2"></i>Refresh & Optimize System</h4>
-                    <p class="text-muted small">Manually clear cache, remove old sessions, and optimize database tables.</p>
+                    <p class="text-muted small mb-0">Manually clear cache, remove old sessions, and optimize database tables.</p>
                 </div>
                 <div class="card-body p-4 d-flex flex-column justify-content-between">
                     <div id="maintenance-init">
@@ -76,10 +91,10 @@ include 'admin_header.php';
 
         <!-- New Card: Boost Website Speed -->
         <div class="col-lg-6">
-            <div class="card border-0 shadow-sm rounded-4 h-100">
-                <div class="card-header bg-white border-0 pt-4 pb-0">
+            <div class="adm-card h-100">
+                <div class="p-4 border-bottom bg-light">
                     <h4 class="fw-bold mb-0 text-success"><i class="fas fa-bolt me-2 text-warning"></i>Boost Website Speed</h4>
-                    <p class="text-muted small">Accelerate website performance safely with instant cache priming and index query optimization.</p>
+                    <p class="text-muted small mb-0">Accelerate website performance safely with instant cache priming and index query optimization.</p>
                 </div>
                 <div class="card-body p-4 d-flex flex-column justify-content-between">
                     <div id="speedboost-init">

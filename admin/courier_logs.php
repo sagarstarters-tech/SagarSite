@@ -35,43 +35,53 @@ if ($tab === 'queue') {
 $total_pages = ceil($total_items / $limit);
 ?>
 
-<div class="container-fluid px-4 pt-3 pb-5">
+<div class="container-fluid px-4 py-4 adm-wrapper">
     
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <div>
-            <h4 class="fw-bold text-dark mb-1"><i class="fas fa-history text-primary me-2"></i>Courier Sync Queue &amp; API Logs</h4>
-            <p class="text-muted small mb-0">Monitor background order dispatches, retries, and API communication records.</p>
-        </div>
-        <div class="d-flex gap-2">
-            <a href="manage_couriers.php" class="btn btn-primary btn-custom shadow-sm">
-                <i class="fas fa-sliders-h me-1"></i> Courier Settings
-            </a>
-            <a href="manage_orders.php" class="btn btn-light btn-custom border shadow-sm">
-                <i class="fas fa-list me-1"></i> Orders Hub
-            </a>
+    <!-- Hero / Header Banner -->
+    <div class="adm-hero">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="adm-hero-badge">
+                        <i class="fas fa-terminal"></i> Dispatch Queue &amp; Audit Telemetry
+                    </span>
+                    <span class="adm-hero-badge badge-success">
+                        <i class="fas fa-database"></i> <?php echo number_format($total_items); ?> Total Records
+                    </span>
+                </div>
+                <h2 class="adm-hero-title">Courier Sync Queue &amp; Logs 📜</h2>
+                <p class="adm-hero-subtitle">Monitor background order dispatches, automated retries, and API communication records with aggregators.</p>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <a href="manage_couriers.php" class="btn adm-btn-white">
+                    <i class="fas fa-sliders-h text-primary"></i>
+                    <span>Courier Settings</span>
+                </a>
+                <a href="manage_orders.php" class="btn btn-primary px-3 py-2 rounded-3 shadow-sm d-flex align-items-center gap-2 fw-semibold text-white">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>Orders Hub</span>
+                </a>
+            </div>
         </div>
     </div>
 
-    <!-- Navigation Tabs -->
-    <ul class="nav nav-pills mb-4 border-bottom pb-3">
-        <li class="nav-item me-2">
-            <a class="nav-link rounded-pill px-4 <?php echo $tab === 'queue' ? 'active' : 'bg-white text-dark shadow-sm'; ?>" href="courier_logs.php?tab=queue">
-                <i class="fas fa-tasks me-2"></i>Sync Queue
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link rounded-pill px-4 <?php echo $tab === 'logs' ? 'active' : 'bg-white text-dark shadow-sm'; ?>" href="courier_logs.php?tab=logs">
-                <i class="fas fa-terminal me-2"></i>API Audit Logs
-            </a>
-        </li>
-    </ul>
+    <!-- Navigation Filter Pills -->
+    <div class="adm-filter-tabs">
+        <a class="adm-filter-tab <?php echo $tab === 'queue' ? 'active' : ''; ?>" href="courier_logs.php?tab=queue">
+            <i class="fas fa-tasks"></i>
+            <span>Sync Queue</span>
+        </a>
+        <a class="adm-filter-tab <?php echo $tab === 'logs' ? 'active' : ''; ?>" href="courier_logs.php?tab=logs">
+            <i class="fas fa-terminal"></i>
+            <span>API Audit Logs</span>
+        </a>
+    </div>
 
     <?php if ($tab === 'queue'): ?>
         <!-- Queue Table -->
-        <div class="card border-0 shadow-sm rounded-4">
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
+        <div class="adm-table-container mb-4">
+            <div class="table-responsive">
+                <table class="adm-table table table-hover align-middle mb-0">
                         <thead class="bg-light">
                             <tr>
                                 <th class="ps-4">Queue ID</th>
@@ -139,15 +149,13 @@ $total_pages = ceil($total_items / $limit);
                         </tbody>
                     </table>
                 </div>
-            </div>
         </div>
 
     <?php else: ?>
         <!-- API Audit Logs Table -->
-        <div class="card border-0 shadow-sm rounded-4">
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
+        <div class="adm-table-container mb-4">
+            <div class="table-responsive">
+                <table class="adm-table table table-hover align-middle mb-0">
                         <thead class="bg-light">
                             <tr>
                                 <th class="ps-4">Log ID</th>
@@ -208,7 +216,6 @@ $total_pages = ceil($total_items / $limit);
                         </tbody>
                     </table>
                 </div>
-            </div>
         </div>
     <?php endif; ?>
 

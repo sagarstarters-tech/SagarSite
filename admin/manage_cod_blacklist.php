@@ -82,56 +82,96 @@ $stats_email = $conn->query("SELECT COUNT(*) as c FROM cod_blacklist WHERE type=
 $stats_ip    = $conn->query("SELECT COUNT(*) as c FROM cod_blacklist WHERE type='ip'")->fetch_assoc()['c'];
 ?>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h4 class="fw-bold mb-1">COD Blacklist Manager</h4>
-        <p class="text-muted mb-0 small">Restrict Cash on Delivery for specific users by phone, email, or IP address.</p>
+<div class="container-fluid px-4 py-4 adm-wrapper">
+    <!-- Hero / Header Banner -->
+    <div class="adm-hero">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="adm-hero-badge">
+                        <i class="fas fa-shield-alt"></i> Fraud Prevention &amp; Risk Control
+                    </span>
+                    <span class="adm-hero-badge badge-warning">
+                        <i class="fas fa-ban"></i> Active Restrictions: <?php echo number_format($total_entries); ?>
+                    </span>
+                </div>
+                <h2 class="adm-hero-title">COD Blacklist Manager 🛡️</h2>
+                <p class="adm-hero-subtitle">Restrict Cash on Delivery for high-risk users by phone number, email address, or network IP.</p>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <a href="manage_settings.php?tab=payment" class="btn adm-btn-white">
+                    <i class="fas fa-wallet text-primary"></i>
+                    <span>Payment Gateways</span>
+                </a>
+                <button class="btn btn-primary px-3 py-2 rounded-3 shadow-sm d-flex align-items-center gap-2 fw-semibold text-white" data-mdb-toggle="modal" data-mdb-target="#addBlacklistModal">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Add Blacklist Entry</span>
+                </button>
+            </div>
+        </div>
     </div>
-    <div class="d-flex gap-2">
-        <a href="manage_settings.php?tab=payment" class="btn btn-light btn-custom border"><i class="fas fa-arrow-left me-2"></i>Back to Payments</a>
-        <button class="btn btn-primary btn-custom px-3" data-mdb-toggle="modal" data-mdb-target="#addBlacklistModal">
-            <i class="fas fa-plus me-2"></i>Add Entry
-        </button>
-    </div>
-</div>
 
 <?php if(isset($success)): ?>
-    <div class="alert alert-success py-2"><i class="fas fa-check-circle me-2"></i><?php echo $success; ?></div>
+    <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-sm py-2 px-3 mb-3"><i class="fas fa-check-circle me-2"></i><?php echo $success; ?></div>
 <?php endif; ?>
 <?php if(isset($error)): ?>
-    <div class="alert alert-danger py-2"><i class="fas fa-exclamation-triangle me-2"></i><?php echo $error; ?></div>
+    <div class="alert alert-danger alert-dismissible fade show rounded-3 shadow-sm py-2 px-3 mb-3"><i class="fas fa-exclamation-triangle me-2"></i><?php echo $error; ?></div>
 <?php endif; ?>
 
-<!-- Stats Cards -->
+<!-- Executive Stats Cards -->
 <div class="row g-3 mb-4">
     <div class="col-md-3">
-        <div class="card border-0 shadow-sm rounded-4 p-3 text-center">
-            <div class="fw-bold fs-3 text-primary"><?php echo $total_entries; ?></div>
-            <div class="text-muted small fw-bold">Total Blocked</div>
+        <div class="adm-stat-card d-flex justify-content-between align-items-center">
+            <div>
+                <div class="adm-stat-lbl">Total Blocked</div>
+                <div class="adm-stat-val text-primary"><?php echo $total_entries; ?></div>
+                <div class="adm-stat-sub"><i class="fas fa-ban me-1 text-primary"></i>All blacklisted records</div>
+            </div>
+            <div class="adm-icon-box adm-icon-blue">
+                <i class="fas fa-shield-alt"></i>
+            </div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card border-0 shadow-sm rounded-4 p-3 text-center">
-            <div class="fw-bold fs-3 text-danger"><?php echo $stats_phone; ?></div>
-            <div class="text-muted small fw-bold"><i class="fas fa-phone me-1"></i>Phone</div>
+        <div class="adm-stat-card d-flex justify-content-between align-items-center">
+            <div>
+                <div class="adm-stat-lbl">Phone Blocks</div>
+                <div class="adm-stat-val text-danger"><?php echo $stats_phone; ?></div>
+                <div class="adm-stat-sub"><i class="fas fa-mobile-alt me-1 text-danger"></i>Blocked mobile numbers</div>
+            </div>
+            <div class="adm-icon-box adm-icon-rose">
+                <i class="fas fa-phone-slash"></i>
+            </div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card border-0 shadow-sm rounded-4 p-3 text-center">
-            <div class="fw-bold fs-3 text-warning"><?php echo $stats_email; ?></div>
-            <div class="text-muted small fw-bold"><i class="fas fa-envelope me-1"></i>Email</div>
+        <div class="adm-stat-card d-flex justify-content-between align-items-center">
+            <div>
+                <div class="adm-stat-lbl">Email Blocks</div>
+                <div class="adm-stat-val text-warning"><?php echo $stats_email; ?></div>
+                <div class="adm-stat-sub"><i class="fas fa-envelope me-1 text-warning"></i>Blacklisted email IDs</div>
+            </div>
+            <div class="adm-icon-box adm-icon-amber">
+                <i class="fas fa-envelope-open-text"></i>
+            </div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card border-0 shadow-sm rounded-4 p-3 text-center">
-            <div class="fw-bold fs-3 text-info"><?php echo $stats_ip; ?></div>
-            <div class="text-muted small fw-bold"><i class="fas fa-globe me-1"></i>IP Address</div>
+        <div class="adm-stat-card d-flex justify-content-between align-items-center">
+            <div>
+                <div class="adm-stat-lbl">IP Address Blocks</div>
+                <div class="adm-stat-val text-info"><?php echo $stats_ip; ?></div>
+                <div class="adm-stat-sub"><i class="fas fa-network-wired me-1 text-info"></i>Network IPs restricted</div>
+            </div>
+            <div class="adm-icon-box adm-icon-cyan">
+                <i class="fas fa-globe"></i>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Search & Filter -->
-<div class="card border-0 shadow-sm rounded-4 mb-4">
+<!-- Search & Filter Card -->
+<div class="adm-card mb-4">
     <div class="card-body p-3">
         <form method="GET" class="row g-2 align-items-end">
             <div class="col-md-5">
@@ -158,10 +198,9 @@ $stats_ip    = $conn->query("SELECT COUNT(*) as c FROM cod_blacklist WHERE type=
 </div>
 
 <!-- Entries Table -->
-<div class="card border-0 shadow-sm rounded-4">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+<div class="adm-table-container mb-4">
+    <div class="table-responsive">
+        <table class="adm-table table table-hover align-middle mb-0">
                 <thead class="bg-light">
                     <tr>
                         <th class="ps-4" style="width:50px;">#</th>
@@ -227,6 +266,7 @@ $stats_ip    = $conn->query("SELECT COUNT(*) as c FROM cod_blacklist WHERE type=
         <?php endif; ?>
     </div>
 </div>
+</div> <!-- /.adm-wrapper -->
 
 <!-- Add Blacklist Modal -->
 <div class="modal fade" id="addBlacklistModal" tabindex="-1" aria-hidden="true">

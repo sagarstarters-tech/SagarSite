@@ -14,32 +14,41 @@ try {
 }
 ?>
 <link href="<?php echo SITE_URL; ?>/admin/social-media/assets/social-media.css" rel="stylesheet">
-<div class="container-fluid py-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="fw-bold m-0">Analytics Dashboard</h2>
-            <select class="form-select w-auto rounded-pill shadow-sm">
-                <option>Last 7 Days</option>
-                <option selected>Last 30 Days</option>
-                <option>Last 90 Days</option>
-            </select>
+<div class="container-fluid px-4 py-4 adm-wrapper">
+    <div class="adm-hero">
+        <div class="adm-hero-content">
+            <div class="adm-hero-badge">
+                <i class="fas fa-chart-line"></i> Performance & Reach
+            </div>
+            <h1 class="adm-hero-title">Social Media Analytics & Reach</h1>
+            <p class="adm-hero-subtitle">Measure automated post volume, delivery success rates, and omnichannel campaign performance.</p>
         </div>
+        <div class="adm-hero-actions">
+            <a href="queue.php" class="adm-btn-white me-2">
+                <i class="fas fa-list me-2"></i>Post Queue
+            </a>
+            <button class="adm-btn-primary" onclick="alert('Exporting report...')"><i class="fas fa-download me-2"></i>Export CSV</button>
+        </div>
+    </div>
         
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card shadow" style="border-radius: 15px; border: none;">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h5 class="fw-bold m-0">Performance Over Time</h5>
-                            <button class="btn btn-sm btn-outline-primary mdb-ripple rounded-pill"><i class="fas fa-download me-1"></i> Export CSV</button>
-                        </div>
-                        <div style="height: 350px;">
-                            <canvas id="analyticsChart"></canvas>
-                        </div>
-                    </div>
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="adm-card p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                    <h5 class="fw-bold m-0 text-dark"><i class="fas fa-chart-area me-2 text-primary"></i>Performance Over Time</h5>
+                    <select class="form-select w-auto rounded-pill shadow-sm">
+                        <option>Last 7 Days</option>
+                        <option selected>Last 30 Days</option>
+                        <option>Last 90 Days</option>
+                    </select>
+                </div>
+                <div style="height: 350px;">
+                    <canvas id="analyticsChart"></canvas>
                 </div>
             </div>
         </div>
     </div>
+</div>
 <style></style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>

@@ -72,15 +72,20 @@ $scheduleTypes = [
 ?>
 <link href="<?php echo SITE_URL; ?>/admin/social-media/assets/social-media.css" rel="stylesheet">
 
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <div>
-            <h2 class="fw-bold m-0">Posting Schedules</h2>
-            <p class="text-muted small m-0">Create and manage automated posting intervals across social media platforms.</p>
+<div class="container-fluid px-4 py-4 adm-wrapper">
+    <div class="adm-hero">
+        <div class="adm-hero-content">
+            <div class="adm-hero-badge">
+                <i class="fas fa-calendar-alt"></i> Automated Schedules
+            </div>
+            <h1 class="adm-hero-title">Automated Posting Schedules</h1>
+            <p class="adm-hero-subtitle">Define recurring posting cadences (every 15 min, hourly, daily) targeted by platform and category.</p>
         </div>
-        <button type="button" class="btn btn-primary rounded-pill px-4 shadow-sm" id="btnOpenCreateModal">
-            <i class="fas fa-plus me-2"></i> Create Schedule
-        </button>
+        <div class="adm-hero-actions">
+            <button type="button" class="adm-btn-primary" id="btnOpenCreateModal">
+                <i class="fas fa-plus me-2"></i>Create Schedule
+            </button>
+        </div>
     </div>
 
     <div id="pageAlert"></div>
@@ -753,5 +758,5 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-
+</div>
 <?php include_once __DIR__ . '/../admin_footer.php'; ?>

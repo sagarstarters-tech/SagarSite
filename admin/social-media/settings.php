@@ -21,12 +21,29 @@ try {
 } catch (\Throwable $e) {}
 ?>
 <link href="<?php echo SITE_URL; ?>/admin/social-media/assets/social-media.css" rel="stylesheet">
-<div class="container-fluid py-4">
-        <h2 class="mb-4 fw-bold">Module Settings</h2>
-        <div class="card shadow" style="border-radius: 15px; border: none;">
-            <div class="card-body p-0">
-                <div class="row g-0">
-                    <div class="col-md-3 border-end">
+<div class="container-fluid px-4 py-4 adm-wrapper">
+    <div class="adm-hero">
+        <div class="adm-hero-content">
+            <div class="adm-hero-badge">
+                <i class="fas fa-sliders-h"></i> Engine Configuration
+            </div>
+            <h1 class="adm-hero-title">Social Automation Settings</h1>
+            <p class="adm-hero-subtitle">Configure auto-queueing triggers, duplicate spam protection rules, and background worker cron jobs.</p>
+        </div>
+        <div class="adm-hero-actions">
+            <a href="accounts.php" class="adm-btn-white me-2">
+                <i class="fas fa-link me-2"></i>Accounts
+            </a>
+            <a href="queue.php" class="adm-btn-primary">
+                <i class="fas fa-list me-2"></i>View Queue
+            </a>
+        </div>
+    </div>
+
+    <div class="adm-card mb-4">
+        <div class="p-0">
+            <div class="row g-0">
+                <div class="col-md-3 border-end">
                         <div class="nav flex-column nav-pills p-3" id="settingsTabs" role="tablist" aria-orientation="vertical">
                             <button class="nav-link active text-start fw-bold mb-2 rounded-pill" data-mdb-toggle="pill" data-mdb-target="#general" type="button" role="tab"><i class="fas fa-cog me-2"></i>General</button>
                             <button class="nav-link text-start fw-bold mb-2 rounded-pill" data-mdb-toggle="pill" data-mdb-target="#protection" type="button" role="tab"><i class="fas fa-shield-alt me-2"></i>Duplicate Protection</button>

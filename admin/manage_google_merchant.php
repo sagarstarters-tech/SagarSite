@@ -68,17 +68,21 @@ $site_url = rtrim(SITE_URL, '/');
 $feed_url = $site_url . '/api/google_merchant_feed.php';
 ?>
 
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12 px-4 pt-4">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h4 class="fw-bold text-primary mb-0">
-                    <i class="fab fa-google me-2 text-danger"></i>Google Merchant Center Connection
-                </h4>
-                <a href="<?php echo htmlspecialchars($feed_url); ?>" target="_blank" class="btn btn-outline-primary btn-sm rounded-pill px-3">
-                    <i class="fas fa-rss me-1"></i> View Live Product Feed
-                </a>
+<div class="container-fluid px-4 py-4 adm-wrapper">
+    <div class="adm-hero">
+        <div class="adm-hero-content">
+            <div class="adm-hero-badge">
+                <i class="fab fa-google"></i> Google Shopping & Ads
             </div>
+            <h1 class="adm-hero-title">Google Merchant Center Connection</h1>
+            <p class="adm-hero-subtitle">Sync your catalog in real-time with Google Shopping ads, Free Listings, and scheduled XML feed fetches.</p>
+        </div>
+        <div class="adm-hero-actions">
+            <a href="<?php echo htmlspecialchars($feed_url); ?>" target="_blank" class="adm-btn-white">
+                <i class="fas fa-rss me-2 text-warning"></i>View Live Product Feed
+            </a>
+        </div>
+    </div>
 
             <?php if ($success): ?>
                 <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
@@ -205,10 +209,8 @@ $feed_url = $site_url . '/api/google_merchant_feed.php';
                                 <li>Click <strong>Save &amp; Fetch</strong>. Google will now automatically sync all your website products!</li>
                             </ol>
                         </div>
-                    </div>
                 </div>
             </div>
-
         </div>
     </div>
 </div>

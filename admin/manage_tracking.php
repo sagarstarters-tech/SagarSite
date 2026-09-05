@@ -46,24 +46,45 @@ $orders_q = $conn->query("
 $couriers = $repo->getActiveCouriers();
 ?>
 
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12 px-4 pt-4">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h4 class="fw-bold mb-0 text-primary"><i class="fas fa-shipping-fast me-2"></i>Order Tracking Management</h4>
+<div class="container-fluid px-4 py-4 adm-wrapper">
+    <!-- Hero / Header Banner -->
+    <div class="adm-hero">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="adm-hero-badge">
+                        <i class="fas fa-shipping-fast"></i> Order Logistics &amp; Delivery Telemetry
+                    </span>
+                    <span class="adm-hero-badge badge-success">
+                        <i class="fas fa-truck"></i> <?php echo $orders_q ? $orders_q->num_rows : 0; ?> Orders Tracked
+                    </span>
+                </div>
+                <h2 class="adm-hero-title">Order Tracking Management 🚚</h2>
+                <p class="adm-hero-subtitle">Assign courier partners, update Air Waybill (AWB) numbers, set estimated delivery dates, and track shipments in real-time.</p>
             </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <a href="manage_couriers.php" class="btn adm-btn-white">
+                    <i class="fas fa-truck-moving text-primary"></i>
+                    <span>Courier Aggregators</span>
+                </a>
+                <a href="manage_orders.php" class="btn btn-primary px-3 py-2 rounded-3 shadow-sm d-flex align-items-center gap-2 fw-semibold text-white">
+                    <i class="fas fa-list"></i>
+                    <span>Orders Hub</span>
+                </a>
+            </div>
+        </div>
+    </div>
 
-            <?php if ($success): ?>
-                <div class="alert alert-success border-0 shadow-sm rounded-4 py-2 mb-4"><?php echo $success; ?></div>
-            <?php endif; ?>
-            <?php if ($error): ?>
-                <div class="alert alert-danger border-0 shadow-sm rounded-4 py-2 mb-4"><?php echo $error; ?></div>
-            <?php endif; ?>
+    <?php if ($success): ?>
+        <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-4 py-2 px-3 mb-4"><?php echo $success; ?></div>
+    <?php endif; ?>
+    <?php if ($error): ?>
+        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-4 py-2 px-3 mb-4"><?php echo $error; ?></div>
+    <?php endif; ?>
 
-            <div class="card border-0 shadow-sm rounded-4">
-                <div class="card-body p-4">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle">
+    <div class="adm-table-container mb-4">
+        <div class="table-responsive">
+            <table class="adm-table table table-hover align-middle">
                             <thead class="bg-light">
                                 <tr>
                                     <th>Order ID</th>
@@ -141,11 +162,8 @@ $couriers = $repo->getActiveCouriers();
                             </tbody>
                         </table>
                     </div>
-                </div>
-            </div>
-        </div>
     </div>
-</div>
+</div> <!-- /.adm-wrapper -->
 
 <!-- Edit Tracking Modal -->
 <div class="modal fade" id="trackingModal" tabindex="-1">

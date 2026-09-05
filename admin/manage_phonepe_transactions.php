@@ -33,33 +33,54 @@ $query = "
 $transactions = $conn->query($query);
 ?>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="fw-bold mb-0">PhonePe Transaction Statements</h4>
-    <a href="manage_settings.php" class="btn btn-outline-primary btn-sm"><i class="fas fa-arrow-left me-1"></i>Back to Settings</a>
-</div>
-
-<?php if(isset($success)): ?>
-    <div class="alert alert-success py-2"><?php echo $success; ?></div>
-<?php endif; ?>
-<?php if(isset($error)): ?>
-    <div class="alert alert-danger py-2"><?php echo $error; ?></div>
-<?php endif; ?>
-
-<div class="card shadow-sm border-0 rounded-4">
-    <div class="card-header bg-white border-0 pt-4 pb-0 d-flex justify-content-between align-items-center">
-        <h5 class="fw-bold mb-0"><i class="fas fa-receipt me-2 text-primary"></i>All Transactions Log</h5>
-        <?php if ($total_rows > 0): ?>
-            <form method="POST" class="m-0" onsubmit="return confirm('WARNING: This will permanently delete ALL PhonePe transaction logs from the database. This action cannot be undone. Are you absolutely sure?');">
-    <?php echo csrf_input(); ?>
-                <input type="hidden" name="action" value="clear_all">
-                <button type="submit" class="btn btn-outline-danger btn-sm"><i class="fas fa-trash-alt me-1"></i>Clear All Data</button>
-            </form>
-        <?php endif; ?>
+<div class="container-fluid px-4 py-4 adm-wrapper">
+    <div class="adm-hero">
+        <div class="adm-hero-content">
+            <div class="adm-hero-badge">
+                <i class="fas fa-credit-card"></i> Payment Gateway Telemetry
+            </div>
+            <h1 class="adm-hero-title">PhonePe Transaction Statements</h1>
+            <p class="adm-hero-subtitle">Review server-to-server webhook telemetry, UPI callback receipts, and raw API transaction logs.</p>
+        </div>
+        <div class="adm-hero-actions">
+            <a href="manage_settings.php" class="adm-btn-white me-2">
+                <i class="fas fa-arrow-left me-2"></i>Back to Settings
+            </a>
+            <?php if ($total_rows > 0): ?>
+                <form method="POST" class="d-inline m-0" onsubmit="return confirm('WARNING: This will permanently delete ALL PhonePe transaction logs from the database. This action cannot be undone. Are you absolutely sure?');">
+                    <?php echo csrf_input(); ?>
+                    <input type="hidden" name="action" value="clear_all">
+                    <button type="submit" class="btn btn-outline-danger bg-white border-0 text-danger rounded-pill px-3 py-2 fw-bold shadow-sm">
+                        <i class="fas fa-trash-alt me-2"></i>Clear All Logs
+                    </button>
+                </form>
+            <?php endif; ?>
+        </div>
     </div>
-    <div class="card-body p-4">
+
+    <?php if(isset($success)): ?>
+        <div class="alert alert-success border-0 shadow-sm rounded-4 py-3 mb-4 d-flex align-items-center">
+            <i class="fas fa-check-circle fs-4 me-3 text-success"></i>
+            <div><?php echo $success; ?></div>
+        </div>
+    <?php endif; ?>
+    <?php if(isset($error)): ?>
+        <div class="alert alert-danger border-0 shadow-sm rounded-4 py-3 mb-4 d-flex align-items-center">
+            <i class="fas fa-exclamation-triangle fs-4 me-3 text-danger"></i>
+            <div><?php echo $error; ?></div>
+        </div>
+    <?php endif; ?>
+
+    <div class="adm-table-container">
+        <div class="p-4 border-bottom bg-light d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h5 class="fw-bold mb-0 text-dark"><i class="fas fa-receipt me-2 text-primary"></i>All Transactions Log</h5>
+                <p class="text-muted small mb-0"><?php echo $total_rows; ?> total recorded payment attempts</p>
+            </div>
+        </div>
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="bg-light">
+            <table class="adm-table">
+                <thead>
                     <tr>
                         <th>Date & Time</th>
                         <th>Transaction ID</th>
@@ -67,7 +88,7 @@ $transactions = $conn->query($query);
                         <th>Customer</th>
                         <th>Amount</th>
                         <th>Payment Status</th>
-                        <th class="text-end">Action</th>
+                        <th class="text-end">Raw Payload</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -75,19 +96,19 @@ $transactions = $conn->query($query);
                         <?php while($row = $transactions->fetch_assoc()): ?>
                             <tr>
                                 <td class="text-muted small"><?php echo date('M d, Y h:i A', strtotime($row['created_at'])); ?></td>
-                                <td class="fw-bold font-monospace small"><?php echo htmlspecialchars($row['transaction_id']); ?></td>
+                                <td class="fw-bold font-monospace small text-dark"><?php echo htmlspecialchars($row['transaction_id']); ?></td>
                                 <td>
-                                    <a class="text-primary fw-bold text-decoration-none" href="manage_orders.php">
+                                    <a class="badge bg-primary text-white text-decoration-none px-2 py-1" href="manage_orders.php">
                                         #<?php echo $row['order_id']; ?>
                                     </a>
                                 </td>
                                 <td>
                                     <div class="d-flex flex-column">
-                                        <span class="fw-bold"><?php echo htmlspecialchars($row['customer_name'] ?? 'Guest'); ?></span>
+                                        <span class="fw-bold text-dark"><?php echo htmlspecialchars($row['customer_name'] ?? 'Guest'); ?></span>
                                         <small class="text-muted"><?php echo htmlspecialchars($row['customer_email'] ?? '-'); ?></small>
                                     </div>
                                 </td>
-                                <td class="fw-bold">
+                                <td class="fw-bold text-dark fs-6">
                                     <?php echo htmlspecialchars($global_settings['currency_symbol'] ?? '₹'); ?><?php echo number_format($row['amount'], 2); ?>
                                 </td>
                                 <td>
@@ -97,20 +118,23 @@ $transactions = $conn->query($query);
                                         elseif ($row['status'] === 'FAILED') $bg = 'bg-danger';
                                         elseif ($row['status'] === 'PENDING') $bg = 'bg-warning text-dark';
                                     ?>
-                                    <span class="badge <?php echo $bg; ?>"><?php echo htmlspecialchars($row['status']); ?></span>
+                                    <span class="badge <?php echo $bg; ?> rounded-pill px-3 py-1"><?php echo htmlspecialchars($row['status']); ?></span>
                                 </td>
                                 <td class="text-end">
-                                    <button class="btn btn-light btn-sm text-primary view-payload-btn" 
+                                    <button class="btn btn-light btn-sm text-primary rounded-pill px-3 fw-bold border view-payload-btn" 
                                             data-payload="<?php echo htmlspecialchars($row['raw_payload']); ?>"
                                             data-refid="<?php echo htmlspecialchars($row['provider_reference_id'] ?? 'N/A'); ?>">
-                                        <i class="fas fa-code"></i> Data
+                                        <i class="fas fa-code me-1"></i> Data
                                     </button>
                                 </td>
                             </tr>
                         <?php endwhile; ?>
                     <?php else: ?>
                         <tr>
-                            <td colspan="7" class="text-center py-4 text-muted">No PhonePe transactions found.</td>
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <i class="fas fa-receipt fs-1 d-block mb-3 opacity-25"></i>
+                                No PhonePe transactions found.
+                            </td>
                         </tr>
                     <?php endif; ?>
                 </tbody>
@@ -119,18 +143,18 @@ $transactions = $conn->query($query);
 
         <!-- Pagination -->
         <?php if ($total_pages > 1): ?>
-        <nav class="mt-4">
+        <nav class="p-4 border-top">
             <ul class="pagination justify-content-center mb-0">
                 <li class="page-item <?php echo ($page <= 1) ? 'disabled' : ''; ?>">
-                    <a class="page-link shadow-sm border-0" href="?page=<?php echo $page - 1; ?>">Previous</a>
+                    <a class="page-link shadow-sm border-0 rounded-pill px-3 mx-1" href="?page=<?php echo $page - 1; ?>">Previous</a>
                 </li>
                 <?php for($i = 1; $i <= $total_pages; $i++): ?>
                     <li class="page-item <?php echo ($page == $i) ? 'active' : ''; ?>">
-                        <a class="page-link shadow-sm border-0" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
+                        <a class="page-link shadow-sm border-0 rounded-circle mx-1" style="width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
                     </li>
                 <?php endfor; ?>
                 <li class="page-item <?php echo ($page >= $total_pages) ? 'disabled' : ''; ?>">
-                    <a class="page-link shadow-sm border-0" href="?page=<?php echo $page + 1; ?>">Next</a>
+                    <a class="page-link shadow-sm border-0 rounded-pill px-3 mx-1" href="?page=<?php echo $page + 1; ?>">Next</a>
                 </li>
             </ul>
         </nav>

@@ -59,32 +59,52 @@ $settings_q = $conn->query("SELECT * FROM hero_slider_settings LIMIT 1");
 $settings = $settings_q->fetch_assoc();
 ?>
 
-<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-    <div>
-        <h2 class="h3 mb-0 text-gray-800 fw-bold"><i class="fas fa-sliders-h text-primary me-2"></i>Hero Slider & Banner Settings</h2>
-        <p class="text-muted small mb-0">Adjust slider height (lambai), width (chaudai), and display options.</p>
+<div class="container-fluid px-4 py-4 adm-wrapper">
+    <!-- Hero / Header Banner -->
+    <div class="adm-hero">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="adm-hero-badge">
+                        <i class="fas fa-sliders-h"></i> Homepage Visual Builder
+                    </span>
+                    <?php if (!empty($settings['is_active'])): ?>
+                        <span class="adm-hero-badge badge-success"><i class="fas fa-check-circle"></i> Slider Active</span>
+                    <?php else: ?>
+                        <span class="adm-hero-badge badge-warning"><i class="fas fa-pause-circle"></i> Slider Disabled</span>
+                    <?php endif; ?>
+                </div>
+                <h2 class="adm-hero-title">Hero Slider &amp; Banner Settings 🖼️</h2>
+                <p class="adm-hero-subtitle">Adjust slider height (lambai), width (chaudai), transition speed, and responsive dimensions across mobile, tablet &amp; desktop.</p>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <a href="manage-slides.php" class="btn adm-btn-white">
+                    <i class="fas fa-images text-primary"></i>
+                    <span>Manage Slides</span>
+                </a>
+                <a href="manage_banners.php" class="btn adm-btn-white">
+                    <i class="fas fa-photo-film text-info"></i>
+                    <span>Promotional Banners</span>
+                </a>
+            </div>
+        </div>
     </div>
-    <div class="d-flex gap-2">
-        <a href="manage-slides.php" class="btn btn-outline-primary rounded-pill px-3"><i class="fas fa-images me-2"></i>Manage Slides</a>
-        <a href="manage_banners.php" class="btn btn-outline-secondary rounded-pill px-3"><i class="fas fa-photo-film me-2"></i>Promotional Banners</a>
-    </div>
-</div>
 
 <?php if(isset($success)): ?>
-    <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-sm" role="alert">
+    <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-sm py-2 px-3 mb-3" role="alert">
         <i class="fas fa-check-circle me-2"></i> <?php echo $success; ?>
         <button type="button" class="btn-close" data-mdb-dismiss="alert" aria-label="Close"></button>
     </div>
 <?php endif; ?>
 <?php if(isset($error)): ?>
-    <div class="alert alert-danger alert-dismissible fade show rounded-3 shadow-sm" role="alert">
+    <div class="alert alert-danger alert-dismissible fade show rounded-3 shadow-sm py-2 px-3 mb-3" role="alert">
         <i class="fas fa-exclamation-circle me-2"></i> <?php echo $error; ?>
         <button type="button" class="btn-close" data-mdb-dismiss="alert" aria-label="Close"></button>
     </div>
 <?php endif; ?>
 
-<div class="card border-0 shadow-sm rounded-4">
-    <div class="card-body p-4">
+<div class="adm-card shadow-sm border-0 rounded-4">
+    <div class="adm-card-body p-4">
         <form method="POST" action="">
             <?php echo csrf_input(); ?>
             <input type="hidden" name="action" value="update_settings">

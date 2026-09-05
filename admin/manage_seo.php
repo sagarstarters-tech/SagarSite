@@ -83,256 +83,323 @@ $pages = $conn->query("SELECT id, title FROM pages ORDER BY title ASC");
 $categories = $conn->query("SELECT id, name FROM categories ORDER BY name ASC");
 ?>
 
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12 px-4 pt-4">
-            <h4 class="fw-bold text-primary mb-4"><i class="fas fa-search me-2"></i>WEBSEO Module</h4>
+<div class="container-fluid px-4 py-4 adm-wrapper">
+    <div class="adm-hero">
+        <div class="adm-hero-content">
+            <div class="adm-hero-badge">
+                <i class="fas fa-search"></i> Search Engine Optimization
+            </div>
+            <h1 class="adm-hero-title">WEBSEO Search Engine Suite</h1>
+            <p class="adm-hero-subtitle">Configure global search meta, OpenGraph tags, page-level keyword overrides, XML sitemaps, and robots directives.</p>
+        </div>
+        <div class="adm-hero-actions">
+            <a href="/sitemap.xml" target="_blank" class="adm-btn-white me-2">
+                <i class="fas fa-sitemap me-2"></i>Live Sitemap
+            </a>
+            <a href="/robots.txt" target="_blank" class="adm-btn-white">
+                <i class="fas fa-robot me-2"></i>Robots.txt
+            </a>
+        </div>
+    </div>
+
+    <?php if ($success): ?>
+        <div class="alert alert-success border-0 shadow-sm rounded-4 py-3 mb-4 d-flex align-items-center">
+            <i class="fas fa-check-circle fs-4 me-3 text-success"></i>
+            <div><?php echo $success; ?></div>
+        </div>
+    <?php endif; ?>
+    <?php if ($error): ?>
+        <div class="alert alert-danger border-0 shadow-sm rounded-4 py-3 mb-4 d-flex align-items-center">
+            <i class="fas fa-exclamation-triangle fs-4 me-3 text-danger"></i>
+            <div><?php echo $error; ?></div>
+        </div>
+    <?php endif; ?>
+
+    <!-- Tabs Navs -->
+    <ul class="nav adm-filter-tabs mb-4" id="seoTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="adm-filter-tab active" id="global-tab" data-mdb-toggle="pill" data-mdb-target="#global-panel" type="button" role="tab">
+                <i class="fas fa-globe me-2"></i>Global Settings
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="adm-filter-tab" id="page-tab" data-mdb-toggle="pill" data-mdb-target="#page-panel" type="button" role="tab">
+                <i class="fas fa-file-alt me-2"></i>Page Specific SEO
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="adm-filter-tab" id="audit-tab" data-mdb-toggle="pill" data-mdb-target="#audit-panel" type="button" role="tab">
+                <i class="fas fa-chart-line me-2"></i>SEO Audit
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="adm-filter-tab" id="tools-tab" data-mdb-toggle="pill" data-mdb-target="#tools-panel" type="button" role="tab">
+                <i class="fas fa-tools me-2"></i>Tools & Sitemap
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tabs Content -->
+    <div class="tab-content" id="seoTabsContent">
+        <!-- Global Settings Panel -->
+        <div class="tab-pane fade show active" id="global-panel" role="tabpanel">
+            <div class="adm-card">
+                <div class="p-4 border-bottom bg-light">
+                    <h5 class="fw-bold mb-0 text-dark"><i class="fas fa-globe me-2 text-primary"></i>Global Store Meta & Social Sharing</h5>
+                    <p class="text-muted small mb-0">Default metadata and verification tags applied across the entire storefront.</p>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" enctype="multipart/form-data">
+                        <?php echo csrf_input(); ?>
+                        <input type="hidden" name="action" value="save_global">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold small text-uppercase">Site Name</label>
+                                <input type="text" name="site_name" class="form-control" value="<?php echo htmlspecialchars($globalSettings['site_name'] ?? ''); ?>">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold small text-uppercase">Site Name Separator</label>
+                                <select name="site_separator" class="form-select">
+                                    <option value="|" <?php echo ($globalSettings['site_separator'] ?? '') == '|' ? 'selected' : ''; ?>>| (Pipe)</option>
+                                    <option value="-" <?php echo ($globalSettings['site_separator'] ?? '') == '-' ? 'selected' : ''; ?>>- (Dash)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-uppercase">Default Meta Title</label>
+                            <input type="text" name="default_meta_title" class="form-control" value="<?php echo htmlspecialchars($globalSettings['default_meta_title'] ?? ''); ?>">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-uppercase">Default Meta Description</label>
+                            <textarea name="default_meta_description" class="form-control" rows="3"><?php echo htmlspecialchars($globalSettings['default_meta_description'] ?? ''); ?></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-uppercase">Default Meta Keywords</label>
+                            <input type="text" name="default_meta_keywords" class="form-control" value="<?php echo htmlspecialchars($globalSettings['default_meta_keywords'] ?? ''); ?>">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold small text-uppercase">Favicon (Square .png/.ico)</label>
+                                <input type="file" name="favicon" id="favicon" class="form-control" accept="image/*">
+                                <input type="hidden" name="favicon_path" id="favicon_path" value="<?php echo htmlspecialchars($globalSettings['site_favicon'] ?? ''); ?>">
+                                <div class="mt-2" id="favicon_preview_box">
+                                    <?php if (!empty($globalSettings['site_favicon'])): 
+                                         $fav_preview = resolve_image_url($globalSettings['site_favicon']);
+                                     ?>
+                                         <img src="<?php echo htmlspecialchars($fav_preview); ?>" style="height: 32px;" onerror="this.src='../assets/images/favicon.png';">
+                                     <?php endif; ?>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold small text-uppercase">Open Graph Default Image</label>
+                                <input type="file" name="og_image" id="og_image" class="form-control" accept="image/*">
+                                <input type="hidden" name="og_image_path" id="og_image_path" value="<?php echo htmlspecialchars($globalSettings['og_default_image'] ?? ''); ?>">
+                                <div class="mt-2" id="og_image_preview_box">
+                                    <?php if (!empty($globalSettings['og_default_image'])): 
+                                         $og_preview = resolve_image_url($globalSettings['og_default_image']);
+                                     ?>
+                                         <img src="<?php echo htmlspecialchars($og_preview); ?>" style="max-height: 50px;" onerror="this.style.display='none';">
+                                     <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold small text-uppercase">Google Analytics ID</label>
+                                <input type="text" name="google_analytics_id" class="form-control" value="<?php echo htmlspecialchars($globalSettings['google_analytics_id'] ?? ''); ?>">
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label fw-bold small text-uppercase">Default Robots Tag</label>
+                                <select name="robots_default" class="form-select">
+                                    <option value="index, follow" <?php echo ($globalSettings['robots_default'] ?? '') == 'index, follow' ? 'selected' : ''; ?>>Index, Follow</option>
+                                    <option value="noindex, nofollow" <?php echo ($globalSettings['robots_default'] ?? '') == 'noindex, nofollow' ? 'selected' : ''; ?>>Noindex, Nofollow</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary px-5 rounded-pill shadow-sm fw-bold">
+                            <i class="fas fa-save me-2"></i>Save Global SEO
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Page Specific SEO Panel -->
+        <div class="tab-pane fade" id="page-panel" role="tabpanel">
+            <div class="adm-card">
+                <div class="p-4 border-bottom bg-light">
+                    <h5 class="fw-bold mb-0 text-dark"><i class="fas fa-file-alt me-2 text-primary"></i>Manage SEO Overrides</h5>
+                    <p class="text-muted small mb-0">Fine-tune custom meta titles and descriptions for specific pages and categories.</p>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST">
+                        <?php echo csrf_input(); ?>
+                        <input type="hidden" name="action" value="save_entity_seo">
+                        <div class="row align-items-end mb-4 bg-light p-3 rounded-4 border">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold small text-uppercase">Select Page Type</label>
+                                <select name="entity_type" id="entityType" class="form-select" onchange="toggleEntityId()">
+                                    <option value="home">Homepage</option>
+                                    <option value="shop">Shop Page</option>
+                                    <option value="page">Static Page</option>
+                                    <option value="category">Category Page</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4" id="entityIdWrapper" style="display: none;">
+                                <label class="form-label fw-bold small text-uppercase">Select Item</label>
+                                <select name="entity_id" id="entityId" class="form-select">
+                                    <!-- Dynamic via JS -->
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <button type="button" class="btn btn-info w-100 rounded-pill fw-bold text-white shadow-sm" id="loadMetaBtn" onclick="loadMetadata()">
+                                    <i class="fas fa-sync me-2"></i>Load Existing Data
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="metadataFields">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold small text-uppercase">Custom Meta Title</label>
+                                <input type="text" name="meta_title" id="meta_title" class="form-control">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold small text-uppercase">Custom Meta Description</label>
+                                <textarea name="meta_description" id="meta_description" class="form-control" rows="3"></textarea>
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label fw-bold small text-uppercase">Canonical URL</label>
+                                <input type="text" name="canonical_url" id="canonical_url" class="form-control" placeholder="https://example.com/custom-url">
+                            </div>
+                            <button type="submit" class="btn btn-primary px-5 rounded-pill shadow-sm fw-bold">
+                                <i class="fas fa-check me-2"></i>Update SEO for Selected Page
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- SEO Audit Panel -->
+        <div class="tab-pane fade" id="audit-panel" role="tabpanel">
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="adm-stat-card">
+                        <div>
+                            <div class="adm-stat-label">Total Pages Indexed</div>
+                            <div class="adm-stat-value text-primary"><?php echo $audit['total_indexed']; ?></div>
+                            <div class="adm-stat-trend text-muted"><i class="fas fa-check-double me-1"></i>Active store URLs</div>
+                        </div>
+                        <div class="adm-icon-box bg-blue">
+                            <i class="fas fa-sitemap"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="adm-stat-card">
+                        <div>
+                            <div class="adm-stat-label">Missing Meta Titles</div>
+                            <div class="adm-stat-value text-warning"><?php echo count($audit['missing_title']); ?></div>
+                            <div class="adm-stat-trend text-warning"><i class="fas fa-exclamation-triangle me-1"></i>Needs optimization</div>
+                        </div>
+                        <div class="adm-icon-box bg-yellow">
+                            <i class="fas fa-heading"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="adm-stat-card">
+                        <div>
+                            <div class="adm-stat-label">Missing Descriptions</div>
+                            <div class="adm-stat-value text-danger"><?php echo count($audit['missing_description']); ?></div>
+                            <div class="adm-stat-trend text-danger"><i class="fas fa-times-circle me-1"></i>Snippet missing</div>
+                        </div>
+                        <div class="adm-icon-box bg-pink">
+                            <i class="fas fa-align-left"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
             
-            <?php if ($success): ?>
-                <div class="alert alert-success border-0 shadow-sm rounded-4 py-2 mb-4"><?php echo $success; ?></div>
-            <?php endif; ?>
-            <?php if ($error): ?>
-                <div class="alert alert-danger border-0 shadow-sm rounded-4 py-2 mb-4"><?php echo $error; ?></div>
-            <?php endif; ?>
-
-            <!-- Tabs Navs -->
-            <ul class="nav nav-pills mb-4" id="seoTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active rounded-pill px-4 me-2" id="global-tab" data-mdb-toggle="pill" data-mdb-target="#global-panel" type="button" role="tab">Global Settings</button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link rounded-pill px-4 me-2" id="page-tab" data-mdb-toggle="pill" data-mdb-target="#page-panel" type="button" role="tab">Page Specific SEO</button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link rounded-pill px-4 me-2" id="audit-tab" data-mdb-toggle="pill" data-mdb-target="#audit-panel" type="button" role="tab">SEO Audit</button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link rounded-pill px-4 me-2" id="tools-tab" data-mdb-toggle="pill" data-mdb-target="#tools-panel" type="button" role="tab">Tools & Sitemap</button>
-                </li>
-            </ul>
-
-            <!-- Tabs Content -->
-            <div class="tab-content" id="seoTabsContent">
-                <!-- Global Settings Panel -->
-                <div class="tab-pane fade show active" id="global-panel" role="tabpanel">
-                    <div class="card border-0 shadow-sm rounded-4">
-                        <div class="card-body p-4">
-                            <form method="POST" enctype="multipart/form-data">
-    <?php echo csrf_input(); ?>
-                                <input type="hidden" name="action" value="save_global">
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label fw-bold">Site Name</label>
-                                        <input type="text" name="site_name" class="form-control" value="<?php echo htmlspecialchars($globalSettings['site_name'] ?? ''); ?>">
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label fw-bold">Site Name Separator</label>
-                                        <select name="site_separator" class="form-select">
-                                            <option value="|" <?php echo ($globalSettings['site_separator'] ?? '') == '|' ? 'selected' : ''; ?>>| (Pipe)</option>
-                                            <option value="-" <?php echo ($globalSettings['site_separator'] ?? '') == '-' ? 'selected' : ''; ?>>- (Dash)</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold">Default Meta Title</label>
-                                    <input type="text" name="default_meta_title" class="form-control" value="<?php echo htmlspecialchars($globalSettings['default_meta_title'] ?? ''); ?>">
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold">Default Meta Description</label>
-                                    <textarea name="default_meta_description" class="form-control" rows="3"><?php echo htmlspecialchars($globalSettings['default_meta_description'] ?? ''); ?></textarea>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold">Default Meta Keywords</label>
-                                    <input type="text" name="default_meta_keywords" class="form-control" value="<?php echo htmlspecialchars($globalSettings['default_meta_keywords'] ?? ''); ?>">
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label fw-bold">Favicon (Square .png/.ico)</label>
-                                        <input type="file" name="favicon" id="favicon" class="form-control" accept="image/*">
-                                        <input type="hidden" name="favicon_path" id="favicon_path" value="<?php echo htmlspecialchars($globalSettings['site_favicon'] ?? ''); ?>">
-                                        <div class="mt-2" id="favicon_preview_box">
-                                            <?php if (!empty($globalSettings['site_favicon'])): 
-                                                 $fav_preview = resolve_image_url($globalSettings['site_favicon']);
-                                             ?>
-                                                 <img src="<?php echo htmlspecialchars($fav_preview); ?>" style="height: 32px;" onerror="this.src='../assets/images/favicon.png';">
-                                             <?php endif; ?>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label fw-bold">Open Graph Default Image</label>
-                                        <input type="file" name="og_image" id="og_image" class="form-control" accept="image/*">
-                                        <input type="hidden" name="og_image_path" id="og_image_path" value="<?php echo htmlspecialchars($globalSettings['og_default_image'] ?? ''); ?>">
-                                        <div class="mt-2" id="og_image_preview_box">
-                                            <?php if (!empty($globalSettings['og_default_image'])): 
-                                                 $og_preview = resolve_image_url($globalSettings['og_default_image']);
-                                             ?>
-                                                 <img src="<?php echo htmlspecialchars($og_preview); ?>" style="max-height: 50px;" onerror="this.style.display='none';">
-                                             <?php endif; ?>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label fw-bold">Google Analytics ID</label>
-                                        <input type="text" name="google_analytics_id" class="form-control" value="<?php echo htmlspecialchars($globalSettings['google_analytics_id'] ?? ''); ?>">
-                                    </div>
-                                    <div class="col-md-6 mb-4">
-                                        <label class="form-label fw-bold">Default Robots Tag</label>
-                                        <select name="robots_default" class="form-select">
-                                            <option value="index, follow" <?php echo ($globalSettings['robots_default'] ?? '') == 'index, follow' ? 'selected' : ''; ?>>Index, Follow</option>
-                                            <option value="noindex, nofollow" <?php echo ($globalSettings['robots_default'] ?? '') == 'noindex, nofollow' ? 'selected' : ''; ?>>Noindex, Nofollow</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <button type="submit" class="btn btn-primary btn-custom px-5 rounded-pill shadow-sm">Save Global SEO</button>
-                            </form>
-                        </div>
-                    </div>
+            <div class="adm-table-container">
+                <div class="p-4 border-bottom bg-light">
+                    <h5 class="fw-bold mb-0 text-dark"><i class="fas fa-notes-medical me-2 text-primary"></i>SEO Health Recommendations</h5>
                 </div>
+                <div class="table-responsive">
+                    <table class="adm-table">
+                        <thead>
+                            <tr>
+                                <th>Issue Type</th>
+                                <th>Affected URL / Page</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($audit['missing_title']) && empty($audit['missing_description'])): ?>
+                                <tr>
+                                    <td colspan="2" class="text-success text-center py-4">
+                                        <i class="fas fa-check-circle fs-3 mb-2 d-block text-success"></i>
+                                        <strong>Awesome! Your site SEO looks healthy and complete.</strong>
+                                    </td>
+                                </tr>
+                            <?php endif; ?>
+                            <?php foreach($audit['missing_title'] as $item): ?>
+                                <tr>
+                                    <td><span class="badge bg-warning text-dark"><i class="fas fa-exclamation-circle me-1"></i>Missing Title Tag</span></td>
+                                    <td class="font-monospace small"><?php echo htmlspecialchars($item); ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                            <?php foreach($audit['missing_description'] as $item): ?>
+                                <tr>
+                                    <td><span class="badge bg-danger"><i class="fas fa-times-circle me-1"></i>Missing Meta Description</span></td>
+                                    <td class="font-monospace small"><?php echo htmlspecialchars($item); ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
 
-                <!-- Page Specific SEO Panel -->
-                <div class="tab-pane fade" id="page-panel" role="tabpanel">
-                    <div class="card border-0 shadow-sm rounded-4">
-                        <div class="card-body p-4">
-                            <h6 class="fw-bold mb-4">Manage SEO Overrides</h6>
+        <!-- Tools Panel -->
+        <div class="tab-pane fade" id="tools-panel" role="tabpanel">
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="adm-card h-100">
+                        <div class="p-4 border-bottom bg-light">
+                            <h5 class="fw-bold mb-0 text-dark"><i class="fas fa-sitemap me-2 text-primary"></i>XML Sitemap Engine</h5>
+                            <p class="text-muted small mb-0">Generate a fresh sitemap including all products, categories, and custom pages.</p>
+                        </div>
+                        <div class="card-body p-4 d-flex flex-column justify-content-between">
                             <form method="POST">
-    <?php echo csrf_input(); ?>
-                                <input type="hidden" name="action" value="save_entity_seo">
-                                <div class="row align-items-end mb-4 bg-light p-3 rounded-4">
-                                    <div class="col-md-4">
-                                        <label class="form-label fw-bold">Select Page Type</label>
-                                        <select name="entity_type" id="entityType" class="form-select" onchange="toggleEntityId()">
-                                            <option value="home">Homepage</option>
-                                            <option value="shop">Shop Page</option>
-                                            <option value="page">Static Page</option>
-                                            <option value="category">Category Page</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-4" id="entityIdWrapper" style="display: none;">
-                                        <label class="form-label fw-bold">Select Item</label>
-                                        <select name="entity_id" id="entityId" class="form-select">
-                                            <!-- Dynamic via JS -->
-                                        </select>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <button type="button" class="btn btn-info btn-custom w-100" id="loadMetaBtn" onclick="loadMetadata()">Load Existing Data</button>
-                                    </div>
-                                </div>
-                                
-                                <div id="metadataFields">
-                                    <div class="mb-3">
-                                        <label class="form-label fw-bold">Custom Meta Title</label>
-                                        <input type="text" name="meta_title" id="meta_title" class="form-control">
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label fw-bold">Custom Meta Description</label>
-                                        <textarea name="meta_description" id="meta_description" class="form-control" rows="3"></textarea>
-                                    </div>
-                                    <div class="mb-4">
-                                        <label class="form-label fw-bold">Canonical URL</label>
-                                        <input type="text" name="canonical_url" id="canonical_url" class="form-control" placeholder="https://example.com/custom-url">
-                                    </div>
-                                    <button type="submit" class="btn btn-primary btn-custom px-5 rounded-pill shadow-sm">Update SEO for Selected Page</button>
-                                </div>
+                                <?php echo csrf_input(); ?>
+                                <input type="hidden" name="action" value="generate_sitemap">
+                                <button type="submit" class="btn btn-primary rounded-pill w-100 py-3 fw-bold shadow-sm">
+                                    <i class="fas fa-sync-alt me-2"></i>Generate sitemap.xml Now
+                                </button>
                             </form>
+                            <div class="mt-4 pt-3 border-top text-center">
+                                <a href="/sitemap.xml" target="_blank" class="btn btn-light rounded-pill px-4 fw-bold">
+                                    View Current Sitemap <i class="fas fa-external-link-alt ms-1 text-primary"></i>
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
-
-                <!-- SEO Audit Panel -->
-                <div class="tab-pane fade" id="audit-panel" role="tabpanel">
-                    <div class="row">
-                        <div class="col-md-4 mb-4">
-                            <div class="card border-0 shadow-sm rounded-4 border-start border-primary border-5">
-                                <div class="card-body p-4 text-center">
-                                    <h3 class="fw-bold text-primary mb-1"><?php echo $audit['total_indexed']; ?></h3>
-                                    <p class="text-muted small mb-0">Total Pages Indexed</p>
-                                </div>
-                            </div>
+                <div class="col-md-6">
+                    <div class="adm-card h-100">
+                        <div class="p-4 border-bottom bg-light">
+                            <h5 class="fw-bold mb-0 text-dark"><i class="fas fa-robot me-2 text-primary"></i>Robots.txt Directives</h5>
+                            <p class="text-muted small mb-0">Instruct search crawlers on allowed and disallowed paths.</p>
                         </div>
-                        <div class="col-md-4 mb-4">
-                            <div class="card border-0 shadow-sm rounded-4 border-start border-warning border-5">
-                                <div class="card-body p-4 text-center">
-                                    <h3 class="fw-bold text-warning mb-1"><?php echo count($audit['missing_title']); ?></h3>
-                                    <p class="text-muted small mb-0">Missing Meta Titles</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4 mb-4">
-                            <div class="card border-0 shadow-sm rounded-4 border-start border-danger border-5">
-                                <div class="card-body p-4 text-center">
-                                    <h3 class="fw-bold text-danger mb-1"><?php echo count($audit['missing_description']); ?></h3>
-                                    <p class="text-muted small mb-0">Missing Descriptions</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="card border-0 shadow-sm rounded-4">
                         <div class="card-body p-4">
-                            <h6 class="fw-bold mb-3">SEO Health Recommendations</h6>
-                            <div class="table-responsive">
-                                <table class="table table-sm">
-                                    <thead>
-                                        <tr>
-                                            <th>Issue</th>
-                                            <th>Affecting</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php if (empty($audit['missing_title']) && empty($audit['missing_description'])): ?>
-                                            <tr><td colspan="2" class="text-success text-center">Your site SEO looks healthy!</td></tr>
-                                        <?php endif; ?>
-                                        <?php foreach($audit['missing_title'] as $item): ?>
-                                            <tr>
-                                                <td class="text-warning">Missing Title Tag</td>
-                                                <td><?php echo htmlspecialchars($item); ?></td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                        <?php foreach($audit['missing_description'] as $item): ?>
-                                            <tr>
-                                                <td class="text-danger">Missing Meta Description</td>
-                                                <td><?php echo htmlspecialchars($item); ?></td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tools Panel -->
-                <div class="tab-pane fade" id="tools-panel" role="tabpanel">
-                    <div class="row">
-                        <div class="col-md-6 mb-4">
-                            <div class="card border-0 shadow-sm rounded-4 h-100">
-                                <div class="card-body p-4">
-                                    <h6 class="fw-bold mb-3"><i class="fas fa-sitemap me-2 text-primary"></i>XML Sitemap</h6>
-                                    <p class="text-muted small">Generate a fresh sitemap including all your products, categories, and custom pages.</p>
-                                    <form method="POST">
-    <?php echo csrf_input(); ?>
-                                        <input type="hidden" name="action" value="generate_sitemap">
-                                        <button type="submit" class="btn btn-outline-primary btn-custom w-100 mt-2">Generate sitemap.xml</button>
-                                    </form>
-                                    <div class="mt-3 text-center">
-                                        <a href="/sitemap.xml" target="_blank" class="text-decoration-none small fw-bold">View Current Sitemap <i class="fas fa-external-link-alt ms-1"></i></a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-4">
-                            <div class="card border-0 shadow-sm rounded-4">
-                                <div class="card-body p-4">
-                                    <h6 class="fw-bold mb-3"><i class="fas fa-robot me-2 text-primary"></i>Robots.txt Editor</h6>
-                                    <form method="POST">
-    <?php echo csrf_input(); ?>
-                                        <input type="hidden" name="action" value="save_robots">
-                                        <textarea name="robots_content" class="form-control font-monospace mb-3" rows="7"><?php echo htmlspecialchars($robotsContent); ?></textarea>
-                                        <button type="submit" class="btn btn-outline-primary btn-custom w-100">Save robots.txt</button>
-                                    </form>
-                                </div>
-                            </div>
+                            <form method="POST">
+                                <?php echo csrf_input(); ?>
+                                <input type="hidden" name="action" value="save_robots">
+                                <textarea name="robots_content" class="form-control font-monospace mb-3" rows="8"><?php echo htmlspecialchars($robotsContent); ?></textarea>
+                                <button type="submit" class="btn btn-primary rounded-pill w-100 py-2 fw-bold shadow-sm">
+                                    <i class="fas fa-save me-2"></i>Save robots.txt
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </div>

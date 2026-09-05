@@ -163,34 +163,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $slides = $conn->query("SELECT * FROM hero_slides ORDER BY display_order ASC");
 ?>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="h3 mb-0 text-gray-800"><i class="fas fa-images me-2"></i>Manage Slides</h2>
-    <div>
-        <a href="hero-slider-settings.php" class="btn btn-secondary btn-custom me-2"><i class="fas fa-cog me-2"></i>Global Settings</a>
-        <button class="btn btn-primary btn-custom px-4" data-mdb-toggle="modal" data-mdb-target="#slideModal" onclick="resetSlideForm()"><i class="fas fa-plus me-2"></i>Add Slide</button>
+<div class="container-fluid px-4 py-4 adm-wrapper">
+    <div class="adm-hero">
+        <div class="adm-hero-content">
+            <div class="adm-hero-badge">
+                <i class="fas fa-images"></i> Interactive Presentation
+            </div>
+            <h1 class="adm-hero-title">Hero Slides & Visual Presentations</h1>
+            <p class="adm-hero-subtitle">Design, reorder, and configure high-converting promotional banners and video slides.</p>
+        </div>
+        <div class="adm-hero-actions">
+            <a href="hero-slider-settings.php" class="adm-btn-white"><i class="fas fa-sliders-h me-2"></i>Global Settings</a>
+            <button class="adm-btn-primary" data-mdb-toggle="modal" data-mdb-target="#slideModal" onclick="resetSlideForm()"><i class="fas fa-plus me-2"></i>Add Slide</button>
+        </div>
     </div>
-</div>
 
-<?php if(isset($success)): ?>
-    <div class="alert alert-success alert-dismissible fade show">
-        <i class="fas fa-check-circle me-2"></i> <?php echo $success; ?>
-        <button type="button" class="btn-close" data-mdb-dismiss="alert"></button>
-    </div>
-<?php endif; ?>
-<?php if(isset($error)): ?>
-    <div class="alert alert-danger alert-dismissible fade show">
-        <i class="fas fa-exclamation-circle me-2"></i> <?php echo $error; ?>
-        <button type="button" class="btn-close" data-mdb-dismiss="alert"></button>
-    </div>
-<?php endif; ?>
+    <?php if(isset($success)): ?>
+        <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-3">
+            <i class="fas fa-check-circle me-2"></i> <?php echo $success; ?>
+            <button type="button" class="btn-close" data-mdb-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
+    <?php if(isset($error)): ?>
+        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-3">
+            <i class="fas fa-exclamation-circle me-2"></i> <?php echo $error; ?>
+            <button type="button" class="btn-close" data-mdb-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
 
-<div class="alert alert-info py-2"><i class="fas fa-info-circle me-2"></i>Drag and drop the rows to reorder how slides appear on the frontend.</div>
+    <div class="alert alert-info py-2 border-0 shadow-sm rounded-3 mb-4"><i class="fas fa-info-circle me-2"></i>Drag and drop the rows to reorder how slides appear on the frontend.</div>
 
-<div class="card border-0 shadow-sm rounded-4">
-    <div class="card-body p-0">
+    <div class="adm-table-container mb-4">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0" id="slidesTable">
-                <thead class="bg-light">
+            <table class="adm-table table table-hover align-middle mb-0" id="slidesTable">
+                <thead>
                     <tr>
                         <th class="px-4 py-3" style="width: 50px;"></th>
                         <th class="py-3">Background</th>
@@ -252,7 +258,6 @@ $slides = $conn->query("SELECT * FROM hero_slides ORDER BY display_order ASC");
             </table>
         </div>
     </div>
-</div>
 
 <!-- Slide Modal (Add/Edit) -->
 <div class="modal fade" id="slideModal" tabindex="-1">
@@ -522,5 +527,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
+</div>
 <?php include 'admin_footer.php'; ?>
 

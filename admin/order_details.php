@@ -58,24 +58,49 @@ $stages = ['Pending', 'Processing', 'Shipped', 'Out for Delivery', 'Delivered'];
 $stageIndex = $info['progress_stage_index'];
 ?>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="fw-bold mb-0">Order Details - #<?php echo $order_id; ?></h4>
-    <div class="d-flex gap-2 flex-wrap">
-        <a href="invoice_view.php?order_id=<?php echo $order_id; ?>" target="_blank" class="btn btn-primary btn-custom px-3" title="View Invoice"><i class="fas fa-file-invoice me-2"></i>Invoice</a>
-        <a href="manage_order_tracking.php?id=<?php echo $order_id; ?>" class="btn btn-info btn-custom text-white px-3"><i class="fas fa-truck-fast me-2"></i>Manage Tracking</a>
-        <a href="manage_orders.php" class="btn btn-light btn-custom border"><i class="fas fa-arrow-left me-2"></i>Back to Orders</a>
+<div class="container-fluid px-4 py-4 adm-wrapper">
+    <!-- Hero / Header Banner -->
+    <div class="adm-hero">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="adm-hero-badge">
+                        <i class="fas fa-receipt"></i> Order Management Hub
+                    </span>
+                    <span class="adm-hero-badge badge-success">
+                        <i class="fas fa-check-circle"></i> #<?php echo $order_id; ?>
+                    </span>
+                    <span class="badge rounded-pill bg-white text-dark px-3 py-1 fw-bold"><?php echo ucfirst(str_replace('_', ' ', $order['status'])); ?></span>
+                </div>
+                <h2 class="adm-hero-title">Order Details — #<?php echo $order_id; ?> 📦</h2>
+                <p class="adm-hero-subtitle">Placed by <strong><?php echo htmlspecialchars($order['user_name'] ?? 'Guest'); ?></strong> (<?php echo htmlspecialchars($order['user_email'] ?? ''); ?>) on <?php echo date('M d, Y \a\t h:i A', strtotime($order['created_at'])); ?></p>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <a href="invoice_view.php?order_id=<?php echo $order_id; ?>" target="_blank" class="btn adm-btn-white" title="View & Print Official Invoice">
+                    <i class="fas fa-file-invoice text-success"></i>
+                    <span>Invoice</span>
+                </a>
+                <a href="manage_order_tracking.php?id=<?php echo $order_id; ?>" class="btn adm-btn-white">
+                    <i class="fas fa-truck-fast text-info"></i>
+                    <span>Live Tracking</span>
+                </a>
+                <a href="manage_orders.php" class="btn btn-primary px-3 py-2 rounded-3 shadow-sm d-flex align-items-center gap-2 fw-semibold text-white">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>All Orders</span>
+                </a>
+            </div>
+        </div>
     </div>
-</div>
 
 <div class="row">
     <div class="col-lg-8">
-        <div class="card border-0 shadow-sm rounded-4 mb-4">
-            <div class="card-header bg-white border-bottom-0 pt-4 px-4">
-                <h5 class="fw-bold mb-0">Order Items</h5>
+        <div class="adm-table-container mb-4">
+            <div class="adm-card-header bg-white border-bottom pt-4 px-4 pb-3 d-flex justify-content-between align-items-center">
+                <h5 class="adm-card-title mb-0"><i class="fas fa-boxes text-primary me-2"></i>Ordered Products</h5>
+                <span class="badge bg-light text-dark border"><?php echo $items_q ? $items_q->num_rows : 0; ?> Items</span>
             </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
+            <div class="table-responsive">
+                <table class="adm-table table table-hover align-middle mb-0">
                         <thead class="bg-light">
                             <tr>
                                 <th class="ps-4">Product</th>
@@ -137,7 +162,6 @@ $stageIndex = $info['progress_stage_index'];
                         </tbody>
                     </table>
                 </div>
-            </div>
             <div class="card-footer bg-light border-0 p-4">
                 <div class="row justify-content-end">
                     <div class="col-md-5 col-lg-4">
@@ -377,6 +401,7 @@ $stageIndex = $info['progress_stage_index'];
         </div>
     </div>
 </div>
+</div> <!-- /.adm-wrapper -->
 
 <script>
 function generateInvoice(orderId, btn) {

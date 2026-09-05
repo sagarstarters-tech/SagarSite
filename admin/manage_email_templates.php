@@ -309,12 +309,21 @@ if (isset($_GET['edit'])) {
 }
 ?>
 
-<div class="row mb-4 align-items-center">
-    <div class="col-md-6">
-        <h2 class="mb-0 text-dark fw-bold"><i class="fas fa-envelope-open-text me-2 text-primary"></i> Email Templates</h2>
-        <p class="text-muted mb-0">Customize the emails sent to customers and administrators.</p>
+<div class="container-fluid px-4 py-4 adm-wrapper">
+    <div class="adm-hero">
+        <div class="adm-hero-content">
+            <div class="adm-hero-badge">
+                <i class="fas fa-envelope-open-text"></i> Automated Email System
+            </div>
+            <h1 class="adm-hero-title">Email Notifications & Templates</h1>
+            <p class="adm-hero-subtitle">Design, customize, and edit HTML notifications for customer orders, account verification, and password resets.</p>
+        </div>
+        <div class="adm-hero-actions">
+            <a href="view_email_logs.php" class="adm-btn-white">
+                <i class="fas fa-history me-2 text-primary"></i>View Delivery Logs
+            </a>
+        </div>
     </div>
-</div>
 
 <?php if ($success_msg): ?>
 <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -404,5 +413,5 @@ if (isset($_GET['edit'])) {
         <?php endif; ?>
     </div>
 </div>
-
+</div>
 <?php require_once 'admin_footer.php'; ?>

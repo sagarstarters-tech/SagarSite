@@ -131,11 +131,22 @@ $platformsConfig = [
 ?>
 <link href="<?php echo SITE_URL; ?>/admin/social-media/assets/social-media.css" rel="stylesheet">
 
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="fw-bold m-0">Connected Accounts</h2>
-            <p class="text-muted small m-0">Connect and manage official social media API accounts for automated posting.</p>
+<div class="container-fluid px-4 py-4 adm-wrapper">
+    <div class="adm-hero">
+        <div class="adm-hero-content">
+            <div class="adm-hero-badge">
+                <i class="fas fa-link"></i> Channel Integrations
+            </div>
+            <h1 class="adm-hero-title">Connected Social Accounts</h1>
+            <p class="adm-hero-subtitle">Connect, authenticate, and manage official API channels for Facebook, Instagram, X (Twitter), LinkedIn, Telegram, and Pinterest.</p>
+        </div>
+        <div class="adm-hero-actions">
+            <a href="queue.php" class="adm-btn-white me-2">
+                <i class="fas fa-list me-2"></i>View Queue
+            </a>
+            <a href="settings.php" class="adm-btn-primary">
+                <i class="fas fa-sliders-h me-2"></i>API Settings
+            </a>
         </div>
     </div>
 
@@ -907,5 +918,5 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-
+</div>
 <?php include_once __DIR__ . '/../admin_footer.php'; ?>

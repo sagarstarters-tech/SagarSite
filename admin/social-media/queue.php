@@ -180,16 +180,22 @@ $statusBadges = [
 }
 </style>
 
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="fw-bold m-0">Queue Management</h2>
-            <p class="text-muted small m-0">Monitor, schedule, and execute social media automated posts.</p>
+<div class="container-fluid px-4 py-4 adm-wrapper">
+    <div class="adm-hero">
+        <div class="adm-hero-content">
+            <div class="adm-hero-badge">
+                <i class="fas fa-layer-group"></i> Dispatch Pipeline
+            </div>
+            <h1 class="adm-hero-title">Social Media Queue Management</h1>
+            <p class="adm-hero-subtitle">Monitor scheduled social posts, retry failed dispatches, preview product copy, and execute instant publishing.</p>
         </div>
-        <div class="d-flex gap-2">
-            <a href="bulk-schedule.php" class="btn btn-primary rounded-pill shadow-sm">
-                <i class="fas fa-plus me-1"></i> Bulk Schedule
+        <div class="adm-hero-actions">
+            <a href="bulk-schedule.php" class="adm-btn-white me-2">
+                <i class="fas fa-plus me-2"></i>Bulk Schedule
             </a>
+            <button class="adm-btn-primary" id="btnManualProcessQueue" type="button">
+                <i class="fas fa-paper-plane me-2"></i>Process Due Posts Now
+            </button>
         </div>
     </div>
     
@@ -963,5 +969,5 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 1000);
 });
 </script>
-
+</div>
 <?php include_once __DIR__ . '/../admin_footer.php'; ?>

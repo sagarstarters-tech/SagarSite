@@ -43,22 +43,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $pages = $conn->query("SELECT * FROM pages ORDER BY id DESC");
 ?>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="fw-bold mb-0">Manage Pages</h4>
-    <button class="btn btn-primary btn-custom px-4" data-mdb-toggle="modal" data-mdb-target="#addPageModal">
-        <i class="fas fa-plus me-2"></i>Add Page
-    </button>
-</div>
+<div class="container-fluid px-4 py-4 adm-wrapper">
+    <div class="adm-hero">
+        <div class="adm-hero-content">
+            <div class="adm-hero-badge">
+                <i class="fas fa-file-alt"></i> Static CMS Pages
+            </div>
+            <h1 class="adm-hero-title">Content & Static Pages Manager</h1>
+            <p class="adm-hero-subtitle">Create and update policy pages, terms, return conditions, FAQs, and custom content.</p>
+        </div>
+        <div class="adm-hero-actions">
+            <button class="adm-btn-primary" data-mdb-toggle="modal" data-mdb-target="#addPageModal">
+                <i class="fas fa-plus me-2"></i>Create New Page
+            </button>
+        </div>
+    </div>
 
-<?php if(isset($success)): ?>
-    <div class="alert alert-success py-2"><?php echo $success; ?></div>
-<?php endif; ?>
+    <?php if(isset($success)): ?>
+        <div class="alert alert-success border-0 shadow-sm rounded-3 py-3 mb-4"><i class="fas fa-check-circle me-2"></i><?php echo $success; ?></div>
+    <?php endif; ?>
 
-<div class="card border-0 shadow-sm rounded-4">
-    <div class="card-body p-0">
+    <div class="adm-table-container mb-4">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="bg-light">
+            <table class="adm-table table table-hover align-middle mb-0">
+                <thead>
                     <tr>
                         <th class="ps-4">ID</th>
                         <th>Title</th>
@@ -104,7 +112,6 @@ $pages = $conn->query("SELECT * FROM pages ORDER BY id DESC");
             </table>
         </div>
     </div>
-</div>
 
 <!-- Add Page Modal -->
 <div class="modal fade" id="addPageModal" tabindex="-1">
@@ -255,5 +262,5 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-
+</div>
 <?php include 'admin_footer.php'; ?>

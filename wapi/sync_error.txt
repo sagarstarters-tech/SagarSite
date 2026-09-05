@@ -1,6 +1,0 @@
-{"user_id":9,"name":"new_order_status","category":"utility","language":"en","header_type":"none","header_content":"","body":"Hello Dear {{1}} Welcome to Sagar Starter&#039;s\n\nYour Order No. #{{2}} status has been updated.\n\nCurrent Status: *{{3}}*\nTracking ID: {{4}}\nTotal Amount: \u20b9{{5}}\n\nThank you for shopping with us.","variables":"","footer":"","buttons":"","status":"approved"}
-SQLSTATE[23000]: Integrity constraint violation: 4025 CONSTRAINT `templates.buttons` failed for `u902894566_wapi`.`templates`
-#0 /home/u902894566/domains/sagarstarters.com/public_html/wapi/classes/Database.php(50): PDOStatement->execute()
-#1 /home/u902894566/domains/sagarstarters.com/public_html/wapi/classes/Database.php(97): Database->query()
-#2 /home/u902894566/domains/sagarstarters.com/public_html/wapi/dashboard/templates.php(113): Database->update()
-#3 {main}

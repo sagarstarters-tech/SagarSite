@@ -92,27 +92,35 @@ function cv($cs, $key) {
 }
 ?>
 
-<!-- Page Header -->
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="fw-bold mb-0">Customize Contact Us Page</h4>
-    <a href="../contact.php" target="_blank" class="btn btn-outline-primary btn-custom px-4">
-        <i class="fas fa-external-link-alt me-2"></i>View Page
-    </a>
-</div>
-
-<?php if (isset($success)): ?>
-    <div class="alert alert-success py-2"><i class="fas fa-check-circle me-2"></i><?php echo $success; ?></div>
-<?php endif; ?>
-
-<form method="POST">
-    <?php echo csrf_input(); ?>
-
-    <!-- ── Hero Section ──────────────────────────────────────── -->
-    <div class="col-md-12 mb-4">
-        <div class="card shadow-sm border-0 rounded-4">
-            <div class="card-header bg-white py-3">
-                <h6 class="m-0 fw-bold text-primary"><i class="fas fa-image me-2"></i>Hero Section</h6>
+<div class="container-fluid px-4 py-4 adm-wrapper">
+    <div class="adm-hero">
+        <div class="adm-hero-content">
+            <div class="adm-hero-badge">
+                <i class="fas fa-headset"></i> Customer Communication
             </div>
+            <h1 class="adm-hero-title">Contact Us Page Customizer</h1>
+            <p class="adm-hero-subtitle">Manage support addresses, helpdesk telephone numbers, business hours, and interactive maps.</p>
+        </div>
+        <div class="adm-hero-actions">
+            <a href="../contact.php" target="_blank" class="adm-btn-white">
+                <i class="fas fa-external-link-alt me-2"></i>View Live Page
+            </a>
+        </div>
+    </div>
+
+    <?php if (isset($success)): ?>
+        <div class="alert alert-success border-0 shadow-sm rounded-3 py-3 mb-4"><i class="fas fa-check-circle me-2"></i><?php echo $success; ?></div>
+    <?php endif; ?>
+
+    <form method="POST">
+        <?php echo csrf_input(); ?>
+
+        <!-- ── Hero Section ──────────────────────────────────────── -->
+        <div class="col-md-12 mb-4">
+            <div class="adm-card">
+                <div class="p-3 border-bottom bg-light">
+                    <h6 class="m-0 fw-bold text-dark"><i class="fas fa-image me-2 text-primary"></i>Hero Section</h6>
+                </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6 mb-3">
@@ -450,5 +458,5 @@ function cv($cs, $key) {
     if (input) { input.addEventListener('input', update); update(); }
 })();
 </script>
-
+</div>
 <?php include 'admin_footer.php'; ?>

@@ -88,36 +88,45 @@ $features = $conn->query("SELECT * FROM homepage_features ORDER BY display_order
 $section_enabled = $global_settings['homepage_features_enabled'] ?? '1';
 ?>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="fw-bold mb-0">Manage Homepage Features</h4>
-    <button class="btn btn-primary btn-custom px-4" data-mdb-toggle="modal" data-mdb-target="#addFeatureModal">
-        <i class="fas fa-plus me-2"></i>Add Feature
-    </button>
-</div>
+<div class="container-fluid px-4 py-4 adm-wrapper">
+    <div class="adm-hero">
+        <div class="adm-hero-content">
+            <div class="adm-hero-badge">
+                <i class="fas fa-certificate"></i> Trust & Value Badges
+            </div>
+            <h1 class="adm-hero-title">Homepage Feature Badges</h1>
+            <p class="adm-hero-subtitle">Highlight key selling propositions like Free Shipping, Secure Payments, and 24/7 Support.</p>
+        </div>
+        <div class="adm-hero-actions">
+            <button class="adm-btn-primary" data-mdb-toggle="modal" data-mdb-target="#addFeatureModal">
+                <i class="fas fa-plus me-2"></i>Add Feature
+            </button>
+        </div>
+    </div>
 
-<?php if(isset($success)): ?>
-    <div class="alert alert-success py-2"><i class="fas fa-check-circle me-2"></i><?php echo $success; ?></div>
-<?php endif; ?>
+    <?php if(isset($success)): ?>
+        <div class="alert alert-success border-0 shadow-sm rounded-3 py-3 mb-4"><i class="fas fa-check-circle me-2"></i><?php echo $success; ?></div>
+    <?php endif; ?>
 
-<div class="card border-0 shadow-sm rounded-4 mb-4">
-    <div class="card-body p-4">
-        <form method="POST" class="d-flex justify-content-between align-items-center">
-    <?php echo csrf_input(); ?>
+    <div class="adm-card p-4 mb-4">
+        <form method="POST" class="d-flex justify-content-between align-items-center m-0">
+            <?php echo csrf_input(); ?>
             <input type="hidden" name="action" value="toggle_section">
-            <h5 class="m-0 fw-bold">Section Status <small class="text-muted fw-normal ms-2">Enable or disable the feature section on the homepage.</small></h5>
+            <div>
+                <h5 class="m-0 fw-bold text-dark">Section Visibility</h5>
+                <small class="text-muted">Enable or disable the feature value proposition strip on the homepage.</small>
+            </div>
             <div class="form-check form-switch fs-5 m-0 d-flex align-items-center">
                 <input class="form-check-input mt-0 me-3" type="checkbox" role="switch" name="homepage_features_enabled" id="enableFeatures" <?php echo ($section_enabled == '1') ? 'checked' : ''; ?> onchange="this.form.submit()">
                 <label class="form-check-label fs-6 fw-bold m-0" for="enableFeatures"><?php echo ($section_enabled == '1') ? 'Enabled' : 'Disabled'; ?></label>
             </div>
         </form>
     </div>
-</div>
 
-<div class="card border-0 shadow-sm rounded-4">
-    <div class="card-body p-0">
+    <div class="adm-table-container mb-4">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="bg-light">
+            <table class="adm-table table table-hover align-middle mb-0">
+                <thead>
                     <tr>
                         <th class="ps-4">Order</th>
                         <th>Icon</th>
@@ -178,7 +187,6 @@ $section_enabled = $global_settings['homepage_features_enabled'] ?? '1';
             </table>
         </div>
     </div>
-</div>
 
 <!-- Add Modal -->
 <div class="modal fade" id="addFeatureModal" tabindex="-1">
@@ -353,6 +361,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 </script>
-
+</div>
 <?php include 'admin_footer.php'; ?>
 

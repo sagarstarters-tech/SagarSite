@@ -240,23 +240,78 @@ try {
 }
 ?>
 
-<div class="container-fluid px-4 py-4">
-    <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <div>
-            <h2 class="fw-bold mb-1"><i class="fas fa-robot text-primary me-2"></i>AI ChatBot Manager</h2>
-            <p class="text-muted mb-0">Configure your 24/7 Virtual Sales & Customer Support AI Assistant</p>
+<div class="container-fluid px-4 py-4 adm-wrapper">
+    <!-- Hero Header -->
+    <div class="adm-hero">
+        <div class="adm-hero-content">
+            <div class="adm-hero-badge">
+                <i class="fas fa-robot"></i> Intelligent Virtual Assistant
+            </div>
+            <h1 class="adm-hero-title">AI ChatBot Assistant & Sales Rep</h1>
+            <p class="adm-hero-subtitle">24/7 automated customer inquiries, catalog search, order tracking, and multi-model AI reasoning.</p>
         </div>
-        <div class="d-flex align-items-center gap-2">
-            <span class="badge <?php echo $chatbotService->isEnabled() ? 'bg-success' : 'bg-secondary'; ?> px-3 py-2 fs-6 rounded-pill">
+        <div class="adm-hero-actions">
+            <span class="badge <?php echo $chatbotService->isEnabled() ? 'bg-success text-white' : 'bg-secondary text-white'; ?> px-3 py-2 fs-6 rounded-pill">
                 <i class="fas <?php echo $chatbotService->isEnabled() ? 'fa-check-circle' : 'fa-pause-circle'; ?> me-1"></i>
                 <?php echo $chatbotService->isEnabled() ? 'ChatBot Online' : 'ChatBot Disabled'; ?>
             </span>
         </div>
     </div>
 
+    <!-- Stat Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-xl-3 col-sm-6">
+            <div class="adm-stat-card d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="adm-stat-lbl">TOTAL INQUIRIES</div>
+                    <div class="adm-stat-val"><?php echo number_format($totalLogsCount); ?></div>
+                    <div class="adm-stat-sub"><i class="fas fa-comments text-primary me-1"></i>Recorded conversations</div>
+                </div>
+                <div class="adm-icon-box adm-icon-blue">
+                    <i class="fas fa-comment-dots"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-sm-6">
+            <div class="adm-stat-card d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="adm-stat-lbl">PRIMARY ENGINE</div>
+                    <div class="adm-stat-val text-uppercase" style="font-size: 1.35rem;"><?php echo htmlspecialchars($chatbotService->getSetting('chatbot_provider') ?: 'hybrid'); ?></div>
+                    <div class="adm-stat-sub"><i class="fas fa-microchip text-success me-1"></i>Active LLM Provider</div>
+                </div>
+                <div class="adm-icon-box adm-icon-green">
+                    <i class="fas fa-brain"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-sm-6">
+            <div class="adm-stat-card d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="adm-stat-lbl">KNOWLEDGE BASE</div>
+                    <div class="adm-stat-val"><?php $faqArr = json_decode($chatbotService->getSetting('chatbot_faqs') ?: '[]', true); echo is_array($faqArr) ? count($faqArr) : 0; ?></div>
+                    <div class="adm-stat-sub"><i class="fas fa-question-circle text-info me-1"></i>Trained Q&A Items</div>
+                </div>
+                <div class="adm-icon-box adm-icon-purple">
+                    <i class="fas fa-database"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-sm-6">
+            <div class="adm-stat-card d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="adm-stat-lbl">BOT STATUS</div>
+                    <div class="adm-stat-val" style="font-size: 1.35rem;"><?php echo $chatbotService->isEnabled() ? '<span class="text-success">Active 24/7</span>' : '<span class="text-secondary">Disabled</span>'; ?></div>
+                    <div class="adm-stat-sub"><i class="fas fa-globe text-warning me-1"></i>Storefront Widget</div>
+                </div>
+                <div class="adm-icon-box adm-icon-amber">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <?php if ($feedback): ?>
-        <div class="alert alert-<?php echo $feedbackType; ?> alert-dismissible fade show rounded-3 shadow-sm border-0" role="alert">
+        <div class="alert alert-<?php echo $feedbackType; ?> alert-dismissible fade show rounded-3 shadow-sm border-0 mb-4" role="alert">
             <i class="fas <?php echo $feedbackType === 'success' ? 'fa-check-circle' : 'fa-info-circle'; ?> me-2"></i>
             <?php echo htmlspecialchars($feedback); ?>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -540,23 +595,23 @@ try {
     </form>
 
     <!-- Section: Conversation History / Logs -->
-    <div class="card border-0 shadow-sm rounded-4 mt-4">
-        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div class="adm-table-container mt-4 mb-4">
+        <div class="p-3 bg-white border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
                 <h5 class="fw-bold mb-0 text-dark"><i class="fas fa-history text-secondary me-2"></i>Recent Customer Inquiries (<?php echo (int)$totalLogsCount; ?> Total)</h5>
             </div>
             <?php if ($totalLogsCount > 0): ?>
-            <form method="POST" onsubmit="return confirm('Are you sure you want to clear all conversation logs?');">
+            <form method="POST" onsubmit="return confirm('Are you sure you want to clear all conversation logs?');" class="m-0">
                 <?php echo csrf_input(); ?>
-                <button type="submit" name="clear_chatbot_logs" class="btn btn-outline-danger btn-sm rounded-pill">
+                <button type="submit" name="clear_chatbot_logs" class="adm-btn-white text-danger border-danger">
                     <i class="fas fa-trash-alt me-1"></i> Clear Logs
                 </button>
             </form>
             <?php endif; ?>
         </div>
-        <div class="card-body p-0 table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="bg-light text-muted small text-uppercase">
+        <div class="table-responsive">
+            <table class="adm-table table table-hover align-middle mb-0">
+                <thead>
                     <tr>
                         <th class="ps-4">Time</th>
                         <th>User Query</th>
@@ -590,6 +645,7 @@ try {
             </table>
         </div>
     </div>
+</div>
 </div>
 
 <script>

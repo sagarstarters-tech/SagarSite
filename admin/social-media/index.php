@@ -55,76 +55,75 @@ $platformIcons = [
 ?>
 <link href="<?php echo SITE_URL; ?>/admin/social-media/assets/social-media.css" rel="stylesheet">
 
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <div>
-            <h2 class="fw-bold m-0">Social Media Dashboard</h2>
-            <p class="text-muted small m-0">Real-time overview of your automated social media posting activities.</p>
+<div class="container-fluid px-4 py-4 adm-wrapper">
+    <div class="adm-hero">
+        <div class="adm-hero-content">
+            <div class="adm-hero-badge">
+                <i class="fas fa-share-nodes"></i> Omnichannel Marketing
+            </div>
+            <h1 class="adm-hero-title">Social Media Automation Hub</h1>
+            <p class="adm-hero-subtitle">Automated product campaigns, multi-platform scheduled broadcasting, and audience growth analytics.</p>
         </div>
-        <div class="d-flex gap-2">
-            <a href="queue.php" class="btn btn-outline-primary rounded-pill">
-                <i class="fas fa-list me-1"></i> View Queue
+        <div class="adm-hero-actions">
+            <a href="queue.php" class="adm-btn-white me-2">
+                <i class="fas fa-list me-2"></i>Post Queue
             </a>
-            <a href="bulk-schedule.php" class="btn btn-primary rounded-pill shadow-sm">
-                <i class="fas fa-layer-group me-1"></i> Bulk Schedule
+            <a href="bulk-schedule.php" class="adm-btn-primary">
+                <i class="fas fa-layer-group me-2"></i>Bulk Schedule
             </a>
         </div>
     </div>
     
     <!-- Top Stat Cards -->
-    <div class="row mb-4">
-        <div class="col-xl-3 col-md-6 mb-3 mb-xl-0">
-            <div class="card text-white shadow-sm h-100 border-0 rounded-4" style="background: linear-gradient(135deg, #0d6efd, #0dcaf0);">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-uppercase mb-1 fw-bold opacity-75 small">Total Scheduled</h6>
-                            <h2 class="mb-0 fw-bold display-6"><?php echo number_format($totalScheduled); ?></h2>
-                        </div>
-                        <i class="fas fa-calendar-alt fa-3x opacity-50"></i>
-                    </div>
+    <div class="row g-3 mb-4">
+        <div class="col-xl-3 col-sm-6">
+            <div class="adm-stat-card d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="adm-stat-lbl">TOTAL SCHEDULED</div>
+                    <div class="adm-stat-val"><?php echo number_format($totalScheduled); ?></div>
+                    <div class="adm-stat-sub"><i class="fas fa-calendar-alt text-primary me-1"></i>Awaiting publication</div>
+                </div>
+                <div class="adm-icon-box adm-icon-blue">
+                    <i class="fas fa-calendar-alt"></i>
                 </div>
             </div>
         </div>
         
-        <div class="col-xl-3 col-md-6 mb-3 mb-xl-0">
-            <div class="card text-white shadow-sm h-100 border-0 rounded-4" style="background: linear-gradient(135deg, #198754, #20c997);">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-uppercase mb-1 fw-bold opacity-75 small">Total Published</h6>
-                            <h2 class="mb-0 fw-bold display-6"><?php echo number_format($totalPublished); ?></h2>
-                        </div>
-                        <i class="fas fa-check-circle fa-3x opacity-50"></i>
-                    </div>
+        <div class="col-xl-3 col-sm-6">
+            <div class="adm-stat-card d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="adm-stat-lbl">PUBLISHED POSTS</div>
+                    <div class="adm-stat-val"><?php echo number_format($totalPublished); ?></div>
+                    <div class="adm-stat-sub"><i class="fas fa-check-circle text-success me-1"></i>Successfully broadcasted</div>
+                </div>
+                <div class="adm-icon-box adm-icon-green">
+                    <i class="fas fa-check-circle"></i>
                 </div>
             </div>
         </div>
         
-        <div class="col-xl-3 col-md-6 mb-3 mb-xl-0">
-            <div class="card text-white shadow-sm h-100 border-0 rounded-4" style="background: linear-gradient(135deg, #dc3545, #fd7e14);">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-uppercase mb-1 fw-bold opacity-75 small">Failed Posts</h6>
-                            <h2 class="mb-0 fw-bold display-6"><?php echo number_format($totalFailed); ?></h2>
-                        </div>
-                        <i class="fas fa-times-circle fa-3x opacity-50"></i>
-                    </div>
+        <div class="col-xl-3 col-sm-6">
+            <div class="adm-stat-card d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="adm-stat-lbl">FAILED DISPATCHES</div>
+                    <div class="adm-stat-val"><?php echo number_format($totalFailed); ?></div>
+                    <div class="adm-stat-sub"><i class="fas fa-exclamation-triangle text-danger me-1"></i>Requires attention</div>
+                </div>
+                <div class="adm-icon-box adm-icon-rose">
+                    <i class="fas fa-times-circle"></i>
                 </div>
             </div>
         </div>
         
-        <div class="col-xl-3 col-md-6 mb-3 mb-xl-0">
-            <div class="card text-white shadow-sm h-100 border-0 rounded-4" style="background: linear-gradient(135deg, #6f42c1, #d63384);">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-uppercase mb-1 fw-bold opacity-75 small">Upcoming Posts</h6>
-                            <h2 class="mb-0 fw-bold display-6"><?php echo number_format($upcomingPosts); ?></h2>
-                        </div>
-                        <i class="fas fa-clock fa-3x opacity-50"></i>
-                    </div>
+        <div class="col-xl-3 col-sm-6">
+            <div class="adm-stat-card d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="adm-stat-lbl">UPCOMING QUEUE</div>
+                    <div class="adm-stat-val"><?php echo number_format($upcomingPosts); ?></div>
+                    <div class="adm-stat-sub"><i class="fas fa-clock text-warning me-1"></i>Next 24-72 hours</div>
+                </div>
+                <div class="adm-icon-box adm-icon-purple">
+                    <i class="fas fa-clock"></i>
                 </div>
             </div>
         </div>
@@ -257,5 +256,5 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-
+</div>
 <?php include_once __DIR__ . '/../admin_footer.php'; ?>

@@ -57,12 +57,21 @@ if ($res) {
 }
 ?>
 
-<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-    <h2 class="h3 mb-0 text-gray-800">Footer &amp; Global Content</h2>
-    <a href="manage_homepage.php" class="btn btn-primary btn-sm">
-        <i class="fas fa-desktop me-1"></i>Manage Homepage Sections &amp; UI
-    </a>
-</div>
+<div class="container-fluid px-4 py-4 adm-wrapper">
+    <div class="adm-hero">
+        <div class="adm-hero-content">
+            <div class="adm-hero-badge">
+                <i class="fas fa-globe"></i> Global Storefront Elements
+            </div>
+            <h1 class="adm-hero-title">Footer & Global Content</h1>
+            <p class="adm-hero-subtitle">Configure site announcements, company footer biographies, copyright clauses, and social channels.</p>
+        </div>
+        <div class="adm-hero-actions">
+            <a href="manage_homepage.php" class="adm-btn-white">
+                <i class="fas fa-desktop me-2"></i>Homepage Sections & UI
+            </a>
+        </div>
+    </div>
 
 <?php if (isset($success_msg)): ?>
     <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -199,5 +208,5 @@ if ($res) {
         </div>
     </div>
 </form>
-
+</div>
 <?php include 'admin_footer.php'; ?>

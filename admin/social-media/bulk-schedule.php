@@ -65,15 +65,20 @@ $platformIcons = [
 ?>
 <link href="<?php echo SITE_URL; ?>/admin/social-media/assets/social-media.css" rel="stylesheet">
 
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="fw-bold m-0">Bulk Schedule Posts</h2>
-            <p class="text-muted small m-0">Automatically add existing products to the social media posting queue in bulk.</p>
+<div class="container-fluid px-4 py-4 adm-wrapper">
+    <div class="adm-hero">
+        <div class="adm-hero-content">
+            <div class="adm-hero-badge">
+                <i class="fas fa-layer-group"></i> Mass Campaign Generator
+            </div>
+            <h1 class="adm-hero-title">Bulk Schedule Social Posts</h1>
+            <p class="adm-hero-subtitle">Batch schedule your entire product catalog or specific categories across all active social channels.</p>
         </div>
-        <a href="queue.php" class="btn btn-outline-secondary rounded-pill">
-            <i class="fas fa-list me-1"></i> View Queue
-        </a>
+        <div class="adm-hero-actions">
+            <a href="queue.php" class="adm-btn-white">
+                <i class="fas fa-list me-2"></i>View Queue
+            </a>
+        </div>
     </div>
 
     <form id="bulkScheduleForm">
@@ -417,5 +422,5 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-
+</div>
 <?php include_once __DIR__ . '/../admin_footer.php'; ?>

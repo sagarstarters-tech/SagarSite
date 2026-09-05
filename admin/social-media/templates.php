@@ -21,15 +21,20 @@ $templates = $stmtTemplates->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <link href="<?php echo SITE_URL; ?>/admin/social-media/assets/social-media.css" rel="stylesheet">
 
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <div>
-            <h2 class="fw-bold m-0">Caption Templates</h2>
-            <p class="text-muted small m-0">Create and manage reusable post caption templates with dynamic variables.</p>
+<div class="container-fluid px-4 py-4 adm-wrapper">
+    <div class="adm-hero">
+        <div class="adm-hero-content">
+            <div class="adm-hero-badge">
+                <i class="fas fa-file-lines"></i> Copywriting Templates
+            </div>
+            <h1 class="adm-hero-title">Social Caption Templates</h1>
+            <p class="adm-hero-subtitle">Compose high-converting templates with dynamic tags: {product_name}, {sale_price}, and tracking URLs.</p>
         </div>
-        <button type="button" class="btn btn-primary rounded-pill px-4 shadow-sm" id="btnCreateTemplate" data-mdb-toggle="modal" data-mdb-target="#templateModal" data-bs-toggle="modal" data-bs-target="#templateModal">
-            <i class="fas fa-plus me-2"></i> Create Template
-        </button>
+        <div class="adm-hero-actions">
+            <button type="button" class="adm-btn-primary" id="btnCreateTemplate" data-mdb-toggle="modal" data-mdb-target="#templateModal" data-bs-toggle="modal" data-bs-target="#templateModal">
+                <i class="fas fa-plus me-2"></i>Create Template
+            </button>
+        </div>
     </div>
 
     <?php if (empty($templates)): ?>
@@ -389,5 +394,5 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-
+</div>
 <?php include_once __DIR__ . '/../admin_footer.php'; ?>

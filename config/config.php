@@ -81,3 +81,8 @@ if (!defined('STORE_BASE_URL')) {
 
     unset($app_config);
 }
+
+// ── Single-Domain License Protection ────────────────────────
+// Automatically bypassed on localhost / development environment
+require_once BASE_PATH . '/classes/LicenseManager.php';
+LicenseManager::enforce();

@@ -40,12 +40,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 
-<<div class="row mb-4 align-items-center">
-    <div class="col-md-8">
-        <h2 class="mb-1 text-dark fw-bold"><i class="fas fa-share-alt me-2 text-primary"></i> Product Share Settings</h2>
-        <p class="text-muted mb-0">Control social sharing icons and buttons displayed on single product detail pages.</p>
+<div class="container-fluid px-4 py-4 adm-wrapper">
+    <div class="adm-hero">
+        <div class="adm-hero-content">
+            <div class="adm-hero-badge">
+                <i class="fas fa-share-alt"></i> Viral Marketing
+            </div>
+            <h1 class="adm-hero-title">Product Share Settings</h1>
+            <p class="adm-hero-subtitle">Enable and configure 1-click viral social sharing channels on your store's product pages.</p>
+        </div>
     </div>
-</div>
 
 <?php if ($success_msg): ?>
 <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-sm border-0 d-flex align-items-center mb-4" role="alert">
@@ -234,5 +238,5 @@ function updateToggleBadge(platform, isChecked) {
     }
 }
 </script>
-
+</div>
 <?php require_once 'admin_footer.php'; ?>

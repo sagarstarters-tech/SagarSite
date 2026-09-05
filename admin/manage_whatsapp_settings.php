@@ -120,20 +120,24 @@ $logs_query = "SELECT wl.*, o.id as order_number, u.name as customer_name FROM w
 $logs = $conn->query($logs_query);
 ?>
 
-<div class="row mb-4 align-items-center">
-    <div class="col-md-6">
-        <h2 class="mb-0 text-dark fw-bold"><i class="fab fa-whatsapp me-2 text-success"></i> WhatsApp Notifications</h2>
-        <p class="text-muted mb-0">Configure automated customer order confirmation, status updates, and admin WhatsApp alerts.</p>
+<div class="container-fluid px-4 py-4 adm-wrapper">
+    <div class="adm-hero">
+        <div class="adm-hero-content">
+            <div class="adm-hero-badge">
+                <i class="fab fa-whatsapp"></i> Instant Messaging Hub
+            </div>
+            <h1 class="adm-hero-title">WhatsApp Notifications & Alerts</h1>
+            <p class="adm-hero-subtitle">Automate customer order confirmations, shipping updates, 24/7 admin purchase alerts, and storefront live chat.</p>
+        </div>
+        <div class="adm-hero-actions">
+            <button type="button" class="adm-btn-white" onclick="openMetaTemplatePicker('meta_template_name')">
+                <i class="fas fa-cloud-download-alt me-2 text-success"></i>Fetch Meta Templates
+            </button>
+            <a href="whatsapp_debug.php" target="_blank" class="adm-btn-white">
+                <i class="fas fa-bug me-2 text-muted"></i>API Diagnostics
+            </a>
+        </div>
     </div>
-    <div class="col-md-6 text-end">
-        <button type="button" class="btn btn-outline-success px-3 py-2 fw-bold rounded-pill shadow-sm" onclick="openMetaTemplatePicker('meta_template_name')">
-            <i class="fas fa-cloud-download-alt me-1"></i> Fetch Meta Templates
-        </button>
-        <a href="whatsapp_debug.php" target="_blank" class="btn btn-outline-secondary px-3 py-2 fw-bold rounded-pill shadow-sm ms-2">
-            <i class="fas fa-bug me-1"></i> API Diagnostics
-        </a>
-    </div>
-</div>
 
 <?php if ($success_msg): ?>
 <div class="alert alert-success alert-dismissible fade show shadow-sm border-0" role="alert">
@@ -786,5 +790,5 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-
+</div>
 <?php require_once 'admin_footer.php'; ?>

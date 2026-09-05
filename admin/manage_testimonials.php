@@ -120,18 +120,26 @@ $res = $conn->query("SELECT * FROM testimonials ORDER BY id DESC");
     }
 </style>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="h3 mb-0 fw-bold"><i class="fas fa-comment-dots text-primary me-2"></i>Manage Testimonials</h2>
-    <button class="btn btn-primary rounded-pill px-4 shadow-sm" onclick="openTestimonialModal()"><i class="fas fa-plus me-2"></i>Add Testimonial</button>
-</div>
+<div class="container-fluid px-4 py-4 adm-wrapper">
+    <div class="adm-hero">
+        <div class="adm-hero-content">
+            <div class="adm-hero-badge">
+                <i class="fas fa-comment-dots"></i> Social Proof & Reviews
+            </div>
+            <h1 class="adm-hero-title">Customer Testimonials</h1>
+            <p class="adm-hero-subtitle">Collect, showcase, and highlight client reviews and ratings across your store.</p>
+        </div>
+        <div class="adm-hero-actions">
+            <button class="adm-btn-primary" onclick="openTestimonialModal()"><i class="fas fa-plus me-2"></i>Add Testimonial</button>
+        </div>
+    </div>
 
-<?php render_flash(); ?>
+    <?php render_flash(); ?>
 
-<div class="card border-0 shadow-sm rounded-4">
-    <div class="card-body p-0">
+    <div class="adm-table-container mb-4">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="bg-light">
+            <table class="adm-table table table-hover align-middle mb-0">
+                <thead>
                     <tr>
                         <th class="ps-4">Client</th>
                         <th>Designation</th>
@@ -191,7 +199,6 @@ $res = $conn->query("SELECT * FROM testimonials ORDER BY id DESC");
             </table>
         </div>
     </div>
-</div>
 
 <!-- Testimonial Modal -->
 <div class="modal fade" id="testimonialModal" tabindex="-1" aria-hidden="true">
@@ -307,5 +314,5 @@ function toggleActive(id, isChecked) {
     });
 }
 </script>
-
+</div>
 <?php include 'admin_footer.php'; ?>

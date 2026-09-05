@@ -47,29 +47,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="fw-bold mb-0">Email Activity Logs</h4>
-    <?php if ($total_items > 0): ?>
-        <form method="POST" class="m-0" onsubmit="return confirm('WARNING: This will permanently delete ALL email activity logs from the database. This action cannot be undone. Are you absolutely sure?');">
-            <?php echo csrf_input(); ?>
-            <input type="hidden" name="action" value="clear_all">
-            <button type="submit" class="btn btn-outline-danger btn-sm px-3"><i class="fas fa-trash-alt me-2"></i>Clear All Data</button>
-        </form>
+<div class="container-fluid px-4 py-4 adm-wrapper">
+    <div class="adm-hero">
+        <div class="adm-hero-content">
+            <div class="adm-hero-badge">
+                <i class="fas fa-history"></i> SMTP Telemetry
+            </div>
+            <h1 class="adm-hero-title">Email Activity & Audit Logs</h1>
+            <p class="adm-hero-subtitle">Real-time audit log of outbound transactional emails, order receipts, verification links, and dispatch notifications.</p>
+        </div>
+        <div class="adm-hero-actions">
+            <a href="manage_email_templates.php" class="adm-btn-white me-2">
+                <i class="fas fa-envelope-open-text me-2 text-primary"></i>Email Templates
+            </a>
+            <?php if ($total_items > 0): ?>
+                <form method="POST" class="d-inline m-0" onsubmit="return confirm('WARNING: This will permanently delete ALL email activity logs from the database. This action cannot be undone. Are you absolutely sure?');">
+                    <?php echo csrf_input(); ?>
+                    <input type="hidden" name="action" value="clear_all">
+                    <button type="submit" class="adm-btn-white text-danger border-danger"><i class="fas fa-trash-alt me-2"></i>Clear All Data</button>
+                </form>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <?php if($success_msg): ?>
+        <div class="alert alert-success border-0 shadow-sm rounded-3 py-3 mb-4"><?php echo $success_msg; ?></div>
     <?php endif; ?>
-</div>
+    <?php if($error_msg): ?>
+        <div class="alert alert-danger border-0 shadow-sm rounded-3 py-3 mb-4"><?php echo $error_msg; ?></div>
+    <?php endif; ?>
 
-<?php if($success_msg): ?>
-    <div class="alert alert-success mt-3"><?php echo $success_msg; ?></div>
-<?php endif; ?>
-<?php if($error_msg): ?>
-    <div class="alert alert-danger mt-3"><?php echo $error_msg; ?></div>
-<?php endif; ?>
-
-<div class="card border-0 shadow-sm rounded-4">
-    <div class="card-body p-4">
+    <div class="adm-table-container mb-4">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="bg-light">
+            <table class="adm-table table table-hover align-middle mb-0">
+                <thead>
                     <tr>
                         <th class="py-3">Date/Time</th>
                         <th class="py-3">Order ID</th>
@@ -172,7 +183,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </nav>
         <?php endif; ?>
     </div>
-</div>
 
 <!-- Single Clean Dynamic Log Details Modal (Placed outside table to prevent flickering) -->
 <div class="modal fade" id="dynamicLogModal" tabindex="-1" aria-labelledby="dynamicLogModalLabel" aria-hidden="true">
@@ -329,5 +339,5 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-
+</div>
 <?php include 'admin_footer.php'; ?>

@@ -46,65 +46,76 @@ $pending_queue   = (int)($conn->query("SELECT COUNT(*) as c FROM courier_queue W
 $failed_queue    = (int)($conn->query("SELECT COUNT(*) as c FROM courier_queue WHERE status IN ('failed', 'failed_permanent')")->fetch_assoc()['c'] ?? 0);
 ?>
 
-<div class="container-fluid px-4 pt-3 pb-5">
+<div class="container-fluid px-4 py-4 adm-wrapper">
     
-    <!-- Hero / Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <div>
-            <h4 class="fw-bold text-dark mb-1"><i class="fas fa-truck-moving text-primary me-2"></i>Courier &amp; Shipping Aggregators</h4>
-            <p class="text-muted small mb-0">Configure BharatShip API integration, automated AWB generation, and pickup warehouse hubs.</p>
-        </div>
-        <div class="d-flex gap-2">
-            <a href="courier_logs.php" class="btn btn-outline-secondary btn-custom shadow-sm">
-                <i class="fas fa-history me-1"></i> API Logs &amp; Queue
-                <?php if ($failed_queue > 0): ?>
-                    <span class="badge bg-danger ms-1"><?php echo $failed_queue; ?> Failed</span>
-                <?php endif; ?>
-            </a>
-            <a href="manage_orders.php" class="btn btn-light btn-custom border shadow-sm">
-                <i class="fas fa-list me-1"></i> All Orders
-            </a>
+    <!-- Hero / Header Banner -->
+    <div class="adm-hero">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="adm-hero-badge">
+                        <i class="fas fa-truck-moving"></i> Logistics & Shipping Automation
+                    </span>
+                    <?php if ($bharatship['is_enabled']): ?>
+                        <span class="adm-hero-badge badge-success"><i class="fas fa-check-circle"></i> Live Dispatch Active</span>
+                    <?php else: ?>
+                        <span class="adm-hero-badge badge-warning"><i class="fas fa-pause-circle"></i> Integration Paused</span>
+                    <?php endif; ?>
+                </div>
+                <h2 class="adm-hero-title">Courier & Shipping Hub 🚚</h2>
+                <p class="adm-hero-subtitle">Configure BharatShip API integration, automated AWB generation, and pickup warehouse hubs.</p>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <a href="courier_logs.php" class="btn adm-btn-white">
+                    <i class="fas fa-history text-primary"></i>
+                    <span>API Logs &amp; Queue</span>
+                    <?php if ($failed_queue > 0): ?>
+                        <span class="badge bg-danger ms-1"><?php echo $failed_queue; ?> Failed</span>
+                    <?php endif; ?>
+                </a>
+                <a href="manage_orders.php" class="btn btn-primary px-3 py-2 rounded-3 shadow-sm d-flex align-items-center gap-2 fw-semibold text-white">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>Orders Hub</span>
+                </a>
+            </div>
         </div>
     </div>
 
     <!-- Quick Stats Cards -->
     <div class="row g-3 mb-4">
         <div class="col-md-4">
-            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white">
-                <div class="d-flex align-items-center">
-                    <div class="rounded-circle p-3 bg-primary bg-opacity-10 text-primary me-3">
-                        <i class="fas fa-boxes fa-2x"></i>
-                    </div>
-                    <div>
-                        <small class="text-muted fw-semibold">Total Synced Shipments</small>
-                        <h3 class="fw-bold mb-0"><?php echo number_format($total_shipments); ?></h3>
-                    </div>
+            <div class="adm-stat-card d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="adm-stat-lbl">Total Synced Shipments</div>
+                    <div class="adm-stat-val text-primary"><?php echo number_format($total_shipments); ?></div>
+                    <div class="adm-stat-sub"><i class="fas fa-check-circle text-success me-1"></i>Automated orders handled</div>
+                </div>
+                <div class="adm-icon-box adm-icon-blue">
+                    <i class="fas fa-boxes"></i>
                 </div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white">
-                <div class="d-flex align-items-center">
-                    <div class="rounded-circle p-3 bg-warning bg-opacity-10 text-warning me-3">
-                        <i class="fas fa-clock fa-2x"></i>
-                    </div>
-                    <div>
-                        <small class="text-muted fw-semibold">Pending in Sync Queue</small>
-                        <h3 class="fw-bold mb-0 text-warning"><?php echo number_format($pending_queue); ?></h3>
-                    </div>
+            <div class="adm-stat-card d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="adm-stat-lbl">Pending in Sync Queue</div>
+                    <div class="adm-stat-val text-warning"><?php echo number_format($pending_queue); ?></div>
+                    <div class="adm-stat-sub"><i class="fas fa-clock text-warning me-1"></i>Waiting for courier AWB</div>
+                </div>
+                <div class="adm-icon-box adm-icon-amber">
+                    <i class="fas fa-clock"></i>
                 </div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white">
-                <div class="d-flex align-items-center">
-                    <div class="rounded-circle p-3 bg-danger bg-opacity-10 text-danger me-3">
-                        <i class="fas fa-exclamation-triangle fa-2x"></i>
-                    </div>
-                    <div>
-                        <small class="text-muted fw-semibold">Failed Dispatches</small>
-                        <h3 class="fw-bold mb-0 text-danger"><?php echo number_format($failed_queue); ?></h3>
-                    </div>
+            <div class="adm-stat-card d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="adm-stat-lbl">Failed Dispatches</div>
+                    <div class="adm-stat-val text-danger"><?php echo number_format($failed_queue); ?></div>
+                    <div class="adm-stat-sub"><i class="fas fa-exclamation-triangle text-danger me-1"></i>Needs attention in logs</div>
+                </div>
+                <div class="adm-icon-box adm-icon-rose">
+                    <i class="fas fa-exclamation-triangle"></i>
                 </div>
             </div>
         </div>

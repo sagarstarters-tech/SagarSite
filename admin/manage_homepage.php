@@ -188,20 +188,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 $active_tab = $_GET['tab'] ?? 'trust';
 ?>
 
-<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-    <div>
-        <h4 class="fw-bold mb-0"><i class="fas fa-desktop me-2 text-primary"></i>Homepage Sections &amp; UI Manager</h4>
-        <small class="text-muted">Customize every title, badge, counter, trust badge, banner &amp; FAQ on your storefront home page.</small>
+<div class="container-fluid px-4 py-4 adm-wrapper">
+    <!-- Hero / Header Banner -->
+    <div class="adm-hero">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="adm-hero-badge">
+                        <i class="fas fa-desktop"></i> Frontend UI &amp; Sections Builder
+                    </span>
+                    <span class="adm-hero-badge badge-success">
+                        <i class="fas fa-check-circle"></i> Live Sync Enabled
+                    </span>
+                </div>
+                <h2 class="adm-hero-title">Homepage Sections &amp; UI Manager 🎨</h2>
+                <p class="adm-hero-subtitle">Customize every title, badge, counter, guarantee strip, product finder, and FAQ on your storefront home page.</p>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <a href="<?php echo STORE_BASE_URL; ?>" target="_blank" class="btn adm-btn-white">
+                    <i class="fas fa-external-link-alt text-primary"></i>
+                    <span>View Live Website</span>
+                </a>
+            </div>
+        </div>
     </div>
-    <div class="d-flex gap-2">
-        <a href="<?php echo STORE_BASE_URL; ?>" target="_blank" class="btn btn-outline-primary btn-sm">
-            <i class="fas fa-external-link-alt me-1"></i>View Live Website
-        </a>
-    </div>
-</div>
 
 <?php if (!empty($success_msg)): ?>
-    <div class="alert alert-success alert-dismissible fade show py-2 mb-3" role="alert">
+    <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-sm py-2 px-3 mb-3" role="alert">
         <i class="fas fa-check-circle me-2"></i><?php echo htmlspecialchars($success_msg); ?>
         <button type="button" class="btn-close" data-mdb-dismiss="alert"></button>
     </div>
@@ -211,31 +224,29 @@ $active_tab = $_GET['tab'] ?? 'trust';
     <?php echo csrf_input(); ?>
     <input type="hidden" name="action" value="save_homepage_settings">
 
-    <!-- Nav Tabs -->
-    <ul class="nav nav-tabs mb-4 border-bottom-0" id="homeTabs">
+    <!-- Nav Filter Tabs -->
+    <div class="adm-filter-tabs mb-4">
         <?php
         $nav_tabs = [
-            'trust'    => ['icon' => 'fa-shield-halved', 'label' => 'Trust Strip (5 Badges)'],
-            'cats'     => ['icon' => 'fa-layer-group',   'label' => 'Categories Section'],
+            'trust'    => ['icon' => 'fa-shield-halved', 'label' => 'Trust Strip'],
+            'cats'     => ['icon' => 'fa-layer-group',   'label' => 'Categories'],
             'prods'    => ['icon' => 'fa-bolt',          'label' => 'Featured Products'],
-            'selector' => ['icon' => 'fa-sliders',       'label' => 'Starter Selector Widget'],
+            'selector' => ['icon' => 'fa-sliders',       'label' => 'Starter Selector'],
             'promo'    => ['icon' => 'fa-rectangle-ad',  'label' => 'Promo Spotlights'],
             'stats'    => ['icon' => 'fa-chart-line',    'label' => 'Reliability Stats'],
-            'cta'      => ['icon' => 'fa-headset',       'label' => 'Engineering CTA Bar'],
+            'cta'      => ['icon' => 'fa-headset',       'label' => 'Engineering CTA'],
             'faq'      => ['icon' => 'fa-circle-question','label' => 'FAQ & Guide'],
         ];
 
         foreach ($nav_tabs as $slug => $tab):
             $isActive = ($active_tab === $slug);
-            $cls = $isActive ? 'active shadow-sm bg-white rounded-top-4 text-primary border-bottom border-primary border-3' : 'text-muted';
         ?>
-        <li class="nav-item">
-            <a class="nav-link fs-6 fw-bold border-0 bg-transparent <?php echo $cls; ?>" href="?tab=<?php echo $slug; ?>">
-                <i class="fas <?php echo $tab['icon']; ?> me-1"></i><?php echo $tab['label']; ?>
+            <a class="adm-filter-tab <?php echo $isActive ? 'active' : ''; ?>" href="?tab=<?php echo $slug; ?>">
+                <i class="fas <?php echo $tab['icon']; ?>"></i>
+                <span><?php echo $tab['label']; ?></span>
             </a>
-        </li>
         <?php endforeach; ?>
-    </ul>
+    </div>
 
     <div class="tab-content">
 
@@ -1007,15 +1018,16 @@ $active_tab = $_GET['tab'] ?? 'trust';
     </div>
 
     <!-- Sticky Save Button Bar -->
-    <div class="card border-0 shadow-sm rounded-4 mt-4 p-3 bg-white d-flex flex-row justify-content-between align-items-center">
+    <div class="adm-card shadow-sm border-0 rounded-4 mt-4 p-3 bg-white d-flex flex-row justify-content-between align-items-center">
         <div>
             <span class="text-muted small"><i class="fas fa-info-circle me-1 text-primary"></i>All changes save immediately and reflect live on your store.</span>
         </div>
-        <button type="submit" class="btn btn-primary btn-lg btn-custom px-5">
+        <button type="submit" class="btn btn-primary btn-lg px-5 shadow-sm rounded-3 fw-bold">
             <i class="fas fa-save me-2"></i>Save All Changes
         </button>
     </div>
 
 </form>
+</div> <!-- /.adm-wrapper -->
 
 <?php include 'admin_footer.php'; ?>

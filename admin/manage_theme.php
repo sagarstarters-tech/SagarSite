@@ -41,82 +41,82 @@ $fontList = ['Poppins', 'Montserrat', 'Roboto', 'Open Sans', 'Lato', 'Nunito', '
 $active_tab = $_GET['tab'] ?? 'colors';
 ?>
 
-<!-- ═══ Page Header ════════════════════════════════════════════ -->
-<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-    <div>
-        <h4 class="fw-bold mb-0"><i class="fas fa-palette me-2 text-primary"></i>Theme Customizer</h4>
-        <small class="text-muted">Control your website's design without editing code.</small>
-    </div>
-    <div class="d-flex flex-wrap gap-2">
-        <button type="button" class="btn btn-outline-secondary btn-sm" id="btnClearCache">
-            <i class="fas fa-broom me-1"></i>Clear Cache
-        </button>
-        <button type="button" class="btn btn-outline-info btn-sm" id="btnExport">
-            <i class="fas fa-download me-1"></i>Export Theme
-        </button>
-        <label class="btn btn-outline-warning btn-sm mb-0" style="cursor:pointer;">
-            <i class="fas fa-upload me-1"></i>Import Theme
-            <input type="file" id="importFileInput" accept=".json" style="display:none;">
-        </label>
-        <form method="POST" onsubmit="return confirm('Reset ALL theme settings to factory defaults?');" class="d-inline m-0">
-            <?php echo csrf_input(); ?>
-            <input type="hidden" name="action" value="reset_theme">
-            <button type="submit" class="btn btn-outline-danger btn-sm">
-                <i class="fas fa-undo me-1"></i>Reset Default
+<div class="container-fluid px-4 py-4 adm-wrapper">
+    <!-- Hero Header -->
+    <div class="adm-hero">
+        <div class="adm-hero-content">
+            <div class="adm-hero-badge">
+                <i class="fas fa-palette"></i> Design System & Styling
+            </div>
+            <h1 class="adm-hero-title">Storefront Theme Customizer</h1>
+            <p class="adm-hero-subtitle">Fine-tune brand palettes, Google Fonts typography, header navigation layouts, and live real-time preview.</p>
+        </div>
+        <div class="adm-hero-actions">
+            <button type="button" class="adm-btn-white" id="btnClearCache">
+                <i class="fas fa-broom me-1"></i>Clear Cache
             </button>
-        </form>
-    </div>
-</div>
-
-<?php if ($success): ?>
-<div class="alert alert-success alert-dismissible fade show py-2 mb-3" role="alert">
-    <i class="fas fa-check-circle me-2"></i><?php echo htmlspecialchars($success); ?>
-    <button type="button" class="btn-close" data-mdb-dismiss="alert"></button>
-</div>
-<?php endif; ?>
-<?php if ($error): ?>
-<div class="alert alert-danger alert-dismissible fade show py-2 mb-3" role="alert">
-    <i class="fas fa-exclamation-circle me-2"></i><?php echo htmlspecialchars($error); ?>
-    <button type="button" class="btn-close" data-mdb-dismiss="alert"></button>
-</div>
-<?php endif; ?>
-
-<!-- Toast for AJAX feedback -->
-<div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999">
-    <div id="themeToast" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive">
-        <div class="d-flex">
-            <div class="toast-body" id="themeToastMsg">Done.</div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-mdb-dismiss="toast"></button>
+            <button type="button" class="adm-btn-white" id="btnExport">
+                <i class="fas fa-download me-1"></i>Export Theme
+            </button>
+            <label class="adm-btn-white mb-0" style="cursor:pointer;">
+                <i class="fas fa-upload me-1"></i>Import Theme
+                <input type="file" id="importFileInput" accept=".json" style="display:none;">
+            </label>
+            <form method="POST" onsubmit="return confirm('Reset ALL theme settings to factory defaults?');" class="d-inline m-0">
+                <?php echo csrf_input(); ?>
+                <input type="hidden" name="action" value="reset_theme">
+                <button type="submit" class="adm-btn-white text-danger border-danger">
+                    <i class="fas fa-undo me-1"></i>Reset Default
+                </button>
+            </form>
         </div>
     </div>
-</div>
 
-<!-- ═══ Main Form ═══════════════════════════════════════════════ -->
-<form method="POST" action="manage_theme.php?tab=<?php echo htmlspecialchars($active_tab); ?>" id="themeForm">
-    <?php echo csrf_input(); ?>
-    <input type="hidden" name="action" value="save_theme">
+    <?php if ($success): ?>
+    <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-3 py-3 mb-4" role="alert">
+        <i class="fas fa-check-circle me-2"></i><?php echo htmlspecialchars($success); ?>
+        <button type="button" class="btn-close" data-mdb-dismiss="alert"></button>
+    </div>
+    <?php endif; ?>
+    <?php if ($error): ?>
+    <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-3 py-3 mb-4" role="alert">
+        <i class="fas fa-exclamation-circle me-2"></i><?php echo htmlspecialchars($error); ?>
+        <button type="button" class="btn-close" data-mdb-dismiss="alert"></button>
+    </div>
+    <?php endif; ?>
 
-    <!-- Tabs Nav -->
-    <ul class="nav nav-tabs mb-4 border-bottom-0" id="themeTabs">
-        <?php
-        $tabs = [
-            'colors'   => ['icon' => 'fa-fill-drip',  'label' => 'Color Settings'],
-            'theme'    => ['icon' => 'fa-sun',         'label' => 'Theme & Typography'],
-            'layout'   => ['icon' => 'fa-layer-group', 'label' => 'Header & Footer'],
-            'preview'  => ['icon' => 'fa-eye',         'label' => 'Live Preview'],
-        ];
-        foreach ($tabs as $slug => $info):
-            $isActive = ($active_tab === $slug);
-            $cls = $isActive ? 'active shadow-sm bg-white rounded-top-4 text-primary border-bottom border-primary border-3' : 'text-muted';
-        ?>
-        <li class="nav-item">
-            <a class="nav-link fs-6 fw-bold border-0 bg-transparent <?php echo $cls; ?>"
-               href="?tab=<?php echo $slug; ?>">
-                <i class="fas <?php echo $info['icon']; ?> me-1"></i><?php echo $info['label']; ?>
-            </a>
-        </li>
-        <?php endforeach; ?>
-    </ul>
+    <!-- Toast for AJAX feedback -->
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999">
+        <div id="themeToast" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive">
+            <div class="d-flex">
+                <div class="toast-body" id="themeToastMsg">Done.</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-mdb-dismiss="toast"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ Main Form ═══════════════════════════════════════════════ -->
+    <form method="POST" action="manage_theme.php?tab=<?php echo htmlspecialchars($active_tab); ?>" id="themeForm">
+        <?php echo csrf_input(); ?>
+        <input type="hidden" name="action" value="save_theme">
+
+        <!-- Tabs Nav -->
+        <div class="adm-filter-tabs mb-4">
+            <?php
+            $tabs = [
+                'colors'   => ['icon' => 'fa-fill-drip',  'label' => 'Color Settings'],
+                'theme'    => ['icon' => 'fa-sun',         'label' => 'Theme & Typography'],
+                'layout'   => ['icon' => 'fa-layer-group', 'label' => 'Header & Footer'],
+                'preview'  => ['icon' => 'fa-eye',         'label' => 'Live Preview'],
+            ];
+            foreach ($tabs as $slug => $info):
+                $isActive = ($active_tab === $slug);
+            ?>
+                <a class="adm-filter-tab <?php echo $isActive ? 'active' : ''; ?>" href="?tab=<?php echo $slug; ?>">
+                    <i class="fas <?php echo $info['icon']; ?> me-1"></i><?php echo $info['label']; ?>
+                </a>
+            <?php endforeach; ?>
+        </div>
 
     <div class="tab-content">
 
@@ -727,5 +727,5 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 </script>
-
+</div>
 <?php include 'admin_footer.php'; ?>

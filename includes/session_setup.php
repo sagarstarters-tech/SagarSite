@@ -97,7 +97,7 @@ if (!function_exists('resolve_profile_photo_url')) {
             $site_url   = $proto . '://' . rtrim($http_host, '/');
         } else {
             $site_url   = defined('SITE_URL')   ? rtrim(SITE_URL,   '/') : '';
-            $site_url   = preg_replace('#/(includes|admin|api|user|auth|cron|shipping_module_src|wapi)$#i', '', $site_url);
+            $site_url   = preg_replace('#/(includes|admin|api|user|auth|cron|shipping_module_src)$#i', '', $site_url);
             $assets_url = defined('ASSETS_URL') ? rtrim(ASSETS_URL, '/') : ($site_url . '/assets');
             $assets_url = preg_replace('#/includes/assets$#i', '/assets', $assets_url);
         }
