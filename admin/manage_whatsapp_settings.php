@@ -1,5 +1,6 @@
 <?php
 require_once 'admin_header.php';
+require_once __DIR__ . '/../includes/whatsapp_functions.php';
 
 // Ensure all settings columns exist (safe migration on load)
 $conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS chat_widget_enabled TINYINT(1) NOT NULL DEFAULT 1");
@@ -343,8 +344,11 @@ $logs = $conn->query($logs_query);
                             <label class="form-label fw-bold d-block">Admin WhatsApp Number</label>
                             <?php echo render_phone_input('admin_whatsapp_number', $settings['admin_whatsapp_number'] ?? '', true); ?>
                             <?php 
-                                $clean_adm_num = normalize_whatsapp_phone_number($settings['admin_whatsapp_number'] ?? '');
-                                $clean_snd_num = normalize_whatsapp_phone_number($settings['sender_number'] ?? '');
+                                $fn_norm = function_exists('normalize_whatsapp_phone_number') 
+                                    ? 'normalize_whatsapp_phone_number' 
+                                    : function($p) { $d = preg_replace('/[^0-9]/', '', (string)$p); return (strlen($d) == 10 ? '91'.$d : $d); };
+                                $clean_adm_num = $fn_norm($settings['admin_whatsapp_number'] ?? '');
+                                $clean_snd_num = $fn_norm($settings['sender_number'] ?? '');
                                 $is_same_as_sender = (!empty($clean_adm_num) && !empty($clean_snd_num) && $clean_adm_num === $clean_snd_num);
                             ?>
                             <div class="small mt-1">
