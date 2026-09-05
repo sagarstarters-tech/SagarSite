@@ -29,6 +29,27 @@ $tpl_lang  = trim($settings['meta_template_lang'] ?? 'en');
 $img_url   = trim($settings['wa_header_image_url'] ?? '');
 
 $token_masked = $token ? substr($token, 0, 12) . '...' . substr($token, -4) : '(NOT SET)';
+
+// Live Meta Phone Number Info Lookup
+$meta_phone = null;
+$meta_phone_err = '';
+if (!empty($token) && !empty($phone_id)) {
+    $ch = curl_init("https://graph.facebook.com/v21.0/{$phone_id}?fields=display_phone_number,verified_name,code_verification_status,quality_rating,whatsapp_business_account_id");
+    curl_setopt_array($ch, [
+        CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . $token, 'Accept: application/json'],
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_TIMEOUT        => 8,
+    ]);
+    $m_res  = curl_exec($ch);
+    $m_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    if ($m_code == 200) {
+        $meta_phone = json_decode($m_res, true);
+    } else {
+        $meta_phone_err = $m_res;
+    }
+}
 ?>
 
 <div class="row g-3 mb-4">
@@ -36,12 +57,18 @@ $token_masked = $token ? substr($token, 0, 12) . '...' . substr($token, -4) : '(
         <div class="p-3 bg-light rounded-3">
             <div class="small text-muted fw-bold mb-1">Phone Number ID</div>
             <div class="fw-bold"><?= $phone_id ?: '<span class="text-danger">NOT SET</span>' ?></div>
+            <?php if ($meta_phone && !empty($meta_phone['display_phone_number'])): ?>
+                <div class="small text-success fw-bold mt-1"><i class="fab fa-whatsapp me-1"></i>Meta: <?= htmlspecialchars($meta_phone['display_phone_number']) ?></div>
+            <?php endif; ?>
         </div>
     </div>
     <div class="col-md-3">
         <div class="p-3 bg-light rounded-3">
             <div class="small text-muted fw-bold mb-1">API Token</div>
             <div class="fw-bold font-monospace"><?= htmlspecialchars($token_masked) ?></div>
+            <?php if ($meta_phone && !empty($meta_phone['verified_name'])): ?>
+                <div class="small text-muted mt-1"><?= htmlspecialchars($meta_phone['verified_name']) ?></div>
+            <?php endif; ?>
         </div>
     </div>
     <div class="col-md-3">
@@ -52,8 +79,14 @@ $token_masked = $token ? substr($token, 0, 12) . '...' . substr($token, -4) : '(
     </div>
     <div class="col-md-3">
         <div class="p-3 bg-light rounded-3">
-            <div class="small text-muted fw-bold mb-1">Template Lang</div>
-            <div class="fw-bold"><?= htmlspecialchars($tpl_lang) ?></div>
+            <div class="small text-muted fw-bold mb-1">Quality Rating</div>
+            <div class="fw-bold">
+                <?php if ($meta_phone && !empty($meta_phone['quality_rating'])): ?>
+                    <span class="badge bg-success"><?= htmlspecialchars($meta_phone['quality_rating']) ?></span>
+                <?php else: ?>
+                    <span class="badge bg-secondary">Unknown</span>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 </div>
@@ -92,9 +125,48 @@ if ($run_test):
         '{OrderAmount}'  => number_format($order['total_amount'], 2),
     ];
     
-    $url = "https://graph.facebook.com/v19.0/{$phone_id}/messages";
-    
-    if (!empty($tpl_name)) {
+    $url = "https://graph.facebook.com/v21.0/{$phone_id}/messages";
+    $selected_tpl = trim($_POST['test_template'] ?? ($tpl_name ?: 'hello_world'));
+
+    if ($selected_tpl === 'hello_world') {
+        $payload = [
+            "messaging_product" => "whatsapp",
+            "recipient_type"    => "individual",
+            "to"                => $clean_number,
+            "type"              => "template",
+            "template"          => [
+                "name"     => "hello_world",
+                "language" => ["code" => "en_US"]
+            ]
+        ];
+    } elseif ($selected_tpl === 'admin_new_order_alert') {
+        $orderDate = date('d M Y');
+        $orderTime = date('h:i A');
+        $params_11 = [
+            ["type" => "text", "text" => (string)$order['id']],
+            ["type" => "text", "text" => (string)$orderDate],
+            ["type" => "text", "text" => (string)$orderTime],
+            ["type" => "text", "text" => (string)($order['name'] ?: 'Customer')],
+            ["type" => "text", "text" => "9876543210"],
+            ["type" => "text", "text" => (string)number_format($order['total_amount'], 2)],
+            ["type" => "text", "text" => "COD"],
+            ["type" => "text", "text" => "Processing"],
+            ["type" => "text", "text" => "Varanasi, UP - 221001"],
+            ["type" => "text", "text" => "• 1-Phase Starter Panel (1x)"],
+            ["type" => "text", "text" => "https://sagarstarters.com/admin/order_details.php?id=" . $order['id']],
+        ];
+        $payload = [
+            "messaging_product" => "whatsapp",
+            "recipient_type"    => "individual",
+            "to"                => $clean_number,
+            "type"              => "template",
+            "template"          => [
+                "name"       => "admin_new_order_alert",
+                "language"   => ["code" => $tpl_lang ?: "en"],
+                "components" => [["type" => "body", "parameters" => $params_11]]
+            ]
+        ];
+    } elseif (!empty($selected_tpl)) {
         preg_match_all('/\{(CustomerName|OrderID|OrderStatus|TrackingID|OrderAmount)\}/', $settings['message_template'], $matches);
         $params = [];
         foreach (($matches[0] ?? []) as $varKey) {
@@ -113,7 +185,7 @@ if ($run_test):
             "to"                => $clean_number,
             "type"              => "template",
             "template"          => [
-                "name"       => $tpl_name,
+                "name"       => $selected_tpl,
                 "language"   => ["code" => $tpl_lang],
                 "components" => $components,
             ]
@@ -256,18 +328,41 @@ if ($is_success) {
 
 <?php endif; // end $run_test ?>
 
-<form method="POST">
-    <?php echo csrf_input(); ?>
     <div class="mb-3">
         <label class="form-label fw-bold">Test Phone Number (with country code, no +)</label>
         <input type="text" name="test_phone" class="form-control" placeholder="919876543210" value="<?= htmlspecialchars($test_phone) ?>" required>
-        <div class="form-text">Example: 919876543210 for India (+91 XXXXXXXXXX)</div>
+        <div class="form-text">Example: 919876543210 for India (+91 XXXXXXXXXX). <em>Note: Agar Meta Cloud API Test Number use ho raha hai, to number Meta Developer Portal me verify hona chahiye.</em></div>
+    </div>
+    <div class="mb-3">
+        <label class="form-label fw-bold">Template to Test</label>
+        <select name="test_template" class="form-select bg-light">
+            <option value="admin_new_order_alert" <?= (($_POST['test_template'] ?? '') === 'admin_new_order_alert') ? 'selected' : '' ?>>admin_new_order_alert (11 Parameters - Admin Alert)</option>
+            <option value="<?= htmlspecialchars($tpl_name) ?>" <?= (($_POST['test_template'] ?? '') === $tpl_name) ? 'selected' : '' ?>><?= htmlspecialchars($tpl_name) ?> (Default Stored Template)</option>
+            <option value="order_confirmation" <?= (($_POST['test_template'] ?? '') === 'order_confirmation') ? 'selected' : '' ?>>order_confirmation (9 Parameters - Customer Confirm)</option>
+            <option value="hello_world" <?= (($_POST['test_template'] ?? '') === 'hello_world') ? 'selected' : '' ?>>hello_world (Meta Default Sandbox Template)</option>
+        </select>
     </div>
     <button type="submit" class="btn btn-success fw-bold px-4">
         <i class="fab fa-whatsapp me-2"></i>Send Test & Show Raw Response
     </button>
     <a href="manage_whatsapp_settings.php" class="btn btn-outline-secondary ms-2">← Back to Settings</a>
 </form>
+
+<?php
+$log_file = __DIR__ . '/../logs/whatsapp_api.log';
+if (file_exists($log_file)):
+    $log_content = file_get_contents($log_file);
+    $log_lines = explode(str_repeat('-', 60), $log_content);
+    $recent_logs = array_slice(array_filter(array_map('trim', $log_lines)), -6);
+?>
+<hr class="my-4">
+<h5 class="fw-bold mb-3"><i class="fas fa-history text-muted me-2"></i>Recent WhatsApp API Telemetry Logs</h5>
+<div class="bg-dark text-light p-3 rounded-3 small font-monospace" style="max-height: 350px; overflow-y: auto;">
+    <?php foreach (array_reverse($recent_logs) as $entry): ?>
+        <div class="border-bottom border-secondary pb-2 mb-2"><?= nl2br(htmlspecialchars($entry)) ?></div>
+    <?php endforeach; ?>
+</div>
+<?php endif; ?>
 
 </div>
 </div>
