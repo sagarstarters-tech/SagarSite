@@ -414,6 +414,26 @@ $active_tab = isset($_GET['tab']) ? $_GET['tab'] : 'general';
                     <input type="hidden" name="action" value="update_settings">
                     <input type="hidden" name="general_settings_update" value="1">
 
+                    <!-- Website Version Setting (Prominent Top Section) -->
+                    <div class="p-3 mb-4 rounded-3 border" style="background: #f8fafc; border-left: 4px solid #3b82f6 !important;" id="version-setting-box">
+                        <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+                            <label class="form-label fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                                <i class="fas fa-code-branch text-primary"></i>
+                                <span>Website / Release Version</span>
+                            </label>
+                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2.5 py-1 small">
+                                Current: <?php echo htmlspecialchars($current_settings['site_version'] ?? (defined('APP_VERSION') ? APP_VERSION : 'v2.5.0')); ?>
+                            </span>
+                        </div>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white text-secondary"><i class="fas fa-tag"></i></span>
+                            <input type="text" name="site_version" class="form-control bg-white fw-bold text-primary" value="<?php echo htmlspecialchars($current_settings['site_version'] ?? (defined('APP_VERSION') ? APP_VERSION : 'v2.5.0')); ?>" placeholder="e.g. v2.5.0" required>
+                        </div>
+                        <small class="text-muted d-block mt-1">
+                            <i class="fas fa-info-circle me-1 text-info"></i> Ye version Admin Dashboard Hero header, System Status bar aur sidebar me display hota hai.
+                        </small>
+                    </div>
+
                     <div class="mb-4">
                         <label class="form-label fw-bold">Site Logo (Header)</label>
                         <div class="d-flex align-items-center gap-3 mb-2">
@@ -499,15 +519,6 @@ $active_tab = isset($_GET['tab']) ? $_GET['tab'] : 'general';
                         <label class="form-label fw-bold">Admin Notification Email</label>
                         <input type="email" name="admin_email" class="form-control" value="<?php echo htmlspecialchars($current_settings['admin_email'] ?? 'admin@store.com'); ?>" required>
                         <small class="text-muted">New order notifications will be sent here.</small>
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="form-label fw-bold">Website / Release Version</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light text-secondary"><i class="fas fa-code-branch"></i></span>
-                            <input type="text" name="site_version" class="form-control" value="<?php echo htmlspecialchars($current_settings['site_version'] ?? (defined('APP_VERSION') ? APP_VERSION : 'v2.5.0')); ?>" placeholder="e.g. v2.5.0">
-                        </div>
-                        <small class="text-muted">Displayed on the Admin Panel Dashboard & platform headers.</small>
                     </div>
 
                     <div class="mb-4">

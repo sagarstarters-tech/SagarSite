@@ -234,9 +234,10 @@ a.dash-btn-white:hover {
                     <span class="badge bg-primary bg-opacity-25 text-white border border-primary border-opacity-50 rounded-pill px-3 py-1 small">
                         <i class="fas fa-store me-1"></i> Admin Command Center
                     </span>
-                    <span class="badge bg-white bg-opacity-10 text-white border border-white border-opacity-25 rounded-pill px-3 py-1 small d-inline-flex align-items-center gap-1 shadow-sm">
+                    <span class="badge bg-white bg-opacity-10 text-white border border-white border-opacity-25 rounded-pill px-3 py-1 small d-inline-flex align-items-center gap-1.5 shadow-sm" style="cursor: pointer; transition: all 0.2s;" data-mdb-toggle="modal" data-mdb-target="#editVersionModal" title="Click to change version">
                         <i class="fas fa-code-branch text-warning me-1"></i>
-                        <span>Version <strong class="text-white"><?php echo htmlspecialchars($site_version); ?></strong></span>
+                        <span>Version <strong class="text-white" id="heroVersionText"><?php echo htmlspecialchars($site_version); ?></strong></span>
+                        <i class="fas fa-pencil-alt text-white-50 ms-1" style="font-size: 0.65rem;"></i>
                     </span>
                     <span class="text-white-50 small"><i class="far fa-calendar-alt me-1"></i> <?php echo date('F j, Y'); ?></span>
                 </div>
@@ -452,15 +453,61 @@ a.dash-btn-white:hover {
             <div class="d-flex align-items-center gap-2 flex-wrap">
                 <div class="px-3 py-1.5 rounded-3 bg-light border text-secondary small d-flex align-items-center gap-2">
                     <i class="fas fa-code-branch text-primary"></i>
-                    <span>Website Version: <strong class="text-primary fw-bold"><?php echo htmlspecialchars($site_version); ?></strong></span>
+                    <span>Website Version: <strong class="text-primary fw-bold" id="dashVersionDisplay"><?php echo htmlspecialchars($site_version); ?></strong></span>
                 </div>
-                <a href="manage_settings.php" class="btn btn-sm btn-outline-secondary rounded-3 px-3 py-1.5" style="font-size: 0.8rem;">
-                    <i class="fas fa-cog me-1"></i> System Settings
+                <button type="button" class="btn btn-sm btn-primary rounded-3 px-3 py-1.5 d-flex align-items-center gap-1.5 shadow-sm text-white fw-semibold" data-mdb-toggle="modal" data-mdb-target="#editVersionModal" style="font-size: 0.82rem;">
+                    <i class="fas fa-edit"></i> Change Version
+                </button>
+                <a href="manage_settings.php?tab=general" class="btn btn-sm btn-outline-secondary rounded-3 px-3 py-1.5 d-flex align-items-center gap-1.5" style="font-size: 0.82rem;">
+                    <i class="fas fa-cog"></i> Settings
                 </a>
             </div>
         </div>
     </div>
 
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!--  6. QUICK EDIT WEBSITE VERSION MODAL                        -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="editVersionModal" tabindex="-1" aria-labelledby="editVersionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-light border-0 py-3 px-4">
+                <h5 class="modal-title fw-bold text-dark fs-6 d-flex align-items-center gap-2 mb-0" id="editVersionModalLabel">
+                    <i class="fas fa-code-branch text-primary"></i> Update Website Version
+                </h5>
+                <button type="button" class="btn-close" data-mdb-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="quickVersionForm">
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-3">
+                        Aap website ka release version yahan se badal sakte hain. Ye turant Dashboard, Settings aur headers par update ho jayega.
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark small">Website / Release Version</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-secondary"><i class="fas fa-tag"></i></span>
+                            <input type="text" class="form-control form-control-lg fs-6 fw-bold text-primary" id="modalVersionInput" name="version" value="<?php echo htmlspecialchars($site_version); ?>" placeholder="e.g. v2.5.0" required>
+                        </div>
+                        <small class="text-muted mt-1 d-block">Format example: <code>v2.5.0</code>, <code>v2.5.1</code>, <code>v3.0.0</code></small>
+                    </div>
+                    <div id="versionModalAlert" class="alert d-none py-2 px-3 small rounded-3 mb-0"></div>
+                </div>
+                <div class="modal-footer border-0 bg-light py-2 px-4 d-flex justify-content-between">
+                    <a href="manage_settings.php?tab=general" class="btn btn-link btn-sm text-decoration-none text-muted px-0">
+                        <i class="fas fa-external-link-alt me-1"></i> Open Settings Page
+                    </a>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-light rounded-3 px-3" data-mdb-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary rounded-3 px-4 fw-semibold shadow-sm text-white" id="saveVersionSubmitBtn">
+                            <i class="fas fa-check me-1"></i> Save Version
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -539,6 +586,69 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+
+    // Quick Version Update AJAX Handler
+    const versionForm = document.getElementById('quickVersionForm');
+    if (versionForm) {
+        versionForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('saveVersionSubmitBtn');
+            const alertBox = document.getElementById('versionModalAlert');
+            const input = document.getElementById('modalVersionInput');
+            const newVersion = input.value.trim();
+
+            if (!newVersion) return;
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Saving...';
+            alertBox.className = 'alert d-none';
+
+            const formData = new FormData();
+            formData.append('version', newVersion);
+
+            fetch('ajax_update_version.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check me-1"></i> Save Version';
+                if (data.success) {
+                    alertBox.className = 'alert alert-success py-2 px-3 small rounded-3 mb-0';
+                    alertBox.innerHTML = '<i class="fas fa-check-circle me-1"></i> ' + data.message;
+                    
+                    const heroText = document.getElementById('heroVersionText');
+                    if (heroText) heroText.textContent = data.version;
+                    const dashText = document.getElementById('dashVersionDisplay');
+                    if (dashText) dashText.textContent = data.version;
+
+                    setTimeout(() => {
+                        const modalEl = document.getElementById('editVersionModal');
+                        if (window.bootstrap && bootstrap.Modal) {
+                            const inst = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                            inst.hide();
+                        } else if (window.mdb && mdb.Modal) {
+                            const inst = mdb.Modal.getInstance(modalEl) || new mdb.Modal(modalEl);
+                            inst.hide();
+                        } else if (window.jQuery) {
+                            $(modalEl).modal('hide');
+                        }
+                        location.reload();
+                    }, 700);
+                } else {
+                    alertBox.className = 'alert alert-danger py-2 px-3 small rounded-3 mb-0';
+                    alertBox.innerHTML = '<i class="fas fa-exclamation-circle me-1"></i> ' + (data.message || 'Failed to update.');
+                }
+            })
+            .catch(err => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check me-1"></i> Save Version';
+                alertBox.className = 'alert alert-danger py-2 px-3 small rounded-3 mb-0';
+                alertBox.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i> Request failed. Please check connection.';
+            });
+        });
+    }
 });
 </script>
 
