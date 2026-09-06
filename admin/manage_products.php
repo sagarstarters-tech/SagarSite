@@ -545,6 +545,59 @@ if ($seo_q) {
     background: #f8fafc;
     flex-shrink: 0;
 }
+.mp-featured-form {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.mp-featured-form-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+@media (max-width: 767.98px) {
+    .mp-hero {
+        padding: 20px 16px !important;
+        margin-bottom: 20px !important;
+    }
+    .mp-hero-actions {
+        width: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
+    .mp-featured-form {
+        width: 100% !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 6px !important;
+        margin-right: 0 !important;
+        margin-bottom: 4px !important;
+        box-sizing: border-box !important;
+    }
+    .mp-featured-form label {
+        width: 100% !important;
+        margin-bottom: 0 !important;
+    }
+    .mp-featured-form-row {
+        width: 100% !important;
+    }
+    .mp-featured-form select {
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
+        width: auto !important;
+    }
+    .mp-hero-actions .btn,
+    .mp-hero-actions a {
+        width: 100% !important;
+        display: flex !important;
+        justify-content: center !important;
+        text-align: center !important;
+        padding: 11px 16px !important;
+        margin: 0 !important;
+        box-sizing: border-box !important;
+    }
+}
 </style>
 
 <div class="container-fluid py-3">
@@ -564,24 +617,26 @@ $current_home_prods_count = isset($global_settings['home_prods_count']) && $glob
                 </div>
                 <h3 class="fw-bold mb-0 text-white">Product Catalog Management</h3>
             </div>
-            <div class="d-flex align-items-center gap-2 flex-wrap">
+            <div class="d-flex align-items-center gap-2 flex-wrap mp-hero-actions">
                 <!-- Homepage Featured Limit Selector -->
-                <form method="POST" class="d-flex align-items-center gap-2 bg-white bg-opacity-10 p-2 rounded-3 border border-white border-opacity-25 me-1">
+                <form method="POST" class="mp-featured-form bg-white bg-opacity-10 p-2 rounded-3 border border-white border-opacity-25 me-xl-1">
                     <input type="hidden" name="action" value="update_display_settings">
                     <label class="small text-white fw-bold mb-0 text-nowrap"><i class="fas fa-fire me-1 text-danger"></i> Homepage Featured:</label>
-                    <select name="home_prods_count" class="form-select form-select-sm border-0 fw-bold shadow-sm" style="width: auto; min-width: 140px; background: #ffffff; color: #1e293b;">
-                        <option value="4" <?php echo $current_home_prods_count == '4' ? 'selected' : ''; ?>>4 Products</option>
-                        <option value="8" <?php echo $current_home_prods_count == '8' ? 'selected' : ''; ?>>8 Products</option>
-                        <option value="12" <?php echo $current_home_prods_count == '12' ? 'selected' : ''; ?>>12 Products (Default)</option>
-                        <option value="16" <?php echo $current_home_prods_count == '16' ? 'selected' : ''; ?>>16 Products</option>
-                        <option value="20" <?php echo $current_home_prods_count == '20' ? 'selected' : ''; ?>>20 Products</option>
-                        <option value="24" <?php echo $current_home_prods_count == '24' ? 'selected' : ''; ?>>24 Products</option>
-                        <option value="36" <?php echo $current_home_prods_count == '36' ? 'selected' : ''; ?>>36 Products</option>
-                        <option value="0" <?php echo $current_home_prods_count == '0' ? 'selected' : ''; ?>>All Trending</option>
-                    </select>
-                    <button type="submit" class="btn btn-sm btn-primary px-3 fw-bold rounded-2 text-nowrap shadow-sm">
-                        <i class="fas fa-save me-1"></i> Save
-                    </button>
+                    <div class="mp-featured-form-row d-flex align-items-center gap-2 w-100">
+                        <select name="home_prods_count" class="form-select form-select-sm border-0 fw-bold shadow-sm" style="width: auto; min-width: 140px; background: #ffffff; color: #1e293b;">
+                            <option value="4" <?php echo $current_home_prods_count == '4' ? 'selected' : ''; ?>>4 Products</option>
+                            <option value="8" <?php echo $current_home_prods_count == '8' ? 'selected' : ''; ?>>8 Products</option>
+                            <option value="12" <?php echo $current_home_prods_count == '12' ? 'selected' : ''; ?>>12 Products (Default)</option>
+                            <option value="16" <?php echo $current_home_prods_count == '16' ? 'selected' : ''; ?>>16 Products</option>
+                            <option value="20" <?php echo $current_home_prods_count == '20' ? 'selected' : ''; ?>>20 Products</option>
+                            <option value="24" <?php echo $current_home_prods_count == '24' ? 'selected' : ''; ?>>24 Products</option>
+                            <option value="36" <?php echo $current_home_prods_count == '36' ? 'selected' : ''; ?>>36 Products</option>
+                            <option value="0" <?php echo $current_home_prods_count == '0' ? 'selected' : ''; ?>>All Trending</option>
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-primary px-3 fw-bold rounded-2 text-nowrap shadow-sm">
+                            <i class="fas fa-save me-1"></i> Save
+                        </button>
+                    </div>
                 </form>
 
                 <a href="export_products.php" class="btn mp-btn-white px-3 py-2 rounded-3 d-flex align-items-center gap-2" title="Export Products to CSV">
