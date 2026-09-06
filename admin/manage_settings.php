@@ -192,22 +192,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $val = max(0, (float)$_POST['cod_free_threshold']);
             $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('cod_free_threshold', '$val') ON DUPLICATE KEY UPDATE setting_value='$val'");
         }
+        $cod_force_global = isset($_POST['cod_force_global']) ? '1' : '0';
+        $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('cod_force_global', '$cod_force_global') ON DUPLICATE KEY UPDATE setting_value='$cod_force_global'");
+
+        // If admin requested to reset/clear all product-specific COD charges so all products follow default
+        if (!empty($_POST['apply_to_all_products_now'])) {
+            $conn->query("UPDATE products SET cod_charge = NULL");
+        }
         // ────────────────────────────────────────────────────────────
         
         // PhonePe Settings
         if (isset($_POST['phonepe_enabled'])) {
             $phonepe_enabled = $conn->real_escape_string($_POST['phonepe_enabled']);
-            $phonepe_mode = $conn->real_escape_string($_POST['phonepe_mode']);
-            $phonepe_merchant_id = $conn->real_escape_string($_POST['phonepe_merchant_id']);
-            $phonepe_salt_key = $conn->real_escape_string($_POST['phonepe_salt_key']);
-            $phonepe_salt_index = $conn->real_escape_string($_POST['phonepe_salt_index']);
+            $phonepe_mode = $conn->real_escape_string($_POST['phonepe_mode'] ?? 'sandbox');
+            $phonepe_merchant_id = $conn->real_escape_string($_POST['phonepe_merchant_id'] ?? '');
+            $phonepe_salt_key = $conn->real_escape_string($_POST['phonepe_salt_key'] ?? '');
+            $phonepe_salt_index = $conn->real_escape_string($_POST['phonepe_salt_index'] ?? '1');
             
-            $conn->query("UPDATE settings SET setting_value='$phonepe_enabled' WHERE setting_key='phonepe_enabled'");
-            $conn->query("UPDATE settings SET setting_value='$phonepe_mode' WHERE setting_key='phonepe_mode'");
-            $conn->query("UPDATE settings SET setting_value='$phonepe_merchant_id' WHERE setting_key='phonepe_merchant_id'");
-            $conn->query("UPDATE settings SET setting_value='$phonepe_salt_key' WHERE setting_key='phonepe_salt_key'");
-            $conn->query("UPDATE settings SET setting_value='$phonepe_salt_index' WHERE setting_key='phonepe_salt_index'");
+            $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('phonepe_enabled', '$phonepe_enabled') ON DUPLICATE KEY UPDATE setting_value='$phonepe_enabled'");
+            $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('phonepe_mode', '$phonepe_mode') ON DUPLICATE KEY UPDATE setting_value='$phonepe_mode'");
+            $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('phonepe_merchant_id', '$phonepe_merchant_id') ON DUPLICATE KEY UPDATE setting_value='$phonepe_merchant_id'");
+            $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('phonepe_salt_key', '$phonepe_salt_key') ON DUPLICATE KEY UPDATE setting_value='$phonepe_salt_key'");
+            $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('phonepe_salt_index', '$phonepe_salt_index') ON DUPLICATE KEY UPDATE setting_value='$phonepe_salt_index'");
         }
+
+        $_SESSION['flash_success'] = "Payment & COD configuration saved successfully.";
+        header("Location: manage_settings.php?tab=payment");
+        exit;
     }
 
     // 3. Social Login Settings (Already has marker)
@@ -798,23 +809,66 @@ $active_tab = isset($_GET['tab']) ? $_GET['tab'] : 'general';
                     </script>
 
                     <!-- ── COD Charges Configuration ──────────────────────── -->
+                    <?php
+                    $custom_cod_count = 0;
+                    $cq = $conn->query("SELECT COUNT(*) as cnt FROM products WHERE cod_charge IS NOT NULL AND cod_charge != ''");
+                    if ($cq && $cr = $cq->fetch_assoc()) {
+                        $custom_cod_count = (int)$cr['cnt'];
+                    }
+                    $cod_force_global = ($current_settings['cod_force_global'] ?? '0') === '1';
+                    ?>
                     <div id="cod_charges_section" class="border rounded-3 p-3 mb-3" style="background: linear-gradient(135deg, #f0fff4 0%, #e8f5e9 100%); <?php echo $cod_is_on ? '' : 'display:none;'; ?>">
-                        <h6 class="fw-bold mb-3 text-success"><i class="fas fa-money-bill-wave me-2"></i>COD Charges Configuration</h6>
+                        <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                            <h6 class="fw-bold mb-0 text-success"><i class="fas fa-money-bill-wave me-2"></i>COD Charges Configuration</h6>
+                            <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25 px-2.5 py-1">
+                                Active Mode: <?php echo htmlspecialchars(ucfirst($current_settings['cod_charge_mode'] ?? 'highest')); ?>
+                            </span>
+                        </div>
+
                         <div class="alert alert-success py-2 small mb-3 border-0 bg-success bg-opacity-10">
                             <i class="fas fa-info-circle me-1"></i>
-                            Set product-wise COD charges and free COD thresholds. Each product can have its own charge set in Product Settings.
+                            Yahan se aap Default COD Charge aur Cart aggregation mode set kar sakte hain.
                         </div>
+
+                        <!-- Force Storewide Default Toggle -->
+                        <div class="mb-3 p-3 rounded-3 border bg-white shadow-sm">
+                            <div class="form-check form-switch fs-6 mb-1">
+                                <input class="form-check-input" type="checkbox" role="switch" name="cod_force_global" id="cod_force_global" value="1" <?php echo $cod_force_global ? 'checked' : ''; ?>>
+                                <label class="form-check-label fw-bold text-dark" for="cod_force_global">
+                                    <i class="fas fa-globe me-1 text-primary"></i>Force Store Default Charge on ALL Products
+                                </label>
+                            </div>
+                            <small class="text-muted d-block ps-4">
+                                Jab ye <strong>ON</strong> hoga, to sabhi products par yahi <em>Default COD Charge</em> force hoga (kisi product ka purana custom charge ignore ho jayega).
+                            </small>
+                        </div>
+
+                        <?php if ($custom_cod_count > 0): ?>
+                        <div class="alert alert-warning py-2 px-3 small mb-3 rounded-3 d-flex align-items-center justify-content-between flex-wrap gap-2 border-warning">
+                            <div>
+                                <i class="fas fa-exclamation-triangle me-1 text-warning"></i>
+                                <strong><?php echo $custom_cod_count; ?> product(s)</strong> ke pass apna custom COD charge set hai (jo default charge ko override kar sakta hai).
+                            </div>
+                            <button type="submit" name="apply_to_all_products_now" value="1" class="btn btn-warning btn-sm fw-bold shadow-sm" onclick="return confirm('Kya aap sabhi <?php echo $custom_cod_count; ?> products ka custom COD charge reset karna chahte hain? Iske baad sabhi products par Store Default Charge apply hoga.');">
+                                <i class="fas fa-sync-alt me-1"></i>Reset All to Default (<?php echo $custom_cod_count; ?>)
+                            </button>
+                        </div>
+                        <?php else: ?>
+                        <div class="alert alert-light border py-2 px-3 small mb-3 rounded-3 text-muted">
+                            <i class="fas fa-check-circle me-1 text-success"></i> Sabhi products Store Default COD Charge use kar rahe hain (koi custom override nahi hai).
+                        </div>
+                        <?php endif; ?>
 
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Default COD Charge <span class="text-danger">*</span></label>
                                 <div class="input-group">
                                     <span class="input-group-text"><?php echo htmlspecialchars($global_currency); ?></span>
-                                    <input type="number" name="cod_default_charge" class="form-control"
+                                    <input type="number" name="cod_default_charge" class="form-control fw-bold text-success"
                                         value="<?php echo htmlspecialchars($current_settings['cod_default_charge'] ?? '0'); ?>"
                                         min="0" step="0.01">
                                 </div>
-                                <small class="text-muted">Applied when a product doesn't have its own COD charge set.</small>
+                                <small class="text-muted">Applied to checkout orders for Cash On Delivery.</small>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Free COD Threshold</label>
@@ -849,9 +903,16 @@ $active_tab = isset($_GET['tab']) ? $_GET['tab'] : 'general';
                             </div>
                         </div>
 
-                        <div class="d-flex align-items-center justify-content-between mt-3 pt-2 border-top">
-                            <small class="text-muted"><i class="fas fa-ban me-1 text-danger"></i>Manage COD restrictions per user</small>
-                            <a href="manage_cod_blacklist.php" class="btn btn-outline-danger btn-sm btn-custom"><i class="fas fa-shield-alt me-1"></i>COD Blacklist Manager</a>
+                        <div class="d-flex align-items-center justify-content-between mt-3 pt-3 border-top flex-wrap gap-2">
+                            <button type="submit" class="btn btn-success btn-sm btn-custom px-4 fw-bold shadow-sm">
+                                <i class="fas fa-save me-1"></i>Save COD Configuration
+                            </button>
+                            <div class="d-flex align-items-center gap-2">
+                                <small class="text-muted"><i class="fas fa-ban me-1 text-danger"></i>High-risk users:</small>
+                                <a href="manage_cod_blacklist.php" class="btn btn-outline-danger btn-sm btn-custom">
+                                    <i class="fas fa-shield-alt me-1"></i>COD Blacklist Manager
+                                </a>
+                            </div>
                         </div>
                     </div>
 
@@ -894,17 +955,17 @@ $active_tab = isset($_GET['tab']) ? $_GET['tab'] : 'general';
 
                     <div class="mb-3">
                         <label class="form-label fw-bold">Merchant ID</label>
-                        <input type="text" name="phonepe_merchant_id" class="form-control" value="<?php echo htmlspecialchars($current_settings['phonepe_merchant_id'] ?? ''); ?>" required>
+                        <input type="text" name="phonepe_merchant_id" class="form-control" value="<?php echo htmlspecialchars($current_settings['phonepe_merchant_id'] ?? ''); ?>" placeholder="Enter PhonePe Merchant ID">
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label fw-bold">Salt Key</label>
-                        <input type="text" name="phonepe_salt_key" class="form-control" value="<?php echo htmlspecialchars($current_settings['phonepe_salt_key'] ?? ''); ?>" required>
+                        <input type="text" name="phonepe_salt_key" class="form-control" value="<?php echo htmlspecialchars($current_settings['phonepe_salt_key'] ?? ''); ?>" placeholder="Enter PhonePe Salt Key">
                     </div>
 
                     <div class="mb-4">
                         <label class="form-label fw-bold">Salt Index</label>
-                        <input type="text" name="phonepe_salt_index" class="form-control" value="<?php echo htmlspecialchars($current_settings['phonepe_salt_index'] ?? '1'); ?>" required>
+                        <input type="text" name="phonepe_salt_index" class="form-control" value="<?php echo htmlspecialchars($current_settings['phonepe_salt_index'] ?? '1'); ?>" placeholder="e.g. 1">
                     </div>
                     
                     <button type="submit" class="btn btn-primary btn-custom w-100">Save Payment Settings</button>

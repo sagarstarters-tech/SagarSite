@@ -794,6 +794,9 @@ $current_home_prods_count = isset($global_settings['home_prods_count']) && $glob
                                 <?php if (!empty($p['min_order_qty']) && (int)$p['min_order_qty'] > 1): ?>
                                     <small class="text-muted d-block" style="font-size: 0.75rem;"><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-1 py-0">MOQ: <?php echo $p['min_order_qty']; ?></span></small>
                                 <?php endif; ?>
+                                <?php if ($p['cod_charge'] !== null && $p['cod_charge'] !== ''): ?>
+                                    <small class="d-block" style="font-size: 0.75rem;"><span class="badge bg-warning bg-opacity-25 text-dark border border-warning border-opacity-50 px-1 py-0" title="Custom product COD charge override"><i class="fas fa-money-bill-wave me-1 text-success"></i>COD: <?php echo $global_currency . number_format((float)$p['cod_charge'], 2); ?></span></small>
+                                <?php endif; ?>
                             </td>
                             <td>
                                 <?php if($p['product_type'] !== 'physical'): ?>
@@ -1109,9 +1112,9 @@ $current_home_prods_count = isset($global_settings['home_prods_count']) && $glob
                         <hr class="my-3">
                         <div class="row">
                             <div class="col-md-6">
-                                <label class="form-label fw-bold small mb-1"><i class="fas fa-money-bill-wave me-1 text-success"></i>COD Charge (<?php echo $global_currency; ?>)</label>
-                                <input type="number" step="0.01" min="0" name="cod_charge" id="edit_p_cod_charge" class="form-control" placeholder="Leave blank for default">
-                                <div class="form-text mt-1 small">Product-specific COD charge. Leave empty to use the global default.</div>
+                                <label class="form-label fw-bold small mb-1"><i class="fas fa-money-bill-wave me-1 text-success"></i>COD Charge (<?php echo $global_currency; ?>) <span class="text-muted fw-normal">(Store Default: <?php echo $global_currency . number_format((float)($global_settings['cod_default_charge'] ?? 0), 2); ?>)</span></label>
+                                <input type="number" step="0.01" min="0" name="cod_charge" id="edit_p_cod_charge" class="form-control" placeholder="Leave blank to use Store Default (<?php echo $global_currency . number_format((float)($global_settings['cod_default_charge'] ?? 0), 2); ?>)">
+                                <div class="form-text mt-1 small">Product-specific COD charge. Isko khali chodne par store ka default charge apply hoga.</div>
                             </div>
                         </div>
                     </div>
@@ -1381,9 +1384,9 @@ $current_home_prods_count = isset($global_settings['home_prods_count']) && $glob
                         <hr class="my-3">
                         <div class="row">
                             <div class="col-md-6">
-                                <label class="form-label fw-bold small mb-1"><i class="fas fa-money-bill-wave me-1 text-success"></i>COD Charge (<?php echo $global_currency; ?>)</label>
-                                <input type="number" step="0.01" min="0" name="cod_charge" class="form-control" placeholder="Leave blank for default">
-                                <div class="form-text mt-1 small">Product-specific COD charge. Leave empty to use the global default.</div>
+                                <label class="form-label fw-bold small mb-1"><i class="fas fa-money-bill-wave me-1 text-success"></i>COD Charge (<?php echo $global_currency; ?>) <span class="text-muted fw-normal">(Store Default: <?php echo $global_currency . number_format((float)($global_settings['cod_default_charge'] ?? 0), 2); ?>)</span></label>
+                                <input type="number" step="0.01" min="0" name="cod_charge" class="form-control" placeholder="Leave blank to use Store Default (<?php echo $global_currency . number_format((float)($global_settings['cod_default_charge'] ?? 0), 2); ?>)">
+                                <div class="form-text mt-1 small">Product-specific COD charge. Isko khali chodne par store ka default charge apply hoga.</div>
                             </div>
                         </div>
                     </div>

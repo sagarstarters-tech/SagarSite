@@ -64,6 +64,7 @@ class CodService
             'cod_default_charge' => '0',
             'cod_charge_mode'    => 'highest',
             'cod_free_threshold' => '0',
+            'cod_force_global'   => '0',
         ];
         foreach ($defaults as $key => $value) {
             if (!isset($this->settings[$key])) {
@@ -79,13 +80,15 @@ class CodService
     /**
      * Returns the COD charge for a product.
      * Uses the product-specific charge if set, else falls back to the global default.
+     * If cod_force_global is enabled, the store default always overrides product charges.
      *
      * @param  array $product  Product row (must include 'cod_charge' key)
      * @return float
      */
     public function getProductCodCharge(array $product): float
     {
-        if (isset($product['cod_charge']) && $product['cod_charge'] !== null && $product['cod_charge'] !== '') {
+        $force_global = isset($this->settings['cod_force_global']) && $this->settings['cod_force_global'] == '1';
+        if (!$force_global && isset($product['cod_charge']) && $product['cod_charge'] !== null && $product['cod_charge'] !== '') {
             return (float) $product['cod_charge'];
         }
         return (float) ($this->settings['cod_default_charge'] ?? 0);
@@ -212,6 +215,7 @@ class CodService
             'cod_default_charge' => (float) ($this->settings['cod_default_charge'] ?? 0),
             'cod_charge_mode'    => $this->settings['cod_charge_mode'] ?? 'highest',
             'cod_free_threshold' => (float) ($this->settings['cod_free_threshold'] ?? 0),
+            'cod_force_global'   => ($this->settings['cod_force_global'] ?? '0') === '1',
             'cod_enabled'        => $this->isCodEnabled(),
         ];
     }
