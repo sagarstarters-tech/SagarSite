@@ -129,14 +129,22 @@ $replacementValues = [
     '{ExpectedDelivery}' => $expectedDelivery,
     '{OrderLink}'        => $orderLink
 ];
-$custom_preview = $custom_template;
-foreach ($replacementValues as $k => $v) {
-    $custom_preview = str_replace($k, $v, $custom_preview);
+if (!empty($settings['order_confirmation_message_template'])) {
+    $confirm_preview = $settings['order_confirmation_message_template'];
+    foreach ($replacementValues as $k => $v) {
+        $confirm_preview = str_replace($k, (string)$v, $confirm_preview);
+    }
+}
+if (!empty($settings['message_template'])) {
+    $status_preview = $settings['message_template'];
+    foreach ($replacementValues as $k => $v) {
+        $status_preview = str_replace($k, (string)$v, $status_preview);
+    }
 }
 
-// Meta template names
-$status_tpl_name  = !empty($settings['meta_template_name']) ? $settings['meta_template_name'] : 'new_order_status';
-$confirm_tpl_name = !empty($settings['order_confirmation_template_name']) ? $settings['order_confirmation_template_name'] : 'order_confirmation';
+// Meta template names - empty when left blank so Fallback Template is used
+$status_tpl_name  = trim($settings['meta_template_name'] ?? '');
+$confirm_tpl_name = trim($settings['order_confirmation_template_name'] ?? '');
 
 echo json_encode([
     'success'               => true,

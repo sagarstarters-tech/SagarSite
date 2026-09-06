@@ -443,10 +443,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const msgEl = document.getElementById('waMessage');
         
         if (type === 'confirmation') {
-            badgeEl.innerText = waOrderPayload.confirm_template_name || 'order_confirmation';
+            badgeEl.innerText = waOrderPayload.confirm_template_name ? waOrderPayload.confirm_template_name : 'Bridge & Fallback Message';
             msgEl.value = waOrderPayload.confirm_preview || '';
         } else {
-            badgeEl.innerText = waOrderPayload.status_template_name || 'new_order_status';
+            badgeEl.innerText = waOrderPayload.status_template_name ? waOrderPayload.status_template_name : 'Bridge & Fallback Message';
             msgEl.value = waOrderPayload.status_preview || '';
         }
     });
@@ -536,12 +536,12 @@ function openWhatsAppModal(orderId) {
             document.getElementById('waOrderId').value = orderId;
             document.getElementById('waCustomerPhone').value = (data.customer_phone || '').replace(/[^0-9]/g, '');
             document.getElementById('waMode').value = data.sending_mode || 'api';
-            document.getElementById('waStatusTplName').value = data.status_template_name || 'new_order_status';
-            document.getElementById('waConfirmTplName').value = data.confirm_template_name || 'order_confirmation';
+            document.getElementById('waStatusTplName').value = data.status_template_name || '';
+            document.getElementById('waConfirmTplName').value = data.confirm_template_name || '';
             
             // Set initial preview
             document.getElementById('waTemplateType').value = 'status';
-            document.getElementById('waTplNameText').innerText = data.status_template_name || 'new_order_status';
+            document.getElementById('waTplNameText').innerText = data.status_template_name ? data.status_template_name : 'Bridge & Fallback Message';
             document.getElementById('waMessage').value = data.status_preview || data.message || '';
             
             // Show Form

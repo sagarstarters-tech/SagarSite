@@ -404,7 +404,9 @@ function sendCustomerOrderConfirmationWhatsApp($conn, $order_id) {
             $meta_response = json_decode($result, true);
             if ($http_code == 200 && isset($meta_response['messages'])) {
                 $msg_id     = $meta_response['messages'][0]['id'] ?? 'unknown';
-                $status_msg = 'Customer Order Confirmation Sent (ID: ' . substr($msg_id, 0, 20) . ')';
+                $status_msg = empty($tpl_name)
+                    ? 'Customer Order Confirmation Sent (Fallback Template) (ID: ' . substr($msg_id, 0, 20) . ')'
+                    : 'Customer Order Confirmation Sent (ID: ' . substr($msg_id, 0, 20) . ')';
             } else {
                 $error_desc = $meta_response['error']['message'] ?? 'Unknown Meta API Error';
                 $error_code = $meta_response['error']['code'] ?? 'N/A';
@@ -849,7 +851,9 @@ function sendCustomerOrderStatusWhatsApp($conn, $order_id) {
             $meta_response = json_decode($result, true);
             if ($http_code == 200 && isset($meta_response['messages'])) {
                 $msg_id     = $meta_response['messages'][0]['id'] ?? 'unknown';
-                $status_msg = "Sent Status Update: {$orderStatus} (ID: " . substr($msg_id, 0, 20) . ')';
+                $status_msg = empty($meta_template_name)
+                    ? "Sent Status Update via Fallback Template: {$orderStatus} (ID: " . substr($msg_id, 0, 20) . ')'
+                    : "Sent Status Update: {$orderStatus} (ID: " . substr($msg_id, 0, 20) . ')';
             } else {
                 $error_desc = $meta_response['error']['message'] ?? 'Unknown Meta API Error';
                 $error_code = $meta_response['error']['code'] ?? 'N/A';
@@ -908,6 +912,7 @@ function sendAdminOrderNotification($conn, $order_id) {
         $conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS admin_whatsapp_number VARCHAR(20) NOT NULL DEFAULT ''");
         $conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS admin_notify_on_new_order TINYINT(1) NOT NULL DEFAULT 1");
         $conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS admin_template_name VARCHAR(100) NOT NULL DEFAULT ''");
+        $conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS admin_message_template TEXT NOT NULL DEFAULT ''");
 
         // Check if feature is enabled and admin number is configured
         $set_q = $conn->query("SELECT * FROM whatsapp_settings WHERE id = 1");
@@ -1017,17 +1022,42 @@ function sendAdminOrderNotification($conn, $order_id) {
         $siteUrl = defined('SITE_URL') ? rtrim(SITE_URL, '/') : 'https://sagarstarters.com';
         $orderLink = $siteUrl . '/admin/order_details.php?id=' . $order_id;
 
-        $adminMessage  = "🛒 *New Order Alert!*\n\n";
-        $adminMessage .= "Order: *#$order_id*\n";
-        $adminMessage .= "Date: $orderDate $orderTime\n";
-        $adminMessage .= "Customer: $customerName\n";
-        $adminMessage .= "Phone: $customerPhone\n";
-        $adminMessage .= "Amount: ₹$orderAmount\n";
-        $adminMessage .= "Payment: $paymentMode\n";
-        $adminMessage .= "Status: $orderStatus\n";
-        $adminMessage .= "Address: $deliveryAddress\n\n";
-        $adminMessage .= "Items:\n$itemsOrdered\n\n";
-        $adminMessage .= "View Order: $orderLink";
+        // Admin Bridge & Fallback Message Template
+        $default_admin_alert_tpl = "🛒 *New Order Alert!*\n\n"
+            . "Order: *#{OrderID}*\n"
+            . "Date: {OrderDate} {OrderTime}\n"
+            . "Customer: {CustomerName}\n"
+            . "Phone: {CustomerPhone}\n"
+            . "Amount: ₹{OrderAmount}\n"
+            . "Payment: {PaymentMethod}\n"
+            . "Status: {OrderStatus}\n"
+            . "Address: {DeliveryAddress}\n\n"
+            . "Items:\n{ItemsOrdered}\n\n"
+            . "View Order: {OrderLink}";
+
+        $admin_bridge_tpl = !empty($settings['admin_message_template']) 
+            ? $settings['admin_message_template'] 
+            : $default_admin_alert_tpl;
+
+        $adminReplacements = [
+            '{OrderID}'         => $order_id,
+            '{OrderDate}'       => $orderDate,
+            '{OrderTime}'       => $orderTime,
+            '{OrderDateTime}'   => $orderDateTime,
+            '{CustomerName}'    => $customerName,
+            '{CustomerPhone}'   => $customerPhone,
+            '{OrderAmount}'     => $orderAmount,
+            '{PaymentMethod}'   => $paymentMode,
+            '{OrderStatus}'     => $orderStatus,
+            '{DeliveryAddress}' => $deliveryAddress,
+            '{ItemsOrdered}'    => $itemsOrdered,
+            '{OrderLink}'       => $orderLink
+        ];
+
+        $adminMessage = $admin_bridge_tpl;
+        foreach ($adminReplacements as $k => $v) {
+            $adminMessage = str_replace($k, (string)$v, $adminMessage);
+        }
 
         $token    = trim($settings['api_token']);
         $phone_id = trim($settings['phone_number_id']);
@@ -1054,15 +1084,6 @@ function sendAdminOrderNotification($conn, $order_id) {
         };
 
         $admin_tpl_name = trim($settings['admin_template_name'] ?? '');
-        if (empty($admin_tpl_name)) {
-            $admin_tpl_name = trim($settings['order_confirmation_template_name'] ?? '');
-        }
-        if (empty($admin_tpl_name)) {
-            $admin_tpl_name = trim($settings['meta_template_name'] ?? '');
-        }
-        if (empty($admin_tpl_name)) {
-            $admin_tpl_name = 'order_confirmation';
-        }
 
         $header_image_url = trim($settings['wa_header_image_url'] ?? '');
         $lang_code = trim($settings['meta_template_lang'] ?? 'en');
@@ -1191,17 +1212,8 @@ function sendAdminOrderNotification($conn, $order_id) {
             };
 
             // List of candidate template names to try in order of relevance:
-            // If user has a custom admin template configured (and not non-existent placeholder), try it first.
-            // Otherwise, immediately use the proven working order_confirmation template!
-            $admin_custom = (!empty($admin_tpl_name) && $admin_tpl_name !== 'admin_new_order_alert') ? $admin_tpl_name : null;
-            $tpl_names_to_try = array_unique(array_filter([
-                $admin_custom,
-                trim($settings['order_confirmation_template_name'] ?? ''),
-                'order_confirmation',
-                'new_order_status',
-                'order_status_update',
-                $admin_tpl_name
-            ]));
+            // Candidate template names: only try the configured admin template
+            $tpl_names_to_try = array_unique(array_filter([$admin_tpl_name]));
 
             // Build smart candidate payload variations
             foreach ($tpl_names_to_try as $current_tpl_name) {
@@ -1233,9 +1245,6 @@ function sendAdminOrderNotification($conn, $order_id) {
 
                             if ($http_code == 200 && isset($meta_response['messages'])) {
                                 $sent_successfully = true;
-                                if ($current_tpl_name !== $admin_tpl_name && empty($admin_tpl_name)) {
-                                    $conn->query("UPDATE whatsapp_settings SET admin_template_name = '" . $conn->real_escape_string($current_tpl_name) . "' WHERE id = 1");
-                                }
                                 break 4; // Successfully delivered! Break all loops.
                             }
 
@@ -1262,9 +1271,6 @@ function sendAdminOrderNotification($conn, $order_id) {
                                             $result = $exact_res;
                                             $http_code = $exact_code;
                                             $sent_successfully = true;
-                                            if ($current_tpl_name !== $admin_tpl_name && empty($admin_tpl_name)) {
-                                                $conn->query("UPDATE whatsapp_settings SET admin_template_name = '" . $conn->real_escape_string($current_tpl_name) . "' WHERE id = 1");
-                                            }
                                             break 4;
                                         }
                                     }
@@ -1313,7 +1319,9 @@ function sendAdminOrderNotification($conn, $order_id) {
             $meta_response = json_decode($result, true);
             if ($http_code == 200 && isset($meta_response['messages'])) {
                 $msg_id     = $meta_response['messages'][0]['id'] ?? 'unknown';
-                $status_msg = 'Admin Alert Sent (ID: ' . substr($msg_id, 0, 20) . ')';
+                $status_msg = empty($admin_tpl_name)
+                    ? 'Admin Alert Sent (Fallback Template) (ID: ' . substr($msg_id, 0, 20) . ')'
+                    : 'Admin Alert Sent (ID: ' . substr($msg_id, 0, 20) . ')';
             } else {
                 $error_desc = $meta_response['error']['message'] ?? 'Unknown Meta API Error';
                 $error_code = $meta_response['error']['code'] ?? 'N/A';

@@ -14,6 +14,7 @@ $conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS wa_header_i
 $conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS admin_whatsapp_number VARCHAR(20) NOT NULL DEFAULT ''");
 $conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS admin_notify_on_new_order TINYINT(1) NOT NULL DEFAULT 1");
 $conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS admin_template_name VARCHAR(100) NOT NULL DEFAULT ''");
+$conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS admin_message_template TEXT NOT NULL DEFAULT ''");
 $conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS order_confirmation_enabled TINYINT(1) NOT NULL DEFAULT 1");
 $conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS order_confirmation_template_name VARCHAR(100) NOT NULL DEFAULT ''");
 $conn->query("ALTER TABLE whatsapp_settings ADD COLUMN IF NOT EXISTS order_confirmation_message_template TEXT NOT NULL DEFAULT ''");
@@ -26,9 +27,11 @@ $settings = $result ? $result->fetch_assoc() : null;
 
 $default_order_confirm_tpl = "Hello Dear {CustomerName},\n\nThank you for your order! Your Order #{OrderID} has been successfully placed.\n\nOrder Date: {OrderDate}\nTotal Amount: ₹{OrderAmount}\nPayment Method: {PaymentMethod}\n\nDelivery Address:\n{DeliveryAddress}\n\nThank you for shopping with Sagar Starter's!";
 
+$default_admin_alert_tpl = "🛒 *New Order Alert!*\n\nOrder: *#{OrderID}*\nDate: {OrderDate} {OrderTime}\nCustomer: {CustomerName}\nPhone: {CustomerPhone}\nAmount: ₹{OrderAmount}\nPayment: {PaymentMethod}\nStatus: {OrderStatus}\nAddress: {DeliveryAddress}\n\nItems:\n{ItemsOrdered}\n\nView Order: {OrderLink}";
+
 if (!$settings) {
     // Failsafe insert if table is empty
-    $conn->query("INSERT IGNORE INTO whatsapp_settings (id, message_template, order_confirmation_message_template) VALUES (1, 'Hello Dear {CustomerName},\n\nYour Order No. #{OrderID} status has been updated.\n\nCurrent Status: *{OrderStatus}*\nTracking ID: {TrackingID}\nTotal Amount: ₹{OrderAmount}\n\nThank you for shopping with us.', '" . $conn->real_escape_string($default_order_confirm_tpl) . "')");
+    $conn->query("INSERT IGNORE INTO whatsapp_settings (id, message_template, order_confirmation_message_template, admin_message_template) VALUES (1, 'Hello Dear {CustomerName},\n\nYour Order No. #{OrderID} status has been updated.\n\nCurrent Status: *{OrderStatus}*\nTracking ID: {TrackingID}\nTotal Amount: ₹{OrderAmount}\n\nThank you for shopping with us.', '" . $conn->real_escape_string($default_order_confirm_tpl) . "', '" . $conn->real_escape_string($default_admin_alert_tpl) . "')");
     $settings = [
         'is_enabled' => 1,
         'sender_number' => '',
@@ -39,6 +42,10 @@ if (!$settings) {
         'order_confirmation_template_name' => '',
         'order_confirmation_message_template' => $default_order_confirm_tpl,
         'order_status_notify_enabled' => 1,
+        'admin_whatsapp_number' => '',
+        'admin_notify_on_new_order' => 1,
+        'admin_template_name' => '',
+        'admin_message_template' => $default_admin_alert_tpl,
         'chat_widget_enabled' => 1,
         'chat_widget_number' => '',
         'chat_widget_message' => 'Hello, I have a question about your products.'
@@ -47,6 +54,9 @@ if (!$settings) {
 
 if (empty($settings['order_confirmation_message_template'])) {
     $settings['order_confirmation_message_template'] = $default_order_confirm_tpl;
+}
+if (empty($settings['admin_message_template'])) {
+    $settings['admin_message_template'] = $default_admin_alert_tpl;
 }
 
 $success_msg = '';
@@ -77,6 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $admin_whatsapp_number     = $conn->real_escape_string(trim($_POST['admin_whatsapp_number'] ?? ''));
     $admin_notify_on_new_order = isset($_POST['admin_notify_on_new_order']) ? 1 : 0;
     $admin_template_name       = $conn->real_escape_string(trim($_POST['admin_template_name'] ?? ''));
+    $admin_message_template    = $conn->real_escape_string($_POST['admin_message_template'] ?? '');
 
     // Chat Widget fields
     $chat_widget_enabled = isset($_POST['chat_widget_enabled']) ? 1 : 0;
@@ -101,6 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         admin_whatsapp_number = '$admin_whatsapp_number',
         admin_notify_on_new_order = $admin_notify_on_new_order,
         admin_template_name = '$admin_template_name',
+        admin_message_template = '$admin_message_template',
         chat_widget_enabled = $chat_widget_enabled,
         chat_widget_number = '$chat_widget_number',
         chat_widget_message = '$chat_widget_message'
@@ -239,12 +251,21 @@ $logs = $conn->query($logs_query);
                             <label class="form-label fw-bold small text-uppercase tracking-wider">Meta Approved Template Name</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-white"><i class="fab fa-whatsapp text-success"></i></span>
-                                <input type="text" name="order_confirmation_template_name" id="orderConfirmTplInput" class="form-control bg-white" placeholder="e.g. order_confirmation" value="<?php echo htmlspecialchars($settings['order_confirmation_template_name'] ?? ''); ?>">
+                                <input type="text" name="order_confirmation_template_name" id="orderConfirmTplInput" class="form-control bg-white" placeholder="e.g. order_confirmation (Khali chhodne par Fallback Template chalega)" value="<?php echo htmlspecialchars($settings['order_confirmation_template_name'] ?? ''); ?>">
                                 <button type="button" class="btn btn-outline-primary fw-bold" onclick="openMetaTemplatePicker('orderConfirmTplInput')">
                                     <i class="fas fa-search me-1"></i> Fetch from Meta
                                 </button>
                             </div>
-                            <div class="form-text small">Meta WhatsApp Manager me approved template ka exact name (e.g. <code>order_confirmation</code> ya <code>admin_new_order_alert</code>).</div>
+                            <div class="mt-2 d-flex flex-wrap gap-2 align-items-center">
+                                <span class="small text-muted fw-bold">Quick Select:</span>
+                                <button type="button" class="btn btn-sm btn-outline-success py-0 px-2 rounded-pill small" onclick="document.getElementById('orderConfirmTplInput').value='order_confirmation'">
+                                    <i class="fas fa-check-circle me-1"></i> order_confirmation
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 rounded-pill small" onclick="document.getElementById('orderConfirmTplInput').value=''">
+                                    <i class="fas fa-times me-1"></i> Clear / Empty (Use Fallback Template)
+                                </button>
+                            </div>
+                            <div class="form-text small mt-1">Meta WhatsApp Manager me approved template ka exact name. Agar is field ko <strong>khali (empty)</strong> chhod diya jaye, to niche diya gaya <strong>Bridge & Fallback Message Template</strong> work karega.</div>
                         </div>
 
                         <div class="mb-2">
@@ -291,7 +312,7 @@ $logs = $conn->query($logs_query);
                             <label class="form-label fw-bold small text-uppercase tracking-wider">Meta Approved Template Name</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-white"><i class="fab fa-whatsapp text-info"></i></span>
-                                <input type="text" name="meta_template_name" id="statusTplInput" class="form-control bg-white" placeholder="e.g. new_order_status" value="<?php echo htmlspecialchars($settings['meta_template_name'] ?? ''); ?>">
+                                <input type="text" name="meta_template_name" id="statusTplInput" class="form-control bg-white" placeholder="e.g. new_order_status (Khali chhodne par Fallback Template chalega)" value="<?php echo htmlspecialchars($settings['meta_template_name'] ?? ''); ?>">
                                 <button type="button" class="btn btn-outline-primary fw-bold" onclick="openMetaTemplatePicker('statusTplInput')">
                                     <i class="fas fa-search me-1"></i> Fetch from Meta
                                 </button>
@@ -304,8 +325,11 @@ $logs = $conn->query($logs_query);
                                 <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 rounded-pill small" onclick="document.getElementById('statusTplInput').value='order_confirmation'">
                                     <i class="fas fa-check-circle me-1"></i> order_confirmation (9 Params - Working)
                                 </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 rounded-pill small" onclick="document.getElementById('statusTplInput').value=''">
+                                    <i class="fas fa-times me-1"></i> Clear / Empty (Use Fallback Template)
+                                </button>
                             </div>
-                            <div class="form-text small mt-1">Meta WhatsApp Manager me approved status template ka name (e.g. <code>new_order_status</code> ya <code>order_status_update</code>).</div>
+                            <div class="form-text small mt-1">Meta WhatsApp Manager me approved status template ka name. Agar is field ko <strong>khali (empty)</strong> chhod diya jaye, to niche diya gaya <strong>Bridge & Fallback Message Template</strong> work karega.</div>
                         </div>
 
                         <div class="mb-2">
@@ -348,8 +372,8 @@ $logs = $conn->query($logs_query);
                     </div>
                 </div>
                 <div class="card-body p-4">
-                    <div class="row">
-                        <div class="col-md-6 mb-3 text-start">
+                    <div class="row mb-3">
+                        <div class="col-md-6 text-start mb-2">
                             <label class="form-label fw-bold d-block">Admin WhatsApp Number</label>
                             <?php echo render_phone_input('admin_whatsapp_number', $settings['admin_whatsapp_number'] ?? '', true); ?>
                             <?php 
@@ -367,48 +391,81 @@ $logs = $conn->query($logs_query);
                                     <strong>Self-Messaging Rule:</strong> Yeh number Store ke API Sender number (<code>+<?php echo htmlspecialchars($clean_snd_num); ?></code>) se <strong>alag</strong> hona chahiye. Meta WhatsApp Cloud API ek number se <u>usi number par</u> message deliver nahi karta.
                                 </div>
                             </div>
-
-                            <div class="mt-3">
-                                <label class="form-label fw-bold small text-uppercase tracking-wider">Admin Meta Template Name</label>
-                                <div class="input-group">
-                                    <input type="text" name="admin_template_name" id="adminTplInput" class="form-control bg-light" placeholder="e.g. order_confirmation" value="<?php echo htmlspecialchars(!empty($settings['admin_template_name']) ? $settings['admin_template_name'] : 'order_confirmation'); ?>">
-                                    <button type="button" class="btn btn-outline-primary" onclick="openMetaTemplatePicker('adminTplInput')">
-                                        <i class="fas fa-search me-1"></i> Fetch
-                                    </button>
-                                </div>
-                                <div class="mt-2 d-flex flex-wrap gap-2 align-items-center">
-                                    <span class="small text-muted fw-bold">Recommended:</span>
-                                    <button type="button" class="btn btn-sm btn-outline-success py-0 px-2 rounded-pill small" onclick="document.getElementById('adminTplInput').value='order_confirmation'">
-                                        <i class="fas fa-check-circle me-1"></i> Use 'order_confirmation' (100% Working)
-                                    </button>
-                                </div>
-                                <small class="text-muted d-block mt-1">Approved template in Meta (default <code>order_confirmation</code> use karne par 24/7 bina issue alert aayega).</small>
-                            </div>
-
-                            <div class="d-flex flex-wrap gap-2 mt-3">
-                                <button type="button" class="btn btn-sm btn-outline-success fw-bold rounded-pill" id="btnQuickTestAdmin">
-                                    <i class="fab fa-whatsapp me-1"></i> Send Test Admin Alert to this number
-                                </button>
-                                <button type="button" class="btn btn-sm btn-outline-primary fw-bold rounded-pill" onclick="openTestModal('admin_alert')">
-                                    <i class="fas fa-paper-plane me-1"></i> Test on Another Number
-                                </button>
-                            </div>
-                            <div id="adminTestResult" class="small mt-2 d-none"></div>
                         </div>
 
-                        <div class="col-md-6 mb-3 d-flex align-items-center">
+                        <div class="col-md-6 d-flex align-items-center mb-2">
                             <div class="alert alert-success py-3 px-3 mb-0 small w-100 border-0 bg-success bg-opacity-10 rounded-3">
-                                <h6 class="fw-bold text-success mb-2"><i class="fas fa-bolt me-1"></i> 24/7 Automated Delivery</h6>
-                                <p class="mb-2 text-dark">Meta approved template use karne par 24/7 bina kisi customer chat session ke instant admin alert deliver hota hai.</p>
-                                <hr class="my-2 border-success border-opacity-25">
-                                <strong>Supported Templates:</strong>
-                                <div class="bg-white p-2 rounded border small text-muted mt-1" style="font-size:0.78rem;">
-                                    <div class="mb-1"><span class="badge bg-success">Recommended</span> <strong>order_confirmation:</strong> Yeh template Meta me approved hai. Isme Customer Name, Order ID, Date, Amount, Payment, Status, Items, Address aur Admin Link sab receive hota hai!</div>
-                                    <div><span class="badge bg-secondary">Dedicated</span> <strong>admin_new_order_alert:</strong> 11-Parameter dedicated template (agar Meta me approve karwaya ho).</div>
+                                <h6 class="fw-bold text-success mb-1" style="font-size:0.85rem;"><i class="fas fa-bolt me-1"></i> 24/7 Automated Delivery</h6>
+                                <p class="mb-1 text-dark" style="font-size:0.8rem;">Meta approved template use karne par 24/7 bina issue alert deliver hota hai. Agar template name <strong>khali (empty)</strong> chhod diya jaye to niche diya gaya <strong>Bridge & Fallback Message Template</strong> direct deliver hoga.</p>
+                                <div class="bg-white p-2 rounded border small text-muted mt-1" style="font-size:0.75rem;">
+                                    <div class="mb-1"><span class="badge bg-success">Recommended</span> <strong>order_confirmation:</strong> Meta approved (100% working 24/7). Isme Customer Name, Order ID, Date, Amount, Payment, Status, Items, Address aur Admin Link sab deliver hota hai!</div>
+                                    <div><span class="badge bg-secondary">Fallback</span> <strong>Direct Message:</strong> Meta template field khali chhodne par Bridge & Fallback Template work karega.</div>
                                 </div>
                             </div>
                         </div>
                     </div>
+
+                    <!-- ADMIN META APPROVED TEMPLATE NAME -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-uppercase tracking-wider">Admin Meta Approved Template Name</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white"><i class="fab fa-whatsapp text-warning"></i></span>
+                            <input type="text" name="admin_template_name" id="adminTplInput" class="form-control bg-white" placeholder="e.g. order_confirmation (Khali chhodne par Fallback Template chalega)" value="<?php echo htmlspecialchars($settings['admin_template_name'] ?? ''); ?>">
+                            <button type="button" class="btn btn-outline-primary fw-bold" onclick="openMetaTemplatePicker('adminTplInput')">
+                                <i class="fas fa-search me-1"></i> Fetch from Meta
+                            </button>
+                        </div>
+                        <div class="mt-2 d-flex flex-wrap gap-2 align-items-center">
+                            <span class="small text-muted fw-bold">Quick Select:</span>
+                            <button type="button" class="btn btn-sm btn-outline-success py-0 px-2 rounded-pill small" onclick="document.getElementById('adminTplInput').value='order_confirmation'">
+                                <i class="fas fa-check-circle me-1"></i> Use 'order_confirmation' (100% Working)
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 rounded-pill small" onclick="document.getElementById('adminTplInput').value=''">
+                                <i class="fas fa-times me-1"></i> Clear / Empty (Use Fallback Template)
+                            </button>
+                        </div>
+                        <div class="form-text small mt-1">Meta WhatsApp Manager me approved template ka exact name. Agar is field ko <strong>khali (empty)</strong> chhod diya jaye, to niche diya gaya <strong>Bridge & Fallback Message Template</strong> work karega.</div>
+                    </div>
+
+                    <!-- ADMIN BRIDGE & FALLBACK MESSAGE TEMPLATE -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-1">
+                            <label class="form-label fw-bold small mb-0">Bridge & Fallback Message Template</label>
+                            <div class="btn-group btn-group-sm flex-wrap">
+                                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('adminMsgInput', '{OrderID}')">+OrderID</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('adminMsgInput', '{OrderDate}')">+Date</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('adminMsgInput', '{OrderTime}')">+Time</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('adminMsgInput', '{CustomerName}')">+Name</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('adminMsgInput', '{CustomerPhone}')">+Phone</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('adminMsgInput', '{OrderAmount}')">+Amount</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('adminMsgInput', '{PaymentMethod}')">+Payment</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('adminMsgInput', '{OrderStatus}')">+Status</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('adminMsgInput', '{DeliveryAddress}')">+Address</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('adminMsgInput', '{ItemsOrdered}')">+Items</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('adminMsgInput', '{OrderLink}')">+Link</button>
+                            </div>
+                        </div>
+                        <textarea name="admin_message_template" id="adminMsgInput" class="form-control bg-white" rows="6"><?php echo htmlspecialchars($settings['admin_message_template'] ?? $default_admin_alert_tpl); ?></textarea>
+                        <div class="form-text small">
+                            <strong>Dynamic Variables:</strong> <code>{OrderID}</code>, <code>{OrderDate}</code>, <code>{OrderTime}</code>, <code>{CustomerName}</code>, <code>{CustomerPhone}</code>, <code>{OrderAmount}</code>, <code>{PaymentMethod}</code>, <code>{OrderStatus}</code>, <code>{DeliveryAddress}</code>, <code>{ItemsOrdered}</code>, <code>{OrderLink}</code>
+                        </div>
+                    </div>
+
+                    <!-- TEST BUTTONS -->
+                    <div class="d-flex flex-wrap justify-content-between align-items-center mt-3 pt-2 border-top">
+                        <div class="small text-muted">
+                            <i class="fas fa-info-circle me-1 text-primary"></i>Test alert will test your Meta Template or Bridge & Fallback Template.
+                        </div>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-success fw-bold rounded-pill" id="btnQuickTestAdmin">
+                                <i class="fab fa-whatsapp me-1"></i> Send Test Admin Alert to this number
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary fw-bold rounded-pill" onclick="openTestModal('admin_alert')">
+                                <i class="fas fa-paper-plane me-1"></i> Test on Another Number
+                            </button>
+                        </div>
+                    </div>
+                    <div id="adminTestResult" class="small mt-2 d-none"></div>
                 </div>
             </div>
 
@@ -772,6 +829,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (data.same_number_warning) {
                         resEl.className = 'alert alert-warning py-2 small';
                         resEl.innerHTML = `⚠️ <strong>Accepted by Meta, but recipient is same as sender (+${data.recipient_number})!</strong> WhatsApp blocks self-messaging. Test with a different phone number.${msgId}`;
+                    } else if (data.delivery_type === 'fallback_text') {
+                        resEl.className = 'alert alert-success py-2 small';
+                        resEl.innerHTML = `✅ <strong>Success! Delivered via Bridge & Fallback Message Template.</strong>${msgId}`;
                     } else {
                         resEl.className = 'alert alert-success py-2 small';
                         resEl.innerHTML = `✅ <strong>Success!</strong> Meta accepted the message for delivery.${msgId}`;
@@ -833,14 +893,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     } else if (data.delivery_type === 'template' || data.bypasses_24h) {
                         adminTestResult.className = 'alert alert-success py-2 small mt-2';
                         adminTestResult.innerHTML = `✅ <strong>Success! Delivered via Meta Template (<code>${data.template_name || 'Approved Template'}</code>)</strong><br>` +
-                            `<span class="text-success fw-bold"><i class="fas fa-shield-alt me-1"></i> 24/7 Guaranteed:</span> कल या 24 घंटे बाद भी नया ऑर्डर आने पर बिना किसी "Hi" के ऑटोमैटिक अलर्ट आएगा।${msgId}`;
-                        // If input was empty and auto-discovery found the template, populate input
-                        if (data.template_name && document.getElementById('adminTplInput') && !document.getElementById('adminTplInput').value) {
-                            document.getElementById('adminTplInput').value = data.template_name;
-                        }
+                            `<span class="text-success fw-bold"><i class="fas fa-shield-alt me-1"></i> 24/7 Guaranteed:</span> Meta approved template delivery successful.${msgId}`;
+                    } else if (data.delivery_type === 'fallback_text') {
+                        adminTestResult.className = 'alert alert-success py-2 small mt-2';
+                        adminTestResult.innerHTML = `✅ <strong>Success! Delivered via Bridge & Fallback Message Template.</strong><br>` +
+                            `<span class="text-muted small">Meta Approved Template Name khali hone par Bridge & Fallback Message Template safaltapoorvak deliver ho gaya hai.</span>${msgId}`;
                     } else {
-                        adminTestResult.className = 'alert alert-warning py-2 small mt-2';
-                        adminTestResult.innerHTML = `⚠️ <strong>Delivered as Direct Text:</strong> अभी 24 घंटे का सेशन खुला है इसलिए मिल गया, लेकिन कल 24 घंटे बाद नए ऑर्डर पर रुक सकता है। कृपया ऊपर <strong>Admin Meta Template Name</strong> में Approved Template चुनें।${msgId}`;
+                        adminTestResult.className = 'alert alert-info py-2 small mt-2';
+                        adminTestResult.innerHTML = `✅ <strong>Delivered via Direct Text Message.</strong>${msgId}`;
                     }
                     adminTestResult.classList.remove('d-none');
                 } else {
