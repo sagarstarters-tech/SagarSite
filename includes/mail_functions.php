@@ -240,14 +240,20 @@ function sendOrderConfirmationEmail($conn, $order_id, $customer_email, $customer
 
     $date_str = date('F j, Y, g:i a');
     
-    // Common HTML Parts - Professional Responsive Items Table
-    $items_html = '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-top: 10px;">
+    // Common HTML Parts - Professional Responsive Items Table (Mobile-Optimized)
+    $items_html = '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="table-layout: fixed; width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-top: 8px; box-sizing: border-box;">
+                    <colgroup>
+                        <col style="width: 48%;">
+                        <col style="width: 14%;">
+                        <col style="width: 19%;">
+                        <col style="width: 19%;">
+                    </colgroup>
                     <thead>
                         <tr style="background-color: #f8fafc;">
-                            <th style="padding: 12px 14px; border-bottom: 1px solid #e2e8f0; text-align: left; font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Product</th>
-                            <th style="padding: 12px 14px; border-bottom: 1px solid #e2e8f0; text-align: center; font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Qty</th>
-                            <th style="padding: 12px 14px; border-bottom: 1px solid #e2e8f0; text-align: right; font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Price</th>
-                            <th style="padding: 12px 14px; border-bottom: 1px solid #e2e8f0; text-align: right; font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Total</th>
+                            <th style="padding: 10px 6px; border-bottom: 1px solid #e2e8f0; text-align: left; font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.3px;">Product</th>
+                            <th style="padding: 10px 4px; border-bottom: 1px solid #e2e8f0; text-align: center; font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.3px;">Qty</th>
+                            <th style="padding: 10px 4px; border-bottom: 1px solid #e2e8f0; text-align: right; font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.3px;">Price</th>
+                            <th style="padding: 10px 6px; border-bottom: 1px solid #e2e8f0; text-align: right; font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.3px;">Total</th>
                         </tr>
                     </thead>
                     <tbody>';
@@ -255,22 +261,22 @@ function sendOrderConfirmationEmail($conn, $order_id, $customer_email, $customer
     foreach ($order_details as $item) {
         $item_total = $item['price'] * $item['qty'];
         $items_html .= '<tr>
-                            <td style="padding: 12px 14px; border-bottom: 1px solid #f1f5f9; text-align: left; vertical-align: middle;">
-                                <div style="font-weight: 600; font-size: 13px; color: #1e293b; line-height: 1.4;">' . htmlspecialchars($item['name']) . '</div>
+                            <td style="padding: 10px 6px; border-bottom: 1px solid #f1f5f9; text-align: left; vertical-align: middle; word-break: break-word; overflow-wrap: break-word;">
+                                <div style="font-weight: 600; font-size: 12px; color: #1e293b; line-height: 1.35;">' . htmlspecialchars($item['name']) . '</div>
                             </td>
-                            <td style="padding: 12px 14px; border-bottom: 1px solid #f1f5f9; text-align: center; vertical-align: middle;">
-                                <span style="display: inline-block; background-color: #f1f5f9; color: #334155; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 6px; border: 1px solid #e2e8f0;">' . $item['qty'] . '</span>
+                            <td style="padding: 10px 4px; border-bottom: 1px solid #f1f5f9; text-align: center; vertical-align: middle;">
+                                <span style="display: inline-block; background-color: #f1f5f9; color: #334155; font-size: 11px; font-weight: 700; padding: 2px 6px; border-radius: 4px; border: 1px solid #e2e8f0;">' . $item['qty'] . '</span>
                             </td>
-                            <td style="padding: 12px 14px; border-bottom: 1px solid #f1f5f9; text-align: right; vertical-align: middle; font-size: 13px; color: #64748b;">' . $currency . number_format($item['price'], 2) . '</td>
-                            <td style="padding: 12px 14px; border-bottom: 1px solid #f1f5f9; text-align: right; vertical-align: middle; font-weight: 700; font-size: 13px; color: #0f172a;">' . $currency . number_format($item_total, 2) . '</td>
+                            <td style="padding: 10px 4px; border-bottom: 1px solid #f1f5f9; text-align: right; vertical-align: middle; font-size: 12px; color: #64748b; white-space: nowrap; font-variant-numeric: tabular-nums;">' . $currency . number_format($item['price'], 2) . '</td>
+                            <td style="padding: 10px 6px; border-bottom: 1px solid #f1f5f9; text-align: right; vertical-align: middle; font-weight: 700; font-size: 12px; color: #0f172a; white-space: nowrap; font-variant-numeric: tabular-nums;">' . $currency . number_format($item_total, 2) . '</td>
                         </tr>';
     }
     
     $items_html .= '</tbody>
                     <tfoot>
                         <tr style="background-color: #f8fafc;">
-                            <td colspan="3" style="padding: 12px 14px; text-align: right; font-weight: 700; font-size: 13px; color: #1e293b; text-transform: uppercase; letter-spacing: 0.5px; border-top: 1px solid #e2e8f0;">Grand Total:</td>
-                            <td style="padding: 12px 14px; text-align: right; font-weight: 800; font-size: 16px; color: #0284c7; border-top: 1px solid #e2e8f0;">' . $currency . number_format($subtotal, 2) . '</td>
+                            <td colspan="2" style="padding: 11px 8px; text-align: right; font-weight: 700; font-size: 12px; color: #1e293b; text-transform: uppercase; letter-spacing: 0.4px; border-top: 2px solid #e2e8f0; white-space: nowrap;">Grand Total:</td>
+                            <td colspan="2" style="padding: 11px 8px; text-align: right; font-weight: 800; font-size: 15px; color: #0284c7; border-top: 2px solid #e2e8f0; white-space: nowrap;">' . $currency . number_format($subtotal, 2) . '</td>
                         </tr>
                     </tfoot>
                    </table>';
@@ -284,23 +290,24 @@ function sendOrderConfirmationEmail($conn, $order_id, $customer_email, $customer
     }
     $admin_order_url = $site_url . '/admin/manage_orders.php';
 
-    // Canonical executive layout for Customer Order Confirmation
-    $exec_customer_body = '<div style="background-color: #f1f5f9; padding: 30px 15px; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Helvetica, Arial, sans-serif;">
-    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06); line-height: 1.5;">
+    // Canonical executive layout for Customer Order Confirmation (Mobile-Optimized)
+    $exec_customer_body = '<div style="background-color: #f1f5f9; padding: 16px 8px; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Helvetica, Arial, sans-serif; box-sizing: border-box; -webkit-text-size-adjust: 100%;">
+    <!-- mobile-responsive-v2 -->
+    <div style="max-width: 600px; width: 100%; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 18px rgba(0,0,0,0.05); line-height: 1.5; box-sizing: border-box;">
         <!-- Top Brand Bar -->
-        <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 20px 25px; text-align: left; border-bottom: 1px solid #334155;">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 16px 14px; text-align: left; border-bottom: 1px solid #334155;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
                 <tr>
-                    <td style="vertical-align: middle;">
-                        <div style="font-size: 18px; font-weight: 800; letter-spacing: 0.5px; color: #ffffff;">
+                    <td style="vertical-align: middle; text-align: left;">
+                        <div style="font-size: 16px; font-weight: 800; letter-spacing: 0.5px; color: #ffffff; line-height: 1.2;">
                             SAGAR <span style="color: #38bdf8;">STARTER\'S</span>
                         </div>
-                        <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; margin-top: 2px;">
-                            Industrial & Agricultural Starters
+                        <div style="font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.6px; margin-top: 3px;">
+                            Industrial &amp; Agricultural Starters
                         </div>
                     </td>
-                    <td style="text-align: right; vertical-align: middle;">
-                        <span style="display: inline-block; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35); color: #38bdf8; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase;">
+                    <td style="text-align: right; vertical-align: middle; white-space: nowrap;">
+                        <span style="display: inline-block; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35); color: #38bdf8; padding: 3px 9px; border-radius: 20px; font-size: 10px; font-weight: 700; text-transform: uppercase;">
                             ✓ Verified Order
                         </span>
                     </td>
@@ -309,43 +316,43 @@ function sendOrderConfirmationEmail($conn, $order_id, $customer_email, $customer
         </div>
 
         <!-- Hero Confirmation Banner -->
-        <div style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); padding: 30px 25px; text-align: center; color: #ffffff;">
-            <div style="display: inline-block; width: 50px; height: 50px; line-height: 48px; border-radius: 50%; background: rgba(255, 255, 255, 0.2); font-size: 24px; margin-bottom: 10px; border: 2px solid rgba(255, 255, 255, 0.35);">
+        <div style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); padding: 22px 16px; text-align: center; color: #ffffff;">
+            <div style="display: inline-block; width: 44px; height: 44px; line-height: 42px; border-radius: 50%; background: rgba(255, 255, 255, 0.2); font-size: 22px; margin-bottom: 8px; border: 2px solid rgba(255, 255, 255, 0.35);">
                 ✓
             </div>
-            <h2 style="margin: 0 0 6px; font-size: 24px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px;">Order Confirmed!</h2>
-            <p style="margin: 0; font-size: 14px; color: #e0f2fe;">Thank you for your purchase. We are preparing your order for dispatch.</p>
+            <h2 style="margin: 0 0 4px; font-size: 22px; font-weight: 800; color: #ffffff; letter-spacing: -0.4px;">Order Confirmed!</h2>
+            <p style="margin: 0; font-size: 13px; color: #e0f2fe; line-height: 1.4;">Thank you for your purchase. We are preparing your order for dispatch.</p>
         </div>
 
         <!-- Main Content -->
-        <div style="padding: 26px;">
-            <p style="font-size: 15px; color: #1e293b; margin: 0 0 12px;">
+        <div style="padding: 18px 14px; box-sizing: border-box;">
+            <p style="font-size: 14px; color: #1e293b; margin: 0 0 10px;">
                 Hello <strong>{customer_name}</strong>,
             </p>
-            <p style="font-size: 14px; color: #475569; margin: 0 0 20px; line-height: 1.6;">
+            <p style="font-size: 13px; color: #475569; margin: 0 0 16px; line-height: 1.55;">
                 We are pleased to confirm your order details below. Our technical team is inspecting and packing your unit with utmost care. You will receive live courier tracking as soon as it ships.
             </p>
 
             <!-- Order Highlights Grid -->
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 24px; overflow: hidden;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="table-layout: fixed; width: 100%; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 20px; overflow: hidden; box-sizing: border-box;">
                 <tr>
-                    <td width="50%" style="padding: 13px 16px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
-                        <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Order Number</span>
-                        <strong style="font-size: 16px; color: #0284c7;">#{order_id}</strong>
+                    <td width="50%" style="padding: 10px 10px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; vertical-align: top; word-break: break-word; box-sizing: border-box;">
+                        <span style="font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Order Number</span>
+                        <strong style="font-size: 15px; color: #0284c7;">#{order_id}</strong>
                     </td>
-                    <td width="50%" style="padding: 13px 16px; border-bottom: 1px solid #e2e8f0;">
-                        <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Order Date</span>
-                        <span style="font-size: 13px; color: #1e293b; font-weight: 600;">{date_str}</span>
+                    <td width="50%" style="padding: 10px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: top; word-break: break-word; box-sizing: border-box;">
+                        <span style="font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Order Date</span>
+                        <span style="font-size: 12px; color: #1e293b; font-weight: 600; line-height: 1.3; display: block;">{date_str}</span>
                     </td>
                 </tr>
                 <tr>
-                    <td width="50%" style="padding: 13px 16px; border-right: 1px solid #e2e8f0;">
-                        <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Payment Method</span>
-                        <span style="font-size: 13px; color: #1e293b; font-weight: 600;">{payment_method}</span>
+                    <td width="50%" style="padding: 10px 10px; border-right: 1px solid #e2e8f0; vertical-align: top; word-break: break-word; box-sizing: border-box;">
+                        <span style="font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Payment Method</span>
+                        <span style="font-size: 12px; color: #1e293b; font-weight: 600; line-height: 1.3; display: block;">{payment_method}</span>
                     </td>
-                    <td width="50%" style="padding: 13px 16px;">
-                        <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Order Status</span>
-                        <span style="display: inline-block; background-color: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 12px;">
+                    <td width="50%" style="padding: 10px 10px; vertical-align: top; word-break: break-word; box-sizing: border-box;">
+                        <span style="font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Order Status</span>
+                        <span style="display: inline-block; background-color: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; line-height: 1.3;">
                             Pending / In Progress
                         </span>
                     </td>
@@ -353,18 +360,18 @@ function sendOrderConfirmationEmail($conn, $order_id, $customer_email, $customer
             </table>
 
             <!-- Order Items Section -->
-            <div style="margin-bottom: 24px;">
-                <div style="font-size: 13px; font-weight: 700; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
+            <div style="margin-bottom: 20px; box-sizing: border-box; width: 100%; overflow: hidden;">
+                <div style="font-size: 12px; font-weight: 700; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
                     📦 Order Summary
                 </div>
                 {items_table}
             </div>
 
             <!-- Call To Actions -->
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0 10px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 20px 0 10px; width: 100%;">
                 <tr>
-                    <td align="center">
-                        <a href="https://wa.me/918573934013?text=Hi%20Sagar%20Starters,%20I%20have%20a%20query%20about%20Order%20%23{order_id}" style="display: inline-block; background-color: #25d366; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 700; padding: 12px 28px; border-radius: 50px; box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35);">
+                    <td align="center" style="padding: 0;">
+                        <a href="https://wa.me/918573934013?text=Hi%20Sagar%20Starters,%20I%20have%20a%20query%20about%20Order%20%23{order_id}" style="display: inline-block; background-color: #25d366; color: #ffffff; text-decoration: none; font-size: 13px; font-weight: 700; padding: 11px 24px; border-radius: 50px; box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35); box-sizing: border-box; max-width: 90%;">
                             💬 WhatsApp Support
                         </a>
                     </td>
@@ -372,13 +379,13 @@ function sendOrderConfirmationEmail($conn, $order_id, $customer_email, $customer
             </table>
 
             <!-- Guarantee Box -->
-            <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px 16px; margin-top: 20px;">
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+            <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 10px 12px; margin-top: 16px; box-sizing: border-box;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
                     <tr>
-                        <td width="28" style="vertical-align: top; font-size: 18px;">🛡️</td>
-                        <td style="padding-left: 8px; vertical-align: top;">
-                            <div style="font-size: 13px; font-weight: 700; color: #166534;">Genuine Manufacturer Assurance</div>
-                            <div style="font-size: 12px; color: #15803d; margin-top: 2px;">All motor starters are 100% factory inspected and tested. Have questions? Reply directly to this email.</div>
+                        <td width="26" style="vertical-align: top; font-size: 16px;">🛡️</td>
+                        <td style="padding-left: 6px; vertical-align: top;">
+                            <div style="font-size: 12px; font-weight: 700; color: #166534;">Genuine Manufacturer Assurance</div>
+                            <div style="font-size: 11px; color: #15803d; margin-top: 2px; line-height: 1.4;">All motor starters are 100% factory inspected and tested. Have questions? Reply directly to this email.</div>
                         </td>
                     </tr>
                 </table>
@@ -386,35 +393,36 @@ function sendOrderConfirmationEmail($conn, $order_id, $customer_email, $customer
         </div>
 
         <!-- Footer -->
-        <div style="background-color: #0f172a; padding: 20px 25px; text-align: center; color: #94a3b8; font-size: 12px; border-top: 1px solid #1e293b;">
-            <p style="margin: 0 0 6px; font-size: 13px; font-weight: 700; color: #f8fafc;">Sagar Starter\'s Support Team</p>
-            <p style="margin: 0 0 10px; color: #64748b;">
+        <div style="background-color: #0f172a; padding: 16px 14px; text-align: center; color: #94a3b8; font-size: 11px; border-top: 1px solid #1e293b;">
+            <p style="margin: 0 0 6px; font-size: 12px; font-weight: 700; color: #f8fafc;">Sagar Starter\'s Support Team</p>
+            <p style="margin: 0 0 8px; color: #64748b; line-height: 1.4;">
                 Email: <a href="mailto:sagarstarters@gmail.com" style="color: #38bdf8; text-decoration: none;">sagarstarters@gmail.com</a> &nbsp;|&nbsp; Phone: <a href="tel:+918573934013" style="color: #38bdf8; text-decoration: none;">+91 85739 34013</a>
             </p>
-            <p style="margin: 0; font-size: 11px; color: #475569;">
+            <p style="margin: 0; font-size: 10px; color: #475569;">
                 &copy; {current_year} Sagar Starter\'s. All rights reserved.
             </p>
         </div>
     </div>
 </div>';
 
-    // Canonical executive layout for Admin Order Notification
-    $exec_admin_body = '<div style="background-color: #f1f5f9; padding: 30px 15px; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Helvetica, Arial, sans-serif;">
-    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06); line-height: 1.5;">
+    // Canonical executive layout for Admin Order Notification (Mobile-Optimized)
+    $exec_admin_body = '<div style="background-color: #f1f5f9; padding: 16px 8px; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Helvetica, Arial, sans-serif; box-sizing: border-box; -webkit-text-size-adjust: 100%;">
+    <!-- mobile-responsive-v2 -->
+    <div style="max-width: 600px; width: 100%; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 18px rgba(0,0,0,0.05); line-height: 1.5; box-sizing: border-box;">
         <!-- Top Admin Bar -->
-        <div style="background: linear-gradient(135deg, #064e3b 0%, #065f46 100%); padding: 18px 25px; text-align: left; border-bottom: 1px solid #047857;">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <div style="background: linear-gradient(135deg, #064e3b 0%, #065f46 100%); padding: 14px 14px; text-align: left; border-bottom: 1px solid #047857;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
                 <tr>
-                    <td style="vertical-align: middle;">
-                        <div style="font-size: 17px; font-weight: 800; color: #ffffff;">
+                    <td style="vertical-align: middle; text-align: left;">
+                        <div style="font-size: 15px; font-weight: 800; color: #ffffff; line-height: 1.2;">
                             SAGAR <span style="color: #34d399;">STARTER\'S</span> ADMIN
                         </div>
-                        <div style="font-size: 11px; color: #a7f3d0; text-transform: uppercase; letter-spacing: 0.8px; margin-top: 2px;">
+                        <div style="font-size: 10px; color: #a7f3d0; text-transform: uppercase; letter-spacing: 0.6px; margin-top: 3px;">
                             New Order Placement Alert
                         </div>
                     </td>
-                    <td style="text-align: right; vertical-align: middle;">
-                        <span style="display: inline-block; background: rgba(52, 211, 153, 0.2); border: 1px solid #34d399; color: #ffffff; padding: 3px 11px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase;">
+                    <td style="text-align: right; vertical-align: middle; white-space: nowrap;">
+                        <span style="display: inline-block; background: rgba(52, 211, 153, 0.2); border: 1px solid #34d399; color: #ffffff; padding: 3px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; text-transform: uppercase;">
                             ⚡ Action Required
                         </span>
                     </td>
@@ -423,66 +431,66 @@ function sendOrderConfirmationEmail($conn, $order_id, $customer_email, $customer
         </div>
 
         <!-- Alert Hero Banner -->
-        <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); padding: 26px 25px; text-align: center; color: #ffffff;">
-            <div style="display: inline-block; width: 46px; height: 46px; line-height: 44px; border-radius: 50%; background: rgba(255, 255, 255, 0.2); font-size: 22px; margin-bottom: 8px; border: 2px solid rgba(255, 255, 255, 0.35);">
+        <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); padding: 20px 16px; text-align: center; color: #ffffff;">
+            <div style="display: inline-block; width: 42px; height: 42px; line-height: 40px; border-radius: 50%; background: rgba(255, 255, 255, 0.2); font-size: 20px; margin-bottom: 6px; border: 2px solid rgba(255, 255, 255, 0.35);">
                 🛒
             </div>
-            <h2 style="margin: 0 0 4px; font-size: 23px; font-weight: 800; color: #ffffff;">New Order Received!</h2>
-            <p style="margin: 0; font-size: 14px; color: #d1fae5;">Order #{order_id} has been placed and requires fulfillment.</p>
+            <h2 style="margin: 0 0 4px; font-size: 21px; font-weight: 800; color: #ffffff;">New Order Received!</h2>
+            <p style="margin: 0; font-size: 13px; color: #d1fae5; line-height: 1.4;">Order #{order_id} has been placed and requires fulfillment.</p>
         </div>
 
         <!-- Main Content -->
-        <div style="padding: 26px;">
+        <div style="padding: 18px 14px; box-sizing: border-box;">
             <!-- Order Meta Grid -->
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 24px; overflow: hidden;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="table-layout: fixed; width: 100%; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 20px; overflow: hidden; box-sizing: border-box;">
                 <tr>
-                    <td width="50%" style="padding: 13px 16px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
-                        <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Order ID</span>
-                        <strong style="font-size: 16px; color: #059669;">#{order_id}</strong>
+                    <td width="50%" style="padding: 10px 10px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; vertical-align: top; word-break: break-word; box-sizing: border-box;">
+                        <span style="font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Order ID</span>
+                        <strong style="font-size: 15px; color: #059669;">#{order_id}</strong>
                     </td>
-                    <td width="50%" style="padding: 13px 16px; border-bottom: 1px solid #e2e8f0;">
-                        <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Total Amount</span>
-                        <strong style="font-size: 16px; color: #0f172a;">{total_amount}</strong>
+                    <td width="50%" style="padding: 10px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: top; word-break: break-word; box-sizing: border-box;">
+                        <span style="font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Total Amount</span>
+                        <strong style="font-size: 15px; color: #0f172a; white-space: nowrap;">{total_amount}</strong>
                     </td>
                 </tr>
                 <tr>
-                    <td width="50%" style="padding: 13px 16px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
-                        <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Customer Name</span>
-                        <strong style="font-size: 14px; color: #1e293b;">{customer_name}</strong>
+                    <td width="50%" style="padding: 10px 10px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; vertical-align: top; word-break: break-word; box-sizing: border-box;">
+                        <span style="font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Customer Name</span>
+                        <strong style="font-size: 13px; color: #1e293b; display: block; word-break: break-word;">{customer_name}</strong>
                     </td>
-                    <td width="50%" style="padding: 13px 16px; border-bottom: 1px solid #e2e8f0;">
-                        <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Customer Email</span>
-                        <a href="mailto:{customer_email}" style="font-size: 13px; color: #0284c7; text-decoration: none; font-weight: 600;">{customer_email}</a>
+                    <td width="50%" style="padding: 10px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: top; word-break: break-all; overflow-wrap: anywhere; box-sizing: border-box;">
+                        <span style="font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Customer Email</span>
+                        <a href="mailto:{customer_email}" style="font-size: 11px; color: #0284c7; text-decoration: none; font-weight: 600; word-break: break-all; overflow-wrap: anywhere; display: inline-block; line-height: 1.3;">{customer_email}</a>
                     </td>
                 </tr>
                 <tr>
-                    <td width="50%" style="padding: 13px 16px; border-right: 1px solid #e2e8f0;">
-                        <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Date & Time</span>
-                        <span style="font-size: 13px; color: #1e293b; font-weight: 500;">{date_str}</span>
+                    <td width="50%" style="padding: 10px 10px; border-right: 1px solid #e2e8f0; vertical-align: top; word-break: break-word; box-sizing: border-box;">
+                        <span style="font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Date &amp; Time</span>
+                        <span style="font-size: 12px; color: #1e293b; font-weight: 500; line-height: 1.3; display: block;">{date_str}</span>
                     </td>
-                    <td width="50%" style="padding: 13px 16px;">
-                        <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Payment Method</span>
-                        <span style="font-size: 13px; color: #1e293b; font-weight: 600;">{payment_method}</span>
+                    <td width="50%" style="padding: 10px 10px; vertical-align: top; word-break: break-word; box-sizing: border-box;">
+                        <span style="font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Payment Method</span>
+                        <span style="font-size: 12px; color: #1e293b; font-weight: 600; line-height: 1.3; display: block;">{payment_method}</span>
                     </td>
                 </tr>
             </table>
 
             <!-- Ordered Items -->
-            <div style="margin-bottom: 24px;">
-                <div style="font-size: 13px; font-weight: 700; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
+            <div style="margin-bottom: 20px; box-sizing: border-box; width: 100%; overflow: hidden;">
+                <div style="font-size: 12px; font-weight: 700; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
                     📋 Ordered Products
                 </div>
                 {items_table}
             </div>
 
             <!-- Admin Action Buttons -->
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 24px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 20px; width: 100%;">
                 <tr>
-                    <td align="center">
-                        <a href="{admin_order_url}" style="display: inline-block; background: linear-gradient(135deg, #059669 0%, #047857 100%); color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 700; padding: 12px 28px; border-radius: 50px; box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35); margin: 4px;">
+                    <td align="center" style="padding: 0;">
+                        <a href="{admin_order_url}" style="display: inline-block; background: linear-gradient(135deg, #059669 0%, #047857 100%); color: #ffffff; text-decoration: none; font-size: 13px; font-weight: 700; padding: 11px 20px; border-radius: 50px; box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35); margin: 4px; box-sizing: border-box;">
                             ⚙️ View in Admin Panel &rarr;
                         </a>
-                        <a href="mailto:{customer_email}?subject=Order%20%23{order_id}%20Update" style="display: inline-block; background-color: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; text-decoration: none; font-size: 14px; font-weight: 600; padding: 11px 22px; border-radius: 50px; margin: 4px;">
+                        <a href="mailto:{customer_email}?subject=Order%20%23{order_id}%20Update" style="display: inline-block; background-color: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; text-decoration: none; font-size: 13px; font-weight: 600; padding: 10px 18px; border-radius: 50px; margin: 4px; box-sizing: border-box;">
                             ✉️ Email Customer
                         </a>
                     </td>
@@ -491,7 +499,7 @@ function sendOrderConfirmationEmail($conn, $order_id, $customer_email, $customer
         </div>
 
         <!-- Footer -->
-        <div style="background-color: #f8fafc; padding: 16px 25px; text-align: center; color: #64748b; font-size: 12px; border-top: 1px solid #e2e8f0;">
+        <div style="background-color: #f8fafc; padding: 14px 14px; text-align: center; color: #64748b; font-size: 11px; border-top: 1px solid #e2e8f0;">
             Automated store notification for Sagar Starter\'s Administrators.
         </div>
     </div>
@@ -507,8 +515,8 @@ function sendOrderConfirmationEmail($conn, $order_id, $customer_email, $customer
             // Fetch template
             $tpl = getEmailTemplate($conn, 'order_confirmation_customer');
             
-            // Check if template in DB is legacy or missing
-            if (!$tpl || empty($tpl['body']) || strpos($tpl['body'], 'Order Instructions') !== false || strpos($tpl['body'], 'background-color: #0d6efd; padding: 20px;') !== false) {
+            // Check if template in DB is legacy, missing, or lacks mobile-responsive optimizations (v2)
+            if (!$tpl || empty($tpl['body']) || strpos($tpl['body'], 'mobile-responsive-v2') === false || strpos($tpl['body'], 'Order Instructions') !== false || strpos($tpl['body'], 'background-color: #0d6efd; padding: 20px;') !== false) {
                 if ($conn) {
                     $conn->query("UPDATE email_templates SET body = '" . $conn->real_escape_string($exec_customer_body) . "' WHERE tpl_key = 'order_confirmation_customer'");
                 }
@@ -551,8 +559,8 @@ function sendOrderConfirmationEmail($conn, $order_id, $customer_email, $customer
             // Fetch template
             $tpl = getEmailTemplate($conn, 'order_confirmation_admin');
             
-            // Check if template in DB is legacy or missing
-            if (!$tpl || empty($tpl['body']) || strpos($tpl['body'], 'background-color: #198754;') !== false || strpos($tpl['body'], 'Ordered Products</h3>') !== false) {
+            // Check if template in DB is legacy, missing, or lacks mobile-responsive optimizations (v2)
+            if (!$tpl || empty($tpl['body']) || strpos($tpl['body'], 'mobile-responsive-v2') === false || strpos($tpl['body'], 'background-color: #198754;') !== false || strpos($tpl['body'], 'Ordered Products</h3>') !== false) {
                 if ($conn) {
                     $conn->query("UPDATE email_templates SET body = '" . $conn->real_escape_string($exec_admin_body) . "' WHERE tpl_key = 'order_confirmation_admin'");
                 }
