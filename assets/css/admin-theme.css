@@ -162,6 +162,88 @@ a.adm-btn-primary:hover {
     box-shadow: 0 6px 18px rgba(29, 78, 216, 0.4) !important;
 }
 
+/* ── Hero Actions Container ──────────────────────────────────── */
+.adm-hero-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    z-index: 2;
+    position: relative;
+}
+
+.adm-hero-actions form {
+    margin: 0;
+    display: inline-flex;
+}
+
+.adm-hero-actions .adm-btn-white,
+.adm-hero-actions .adm-btn-primary,
+.adm-hero-actions .btn {
+    margin: 0 !important;
+    white-space: nowrap;
+}
+
+/* Variable button groups wrapping fix */
+.btn-group.flex-wrap {
+    gap: 6px !important;
+}
+.btn-group.flex-wrap > .btn,
+.btn-group.flex-wrap > button {
+    margin-left: 0 !important;
+    border-radius: var(--adm-radius-sm, 8px) !important;
+}
+
+/* Mobile & Tablet Responsive for Hero & Action Buttons */
+@media (max-width: 767.98px) {
+    .adm-hero {
+        padding: 20px 18px !important;
+        margin-bottom: 20px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 14px !important;
+    }
+
+    .adm-hero-title {
+        font-size: 1.35rem !important;
+        line-height: 1.3 !important;
+    }
+
+    .adm-hero-subtitle {
+        font-size: 0.825rem !important;
+        margin-bottom: 6px !important;
+    }
+
+    .adm-hero-actions {
+        width: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 12px !important;
+        margin-top: 4px !important;
+    }
+
+    .adm-hero-actions form {
+        width: 100% !important;
+        display: block !important;
+        margin: 0 !important;
+    }
+
+    .adm-hero-actions .adm-btn-white,
+    .adm-hero-actions .adm-btn-primary,
+    .adm-hero-actions a,
+    .adm-hero-actions button {
+        width: 100% !important;
+        display: flex !important;
+        justify-content: center !important;
+        text-align: center !important;
+        padding: 12px 18px !important;
+        margin: 0 !important;
+        font-size: 0.9rem !important;
+        box-sizing: border-box !important;
+    }
+}
+
 /* ── 3. Stat Cards ───────────────────────────────────────────── */
 .adm-stat-card {
     background: #ffffff;

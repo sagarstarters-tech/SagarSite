@@ -177,10 +177,27 @@
     .action-btns, .btn-group-row {
         width: 100%;
         flex-direction: column;
+        gap: 10px !important;
     }
     
     .action-btns .btn, .btn-group-row .btn {
-        width: 100%;
+        width: 100% !important;
+        margin: 0 !important;
+    }
+
+    .card-header.d-flex {
+        flex-wrap: wrap !important;
+        gap: 10px !important;
+    }
+
+    .card .btn-group {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    .card .btn-group > .btn,
+    .card .btn-group > button {
+        border-radius: 8px !important;
+        margin-left: 0 !important;
     }
     
     .modal-dialog {
