@@ -107,40 +107,33 @@ if (strtolower($order['status']) === 'shipped') {
 $siteUrl = defined('SITE_URL') ? rtrim(SITE_URL, '/') : 'https://sagarstarters.com';
 $orderLink = $siteUrl . '/my-orders.php';
 
-// Construct preview for Status Template (order_status_updated)
-$status_preview = "Hello Dear {$customerName},\n\nYour Order No. #{$order_id} status has been updated.\n\nOrder Date: {$orderDate}\nCurrent Status: *{$orderStatus}*\nStatus Message: {$statusMessage}\nItems Ordered:\n{$itemsOrdered}\nTotal Amount: ₹{$orderAmount}\nDelivery Address:\n{$deliveryAddress}\nExpected Delivery: {$expectedDelivery}\nOrder Link: {$orderLink}\n\nThank you for shopping with Sagar Starter's!";
-
-// Construct preview for Confirmation Template (order_confirmation)
-$confirm_preview = "Hello Dear {$customerName},\n\nThank you for your order! Your Order #{$order_id} has been successfully placed.\n\nOrder Date: {$orderDate}\nTotal Amount: ₹{$orderAmount}\nPayment: {$paymentMode}\nOrder Status: {$orderStatus}\nItems:\n{$itemsOrdered}\nDelivery Address:\n{$deliveryAddress}\nTrack Order: {$orderLink}\n\nThank you for shopping with Sagar Starter's!";
-
-$custom_template = !empty($settings['message_template']) ? $settings['message_template'] : $status_preview;
-$replacementValues = [
-    '{CustomerName}'     => $customerName,
-    '{OrderID}'          => $order_id,
-    '{OrderStatus}'      => $orderStatus,
-    '{TrackingID}'       => $trackingID,
-    '{OrderAmount}'      => $orderAmount,
-    '{OrderDate}'        => $orderDate,
-    '{OrderTime}'        => $orderTime,
-    '{PaymentMethod}'    => $paymentMode,
-    '{StatusMessage}'    => $statusMessage,
-    '{ItemsOrdered}'     => $itemsOrdered,
-    '{DeliveryAddress}'  => $deliveryAddress,
-    '{ExpectedDelivery}' => $expectedDelivery,
-    '{OrderLink}'        => $orderLink
+$orderData = [
+    'customer_name'          => $customerName,
+    'order_id'               => $order_id,
+    'order_status'           => $orderStatus,
+    'tracking_id'            => $trackingID,
+    'order_amount'           => $orderAmount,
+    'order_date'             => $orderDate,
+    'order_time'             => $orderTime,
+    'order_datetime'         => $orderDateTime,
+    'payment_method'         => $paymentMode,
+    'status_message'         => $statusMessage,
+    'items_ordered'          => $itemsOrdered,
+    'delivery_address'       => $deliveryAddress,
+    'expected_delivery_date' => $expectedDelivery,
+    'order_link'             => $orderLink,
+    'customer_phone'         => $customerPhone
 ];
-if (!empty($settings['order_confirmation_message_template'])) {
-    $confirm_preview = $settings['order_confirmation_message_template'];
-    foreach ($replacementValues as $k => $v) {
-        $confirm_preview = str_replace($k, (string)$v, $confirm_preview);
-    }
-}
-if (!empty($settings['message_template'])) {
-    $status_preview = $settings['message_template'];
-    foreach ($replacementValues as $k => $v) {
-        $status_preview = str_replace($k, (string)$v, $status_preview);
-    }
-}
+
+$raw_default_status = "Hello Dear {CustomerName},\n\nYour Order No. #{OrderID} status has been updated.\n\nOrder Date: {OrderDate}\nCurrent Status: *{OrderStatus}*\nStatus Message: {StatusMessage}\nItems Ordered:\n{ItemsOrdered}\nTotal Amount: ₹{OrderAmount}\nDelivery Address:\n{DeliveryAddress}\nExpected Delivery: {ExpectedDelivery}\nOrder Link: {OrderLink}\n\nThank you for shopping with Sagar Starter's!";
+
+$raw_default_confirm = "Hello Dear {CustomerName},\n\nThank you for your order! Your Order #{OrderID} has been successfully placed.\n\nOrder Date: {OrderDate}\nTotal Amount: ₹{OrderAmount}\nPayment: {PaymentMethod}\nOrder Status: {OrderStatus}\nItems:\n{ItemsOrdered}\nDelivery Address:\n{DeliveryAddress}\nTrack Order: {OrderLink}\n\nThank you for shopping with Sagar Starter's!";
+
+$raw_status_tpl  = !empty($settings['message_template']) ? $settings['message_template'] : $raw_default_status;
+$raw_confirm_tpl = !empty($settings['order_confirmation_message_template']) ? $settings['order_confirmation_message_template'] : $raw_default_confirm;
+
+$status_preview  = compileWhatsAppTemplate($raw_status_tpl, $orderData);
+$confirm_preview = compileWhatsAppTemplate($raw_confirm_tpl, $orderData);
 
 // Meta template names - empty when left blank so Fallback Template is used
 $status_tpl_name  = trim($settings['meta_template_name'] ?? '');

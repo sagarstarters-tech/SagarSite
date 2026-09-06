@@ -76,6 +76,158 @@ if (!function_exists('formatWhatsAppPaymentMethod')) {
 }
 
 /**
+ * Universal Template Compiler for WhatsApp Messages.
+ * Supports:
+ * 1. Single {var} and double {{var}} curly braces.
+ * 2. Case-insensitive matching (e.g. {order_id}, {OrderID}, {ORDER_ID}, {{order_id}}).
+ * 3. All common variable aliases (snake_case, PascalCase, abbreviations).
+ *
+ * @param string $template Raw template string
+ * @param array  $data     Data values for dynamic tags
+ * @return string Compiled message text
+ */
+if (!function_exists('compileWhatsAppTemplate')) {
+    function compileWhatsAppTemplate($template, array $data = []) {
+        if (empty($template)) return '';
+
+        // Standardize canonical values
+        $customerName    = (string)($data['customer_name'] ?? $data['CustomerName'] ?? 'Valued Customer');
+        $orderId         = (string)($data['order_id'] ?? $data['OrderID'] ?? '');
+        $orderDate       = (string)($data['order_date'] ?? $data['OrderDate'] ?? date('d M Y'));
+        $orderTime       = (string)($data['order_time'] ?? $data['OrderTime'] ?? date('h:i A'));
+        $orderDateTime   = (string)($data['order_datetime'] ?? $data['OrderDateTime'] ?? "$orderDate $orderTime");
+        $orderAmount     = (string)($data['order_amount'] ?? $data['order_total'] ?? $data['OrderAmount'] ?? '0.00');
+        $paymentMethod   = (string)($data['payment_method'] ?? $data['payment_mode'] ?? $data['PaymentMethod'] ?? 'COD');
+        $orderStatus     = (string)($data['order_status'] ?? $data['status'] ?? $data['OrderStatus'] ?? 'Pending');
+        $statusMessage   = (string)($data['status_message'] ?? $data['StatusMessage'] ?? '');
+        $itemsOrdered    = (string)($data['order_items'] ?? $data['items_ordered'] ?? $data['ItemsOrdered'] ?? '');
+        $customerAddress = (string)($data['customer_address'] ?? $data['delivery_address'] ?? $data['DeliveryAddress'] ?? 'N/A');
+        $customerPhone   = (string)($data['customer_phone'] ?? $data['phone'] ?? $data['CustomerPhone'] ?? '');
+        $trackingId      = (string)($data['tracking_id'] ?? $data['tracking_number'] ?? $data['TrackingID'] ?? 'N/A');
+        $expectedDelivery= (string)($data['expected_delivery_date'] ?? $data['expected_delivery'] ?? $data['ExpectedDelivery'] ?? '');
+        $orderLink       = (string)($data['order_link'] ?? $data['OrderLink'] ?? '');
+        $siteName        = (string)($data['site_name'] ?? (defined('STORE_NAME') ? STORE_NAME : "Sagar Starter's"));
+
+        $aliasMap = [
+            // Customer Name
+            'customer_name' => $customerName,
+            'customername'  => $customerName,
+            'customer'      => $customerName,
+            'name'          => $customerName,
+            'client_name'   => $customerName,
+
+            // Order ID
+            'order_id'      => $orderId,
+            'orderid'       => $orderId,
+            'order_no'      => $orderId,
+            'orderno'       => $orderId,
+            'id'            => $orderId,
+
+            // Order Date & Time
+            'order_date'        => $orderDate,
+            'orderdate'         => $orderDate,
+            'date'              => $orderDate,
+            'order_time'        => $orderTime,
+            'ordertime'         => $orderTime,
+            'time'              => $orderTime,
+            'order_date_time'   => $orderDateTime,
+            'order_datetime'    => $orderDateTime,
+            'orderdatetime'     => $orderDateTime,
+            'datetime'          => $orderDateTime,
+
+            // Order Total / Amount
+            'order_total'   => $orderAmount,
+            'ordertotal'    => $orderAmount,
+            'order_amount'  => $orderAmount,
+            'orderamount'   => $orderAmount,
+            'total_amount'  => $orderAmount,
+            'totalamount'   => $orderAmount,
+            'amount'        => $orderAmount,
+            'total'         => $orderAmount,
+
+            // Payment
+            'payment_method'=> $paymentMethod,
+            'paymentmethod' => $paymentMethod,
+            'payment_mode'  => $paymentMethod,
+            'paymentmode'   => $paymentMethod,
+            'payment'       => $paymentMethod,
+
+            // Status
+            'order_status'  => $orderStatus,
+            'orderstatus'   => $orderStatus,
+            'status'        => $orderStatus,
+            'display_status'=> $orderStatus,
+
+            // Status message
+            'status_message'=> $statusMessage,
+            'statusmessage' => $statusMessage,
+            'message'       => $statusMessage,
+
+            // Items
+            'order_items'   => $itemsOrdered,
+            'orderitems'    => $itemsOrdered,
+            'items_ordered' => $itemsOrdered,
+            'itemsordered'  => $itemsOrdered,
+            'items'         => $itemsOrdered,
+            'items_list'    => $itemsOrdered,
+
+            // Address
+            'customer_address' => $customerAddress,
+            'customeraddress'  => $customerAddress,
+            'delivery_address' => $customerAddress,
+            'deliveryaddress'  => $customerAddress,
+            'shipping_address' => $customerAddress,
+            'shippingaddress'  => $customerAddress,
+            'address'          => $customerAddress,
+
+            // Phone
+            'customer_phone'=> $customerPhone,
+            'customerphone' => $customerPhone,
+            'phone_number'  => $customerPhone,
+            'phonenumber'   => $customerPhone,
+            'phone'         => $customerPhone,
+            'mobile'        => $customerPhone,
+
+            // Tracking
+            'tracking_id'    => $trackingId,
+            'trackingid'     => $trackingId,
+            'tracking_number'=> $trackingId,
+            'trackingnumber' => $trackingId,
+            'tracking'       => $trackingId,
+
+            // Expected Delivery
+            'expected_delivery_date' => $expectedDelivery,
+            'expecteddeliverydate'   => $expectedDelivery,
+            'expected_delivery'      => $expectedDelivery,
+            'expecteddelivery'       => $expectedDelivery,
+            'delivery_date'          => $expectedDelivery,
+            'deliverydate'           => $expectedDelivery,
+
+            // Link
+            'order_link'    => $orderLink,
+            'orderlink'     => $orderLink,
+            'track_order'   => $orderLink,
+            'trackorder'    => $orderLink,
+            'track_link'    => $orderLink,
+            'tracklink'     => $orderLink,
+            'link'          => $orderLink,
+
+            // Store
+            'store_name'    => $siteName,
+            'site_name'     => $siteName,
+        ];
+
+        return preg_replace_callback('/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}|\{\s*([a-zA-Z0-9_]+)\s*\}/', function($m) use ($aliasMap) {
+            $tag = strtolower(trim(!empty($m[1]) ? $m[1] : $m[2]));
+            if (array_key_exists($tag, $aliasMap)) {
+                return $aliasMap[$tag];
+            }
+            return $m[0];
+        }, $template);
+    }
+}
+
+/**
  * Send WhatsApp notification to CUSTOMER when an order is placed/confirmed.
  *
  * @param mysqli $conn     Database connection
@@ -185,23 +337,23 @@ function sendCustomerOrderConfirmationWhatsApp($conn, $order_id) {
             ? $settings['order_confirmation_message_template']
             : "Hello Dear {CustomerName},\n\nThank you for your order! Your Order #{OrderID} has been successfully placed.\n\nOrder Date: {OrderDate}\nTotal Amount: ₹{OrderAmount}\nPayment: {PaymentMethod}\n\nDelivery Address:\n{DeliveryAddress}\n\nThank you for shopping with Sagar Starter's!";
 
-        $replacementValues = [
-            '{CustomerName}'  => $customerName,
-            '{OrderID}'       => $order_id,
-            '{OrderDate}'     => $orderDate,
-            '{OrderTime}'     => $orderTime,
-            '{OrderAmount}'   => $orderAmount,
-            '{PaymentMethod}' => $paymentMode,
-            '{OrderStatus}'   => $orderStatus,
-            '{DeliveryAddress}' => $deliveryAddress,
-            '{ItemsOrdered}'  => $itemsOrdered,
-            '{OrderLink}'     => $orderLink
+        $templateData = [
+            'customer_name'          => $customerName,
+            'order_id'               => $order_id,
+            'order_date'             => $orderDate,
+            'order_time'             => $orderTime,
+            'order_datetime'         => $orderDateTime,
+            'order_amount'           => $orderAmount,
+            'payment_method'         => $paymentMode,
+            'order_status'           => $orderStatus,
+            'delivery_address'       => $deliveryAddress,
+            'items_ordered'          => $itemsOrdered,
+            'order_link'             => $orderLink,
+            'customer_phone'         => $customerPhone,
+            'expected_delivery_date' => $expectedDelivery
         ];
 
-        $message = $bridge_template;
-        foreach ($replacementValues as $k => $v) {
-            $message = str_replace($k, $v, $message);
-        }
+        $message = compileWhatsAppTemplate($bridge_template, $templateData);
 
         $token    = trim($settings['api_token']);
         $phone_id = trim($settings['phone_number_id']);
@@ -550,25 +702,25 @@ function sendCustomerOrderStatusWhatsApp($conn, $order_id) {
             ? $settings['message_template'] 
             : "Hello Dear {CustomerName},\n\nYour Order No. #{OrderID} status has been updated.\n\nCurrent Status: *{OrderStatus}*\nTracking ID: {TrackingID}\nTotal Amount: ₹{OrderAmount}\n\nThank you for shopping with us.";
 
-        $replacementValues = [
-            '{CustomerName}'     => $customerName,
-            '{OrderID}'          => $order_id,
-            '{OrderStatus}'      => $orderStatus,
-            '{TrackingID}'       => $trackingID,
-            '{OrderAmount}'      => $orderAmount,
-            '{OrderDate}'        => $orderDate,
-            '{PaymentMethod}'    => $paymentMode,
-            '{StatusMessage}'    => $statusMessage,
-            '{ItemsOrdered}'     => $itemsOrdered,
-            '{DeliveryAddress}'  => $deliveryAddress,
-            '{ExpectedDelivery}' => $expectedDelivery,
-            '{OrderLink}'        => $orderLink
+        $templateData = [
+            'customer_name'          => $customerName,
+            'order_id'               => $order_id,
+            'order_status'           => $orderStatus,
+            'tracking_id'            => $trackingID,
+            'order_amount'           => $orderAmount,
+            'order_date'             => $orderDate,
+            'order_time'             => $orderTime,
+            'order_datetime'         => $orderDateTime,
+            'payment_method'         => $paymentMode,
+            'status_message'         => $statusMessage,
+            'items_ordered'          => $itemsOrdered,
+            'delivery_address'       => $deliveryAddress,
+            'expected_delivery_date' => $expectedDelivery,
+            'order_link'             => $orderLink,
+            'customer_phone'         => $customerPhone
         ];
         
-        $message = $bridge_template;
-        foreach ($replacementValues as $search => $replace) {
-            $message = str_replace($search, $replace, $message);
-        }
+        $message = compileWhatsAppTemplate($bridge_template, $templateData);
         
         $token    = trim($settings['api_token']);
         $phone_id = trim($settings['phone_number_id']);
@@ -1039,25 +1191,22 @@ function sendAdminOrderNotification($conn, $order_id) {
             ? $settings['admin_message_template'] 
             : $default_admin_alert_tpl;
 
-        $adminReplacements = [
-            '{OrderID}'         => $order_id,
-            '{OrderDate}'       => $orderDate,
-            '{OrderTime}'       => $orderTime,
-            '{OrderDateTime}'   => $orderDateTime,
-            '{CustomerName}'    => $customerName,
-            '{CustomerPhone}'   => $customerPhone,
-            '{OrderAmount}'     => $orderAmount,
-            '{PaymentMethod}'   => $paymentMode,
-            '{OrderStatus}'     => $orderStatus,
-            '{DeliveryAddress}' => $deliveryAddress,
-            '{ItemsOrdered}'    => $itemsOrdered,
-            '{OrderLink}'       => $orderLink
+        $adminData = [
+            'order_id'         => $order_id,
+            'order_date'       => $orderDate,
+            'order_time'       => $orderTime,
+            'order_datetime'   => $orderDateTime,
+            'customer_name'    => $customerName,
+            'customer_phone'   => $customerPhone,
+            'order_amount'     => $orderAmount,
+            'payment_method'   => $paymentMode,
+            'order_status'     => $orderStatus,
+            'delivery_address' => $deliveryAddress,
+            'items_ordered'    => $itemsOrdered,
+            'order_link'       => $orderLink
         ];
 
-        $adminMessage = $admin_bridge_tpl;
-        foreach ($adminReplacements as $k => $v) {
-            $adminMessage = str_replace($k, (string)$v, $adminMessage);
-        }
+        $adminMessage = compileWhatsAppTemplate($admin_bridge_tpl, $adminData);
 
         $token    = trim($settings['api_token']);
         $phone_id = trim($settings['phone_number_id']);

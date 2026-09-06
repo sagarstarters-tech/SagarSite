@@ -271,7 +271,7 @@ $logs = $conn->query($logs_query);
                         <div class="mb-2">
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <label class="form-label fw-bold small mb-0">Bridge & Fallback Message Template</label>
-                                <div class="btn-group btn-group-sm">
+                                <div class="btn-group btn-group-sm flex-wrap">
                                     <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('orderConfirmMsgInput', '{CustomerName}')">+Name</button>
                                     <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('orderConfirmMsgInput', '{OrderID}')">+OrderID</button>
                                     <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('orderConfirmMsgInput', '{OrderDate}')">+Date</button>
@@ -279,11 +279,12 @@ $logs = $conn->query($logs_query);
                                     <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('orderConfirmMsgInput', '{PaymentMethod}')">+Payment</button>
                                     <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('orderConfirmMsgInput', '{DeliveryAddress}')">+Address</button>
                                     <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('orderConfirmMsgInput', '{ItemsOrdered}')">+Items</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('orderConfirmMsgInput', '{OrderLink}')">+Link</button>
                                 </div>
                             </div>
                             <textarea name="order_confirmation_message_template" id="orderConfirmMsgInput" class="form-control bg-white" rows="5"><?php echo htmlspecialchars($settings['order_confirmation_message_template'] ?? $default_order_confirm_tpl); ?></textarea>
                             <div class="form-text small">
-                                <strong>Dynamic Variables:</strong> <code>{CustomerName}</code>, <code>{OrderID}</code>, <code>{OrderDate}</code>, <code>{OrderTime}</code>, <code>{OrderAmount}</code>, <code>{PaymentMethod}</code>, <code>{DeliveryAddress}</code>, <code>{ItemsOrdered}</code>
+                                <strong>Dynamic Variables:</strong> <code>{customer_name}</code>, <code>{order_id}</code>, <code>{order_date}</code>, <code>{order_total}</code>, <code>{payment_method}</code>, <code>{customer_address}</code>, <code>{order_items}</code>, <code>{order_link}</code> (Single <code>{var}</code> ya double <code>{{var}}</code> dono kaam karenge).
                             </div>
                         </div>
 
@@ -335,17 +336,21 @@ $logs = $conn->query($logs_query);
                         <div class="mb-2">
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <label class="form-label fw-bold small mb-0">Bridge & Fallback Message Template</label>
-                                <div class="btn-group btn-group-sm">
+                                <div class="btn-group btn-group-sm flex-wrap">
                                     <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('statusMsgInput', '{CustomerName}')">+Name</button>
                                     <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('statusMsgInput', '{OrderID}')">+OrderID</button>
                                     <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('statusMsgInput', '{OrderStatus}')">+Status</button>
                                     <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('statusMsgInput', '{TrackingID}')">+Tracking</button>
                                     <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('statusMsgInput', '{OrderAmount}')">+Amount</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('statusMsgInput', '{ItemsOrdered}')">+Items</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('statusMsgInput', '{DeliveryAddress}')">+Address</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('statusMsgInput', '{ExpectedDelivery}')">+Delivery</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertVar('statusMsgInput', '{OrderLink}')">+Link</button>
                                 </div>
                             </div>
                             <textarea name="message_template" id="statusMsgInput" class="form-control bg-white" rows="5"><?php echo htmlspecialchars($settings['message_template'] ?? ''); ?></textarea>
                             <div class="form-text small">
-                                <strong>Dynamic Variables:</strong> <code>{CustomerName}</code>, <code>{OrderID}</code>, <code>{OrderStatus}</code>, <code>{TrackingID}</code>, <code>{OrderAmount}</code>
+                                <strong>Dynamic Variables:</strong> <code>{customer_name}</code>, <code>{order_id}</code>, <code>{order_status}</code>, <code>{status_message}</code>, <code>{tracking_id}</code>, <code>{order_total}</code>, <code>{expected_delivery_date}</code>, <code>{order_link}</code>, <code>{customer_address}</code>, <code>{order_items}</code> (Single <code>{var}</code> ya double <code>{{var}}</code> dono kaam karenge).
                             </div>
                         </div>
 

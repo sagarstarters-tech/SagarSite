@@ -75,25 +75,22 @@ if (isset($_GET['test_admin']) && $_GET['test_admin'] == '1') {
     $default_admin_alert_tpl = "🛒 *New Order Alert!*\n\nOrder: *#{OrderID}*\nDate: {OrderDate} {OrderTime}\nCustomer: {CustomerName}\nPhone: {CustomerPhone}\nAmount: ₹{OrderAmount}\nPayment: {PaymentMethod}\nStatus: {OrderStatus}\nAddress: {DeliveryAddress}\n\nItems:\n{ItemsOrdered}\n\nView Order: {OrderLink}";
     $admin_bridge_tpl = !empty($settings['admin_message_template']) ? $settings['admin_message_template'] : $default_admin_alert_tpl;
 
-    $adminReplacements = [
-        '{OrderID}'         => $order_id,
-        '{OrderDate}'       => $orderDate,
-        '{OrderTime}'       => $orderTime,
-        '{OrderDateTime}'   => $orderDateTime,
-        '{CustomerName}'    => $customerName,
-        '{CustomerPhone}'   => $customerPhone,
-        '{OrderAmount}'     => $orderAmount,
-        '{PaymentMethod}'   => $paymentMode,
-        '{OrderStatus}'     => $orderStatus,
-        '{DeliveryAddress}' => $deliveryAddress,
-        '{ItemsOrdered}'    => $itemsOrdered,
-        '{OrderLink}'       => $orderLink
+    $adminData = [
+        'order_id'         => $order_id,
+        'order_date'       => $orderDate,
+        'order_time'       => $orderTime,
+        'order_datetime'   => $orderDateTime,
+        'customer_name'    => $customerName,
+        'customer_phone'   => $customerPhone,
+        'order_amount'     => $orderAmount,
+        'payment_method'   => $paymentMode,
+        'order_status'     => $orderStatus,
+        'delivery_address' => $deliveryAddress,
+        'items_ordered'    => $itemsOrdered,
+        'order_link'       => $orderLink
     ];
 
-    $adminMessage = $admin_bridge_tpl;
-    foreach ($adminReplacements as $k => $v) {
-        $adminMessage = str_replace($k, (string)$v, $adminMessage);
-    }
+    $adminMessage = compileWhatsAppTemplate($admin_bridge_tpl, $adminData);
 
     $sending_mode    = 'api';
     $customer_number = $admin_number;
@@ -145,23 +142,23 @@ if (isset($_GET['test_admin']) && $_GET['test_admin'] == '1') {
     $default_order_confirm_tpl = "Hello Dear {CustomerName},\n\nThank you for your order! Your Order #{OrderID} has been successfully placed.\n\nOrder Date: {OrderDate}\nTotal Amount: ₹{OrderAmount}\nPayment Method: {PaymentMethod}\n\nDelivery Address:\n{DeliveryAddress}\n\nThank you for shopping with Sagar Starter's!";
     $confirm_bridge_tpl = !empty($settings['order_confirmation_message_template']) ? $settings['order_confirmation_message_template'] : $default_order_confirm_tpl;
 
-    $confirmReplacements = [
-        '{CustomerName}'  => $customerName,
-        '{OrderID}'       => $order_id,
-        '{OrderDate}'     => $orderDate,
-        '{OrderTime}'     => $orderTime,
-        '{OrderAmount}'   => $orderAmount,
-        '{PaymentMethod}' => $paymentMode,
-        '{OrderStatus}'   => $orderStatus,
-        '{DeliveryAddress}' => $deliveryAddress,
-        '{ItemsOrdered}'  => $itemsOrdered,
-        '{OrderLink}'     => $orderLink
+    $confirmData = [
+        'customer_name'          => $customerName,
+        'order_id'               => $order_id,
+        'order_date'             => $orderDate,
+        'order_time'             => $orderTime,
+        'order_datetime'         => $orderDateTime,
+        'order_amount'           => $orderAmount,
+        'payment_method'         => $paymentMode,
+        'order_status'           => $orderStatus,
+        'delivery_address'       => $deliveryAddress,
+        'items_ordered'          => $itemsOrdered,
+        'order_link'             => $orderLink,
+        'customer_phone'         => $customerPhone,
+        'expected_delivery_date' => date('d M Y', strtotime('+4 days'))
     ];
 
-    $message = $confirm_bridge_tpl;
-    foreach ($confirmReplacements as $k => $v) {
-        $message = str_replace($k, (string)$v, $message);
-    }
+    $message = compileWhatsAppTemplate($confirm_bridge_tpl, $confirmData);
 
 } elseif (isset($_GET['test']) && $_GET['test'] == '1') {
     $sending_mode = 'api';
@@ -189,24 +186,43 @@ if (isset($_GET['test_admin']) && $_GET['test_admin'] == '1') {
 
     $order_id      = (int)$order['id'];
     $customerName  = trim($order['customer_name'] ?? 'Customer');
+    $customerPhone = trim($order['customer_phone'] ?? '+91 9876543210');
     $orderAmount   = number_format((float)($order['total_amount'] ?? 0), 2);
     $orderStatus   = ucwords(str_replace('_', ' ', $order['status'] ?? 'Processing'));
     $trackingID    = !empty($order['tracking_number']) ? $order['tracking_number'] : 'TESTTRACKING123';
+    $orderDate     = date('d M Y', strtotime($order['created_at'] ?? 'now'));
+    $orderTime     = date('h:i A', strtotime($order['created_at'] ?? 'now'));
+    $orderDateTime = date('d M Y, h:i A', strtotime($order['created_at'] ?? 'now'));
+    $paymentMode   = strtoupper($order['payment_mode'] ?? 'COD');
+    $deliveryAddress = '123 Civil Lines, Varanasi, UP - 221001';
+    $siteUrl       = defined('SITE_URL') ? rtrim(SITE_URL, '/') : 'https://sagarstarters.com';
+    $orderLink     = $siteUrl . '/my-orders.php';
+    $statusMessage = "Your order #$order_id status has been updated to $orderStatus.";
+    $itemsOrdered  = "• 1-Phase Submersible Panel (1x)";
+    $expectedDelivery = date('d M Y', strtotime('+4 days'));
 
     $default_status_tpl = "Hello Dear {CustomerName},\n\nYour Order No. #{OrderID} status has been updated.\n\nCurrent Status: *{OrderStatus}*\nTracking ID: {TrackingID}\nTotal Amount: ₹{OrderAmount}\n\nThank you for shopping with us.";
     $status_bridge_tpl = !empty($settings['message_template']) ? $settings['message_template'] : $default_status_tpl;
 
-    $statusReplacements = [
-        '{CustomerName}' => $customerName,
-        '{OrderID}'      => $order_id,
-        '{OrderStatus}'  => $orderStatus,
-        '{TrackingID}'   => $trackingID,
-        '{OrderAmount}'  => $orderAmount,
+    $statusData = [
+        'customer_name'          => $customerName,
+        'order_id'               => $order_id,
+        'order_status'           => $orderStatus,
+        'tracking_id'            => $trackingID,
+        'order_amount'           => $orderAmount,
+        'order_date'             => $orderDate,
+        'order_time'             => $orderTime,
+        'order_datetime'         => $orderDateTime,
+        'payment_method'         => $paymentMode,
+        'status_message'         => $statusMessage,
+        'items_ordered'          => $itemsOrdered,
+        'delivery_address'       => $deliveryAddress,
+        'expected_delivery_date' => $expectedDelivery,
+        'order_link'             => $orderLink,
+        'customer_phone'         => $customerPhone
     ];
-    $message = $status_bridge_tpl;
-    foreach ($statusReplacements as $k => $v) {
-        $message = str_replace($k, (string)$v, $message);
-    }
+
+    $message = compileWhatsAppTemplate($status_bridge_tpl, $statusData);
 
 } else {
     $order_id        = intval($_POST['order_id'] ?? 0);
@@ -214,6 +230,65 @@ if (isset($_GET['test_admin']) && $_GET['test_admin'] == '1') {
     $message         = trim($_POST['message'] ?? '');
     $sending_mode    = trim($_POST['sending_mode'] ?? '');
     $is_admin_test   = false;
+
+    // Failsafe: If the submitted message contains any unresolved {tag} or {{tag}}, compile it with order details
+    if ($order_id > 0 && preg_match('/\{\{\s*[a-zA-Z0-9_]+\s*\}\}|\{\s*[a-zA-Z0-9_]+\s*\}/', $message)) {
+        $q = $conn->query("
+            SELECT o.id, o.status, o.total_amount, o.payment_mode, o.payment_method, o.created_at,
+                   u.name AS customer_name, u.phone AS customer_phone,
+                   u.address AS customer_address, u.city AS customer_city, u.state AS customer_state, u.zip_code AS customer_zip,
+                   (SELECT tracking_number FROM order_tracking WHERE order_id = o.id LIMIT 1) as tracking_number
+            FROM orders o 
+            LEFT JOIN users u ON o.user_id = u.id 
+            WHERE o.id = $order_id LIMIT 1
+        ");
+        if ($q && $q->num_rows > 0) {
+            $ord = $q->fetch_assoc();
+            $cName = trim($ord['customer_name'] ?? 'Customer');
+            $cPhone = trim($ord['customer_phone'] ?? '');
+            $oAmount = number_format((float)($ord['total_amount'] ?? 0), 2);
+            $oStatus = ucwords(str_replace('_', ' ', $ord['status'] ?? 'Processing'));
+            $tId = $ord['tracking_number'] ?: 'N/A';
+            $pMode = formatWhatsAppPaymentMethod($ord['payment_method'] ?? '', $ord['payment_mode'] ?? '');
+            $oDate = date('d M Y', strtotime($ord['created_at'] ?? 'now'));
+            $oTime = date('h:i A', strtotime($ord['created_at'] ?? 'now'));
+            $oDateTime = date('d M Y, h:i A', strtotime($ord['created_at'] ?? 'now'));
+            $addr = trim(($ord['customer_address'] ?? '') . ', ' . ($ord['customer_city'] ?? ''));
+            if (empty($addr)) $addr = 'N/A';
+            $sUrl = defined('SITE_URL') ? rtrim(SITE_URL, '/') : 'https://sagarstarters.com';
+            $oLink = $sUrl . '/my-orders.php';
+            $expDel = date('d M Y', strtotime($ord['created_at'] . ' + 4 days'));
+            $sMsg = "Your order #$order_id is currently $oStatus.";
+
+            // Items
+            $itms = [];
+            $iq = $conn->query("SELECT oi.quantity, p.name FROM order_items oi LEFT JOIN products p ON oi.product_id = p.id WHERE oi.order_id = $order_id");
+            if ($iq) {
+                while ($ir = $iq->fetch_assoc()) {
+                    $itms[] = "• " . ($ir['name'] ?? 'Product') . " (" . (int)$ir['quantity'] . "x)";
+                }
+            }
+            $iList = !empty($itms) ? implode("\n", $itms) : "Order #$order_id";
+
+            $message = compileWhatsAppTemplate($message, [
+                'customer_name'          => $cName,
+                'order_id'               => $order_id,
+                'order_status'           => $oStatus,
+                'tracking_id'            => $tId,
+                'order_amount'           => $oAmount,
+                'order_date'             => $oDate,
+                'order_time'             => $oTime,
+                'order_datetime'         => $oDateTime,
+                'payment_method'         => $pMode,
+                'status_message'         => $sMsg,
+                'items_ordered'          => $iList,
+                'delivery_address'       => $addr,
+                'expected_delivery_date' => $expDel,
+                'order_link'             => $oLink,
+                'customer_phone'         => $cPhone
+            ]);
+        }
+    }
 }
 
 // Whitelist sending_mode to avoid arbitrary data
