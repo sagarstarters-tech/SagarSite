@@ -277,8 +277,13 @@ function sendCustomerOrderConfirmationWhatsApp($conn, $order_id) {
         $orderAmount   = number_format((float)($order['total_amount'] ?? 0), 2);
         $paymentMode   = formatWhatsAppPaymentMethod($order['payment_method'] ?? '', $order['payment_mode'] ?? '');
         $orderStatus   = ucwords(str_replace('_', ' ', $order['status'] ?? 'Pending'));
-        $orderDate     = date('d M Y', strtotime($order['created_at']));
-        $orderTime     = date('h:i A', strtotime($order['created_at']));
+        $createdTime   = !empty($order['created_at']) ? strtotime($order['created_at']) : time();
+        $orderDate     = date('d M Y', $createdTime);
+        $orderTime     = date('h:i A', $createdTime);
+        $orderDateTime = date('d M Y, h:i A', $createdTime);
+        $expectedDelivery = !empty($order['estimated_delivery']) 
+            ? date('d M Y', strtotime($order['estimated_delivery'])) 
+            : date('d M Y', strtotime('+4 days', $createdTime));
 
         $clean_number = normalize_whatsapp_phone_number($customerPhone);
         if (empty($clean_number)) return false;
@@ -422,15 +427,6 @@ function sendCustomerOrderConfirmationWhatsApp($conn, $order_id) {
                 ];
             };
 
-            // Standard parameter sets for order confirmation:
-            $params_bridge = [];
-            preg_match_all('/\{(CustomerName|OrderID|OrderDate|OrderTime|OrderAmount|PaymentMethod|OrderStatus|DeliveryAddress|ItemsOrdered|OrderLink)\}/', $bridge_template, $matches);
-            if (!empty($matches[0])) {
-                foreach ($matches[0] as $varKey) {
-                    $params_bridge[] = ["type" => "text", "text" => (string)($replacementValues[$varKey] ?? '')];
-                }
-            }
-
             $safe_cust_name  = !empty($customerName) ? $customerName : 'Valued Customer';
             $safe_order_id   = (string)$order_id;
             $safe_order_date = !empty($orderDate) ? $orderDate : date('d M Y');
@@ -441,6 +437,27 @@ function sendCustomerOrderConfirmationWhatsApp($conn, $order_id) {
             $safe_items      = !empty($itemsOrdered) ? $itemsOrdered : "Order #$order_id";
             $safe_addr       = (!empty($deliveryAddress) && $deliveryAddress !== 'N/A') ? $deliveryAddress : 'Customer Delivery Address';
             $safe_link       = !empty($orderLink) ? $orderLink : 'https://sagarstarters.com/my-orders.php';
+
+            // Standard parameter sets for order confirmation:
+            $params_bridge = [];
+            $replacementValues = [
+                '{CustomerName}'   => $safe_cust_name,
+                '{OrderID}'        => $safe_order_id,
+                '{OrderDate}'      => $safe_order_date,
+                '{OrderTime}'      => $safe_order_time,
+                '{OrderAmount}'    => $safe_amount,
+                '{PaymentMethod}'  => $safe_payment,
+                '{OrderStatus}'    => $safe_status,
+                '{DeliveryAddress}'=> $safe_addr,
+                '{ItemsOrdered}'   => $safe_items,
+                '{OrderLink}'      => $safe_link
+            ];
+            preg_match_all('/\{(CustomerName|OrderID|OrderDate|OrderTime|OrderAmount|PaymentMethod|OrderStatus|DeliveryAddress|ItemsOrdered|OrderLink)\}/', $bridge_template, $matches);
+            if (!empty($matches[0])) {
+                foreach ($matches[0] as $varKey) {
+                    $params_bridge[] = ["type" => "text", "text" => (string)($replacementValues[$varKey] ?? '')];
+                }
+            }
 
             $params_9 = [
                 ["type" => "text", "text" => $safe_cust_name],  // {{1}} customer_name
@@ -643,11 +660,15 @@ function sendCustomerOrderStatusWhatsApp($conn, $order_id) {
         $trackingID    = !empty($track['tracking_number']) ? $track['tracking_number'] : (!empty($order['order_tracking_num']) ? $order['order_tracking_num'] : 'N/A');
         $courierName   = !empty($track['courier_name']) ? $track['courier_name'] : (!empty($order['order_carrier']) ? $order['order_carrier'] : 'Courier');
         $orderAmount   = number_format((float)($order['total_amount'] ?? 0), 2);
-        $orderDate     = date('d M Y', strtotime($order['created_at']));
-        $orderTime     = date('h:i A', strtotime($order['created_at']));
+        $createdTime   = !empty($order['created_at']) ? strtotime($order['created_at']) : time();
+        $orderDate     = date('d M Y', $createdTime);
+        $orderTime     = date('h:i A', $createdTime);
+        $orderDateTime = date('d M Y, h:i A', $createdTime);
         $expectedDelivery = !empty($track['estimated_delivery_date']) 
             ? date('d M Y', strtotime($track['estimated_delivery_date'])) 
-            : date('d M Y', strtotime($order['created_at'] . ' + 4 days'));
+            : (!empty($order['estimated_delivery']) 
+                ? date('d M Y', strtotime($order['estimated_delivery'])) 
+                : date('d M Y', strtotime('+4 days', $createdTime)));
 
         $clean_number = normalize_whatsapp_phone_number($customerPhone);
         if (empty($clean_number)) return false;
@@ -688,10 +709,12 @@ function sendCustomerOrderStatusWhatsApp($conn, $order_id) {
         }
         $itemsOrdered = !empty($itemsList) ? implode("\n", $itemsList) : "Order #$order_id";
 
-        // Expected Delivery Date
-        $expectedDelivery = !empty($order['estimated_delivery']) 
-            ? date('d M Y', strtotime($order['estimated_delivery'])) 
-            : date('d M Y', strtotime($order['created_at'] . ' + 4 days'));
+        // Expected Delivery Date (fallback if still empty)
+        if (empty($expectedDelivery)) {
+            $expectedDelivery = !empty($order['estimated_delivery']) 
+                ? date('d M Y', strtotime($order['estimated_delivery'])) 
+                : date('d M Y', strtotime('+4 days', $createdTime));
+        }
 
         $siteUrl = defined('SITE_URL') ? rtrim(SITE_URL, '/') : 'https://sagarstarters.com';
         $orderLink = $siteUrl . '/my-orders.php';

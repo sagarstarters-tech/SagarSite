@@ -63,11 +63,15 @@ $trackingID    = !empty($track['tracking_number']) ? $track['tracking_number'] :
 $courierName   = !empty($track['courier_name']) ? $track['courier_name'] : (!empty($order['order_carrier']) ? $order['order_carrier'] : 'Courier');
 $orderAmount   = number_format((float)($order['total_amount'] ?? 0), 2);
 $paymentMode   = formatWhatsAppPaymentMethod($order['payment_method'] ?? '', $order['payment_mode'] ?? '');
-$orderDate     = date('d M Y', strtotime($order['created_at']));
-$orderTime     = date('h:i A', strtotime($order['created_at']));
+$createdTime   = !empty($order['created_at']) ? strtotime($order['created_at']) : time();
+$orderDate     = date('d M Y', $createdTime);
+$orderTime     = date('h:i A', $createdTime);
+$orderDateTime = date('d M Y, h:i A', $createdTime);
 $expectedDelivery = !empty($track['estimated_delivery_date']) 
     ? date('d M Y', strtotime($track['estimated_delivery_date'])) 
-    : date('d M Y', strtotime($order['created_at'] . ' + 4 days'));
+    : (!empty($order['estimated_delivery']) 
+        ? date('d M Y', strtotime($order['estimated_delivery'])) 
+        : date('d M Y', strtotime('+4 days', $createdTime)));
 
 // Address
 $addressParts = array_filter([
