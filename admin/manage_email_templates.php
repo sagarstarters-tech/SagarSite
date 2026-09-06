@@ -229,7 +229,130 @@ $defaults = [
         </div>
     </div>
 </div>", '{customer_name}, {customer_email}, {order_id}, {date_str}, {payment_method}, {items_table}, {total_amount}, {admin_order_url}, {site_url}, {current_year}'],
-    ['order_status_update', 'Order Status Update', 'Update on your Order #{order_id} - {display_status}', "\n<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333; border: 1px solid #eaeaea; border-radius: 8px; overflow: hidden;\">\n    <div style=\"background-color: {status_color}; padding: 20px; text-align: center; color: white;\">\n        <h2 style=\"margin: 0;\">Order Status Update</h2>\n    </div>\n    <div style=\"padding: 20px;\">\n        <p style=\"font-size: 16px;\">Hello <strong>{customer_name}</strong>,</p>\n        \n        <div style=\"background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid {status_color};\">\n            <h3 style=\"margin-top: 0; color: {status_color};\">Status: {display_status}</h3>\n            <p style=\"margin-bottom: 0;\">{status_message}</p>\n        </div>\n        \n        <p><strong>Order ID:</strong> #{order_id}</p>\n        \n        <p style=\"margin-top: 30px; font-size: 14px; color: #6c757d; text-align: center;\">\n            If you have any questions about your order, please reply to this email or contact our support team.\n        </p>\n    </div>\n    <div style=\"background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 12px; border-top: 1px solid #eaeaea;\">\n        &copy; {current_year} Sagar Starter's. All rights reserved.\n    </div>\n</div>", '{status_color}, {customer_name}, {display_status}, {status_message}, {order_id}, {current_year}'],
+    ['order_status_update', 'Order Status Update', 'Update on your Order #{order_id} - {display_status}', "<div style=\"background-color: #f1f5f9; padding: 16px 8px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; box-sizing: border-box; -webkit-text-size-adjust: 100%;\">
+    <!-- mobile-responsive-v2 -->
+    <div style=\"max-width: 600px; width: 100%; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 18px rgba(0,0,0,0.05); line-height: 1.5; box-sizing: border-box;\">
+        <!-- Top Brand Bar -->
+        <div style=\"background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 16px 14px; text-align: left; border-bottom: 1px solid #334155;\">
+            <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width: 100%;\">
+                <tr>
+                    <td style=\"vertical-align: middle; text-align: left;\">
+                        <div style=\"font-size: 16px; font-weight: 800; letter-spacing: 0.5px; color: #ffffff; line-height: 1.2;\">
+                            SAGAR <span style=\"color: #38bdf8;\">STARTER'S</span>
+                        </div>
+                        <div style=\"font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.6px; margin-top: 3px;\">
+                            Industrial &amp; Agricultural Starters
+                        </div>
+                    </td>
+                    <td style=\"text-align: right; vertical-align: middle; white-space: nowrap;\">
+                        <span style=\"display: inline-block; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35); color: #38bdf8; padding: 3px 9px; border-radius: 20px; font-size: 10px; font-weight: 700; text-transform: uppercase;\">
+                            ⚡ Status Updated
+                        </span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Hero Status Banner -->
+        <div style=\"background: {status_color}; background: linear-gradient(135deg, {status_color} 0%, #0f172a 100%); padding: 22px 16px; text-align: center; color: #ffffff;\">
+            <div style=\"display: inline-block; width: 44px; height: 44px; line-height: 42px; border-radius: 50%; background: rgba(255, 255, 255, 0.2); font-size: 22px; margin-bottom: 8px; border: 2px solid rgba(255, 255, 255, 0.35);\">
+                {status_icon}
+            </div>
+            <h2 style=\"margin: 0 0 4px; font-size: 22px; font-weight: 800; color: #ffffff; letter-spacing: -0.4px;\">Order Status: {display_status}</h2>
+            <p style=\"margin: 0; font-size: 13px; color: #f8fafc; line-height: 1.4;\">Your order #{order_id} has been updated to <strong>{display_status}</strong>.</p>
+        </div>
+
+        <!-- Main Content -->
+        <div style=\"padding: 18px 14px; box-sizing: border-box;\">
+            <p style=\"font-size: 14px; color: #1e293b; margin: 0 0 10px;\">
+                Hello <strong>{customer_name}</strong>,
+            </p>
+            <p style=\"font-size: 13px; color: #475569; margin: 0 0 16px; line-height: 1.55;\">
+                We are writing to let you know that the current status of your order has been updated. Here is the latest progress on your purchase:
+            </p>
+
+            <!-- Status Notice Callout Box -->
+            <div style=\"background-color: #f8fafc; border-left: 4px solid {status_color}; border-radius: 6px; padding: 12px 14px; margin-bottom: 20px; box-sizing: border-box;\">
+                <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width: 100%;\">
+                    <tr>
+                        <td style=\"vertical-align: top;\">
+                            <div style=\"font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; color: {status_color}; margin-bottom: 3px;\">
+                                Latest Update
+                            </div>
+                            <div style=\"font-size: 13px; color: #1e293b; font-weight: 600; line-height: 1.45;\">
+                                {status_message}
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Order Highlights Grid -->
+            <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"table-layout: fixed; width: 100%; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 20px; overflow: hidden; box-sizing: border-box;\">
+                <tr>
+                    <td width=\"50%\" style=\"padding: 10px 10px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; vertical-align: top; word-break: break-word; box-sizing: border-box;\">
+                        <span style=\"font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;\">Order Number</span>
+                        <strong style=\"font-size: 15px; color: #0284c7;\">#{order_id}</strong>
+                    </td>
+                    <td width=\"50%\" style=\"padding: 10px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: top; word-break: break-word; box-sizing: border-box;\">
+                        <span style=\"font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;\">Current Status</span>
+                        <span style=\"display: inline-block; background-color: #ffffff; color: {status_color}; border: 1px solid {status_color}; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; line-height: 1.3;\">
+                            ● {display_status}
+                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td width=\"50%\" style=\"padding: 10px 10px; border-right: 1px solid #e2e8f0; vertical-align: top; word-break: break-word; box-sizing: border-box;\">
+                        <span style=\"font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;\">Updated Date</span>
+                        <span style=\"font-size: 12px; color: #1e293b; font-weight: 600; line-height: 1.3; display: block;\">{date_str}</span>
+                    </td>
+                    <td width=\"50%\" style=\"padding: 10px 10px; vertical-align: top; word-break: break-word; box-sizing: border-box;\">
+                        <span style=\"font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;\">Tracking / Courier</span>
+                        <span style=\"font-size: 12px; color: #1e293b; font-weight: 600; line-height: 1.3; display: block; word-break: break-word;\">{tracking_info}</span>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Call To Actions -->
+            <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"margin: 20px 0 10px; width: 100%;\">
+                <tr>
+                    <td align=\"center\" style=\"padding: 0;\">
+                        <a href=\"{order_link}\" style=\"display: inline-block; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #ffffff; text-decoration: none; font-size: 13px; font-weight: 700; padding: 11px 22px; border-radius: 50px; box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35); margin: 4px; box-sizing: border-box;\">
+                            📦 Track Live Status &rarr;
+                        </a>
+                        <a href=\"https://wa.me/918573934013?text=Hi%20Sagar%20Starters,%20I%20have%20a%20query%20about%20Order%20%23{order_id}\" style=\"display: inline-block; background-color: #25d366; color: #ffffff; text-decoration: none; font-size: 13px; font-weight: 700; padding: 11px 22px; border-radius: 50px; box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35); margin: 4px; box-sizing: border-box;\">
+                            💬 WhatsApp Support
+                        </a>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Guarantee Box -->
+            <div style=\"background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 10px 12px; margin-top: 16px; box-sizing: border-box;\">
+                <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width: 100%;\">
+                    <tr>
+                        <td width=\"26\" style=\"vertical-align: top; font-size: 16px;\">🛡️</td>
+                        <td style=\"padding-left: 6px; vertical-align: top;\">
+                            <div style=\"font-size: 12px; font-weight: 700; color: #166534;\">Genuine Manufacturer Assurance</div>
+                            <div style=\"font-size: 11px; color: #15803d; margin-top: 2px; line-height: 1.4;\">All motor starters are 100% factory inspected and tested. Have questions? Reply directly to this email.</div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div style=\"background-color: #0f172a; padding: 16px 14px; text-align: center; color: #94a3b8; font-size: 11px; border-top: 1px solid #1e293b;\">
+            <p style=\"margin: 0 0 6px; font-size: 12px; font-weight: 700; color: #f8fafc;\">Sagar Starter's Support Team</p>
+            <p style=\"margin: 0 0 8px; color: #64748b; line-height: 1.4;\">
+                Email: <a href=\"mailto:sagarstarters@gmail.com\" style=\"color: #38bdf8; text-decoration: none;\">sagarstarters@gmail.com</a> &nbsp;|&nbsp; Phone: <a href=\"tel:+918573934013\" style=\"color: #38bdf8; text-decoration: none;\">+91 85739 34013</a>
+            </p>
+            <p style=\"margin: 0; font-size: 10px; color: #475569;\">
+                &copy; {current_year} Sagar Starter's. All rights reserved.
+            </p>
+        </div>
+    </div>
+</div>", '{status_color}, {status_icon}, {customer_name}, {display_status}, {status_message}, {order_id}, {date_str}, {tracking_info}, {order_link}, {site_url}, {total_amount}, {payment_method}, {current_year}'],
     ['contact_form', 'Contact Us Submission', 'New Contact Form Submission: {subject}', "<h2>New Contact Form Submission</h2>\n<p><strong>Name:</strong> {name}</p>\n<p><strong>Email:</strong> {email}</p>\n<p><strong>Phone:</strong> {phone}</p>\n<p><strong>Subject:</strong> {subject}</p>\n<hr>\n<p><strong>Message:</strong></p>\n<p>{message}</p>", '{name}, {email}, {phone}, {subject}, {message}'],
     ['google_profile_reminder', 'Google Profile Completion Reminder', 'Complete Your Profile at {site_name} – Quick 1-Minute Setup', "\n<div style=\"font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05);\">\n    <div style=\"background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%); padding: 32px 24px; text-align: center; color: #ffffff;\">\n        <div style=\"display: inline-block; background-color: rgba(255, 255, 255, 0.2); border-radius: 50%; padding: 12px; margin-bottom: 12px;\">\n            <img src=\"https://cdn-icons-png.flaticon.com/512/3135/3135715.png\" width=\"48\" height=\"48\" alt=\"Profile Icon\" style=\"vertical-align: middle;\">\n        </div>\n        <h2 style=\"margin: 0; font-size: 24px; font-weight: 700;\">Welcome to {site_name}!</h2>\n        <p style=\"margin: 6px 0 0; font-size: 15px; color: rgba(255,255,255,0.9);\">You are just one step away from seamless shopping & fast delivery.</p>\n    </div>\n    <div style=\"padding: 32px 28px; color: #334155; line-height: 1.6;\">\n        <p style=\"font-size: 16px; margin-top: 0;\">Hi <strong>{name}</strong>,</p>\n        <p style=\"font-size: 15px; margin-bottom: 20px;\">Thank you for signing in with Google! We noticed you moved away before finishing your shipping and contact details (Phone, Delivery Address, etc.).</p>\n        <div style=\"background-color: #f8fafc; border-left: 4px solid #0d6efd; padding: 16px 20px; border-radius: 6px; margin: 24px 0;\">\n            <p style=\"margin: 0 0 8px; font-weight: 600; color: #1e293b; font-size: 15px;\">Why complete your profile?</p>\n            <ul style=\"margin: 0; padding-left: 20px; color: #475569; font-size: 14px;\">\n                <li style=\"margin-bottom: 6px;\">⚡ <strong>Fast Checkout:</strong> Auto-fill your delivery details instantly.</li>\n                <li style=\"margin-bottom: 6px;\">📦 <strong>Live Order Tracking:</strong> Receive WhatsApp & SMS shipment updates.</li>\n                <li>🎁 <strong>Exclusive Offers:</strong> Access special member discounts.</li>\n            </ul>\n        </div>\n        <div style=\"text-align: center; margin: 32px 0 24px;\">\n            <a href=\"{profile_link}\" style=\"display: inline-block; background-color: #0d6efd; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; padding: 14px 36px; border-radius: 50px; box-shadow: 0 4px 12px rgba(13,110,253,0.35);\">Complete My Profile Now &rarr;</a>\n        </div>\n        <p style=\"font-size: 13px; color: #64748b; text-align: center; margin-top: 20px;\">Or copy and paste this link in your browser:<br><a href=\"{profile_link}\" style=\"color: #0d6efd; word-break: break-all;\">{profile_link}</a></p>\n    </div>\n    <div style=\"background-color: #f1f5f9; padding: 20px 24px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b;\">\n        <p style=\"margin: 0 0 6px;\">This reminder was sent to <strong>{email}</strong> because you signed in to {site_name}.</p>\n        <p style=\"margin: 0;\">&copy; {current_year} {site_name}. All rights reserved.</p>\n    </div>\n</div>", '{name}, {email}, {profile_link}, {site_name}, {site_url}, {current_year}']
 ];
@@ -245,7 +368,7 @@ foreach ($defaults as $d) {
 // Auto-upgrade legacy order templates if found in DB
 $legacy_cust = $conn->query("SELECT id, body FROM email_templates WHERE tpl_key = 'order_confirmation_customer' LIMIT 1");
 if ($legacy_cust && $row_c = $legacy_cust->fetch_assoc()) {
-    if (strpos($row_c['body'], 'Order Instructions') !== false || strpos($row_c['body'], 'background-color: #0d6efd; padding: 20px;') !== false) {
+    if (strpos($row_c['body'], 'mobile-responsive-v2') === false) {
         $stmt_u = $conn->prepare("UPDATE email_templates SET body = ?, placeholders = ? WHERE id = ?");
         $stmt_u->bind_param("ssi", $defaults[2][3], $defaults[2][4], $row_c['id']);
         $stmt_u->execute();
@@ -255,9 +378,19 @@ if ($legacy_cust && $row_c = $legacy_cust->fetch_assoc()) {
 
 $legacy_adm = $conn->query("SELECT id, body FROM email_templates WHERE tpl_key = 'order_confirmation_admin' LIMIT 1");
 if ($legacy_adm && $row_a = $legacy_adm->fetch_assoc()) {
-    if (strpos($row_a['body'], 'Ordered Products</h3>') !== false || strpos($row_a['body'], 'background-color: #198754;') !== false) {
+    if (strpos($row_a['body'], 'mobile-responsive-v2') === false) {
         $stmt_u = $conn->prepare("UPDATE email_templates SET body = ?, placeholders = ? WHERE id = ?");
         $stmt_u->bind_param("ssi", $defaults[3][3], $defaults[3][4], $row_a['id']);
+        $stmt_u->execute();
+        $stmt_u->close();
+    }
+}
+
+$legacy_stat = $conn->query("SELECT id, body FROM email_templates WHERE tpl_key = 'order_status_update' LIMIT 1");
+if ($legacy_stat && $row_s = $legacy_stat->fetch_assoc()) {
+    if (strpos($row_s['body'], 'mobile-responsive-v2') === false) {
+        $stmt_u = $conn->prepare("UPDATE email_templates SET body = ?, placeholders = ? WHERE id = ?");
+        $stmt_u->bind_param("ssi", $defaults[4][3], $defaults[4][4], $row_s['id']);
         $stmt_u->execute();
         $stmt_u->close();
     }

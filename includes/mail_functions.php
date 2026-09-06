@@ -616,81 +616,253 @@ function sendOrderStatusEmail($conn, $order_id, $customer_email, $customer_name,
     // Format the status for display
     $display_status = ucwords(str_replace('_', ' ', $new_status));
     
-    // Custom message based on status
+    // Custom message, icon and color based on status
     $status_message = "";
-    $color_code = "#0d6efd"; // Default blue
+    $color_code = "#0284c7"; // Default sky blue
+    $status_icon = "🔔";
     
     switch ($new_status) {
         case 'processing':
             $status_message = "Your order is now being processed by our warehouse team and will be prepared for shipping shortly.";
-            $color_code = "#0dcaf0"; // Info cyan
+            $color_code = "#0284c7"; // Blue
+            $status_icon = "⚙️";
             break;
         case 'partially_shipped':
             $status_message = "Your order has been partially shipped. Some items are on the way, and the remainder will follow soon.";
-            $color_code = "#fd7e14"; // Orange
+            $color_code = "#d97706"; // Amber
+            $status_icon = "📦";
             break;
         case 'shipped':
             $status_message = "Great news! Your complete order has been shipped and is on its way to you.";
-            $color_code = "#198754"; // Success green
+            $color_code = "#059669"; // Emerald green
+            $status_icon = "🚚";
             break;
         case 'delivered':
             $status_message = "Your order has been marked as delivered. We hope you enjoy your purchase!";
-            $color_code = "#20c997"; // Teal
+            $color_code = "#16a34a"; // Success green
+            $status_icon = "🎉";
             break;
         case 'cancelled':
             $status_message = "Your order has been cancelled. If you have already been charged, a refund will be processed according to our policy.";
-            $color_code = "#dc3545"; // Danger red
+            $color_code = "#dc2626"; // Crimson red
+            $status_icon = "❌";
             break;
         default:
             $status_message = "The status of your order has been updated to: " . $display_status;
+            $color_code = "#0284c7";
+            $status_icon = "🔔";
             break;
     }
+
+    // Resolve base site url and tracking link
+    $proto = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $site_url = defined('SITE_URL') && !empty(SITE_URL) ? rtrim(SITE_URL, '/') : ($proto . $host . '/SagarSite');
+    if (!preg_match('~^https?://~i', $site_url)) {
+        $site_url = $proto . $host . '/' . ltrim($site_url, '/');
+    }
+    $order_link = $site_url . '/track_order.php';
+
+    // Fetch tracking & order metadata safely
+    $date_str = date('d M Y, h:i A');
+    $tracking_info = "Available once dispatched";
+    $payment_method = "Standard";
+    $total_amount = "";
+    
+    $ord_q = $conn->query("SELECT created_at, payment_method, total_amount, carrier, tracking_number FROM orders WHERE id = " . intval($order_id));
+    if ($ord_q && $ord_row = $ord_q->fetch_assoc()) {
+        if (!empty($ord_row['payment_method'])) {
+            $payment_method = strtoupper($ord_row['payment_method']);
+        }
+        if (!empty($ord_row['total_amount'])) {
+            $total_amount = '₹' . number_format($ord_row['total_amount'], 2);
+        }
+        if (!empty($ord_row['tracking_number'])) {
+            $tracking_info = (!empty($ord_row['carrier']) ? htmlspecialchars($ord_row['carrier']) . ' - ' : '') . '#' . htmlspecialchars($ord_row['tracking_number']);
+        }
+    }
+    
+    // Check order_tracking table if tracking still not found
+    if ($tracking_info === "Available once dispatched") {
+        try {
+            $trk_q = $conn->query("SELECT ot.tracking_number, cc.name AS courier_name FROM order_tracking ot LEFT JOIN courier_companies cc ON ot.courier_id = cc.id WHERE ot.order_id = " . intval($order_id) . " ORDER BY ot.id DESC LIMIT 1");
+            if ($trk_q && $trk_row = $trk_q->fetch_assoc()) {
+                if (!empty($trk_row['tracking_number'])) {
+                    $tracking_info = (!empty($trk_row['courier_name']) ? htmlspecialchars($trk_row['courier_name']) . ' - ' : '') . '#' . htmlspecialchars($trk_row['tracking_number']);
+                }
+            }
+        } catch (\Throwable $e) {
+            // Ignore if tracking tables not present
+        }
+    }
+
+    // Canonical executive layout for Order Status Update (Mobile-Optimized)
+    $exec_status_update_body = '<div style="background-color: #f1f5f9; padding: 16px 8px; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Helvetica, Arial, sans-serif; box-sizing: border-box; -webkit-text-size-adjust: 100%;">
+    <!-- mobile-responsive-v2 -->
+    <div style="max-width: 600px; width: 100%; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 18px rgba(0,0,0,0.05); line-height: 1.5; box-sizing: border-box;">
+        <!-- Top Brand Bar -->
+        <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 16px 14px; text-align: left; border-bottom: 1px solid #334155;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+                <tr>
+                    <td style="vertical-align: middle; text-align: left;">
+                        <div style="font-size: 16px; font-weight: 800; letter-spacing: 0.5px; color: #ffffff; line-height: 1.2;">
+                            SAGAR <span style="color: #38bdf8;">STARTER\'S</span>
+                        </div>
+                        <div style="font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.6px; margin-top: 3px;">
+                            Industrial &amp; Agricultural Starters
+                        </div>
+                    </td>
+                    <td style="text-align: right; vertical-align: middle; white-space: nowrap;">
+                        <span style="display: inline-block; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35); color: #38bdf8; padding: 3px 9px; border-radius: 20px; font-size: 10px; font-weight: 700; text-transform: uppercase;">
+                            ⚡ Status Updated
+                        </span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Hero Status Banner -->
+        <div style="background: {status_color}; background: linear-gradient(135deg, {status_color} 0%, #0f172a 100%); padding: 22px 16px; text-align: center; color: #ffffff;">
+            <div style="display: inline-block; width: 44px; height: 44px; line-height: 42px; border-radius: 50%; background: rgba(255, 255, 255, 0.2); font-size: 22px; margin-bottom: 8px; border: 2px solid rgba(255, 255, 255, 0.35);">
+                {status_icon}
+            </div>
+            <h2 style="margin: 0 0 4px; font-size: 22px; font-weight: 800; color: #ffffff; letter-spacing: -0.4px;">Order Status: {display_status}</h2>
+            <p style="margin: 0; font-size: 13px; color: #f8fafc; line-height: 1.4;">Your order #{order_id} has been updated to <strong>{display_status}</strong>.</p>
+        </div>
+
+        <!-- Main Content -->
+        <div style="padding: 18px 14px; box-sizing: border-box;">
+            <p style="font-size: 14px; color: #1e293b; margin: 0 0 10px;">
+                Hello <strong>{customer_name}</strong>,
+            </p>
+            <p style="font-size: 13px; color: #475569; margin: 0 0 16px; line-height: 1.55;">
+                We are writing to let you know that the current status of your order has been updated. Here is the latest progress on your purchase:
+            </p>
+
+            <!-- Status Notice Callout Box -->
+            <div style="background-color: #f8fafc; border-left: 4px solid {status_color}; border-radius: 6px; padding: 12px 14px; margin-bottom: 20px; box-sizing: border-box;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+                    <tr>
+                        <td style="vertical-align: top;">
+                            <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; color: {status_color}; margin-bottom: 3px;">
+                                Latest Update
+                            </div>
+                            <div style="font-size: 13px; color: #1e293b; font-weight: 600; line-height: 1.45;">
+                                {status_message}
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Order Highlights Grid -->
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="table-layout: fixed; width: 100%; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 20px; overflow: hidden; box-sizing: border-box;">
+                <tr>
+                    <td width="50%" style="padding: 10px 10px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; vertical-align: top; word-break: break-word; box-sizing: border-box;">
+                        <span style="font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Order Number</span>
+                        <strong style="font-size: 15px; color: #0284c7;">#{order_id}</strong>
+                    </td>
+                    <td width="50%" style="padding: 10px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: top; word-break: break-word; box-sizing: border-box;">
+                        <span style="font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Current Status</span>
+                        <span style="display: inline-block; background-color: #ffffff; color: {status_color}; border: 1px solid {status_color}; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; line-height: 1.3;">
+                            ● {display_status}
+                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td width="50%" style="padding: 10px 10px; border-right: 1px solid #e2e8f0; vertical-align: top; word-break: break-word; box-sizing: border-box;">
+                        <span style="font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Updated Date</span>
+                        <span style="font-size: 12px; color: #1e293b; font-weight: 600; line-height: 1.3; display: block;">{date_str}</span>
+                    </td>
+                    <td width="50%" style="padding: 10px 10px; vertical-align: top; word-break: break-word; box-sizing: border-box;">
+                        <span style="font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">Tracking / Courier</span>
+                        <span style="font-size: 12px; color: #1e293b; font-weight: 600; line-height: 1.3; display: block; word-break: break-word;">{tracking_info}</span>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Call To Actions -->
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 20px 0 10px; width: 100%;">
+                <tr>
+                    <td align="center" style="padding: 0;">
+                        <a href="{order_link}" style="display: inline-block; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #ffffff; text-decoration: none; font-size: 13px; font-weight: 700; padding: 11px 22px; border-radius: 50px; box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35); margin: 4px; box-sizing: border-box;">
+                            📦 Track Live Status &rarr;
+                        </a>
+                        <a href="https://wa.me/918573934013?text=Hi%20Sagar%20Starters,%20I%20have%20a%20query%20about%20Order%20%23{order_id}" style="display: inline-block; background-color: #25d366; color: #ffffff; text-decoration: none; font-size: 13px; font-weight: 700; padding: 11px 22px; border-radius: 50px; box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35); margin: 4px; box-sizing: border-box;">
+                            💬 WhatsApp Support
+                        </a>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Guarantee Box -->
+            <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 10px 12px; margin-top: 16px; box-sizing: border-box;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+                    <tr>
+                        <td width="26" style="vertical-align: top; font-size: 16px;">🛡️</td>
+                        <td style="padding-left: 6px; vertical-align: top;">
+                            <div style="font-size: 12px; font-weight: 700; color: #166534;">Genuine Manufacturer Assurance</div>
+                            <div style="font-size: 11px; color: #15803d; margin-top: 2px; line-height: 1.4;">All motor starters are 100% factory inspected and tested. Have questions? Reply directly to this email.</div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="background-color: #0f172a; padding: 16px 14px; text-align: center; color: #94a3b8; font-size: 11px; border-top: 1px solid #1e293b;">
+            <p style="margin: 0 0 6px; font-size: 12px; font-weight: 700; color: #f8fafc;">Sagar Starter\'s Support Team</p>
+            <p style="margin: 0 0 8px; color: #64748b; line-height: 1.4;">
+                Email: <a href="mailto:sagarstarters@gmail.com" style="color: #38bdf8; text-decoration: none;">sagarstarters@gmail.com</a> &nbsp;|&nbsp; Phone: <a href="tel:+918573934013" style="color: #38bdf8; text-decoration: none;">+91 85739 34013</a>
+            </p>
+            <p style="margin: 0; font-size: 10px; color: #475569;">
+                &copy; {current_year} Sagar Starter\'s. All rights reserved.
+            </p>
+        </div>
+    </div>
+</div>';
 
     try {
         $mail = getMailerInstance();
         $mail->addAddress($customer_email, $customer_name);
         $mail->isHTML(true);
 
-        // Fetch template
+        // Auto-upgrade database templates if they are missing or have legacy cut-off styles
         $tpl = getEmailTemplate($conn, 'order_status_update');
+        if (!$tpl || empty($tpl['body']) || strpos($tpl['body'], 'mobile-responsive-v2') === false) {
+            $upd_stmt = $conn->prepare("UPDATE email_templates SET body = ?, placeholders = ? WHERE tpl_key = 'order_status_update'");
+            if ($upd_stmt) {
+                $placeholders_str = '{status_color}, {status_icon}, {customer_name}, {display_status}, {status_message}, {order_id}, {date_str}, {tracking_info}, {order_link}, {site_url}, {total_amount}, {payment_method}, {current_year}';
+                $upd_stmt->bind_param("ss", $exec_status_update_body, $placeholders_str);
+                $upd_stmt->execute();
+                $upd_stmt->close();
+                $tpl = getEmailTemplate($conn, 'order_status_update');
+            }
+        }
+
+        $vars = [
+            'status_color'   => $color_code,
+            'status_icon'    => $status_icon,
+            'customer_name'  => htmlspecialchars($customer_name),
+            'display_status' => $display_status,
+            'status_message' => $status_message,
+            'order_id'       => $order_id,
+            'date_str'       => $date_str,
+            'tracking_info'  => $tracking_info,
+            'order_link'     => $order_link,
+            'site_url'       => $site_url,
+            'total_amount'   => $total_amount,
+            'payment_method' => $payment_method,
+            'current_year'   => date('Y')
+        ];
+
         if ($tpl) {
-            $vars = [
-                'status_color' => $color_code,
-                'customer_name' => htmlspecialchars($customer_name),
-                'display_status' => $display_status,
-                'status_message' => $status_message,
-                'order_id' => $order_id,
-                'current_year' => date('Y')
-            ];
             $mail->Subject = parseTemplate($tpl['subject'], $vars);
             $mail->Body = parseTemplate($tpl['body'], $vars);
         } else {
-            // FALLBACK Case
+            // Fallback
             $mail->Subject = "Update on your Order #{$order_id} - {$display_status}";
-            $body = '
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333; border: 1px solid #eaeaea; border-radius: 8px; overflow: hidden;">
-                <div style="background-color: ' . $color_code . '; padding: 20px; text-align: center; color: white;">
-                    <h2 style="margin: 0;">Order Status Update</h2>
-                </div>
-                <div style="padding: 20px;">
-                    <p style="font-size: 16px;">Hello <strong>' . htmlspecialchars($customer_name) . '</strong>,</p>
-                    
-                    <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid ' . $color_code . ';">
-                        <h3 style="margin-top: 0; color: ' . $color_code . ';">Status: ' . $display_status . '</h3>
-                        <p style="margin-bottom: 0;">' . $status_message . '</p>
-                    </div>
-                    
-                    <p><strong>Order ID:</strong> #' . $order_id . '</p>
-                    
-                    <p style="margin-top: 30px; font-size: 14px; color: #6c757d; text-align: center;">
-                        If you have any questions about your order, please reply to this email or contact our support team.
-                    </p>
-                </div>
-                <div style="background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 12px; border-top: 1px solid #eaeaea;">
-                    &copy; ' . date('Y') . ' Sagar Starter\'s. All rights reserved.
-                </div>
-            </div>';
-            $mail->Body = $body;
+            $mail->Body = parseTemplate($exec_status_update_body, $vars);
         }
 
         $mail->send();
