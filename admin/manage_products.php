@@ -70,47 +70,77 @@ include 'admin_header.php';
 require_once '../includes/SeoRepository.php';
 $seoRepo = new SeoRepository($conn);
 
-// Auto-migrate: Ensure required columns exist (Safe for live server)
-$check_col = $conn->query("SHOW COLUMNS FROM products LIKE 'is_trending'");
-if ($check_col && $check_col->num_rows == 0) {
-    $conn->query("ALTER TABLE products ADD COLUMN is_trending TINYINT(1) DEFAULT 0 AFTER cod_available");
-}
-$check_features = $conn->query("SHOW COLUMNS FROM products LIKE 'features'");
-if ($check_features && $check_features->num_rows == 0) {
-    $conn->query("ALTER TABLE products ADD COLUMN features TEXT AFTER description");
-}
-// COD charge per-product column
-$check_cod_charge = $conn->query("SHOW COLUMNS FROM products LIKE 'cod_charge'");
-if ($check_cod_charge && $check_cod_charge->num_rows == 0) {
-    $conn->query("ALTER TABLE products ADD COLUMN cod_charge DECIMAL(10,2) DEFAULT NULL COMMENT 'Per-product COD charge (NULL = use global default)'");
-}
+// Auto-migrate: Ensure all required columns exist in products table (Safe for live server)
+try {
+    $existing_cols_q = $conn->query("SHOW COLUMNS FROM products");
+    if ($existing_cols_q) {
+        $existing_cols = [];
+        while ($col_row = $existing_cols_q->fetch_assoc()) {
+            $existing_cols[$col_row['Field']] = true;
+        }
 
-// Auto-migrate: MOQ & Bulk Pricing columns (Safe for live server)
-$check_moq = $conn->query("SHOW COLUMNS FROM products LIKE 'min_order_qty'");
-if ($check_moq && $check_moq->num_rows == 0) {
-    $conn->query("ALTER TABLE products ADD COLUMN min_order_qty INT NOT NULL DEFAULT 1 COMMENT 'Minimum Order Quantity (MOQ)' AFTER stock");
-}
-$check_bulk_price = $conn->query("SHOW COLUMNS FROM products LIKE 'bulk_price'");
-if ($check_bulk_price && $check_bulk_price->num_rows == 0) {
-    $conn->query("ALTER TABLE products ADD COLUMN bulk_price DECIMAL(10,2) DEFAULT NULL COMMENT 'Bulk Order Price' AFTER sale_price");
-}
-$check_bulk_min_qty = $conn->query("SHOW COLUMNS FROM products LIKE 'bulk_min_qty'");
-if ($check_bulk_min_qty && $check_bulk_min_qty->num_rows == 0) {
-    $conn->query("ALTER TABLE products ADD COLUMN bulk_min_qty INT DEFAULT NULL COMMENT 'Bulk Minimum Quantity' AFTER bulk_price");
-}
-$check_bulk_ship = $conn->query("SHOW COLUMNS FROM products LIKE 'bulk_shipping_cost'");
-if ($check_bulk_ship && $check_bulk_ship->num_rows == 0) {
-    $conn->query("ALTER TABLE products ADD COLUMN bulk_shipping_cost DECIMAL(10,2) DEFAULT NULL COMMENT 'Bulk Shipping Cost' AFTER bulk_min_qty");
-}
-$check_bulk_cod = $conn->query("SHOW COLUMNS FROM products LIKE 'bulk_cod_available'");
-if ($check_bulk_cod && $check_bulk_cod->num_rows == 0) {
-    $conn->query("ALTER TABLE products ADD COLUMN bulk_cod_available TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Allow COD for Bulk Orders (1=Yes, 0=No)' AFTER bulk_shipping_cost");
+        $columns_to_ensure = [
+            'license_key'          => "ALTER TABLE products ADD COLUMN `license_key` TEXT DEFAULT NULL",
+            'product_type'         => "ALTER TABLE products ADD COLUMN `product_type` ENUM('physical','virtual','downloadable') DEFAULT 'physical'",
+            'download_file'        => "ALTER TABLE products ADD COLUMN `download_file` VARCHAR(255) DEFAULT NULL",
+            'download_url'         => "ALTER TABLE products ADD COLUMN `download_url` VARCHAR(255) DEFAULT NULL",
+            'download_limit'       => "ALTER TABLE products ADD COLUMN `download_limit` INT(11) DEFAULT NULL",
+            'download_expiry_days' => "ALTER TABLE products ADD COLUMN `download_expiry_days` INT(11) DEFAULT NULL",
+            'image_fit'            => "ALTER TABLE products ADD COLUMN `image_fit` ENUM('cover','contain') NOT NULL DEFAULT 'cover'",
+            'regular_price'        => "ALTER TABLE products ADD COLUMN `regular_price` DECIMAL(10,2) DEFAULT NULL",
+            'sale_price'           => "ALTER TABLE products ADD COLUMN `sale_price` DECIMAL(10,2) DEFAULT NULL",
+            'bulk_price'           => "ALTER TABLE products ADD COLUMN `bulk_price` DECIMAL(10,2) DEFAULT NULL COMMENT 'Bulk Order Price'",
+            'bulk_min_qty'         => "ALTER TABLE products ADD COLUMN `bulk_min_qty` INT DEFAULT NULL COMMENT 'Bulk Minimum Quantity'",
+            'bulk_shipping_cost'   => "ALTER TABLE products ADD COLUMN `bulk_shipping_cost` DECIMAL(10,2) DEFAULT NULL COMMENT 'Bulk Shipping Cost'",
+            'bulk_cod_available'   => "ALTER TABLE products ADD COLUMN `bulk_cod_available` TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Allow COD for Bulk Orders'",
+            'min_order_qty'        => "ALTER TABLE products ADD COLUMN `min_order_qty` INT NOT NULL DEFAULT 1 COMMENT 'Minimum Order Quantity (MOQ)'",
+            'cod_charge'           => "ALTER TABLE products ADD COLUMN `cod_charge` DECIMAL(10,2) DEFAULT NULL COMMENT 'Per-product COD charge'",
+            'is_trending'          => "ALTER TABLE products ADD COLUMN `is_trending` TINYINT(1) DEFAULT 0",
+            'features'             => "ALTER TABLE products ADD COLUMN `features` TEXT",
+            'short_description'    => "ALTER TABLE products ADD COLUMN `short_description` TEXT DEFAULT NULL",
+            'meta_description'     => "ALTER TABLE products ADD COLUMN `meta_description` TEXT DEFAULT NULL",
+            'gtin'                 => "ALTER TABLE products ADD COLUMN `gtin` VARCHAR(14) DEFAULT NULL",
+            'mpn'                  => "ALTER TABLE products ADD COLUMN `mpn` VARCHAR(70) DEFAULT NULL",
+            'condition_type'       => "ALTER TABLE products ADD COLUMN `condition_type` ENUM('new','refurbished','used') DEFAULT 'new'",
+            'google_product_category' => "ALTER TABLE products ADD COLUMN `google_product_category` VARCHAR(255) DEFAULT NULL"
+        ];
+
+        foreach ($columns_to_ensure as $col_name => $alter_sql) {
+            if (!isset($existing_cols[$col_name])) {
+                $conn->query($alter_sql);
+            }
+        }
+    }
+} catch (\Throwable $e) {
+    error_log("[manage_products column migration] " . $e->getMessage());
 }
 
 // Migration for Gallery Position
-$check_pos = $conn->query("SHOW COLUMNS FROM product_images LIKE 'position'");
-if ($check_pos && $check_pos->num_rows == 0) {
-    $conn->query("ALTER TABLE product_images ADD COLUMN position INT DEFAULT 0");
+try {
+    $check_pos = $conn->query("SHOW COLUMNS FROM product_images LIKE 'position'");
+    if ($check_pos && $check_pos->num_rows == 0) {
+        $conn->query("ALTER TABLE product_images ADD COLUMN position INT DEFAULT 0");
+    }
+} catch (\Throwable $e) {
+    error_log("[product_images position migration] " . $e->getMessage());
+}
+
+// Ensure user_downloads table exists for digital products
+try {
+    $conn->query("CREATE TABLE IF NOT EXISTS `user_downloads` (
+      `id` int(11) NOT NULL AUTO_INCREMENT,
+      `user_id` int(11) NOT NULL,
+      `product_id` int(11) NOT NULL,
+      `order_id` int(11) NOT NULL,
+      `download_token` varchar(64) NOT NULL,
+      `download_count` int(11) NOT NULL DEFAULT 0,
+      `expiry_date` datetime DEFAULT NULL,
+      `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `token` (`download_token`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+} catch (\Throwable $e) {
+    error_log("[user_downloads table migration] " . $e->getMessage());
 }
 
 // Note: Removed aggressive auto-delete of product_images rows on every page load.
@@ -215,7 +245,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $image_sql = ($image !== null) ? "'" . $conn->real_escape_string($image) . "'" : "NULL";
         $sql = "INSERT INTO products (name, slug, short_description, description, features, meta_description, category_id, product_type, download_file, download_url, download_limit, download_expiry_days, license_key, regular_price, sale_price, bulk_price, bulk_min_qty, bulk_shipping_cost, bulk_cod_available, price, sku, brand, stock, min_order_qty, shipping_cost, weight, length, width, height, cod_available, is_trending, cod_charge, image, image_fit) VALUES ('$name', '$slug', '$short_desc', '$desc', '$features', '$meta_desc', $cat_id, '$product_type', '$download_file', '$download_url', $download_limit, $download_expiry, '$license_key', $regular_price, $sale_price, $bulk_price_sql, $bulk_min_qty_sql, $bulk_shipping_cost_sql, $bulk_cod_available, $price, '$sku', '$brand', $stock, $min_order_qty, $shipping_cost, $weight, $length, $width, $height, $cod_available, $is_trending, $cod_charge_sql, $image_sql, '$image_fit')";
 
-        if ($conn->query($sql)) {
+        $insert_success = false;
+        $insert_err = '';
+        try {
+            $insert_success = $conn->query($sql);
+        } catch (\Throwable $e) {
+            $insert_success = false;
+            $insert_err = $e->getMessage();
+        }
+
+        if ($insert_success) {
             $product_id = $conn->insert_id;
             
             // Save SEO Metadata
@@ -260,7 +299,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header("Location: manage_products.php?action=list");
             exit;
         } else {
-            $_SESSION['flash_error'] = "Failed to add product: " . $conn->error;
+            $_SESSION['flash_error'] = "Failed to add product: " . (!empty($insert_err) ? $insert_err : $conn->error);
         }
     } elseif ($action === 'edit') {
         $id = intval($_POST['id']);
@@ -371,7 +410,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
 
-        if ($conn->query($sql)) {
+        $update_success = false;
+        $update_err = '';
+        try {
+            $update_success = $conn->query($sql);
+        } catch (\Throwable $e) {
+            $update_success = false;
+            $update_err = $e->getMessage();
+        }
+
+        if ($update_success) {
             // Save SEO Metadata
             $seoRepo->saveMetadata([
                 'entity_type' => 'product',
@@ -405,7 +453,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header("Location: manage_products.php?page=" . $return_page);
             exit;
         } else {
-            $_SESSION['flash_error'] = "Failed to update product: " . $conn->error;
+            $_SESSION['flash_error'] = "Failed to update product: " . (!empty($update_err) ? $update_err : $conn->error);
         }
     } elseif ($action === 'delete') {
         $id = intval($_POST['id']);
