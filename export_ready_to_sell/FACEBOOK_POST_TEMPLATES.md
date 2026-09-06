@@ -16,9 +16,9 @@ Facebook groups, feed aur marketplace par post karne ke liye ready templates yah
 
 ✨ टॉप फीचर्स:
 ✅ PhonePe UPI & Cards: ग्राहक Google Pay, PhonePe, Paytm या कार्ड से भुगतान कर सकते हैं—पैसा सीधे आपके बैंक खाते में!
-✅ WhatsApp ऑटोमेटेड अलर्ट्स: आर्डर होते ही ग्राहक को WhatsApp पर बिल और ट्रैकिंग मैसेज तुरंत जायेगा।
-✅ लाइव कूरियर ट्रैकिंग: ग्राहक अपने पार्सल का स्टेटस लाइव ट्रैक कर सकेंगे।
-✅ मोबाइल और लैपटॉप फ्रेंडली: 1 मिनट में नया प्रोडक्ट जोड़ें, रेट बदलें और फोटो अपलोड करें।
+✅ WhatsApp ऑटोमेटेड अलर्ट्स: आर्डर होते ही ग्राहक को WhatsApp पर बिल और ट्रैकिंग मैसेज तुरंत जायेगा, और आपके फोन पर भी नया आर्डर आने का WhatsApp अलर्ट मिलेगा।
+✅ लाइव कूरियर ट्रैकिंग: ग्राहक अपने पार्सल का स्टेटस लाइव ट्रैक कर सकेंगे (Delhivery, Blue Dart, Shiprocket).
+✅ 100% मोबाइल फ्रेंडली एडमिन: आप अपने मोबाइल से 1 मिनट में नया प्रोडक्ट जोड़ें, रेट बदलें और आर्डर प्रोसेस करें।
 ✅ 1-Click GST इनवॉइस: हर आर्डर का पक्का बिल 1 क्लिक में प्रिंट करें।
 ❌ नो मंथली चार्ज: Shopify की तरह हर महीने कोई रेंट या कमीशन नहीं देना!
 
@@ -41,15 +41,16 @@ We have a clean, modular Custom PHP & MySQL E-Commerce platform ready for immedi
 
 ⚡ Architecture & Highlights:
 🔹 Native PhonePe Payment Gateway (Instant Callback + Webhook verification)
-🔹 WhatsApp Notification API (Order Confirmation, Dispatch & Delivery Triggers)
-🔹 Automated Courier Tracking System (Multi-Courier support)
-🔹 Abandoned Cart Recovery System
-🔹 Robust Admin Center (Catalog, Stocks, Orders, Dynamic SEO, Invoices)
-🔹 PWA Enabled & Ultra-fast page speed (<1s load time)
+🔹 Dual-Mode WhatsApp Notification Engine (Meta Cloud API + Bridge & Fallback Direct Message Delivery)
+🔹 Admin WhatsApp Alerts with dynamic variable compiler ({customer_name}, {order_id}, {order_total}, etc.)
+🔹 Automated Courier Tracking System (Multi-Courier support + COD Blacklist Guard)
+🔹 Abandoned Cart Recovery System (Automated WhatsApp & Email nudges)
+🔹 Executive Dark Navy Admin Dashboard (36+ Modern Modules, 100% Mobile Responsive, Storefront Theme Customizer & WEBSEO Suite)
+🔹 Clean 77-Table Database Schema & Ultra-fast page speed (<1s load time)
 
 📦 Deliverables:
 - Full Clean Source Code (Zero encryption)
-- Sanitized Starter Database (.sql)
+- Sanitized 77-Table Starter Database (.sql)
 - 5-Minute Installation Guide (.env based)
 
 Interested agencies/freelancers can DM me directly for a screen walkthrough and agency pricing! 🚀
@@ -65,13 +66,13 @@ Interested agencies/freelancers can DM me directly for a screen walkthrough and 
 * **Category:** Software / Business Services
 * **Description (विवरण):**
 ```text
-Ready-to-use full E-Commerce Website with Admin Panel.
+Ready-to-use full E-Commerce Website with Mobile-Friendly Admin Panel.
 
 Main Highlights:
-- Direct PhonePe UPI & Card payment to your bank
-- Automated WhatsApp notifications to customers
-- Courier tracking & 1-click GST invoices
-- Easy mobile admin panel to manage products
+- Direct PhonePe UPI & Card payment to your bank (Zero commission)
+- Automated WhatsApp notifications to customers & instant alert to owner
+- Live Courier tracking & 1-click GST invoices
+- Easy mobile admin panel to manage products from your phone
 - Zero monthly charges (1-time ownership)
 
 Full demo video available. DM me for live demo and details!
@@ -87,8 +88,9 @@ Full demo video available. DM me for live demo and details!
 
 Get your own complete E-Commerce Store with:
 💳 PhonePe UPI Payments (Direct to bank)
-📲 WhatsApp Order & Tracking Alerts
+📲 WhatsApp Order & Tracking Alerts + Owner ping
 📦 Courier Tracking & GST Invoices
+📱 100% Mobile-Friendly Admin Panel
 🚫 Zero monthly fees!
 
 📲 Comment 'DEMO' or DM me to see the live video preview! 🛍️

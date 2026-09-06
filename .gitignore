@@ -42,6 +42,7 @@ Thumbs.db
 # Vendor (if composer is used)
 # Backups & SQL Dumps
 *.sql
+!/export_ready_to_sell/clean_schema.sql
 *.zip
 *.tar.gz
 *.7z
