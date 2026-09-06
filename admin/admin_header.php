@@ -24,6 +24,9 @@ $current_page = $current_page ?? basename($_SERVER['PHP_SELF']);
 
 // 5. Load Menu Config
 $__admin_menu = require __DIR__ . '/config/menu.php';
+
+// 6. Website / Application Version
+$site_version = !empty($global_settings['site_version']) ? $global_settings['site_version'] : (defined('APP_VERSION') ? APP_VERSION : 'v2.5.0');
 ?>
 <!DOCTYPE html>
 <html lang="en">

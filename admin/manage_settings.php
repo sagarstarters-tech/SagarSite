@@ -21,6 +21,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $admin_email = $conn->real_escape_string($_POST['admin_email']);
             $conn->query("UPDATE settings SET setting_value='$admin_email' WHERE setting_key='admin_email'");
         }
+
+        if (isset($_POST['site_version'])) {
+            $site_version_val = $conn->real_escape_string(trim($_POST['site_version']));
+            $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('site_version', '$site_version_val') ON DUPLICATE KEY UPDATE setting_value='$site_version_val'");
+        }
         
         // Logo Upload Logic
         if (isset($_FILES['site_logo']) && $_FILES['site_logo']['error'] === UPLOAD_ERR_OK) {
@@ -494,6 +499,15 @@ $active_tab = isset($_GET['tab']) ? $_GET['tab'] : 'general';
                         <label class="form-label fw-bold">Admin Notification Email</label>
                         <input type="email" name="admin_email" class="form-control" value="<?php echo htmlspecialchars($current_settings['admin_email'] ?? 'admin@store.com'); ?>" required>
                         <small class="text-muted">New order notifications will be sent here.</small>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Website / Release Version</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-secondary"><i class="fas fa-code-branch"></i></span>
+                            <input type="text" name="site_version" class="form-control" value="<?php echo htmlspecialchars($current_settings['site_version'] ?? (defined('APP_VERSION') ? APP_VERSION : 'v2.5.0')); ?>" placeholder="e.g. v2.5.0">
+                        </div>
+                        <small class="text-muted">Displayed on the Admin Panel Dashboard & platform headers.</small>
                     </div>
 
                     <div class="mb-4">

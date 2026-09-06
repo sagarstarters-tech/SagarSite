@@ -37,6 +37,9 @@ if (isset($_SERVER['HTTP_HOST']) && $_SERVER['HTTP_HOST'] !== 'localhost' && $_S
 }
 
 return [
+    // ── Application Info ──────────────────────────────────
+    'app_version'    => _env('APP_VERSION', 'v2.5.0'),
+
     // ── URLs ──────────────────────────────────────────────
     'site_url'       => $_site_url,
     'assets_url'     => $_site_url . '/assets',

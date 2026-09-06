@@ -38,6 +38,7 @@ for ($i = 6; $i >= 0; $i--) {
 
 $currency = isset($global_currency) ? htmlspecialchars($global_currency) : '₹';
 $admin_name = isset($_SESSION['name']) ? htmlspecialchars($_SESSION['name']) : 'Admin';
+$site_version = $site_version ?? (!empty($global_settings['site_version']) ? $global_settings['site_version'] : (defined('APP_VERSION') ? APP_VERSION : 'v2.5.0'));
 ?>
 
 <style>
@@ -229,9 +230,13 @@ a.dash-btn-white:hover {
     <div class="dash-hero mb-4">
         <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
             <div>
-                <div class="d-flex align-items-center gap-2 mb-2">
+                <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
                     <span class="badge bg-primary bg-opacity-25 text-white border border-primary border-opacity-50 rounded-pill px-3 py-1 small">
                         <i class="fas fa-store me-1"></i> Admin Command Center
+                    </span>
+                    <span class="badge bg-white bg-opacity-10 text-white border border-white border-opacity-25 rounded-pill px-3 py-1 small d-inline-flex align-items-center gap-1 shadow-sm">
+                        <i class="fas fa-code-branch text-warning me-1"></i>
+                        <span>Version <strong class="text-white"><?php echo htmlspecialchars($site_version); ?></strong></span>
                     </span>
                     <span class="text-white-50 small"><i class="far fa-calendar-alt me-1"></i> <?php echo date('F j, Y'); ?></span>
                 </div>
@@ -415,6 +420,43 @@ a.dash-btn-white:hover {
                         <p class="text-muted mb-0 small">No recent orders yet.</p>
                     </div>
                 <?php endif; ?>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!--  5. PLATFORM & SYSTEM STATUS OVERVIEW                       -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div class="dash-card p-3 px-4 mt-4">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="dash-icon-box" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); color: #16a34a; width: 44px; height: 44px; font-size: 1.15rem; border-radius: 12px;">
+                    <i class="fas fa-server"></i>
+                </div>
+                <div>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <span class="fw-bold text-dark small"><?php echo htmlspecialchars($global_settings['site_name'] ?? "Sagar Starter's Store"); ?></span>
+                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 0.72rem;">
+                            <i class="fas fa-check-circle me-1"></i> System Active
+                        </span>
+                    </div>
+                    <div class="text-muted" style="font-size: 0.8rem;">
+                        <span>PHP <?php echo PHP_VERSION; ?></span>
+                        <span class="mx-1">&bull;</span>
+                        <span>Environment: <strong class="text-capitalize"><?php echo defined('APP_ENV') ? APP_ENV : 'production'; ?></strong></span>
+                        <span class="mx-1">&bull;</span>
+                        <span>Timezone: <?php echo date_default_timezone_get(); ?></span>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <div class="px-3 py-1.5 rounded-3 bg-light border text-secondary small d-flex align-items-center gap-2">
+                    <i class="fas fa-code-branch text-primary"></i>
+                    <span>Website Version: <strong class="text-primary fw-bold"><?php echo htmlspecialchars($site_version); ?></strong></span>
+                </div>
+                <a href="manage_settings.php" class="btn btn-sm btn-outline-secondary rounded-3 px-3 py-1.5" style="font-size: 0.8rem;">
+                    <i class="fas fa-cog me-1"></i> System Settings
+                </a>
             </div>
         </div>
     </div>

@@ -68,11 +68,18 @@ Aapko client ke type ke hisaab se yeh price maangna chahiye:
 > **Aapka Jawab:**
 > *"Isme PhonePe integrated hai. Customer UPI (GPay, PhonePe, Paytm), Debit Card, Credit Card ya Net Banking se payment kar sakta hai, aur paisa direct aapke current/savings bank account mein aayega."*
 
+#### Sawaal: *"WhatsApp notifications ke liye kya Meta/Facebook verification zaroori hai?"*
+> **Aapka Jawab:**
+> *"Nahi! Hamare system mein Smart Bridge & Fallback feature pehle se laga hai. Agar aapka Meta template name khali ho ya approve na bhi ho, tab bhi direct text message ke roop mein order confirmation aur tracking details customer aur admin dono ko turant deliver ho jaati hain."*
+
+#### Sawaal: *"Kya main bina laptop ke mobile se pura store chala sakta hoon?"*
+> **Aapka Jawab:**
+> *"Haan, 100%! Admin Dashboard ko special smartphone-first responsive design diya gaya hai. Aap apne mobile browser se naya product add kar sakte hain, homepage featured products set kar sakte hain, aur WhatsApp alerts bhej sakte hain."*
+
 ---
 
 ## 📦 5. Deal Close Hone Ke Baad Kya Deliver Karna Hai?
 
 Jab buyer se **100% payment** mil jaaye:
-1. `export_ready_to_sell/` folder ka ek ZIP banayein (`Ecommerce_Store_System.zip`).
-2. Buyer ko ZIP file aur `INSTALLATION_GUIDE.md` bhej dein.
-3. Agar unka apna developer ya hosting provider hai, toh wo 10 minute mein ise live kar lenge.
+1. `Ecommerce_Store_Package.zip` file aur `INSTALLATION_GUIDE.md` unhe bhej dein (yeh package `CREATE_READY_ZIP.bat` se generate hota hai).
+2. Agar unka apna developer ya hosting provider hai, toh wo 5-10 minute mein ise live kar lenge.

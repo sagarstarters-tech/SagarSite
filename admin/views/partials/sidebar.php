@@ -304,6 +304,12 @@ if (isset($conn)) {
         <span>Logout</span>
     </a>
 
+    <!-- Version Badge -->
+    <div class="px-3 py-2 text-center border-top" style="border-color: rgba(255, 255, 255, 0.07) !important; font-size: 0.72rem; color: rgba(255, 255, 255, 0.45);">
+        <i class="fas fa-code-branch me-1 text-warning"></i>
+        <span>Version <?php echo htmlspecialchars($site_version ?? (defined('APP_VERSION') ? APP_VERSION : 'v2.5.0')); ?></span>
+    </div>
+
 </div>
 
 <script>

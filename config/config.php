@@ -79,6 +79,9 @@ if (!defined('STORE_BASE_URL')) {
     if (!defined('SMTP_SECURE')) define('SMTP_SECURE', $app_config['smtp_secure']);
     if (!defined('MAIL_FROM_NAME')) define('MAIL_FROM_NAME', $app_config['mail_from_name']);
 
+    // ── Version Constant ────────────────────────────────────────
+    if (!defined('APP_VERSION')) define('APP_VERSION', $app_config['app_version'] ?? 'v2.5.0');
+
     unset($app_config);
 }
 
