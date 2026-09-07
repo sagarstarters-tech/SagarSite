@@ -199,7 +199,7 @@ if (!empty($global_settings['hero_banner_product'])) {
             <!-- ══ AMAZON-STYLE PRODUCT IMAGE ══════════════════════════════ -->
             <!-- Main Image Card (hover=lens zoom, click=lightbox) -->
             <div id="prdImgCard" class="card product-card shadow-sm border-0 bg-light p-2 mb-3"
-                 style="position:relative; overflow:visible; cursor:zoom-in;"
+                 style="position:relative; overflow:visible; cursor:pointer;"
                  onclick="openPrdLightbox()">
                 <!-- Lens overlay (desktop hover) -->
                 <div id="prdLens" style="display:none; position:absolute; border:2px solid #0d6efd;
@@ -214,7 +214,7 @@ if (!empty($global_settings['hero_banner_product'])) {
                      fetchpriority="high" decoding="async"
                      style="width:100%; aspect-ratio:1/1; object-fit:<?php echo $prd_img_fit; ?>; display:block; pointer-events:none;">
                 <div class="text-center mt-2 pb-1">
-                    <span class="text-primary small fw-semibold" style="cursor:zoom-in;">
+                    <span class="text-primary small fw-semibold" style="cursor:pointer;">
                         <i class="fas fa-search-plus me-1"></i>Click to see full view
                     </span>
                 </div>
