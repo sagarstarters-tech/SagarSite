@@ -257,25 +257,49 @@ if (!empty($global_settings['hero_banner_product'])) {
         <!-- ══ FULLSCREEN LIGHTBOX MODAL ══════════════════════════════════ -->
         <div id="prdLightbox" style="display:none; position:fixed; inset:0; z-index:2000;
              background:rgba(0,0,0,0.93); flex-direction:column; align-items:center;">
+
+            <style>
+            /* Mobile-responsive lightbox top bar */
+            #lbTopBar { width:100%; display:flex; align-items:center; justify-content:space-between;
+                        padding:8px 12px; background:rgba(0,0,0,0.7); flex-shrink:0; gap:6px; flex-wrap:nowrap; }
+            #lbZoomBtns { display:flex; align-items:center; gap:6px; flex-shrink:0; }
+            .lb-btn { border:1px solid rgba(255,255,255,0.4); background:transparent; color:#fff;
+                      border-radius:50px; padding:6px 14px; font-size:0.82rem; cursor:pointer;
+                      white-space:nowrap; display:flex; align-items:center; gap:4px; transition:background 0.15s; }
+            .lb-btn:hover, .lb-btn:active { background:rgba(255,255,255,0.18); }
+            .lb-btn-close { background:rgba(255,255,255,0.12); }
+            .lb-btn .btn-label { display:inline; }
+            /* On very small screens — hide text, show icons only */
+            @media (max-width: 420px) {
+                .lb-btn .btn-label { display:none; }
+                .lb-btn { padding:7px 10px; font-size:0.9rem; }
+                #lbTopBar { padding:6px 8px; gap:4px; }
+                #lbZoomLevel { min-width:40px !important; font-size:0.72rem !important; }
+            }
+            </style>
+
             <!-- Top Bar -->
-            <div style="width:100%; display:flex; align-items:center; justify-content:space-between;
-                        padding:10px 16px; background:rgba(0,0,0,0.6); flex-shrink:0; gap:8px; flex-wrap:wrap;">
+            <div id="lbTopBar">
                 <!-- Zoom Controls -->
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <button onclick="lbZoomOut()" class="btn btn-outline-light btn-sm rounded-pill px-3">
-                        <i class="fas fa-search-minus me-1"></i> Zoom Out
+                <div id="lbZoomBtns">
+                    <button onclick="lbZoomOut()" class="lb-btn" title="Zoom Out">
+                        <i class="fas fa-search-minus"></i>
+                        <span class="btn-label">Zoom Out</span>
                     </button>
-                    <span id="lbZoomLevel" class="badge bg-secondary px-3 py-2" style="font-size:0.8rem; min-width:52px;">100%</span>
-                    <button onclick="lbZoomIn()" class="btn btn-outline-light btn-sm rounded-pill px-3">
-                        <i class="fas fa-search-plus me-1"></i> Zoom In
+                    <span id="lbZoomLevel" class="badge bg-secondary text-center" style="font-size:0.78rem; min-width:46px; padding:5px 8px;">100%</span>
+                    <button onclick="lbZoomIn()" class="lb-btn" title="Zoom In">
+                        <i class="fas fa-search-plus"></i>
+                        <span class="btn-label">Zoom In</span>
                     </button>
-                    <button onclick="lbZoomReset()" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
-                        <i class="fas fa-compress-arrows-alt me-1"></i> Reset
+                    <button onclick="lbZoomReset()" class="lb-btn" title="Reset">
+                        <i class="fas fa-compress-arrows-alt"></i>
+                        <span class="btn-label">Reset</span>
                     </button>
                 </div>
                 <!-- Close -->
-                <button onclick="closePrdLightbox()" class="btn btn-light btn-sm rounded-pill px-3 fw-bold">
-                    <i class="fas fa-times me-1"></i> Close
+                <button onclick="closePrdLightbox()" class="lb-btn lb-btn-close" title="Close">
+                    <i class="fas fa-times"></i>
+                    <span class="btn-label">Close</span>
                 </button>
             </div>
             <!-- Image Wrapper -->
@@ -472,18 +496,28 @@ if (!empty($global_settings['hero_banner_product'])) {
                 }
             });
 
-            // Pinch-to-zoom (touch)
+            // Pinch-to-zoom + Single-finger drag (touch devices)
             var lastPinch = null;
+            var touchDrag = null;  // single-finger drag state
+
             wrap.addEventListener('touchstart', function(e) {
                 if (e.touches.length === 2) {
+                    // Pinch start
+                    touchDrag = null;  // cancel any drag
                     lastPinch = Math.hypot(
                         e.touches[0].clientX - e.touches[1].clientX,
                         e.touches[0].clientY - e.touches[1].clientY
                     );
+                } else if (e.touches.length === 1) {
+                    // Single-finger drag start (only pan when zoomed)
+                    lastPinch = null;
+                    touchDrag = { x: e.touches[0].clientX, y: e.touches[0].clientY, px: lbPanX, py: lbPanY };
                 }
             }, { passive: true });
+
             wrap.addEventListener('touchmove', function(e) {
                 if (e.touches.length === 2 && lastPinch !== null) {
+                    // Pinch zoom
                     e.preventDefault();
                     var d = Math.hypot(
                         e.touches[0].clientX - e.touches[1].clientX,
@@ -491,10 +525,32 @@ if (!empty($global_settings['hero_banner_product'])) {
                     );
                     lbScale = Math.min(lbMax, Math.max(lbMin, parseFloat((lbScale * d / lastPinch).toFixed(2))));
                     lastPinch = d;
+                    var img = document.getElementById('lbImg');
+                    if (img) img.style.transition = 'none';
+                    lbApply();
+                } else if (e.touches.length === 1 && touchDrag !== null && lbScale > 1) {
+                    // Single-finger drag pan (only when zoomed in)
+                    e.preventDefault();
+                    lbPanX = touchDrag.px + (e.touches[0].clientX - touchDrag.x);
+                    lbPanY = touchDrag.py + (e.touches[0].clientY - touchDrag.y);
+                    var img = document.getElementById('lbImg');
+                    if (img) img.style.transition = 'none';
                     lbApply();
                 }
             }, { passive: false });
-            wrap.addEventListener('touchend', function() { lastPinch = null; });
+
+            wrap.addEventListener('touchend', function(e) {
+                if (e.touches.length === 0) {
+                    lastPinch = null;
+                    touchDrag = null;
+                    var img = document.getElementById('lbImg');
+                    if (img) img.style.transition = 'transform 0.15s ease';
+                } else if (e.touches.length === 1) {
+                    // Went from 2 fingers to 1 — switch to drag mode
+                    lastPinch = null;
+                    touchDrag = { x: e.touches[0].clientX, y: e.touches[0].clientY, px: lbPanX, py: lbPanY };
+                }
+            });
         });
         </script>
 
