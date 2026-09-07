@@ -149,10 +149,14 @@ try {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     
-    // Block browser hard-refresh POST resubmit for destructive actions (add/edit/delete)
-    // verify_form_nonce() consumes the nonce — a hard refresh resubmit will find an empty nonce and be rejected.
+    // Verify CSRF token for all state-changing actions (add/edit/delete)
     if (in_array($action, ['add', 'edit', 'delete'])) {
-        csrf_verify(); // Verify CSRF token (session-lifetime protection)
+        csrf_verify();
+    }
+
+    // Block browser hard-refresh POST resubmit for add and edit forms
+    // verify_form_nonce() consumes the nonce — a hard refresh resubmit will find an empty nonce and be rejected.
+    if (in_array($action, ['add', 'edit'])) {
         if (!verify_form_nonce()) {
             // Duplicate submission / hard refresh — safe redirect back to prevent any side effects
             $_SESSION['flash_error'] = "Duplicate form submission detected. Your last action was already saved. Please do not use browser refresh after submitting a form.";
@@ -487,12 +491,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         
-        $conn->query("DELETE FROM products WHERE id=$id");
+        $del_ok = $conn->query("DELETE FROM products WHERE id=$id");
         try {
             $conn->query("DELETE FROM sm_queue WHERE product_id = " . (int)$id . " AND status IN ('pending', 'scheduled', 'retry')");
         } catch (\Throwable $e) {}
-        $_SESSION['flash_success'] = "Product deleted successfully.";
-        header("Location: manage_products.php?action=list");
+        
+        $return_page = intval($_POST['current_page'] ?? 1);
+        if ($del_ok) {
+            $_SESSION['flash_success'] = "Product deleted successfully.";
+        } else {
+            $_SESSION['flash_error'] = "Failed to delete product: " . $conn->error;
+        }
+        header("Location: manage_products.php?page=" . max(1, $return_page));
         exit;
     } elseif ($action === 'update_display_settings') {
         $prods_count = isset($_POST['home_prods_count']) ? intval($_POST['home_prods_count']) : 12;
@@ -851,10 +861,11 @@ $current_home_prods_count = isset($global_settings['home_prods_count']) && $glob
                                         title="Edit Product">
                                         <i class="fas fa-edit"></i>
                                     </button>
-                                    <form method="POST" class="d-inline m-0 p-0" onsubmit="return confirm('Delete this product?');">
+                                    <form method="POST" class="d-inline m-0 p-0" onsubmit="return confirm('Are you sure you want to delete this product?');">
                                         <?php echo csrf_input(); ?>
                                         <input type="hidden" name="action" value="delete">
                                         <input type="hidden" name="id" value="<?php echo $p['id']; ?>">
+                                        <input type="hidden" name="current_page" value="<?php echo $page; ?>">
                                         <button type="submit" class="btn btn-danger btn-sm rounded-3 px-2 py-1" title="Delete Product"><i class="fas fa-trash-alt"></i></button>
                                     </form>
                                 </div>
