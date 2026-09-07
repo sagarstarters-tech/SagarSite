@@ -275,10 +275,27 @@ if (!empty($global_settings['hero_banner_about'])) {
                     <button type="button" class="btn-close" data-mdb-dismiss="modal" data-bs-dismiss="modal" onclick="hideModalSafely('frontendDocModal')" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-3 p-md-4 text-center bg-light">
-                    <div class="p-2 bg-white rounded-3 border shadow-sm d-inline-block w-100" style="max-height: 70vh; overflow: auto;">
-                        <img src="" id="feDocImg" class="img-fluid rounded" alt="Document Certificate" style="max-height: 65vh; object-fit: contain;">
+                    <!-- Zoom Controls Toolbar -->
+                    <div class="d-flex justify-content-center align-items-center gap-2 mb-2">
+                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" id="feZoomOut" title="Zoom Out">
+                            <i class="fas fa-search-minus me-1"></i> Zoom Out
+                        </button>
+                        <span id="feZoomLevel" class="badge bg-secondary px-3 py-2" style="font-size:0.78rem; min-width:52px;">100%</span>
+                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" id="feZoomIn" title="Zoom In">
+                            <i class="fas fa-search-plus me-1"></i> Zoom In
+                        </button>
+                        <button type="button" class="btn btn-outline-dark btn-sm rounded-pill px-3" id="feZoomReset" title="Reset Zoom">
+                            <i class="fas fa-compress-arrows-alt me-1"></i> Reset
+                        </button>
+                    </div>
+                    <!-- Image Container with overflow for zoom/pan -->
+                    <div id="feDocImgWrapper" class="p-2 bg-white rounded-3 border shadow-sm d-inline-block w-100"
+                         style="max-height: 65vh; overflow: hidden; cursor: grab; user-select: none; position: relative;">
+                        <img src="" id="feDocImg" class="rounded" alt="Document Certificate"
+                             style="max-width:100%; display:block; margin:auto; transform-origin: center center; transform: scale(1); transition: transform 0.15s ease; cursor: grab;">
                     </div>
                     <div id="feDocDesc" class="mt-3 text-muted small text-start px-2"></div>
+                    <p class="text-muted small mt-2 mb-0"><i class="fas fa-mouse-pointer me-1"></i>Scroll to zoom &bull; Drag to pan when zoomed</p>
                 </div>
                 <div class="modal-footer border-0 pt-0 pb-3 px-4 d-flex justify-content-between align-items-center">
                     <span class="small text-muted"><i class="fas fa-check-circle text-success me-1"></i> Registered Sagar Starters compliance</span>
@@ -344,9 +361,12 @@ if (!empty($global_settings['hero_banner_about'])) {
 
     function openFrontendDocModal(title, imgUrl, docNum, desc) {
         document.getElementById('feDocTitle').textContent = title;
-        document.getElementById('feDocImg').src = imgUrl;
+        var img = document.getElementById('feDocImg');
+        img.src = imgUrl;
         document.getElementById('feDocOpenBtn').href = imgUrl;
-        
+        // Reset zoom on open
+        feZoomReset();
+
         var numBadge = document.getElementById('feDocNumBadge');
         if (docNum && docNum.trim() !== '') {
             numBadge.textContent = 'Reg No: ' + docNum;
@@ -366,19 +386,116 @@ if (!empty($global_settings['hero_banner_about'])) {
         showModalSafely('frontendDocModal');
     }
 
+    // ── Zoom Logic ─────────────────────────────────────────────────────────
+    var feScale = 1;
+    var feMinScale = 0.5;
+    var feMaxScale = 4;
+    var feStep = 0.25;
+    var fePanX = 0, fePanY = 0;   // current pan offset
+    var feDragStart = null;         // {x, y, panX, panY}
+
+    function feApplyTransform() {
+        var img = document.getElementById('feDocImg');
+        if (!img) return;
+        img.style.transform = 'scale(' + feScale + ') translate(' + (fePanX/feScale) + 'px, ' + (fePanY/feScale) + 'px)';
+        document.getElementById('feZoomLevel').textContent = Math.round(feScale * 100) + '%';
+        img.style.cursor = feScale > 1 ? 'grab' : 'default';
+    }
+
+    function feZoomIn() {
+        feScale = Math.min(feMaxScale, parseFloat((feScale + feStep).toFixed(2)));
+        feApplyTransform();
+    }
+    function feZoomOut() {
+        feScale = Math.max(feMinScale, parseFloat((feScale - feStep).toFixed(2)));
+        if (feScale <= 1) { fePanX = 0; fePanY = 0; }
+        feApplyTransform();
+    }
+    function feZoomReset() {
+        feScale = 1; fePanX = 0; fePanY = 0;
+        var img = document.getElementById('feDocImg');
+        if (img) { img.style.transition = 'transform 0.2s ease'; }
+        feApplyTransform();
+    }
+
+    // Bind zoom buttons after DOM ready
+    document.addEventListener('DOMContentLoaded', function() {
+        var zIn  = document.getElementById('feZoomIn');
+        var zOut = document.getElementById('feZoomOut');
+        var zRes = document.getElementById('feZoomReset');
+        if (zIn)  zIn.addEventListener('click',  feZoomIn);
+        if (zOut) zOut.addEventListener('click',  feZoomOut);
+        if (zRes) zRes.addEventListener('click',  feZoomReset);
+
+        // Mouse wheel zoom
+        var wrapper = document.getElementById('feDocImgWrapper');
+        if (wrapper) {
+            wrapper.addEventListener('wheel', function(e) {
+                e.preventDefault();
+                if (e.deltaY < 0) feZoomIn(); else feZoomOut();
+            }, { passive: false });
+
+            // Drag to pan
+            wrapper.addEventListener('mousedown', function(e) {
+                if (feScale <= 1) return;
+                e.preventDefault();
+                feDragStart = { x: e.clientX, y: e.clientY, panX: fePanX, panY: fePanY };
+                wrapper.style.cursor = 'grabbing';
+            });
+            document.addEventListener('mousemove', function(e) {
+                if (!feDragStart) return;
+                fePanX = feDragStart.panX + (e.clientX - feDragStart.x);
+                fePanY = feDragStart.panY + (e.clientY - feDragStart.y);
+                var img = document.getElementById('feDocImg');
+                if (img) img.style.transition = 'none';
+                feApplyTransform();
+            });
+            document.addEventListener('mouseup', function() {
+                if (feDragStart) {
+                    feDragStart = null;
+                    wrapper.style.cursor = feScale > 1 ? 'grab' : 'default';
+                    var img = document.getElementById('feDocImg');
+                    if (img) img.style.transition = 'transform 0.15s ease';
+                }
+            });
+
+            // Pinch-to-zoom (touch devices)
+            var lastPinchDist = null;
+            wrapper.addEventListener('touchstart', function(e) {
+                if (e.touches.length === 2) {
+                    lastPinchDist = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                }
+            }, { passive: true });
+            wrapper.addEventListener('touchmove', function(e) {
+                if (e.touches.length === 2 && lastPinchDist !== null) {
+                    e.preventDefault();
+                    var newDist = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    var ratio = newDist / lastPinchDist;
+                    feScale = Math.min(feMaxScale, Math.max(feMinScale, feScale * ratio));
+                    feScale = parseFloat(feScale.toFixed(2));
+                    lastPinchDist = newDist;
+                    feApplyTransform();
+                }
+            }, { passive: false });
+            wrapper.addEventListener('touchend', function() { lastPinchDist = null; });
+        }
+    });
+
     function copyDocText(text, btnEl) {
         if (!text) return;
         navigator.clipboard.writeText(text).then(function() {
             var icon = btnEl.querySelector('i');
             if (icon) {
                 icon.className = 'fas fa-check text-success';
-                setTimeout(function() {
-                    icon.className = 'far fa-copy';
-                }, 2000);
+                setTimeout(function() { icon.className = 'far fa-copy'; }, 2000);
             }
-        }).catch(function(err) {
-            console.error('Failed to copy text: ', err);
-        });
+        }).catch(function(err) { console.error('Failed to copy text: ', err); });
     }
     </script>
     <?php endif; ?>
