@@ -331,18 +331,30 @@ if (!empty($global_settings['hero_banner_product'])) {
             card.addEventListener('mouseenter', function() {
                 // Only on desktop (pointer: fine)
                 if (!window.matchMedia('(pointer: fine)').matches) return;
-                lens.style.display = 'block';
                 var r = card.getBoundingClientRect();
-                var panelW = Math.min(r.width * 1.1, 420);
-                var panelH = r.height;
+
+                // Calculate available space to the right of the image card
+                var availableW = window.innerWidth - r.right - 16; // 16px breathing room
+                if (availableW < 100) {
+                    // Not enough space — skip hover panel (user can still click for lightbox)
+                    return;
+                }
+
+                // Panel size = clamp to available space, same height as image card
+                var panelW = Math.min(availableW, r.width);  // never wider than image
+                var panelH = Math.min(r.height, window.innerHeight - r.top - 10);
+
+                lens.style.display = 'block';
+
                 panel.style.width  = panelW + 'px';
                 panel.style.height = panelH + 'px';
                 panel.style.top    = r.top + 'px';
-                panel.style.left   = (r.right + 10) + 'px';
+                panel.style.left   = (r.right + 8) + 'px';
+
                 panelImg.src = document.getElementById('mainProductImage').src;
-                // Size the panel image
-                var imgW = r.width * ZOOM_FACTOR;
-                var imgH = r.height * ZOOM_FACTOR;
+                // Size the panel image proportionally to ZOOM_FACTOR
+                var imgW = panelW * ZOOM_FACTOR;
+                var imgH = panelH * ZOOM_FACTOR;
                 panelImg.style.width  = imgW + 'px';
                 panelImg.style.height = imgH + 'px';
                 panel.style.display = 'block';
