@@ -194,40 +194,156 @@ if (!empty($global_settings['hero_banner_product'])) {
             // Determine main image source with fallback to first gallery image
             $main_image_src = resolve_product_image_url($product['image'] ?? '', $conn, $id);
             ?>
-            <div class="card product-card shadow-sm border-0 bg-light d-flex align-items-center justify-content-center p-3 mb-3" style="position: relative; overflow: hidden;" id="imageZoomContainer">
-                <img id="mainProductImage" src="<?php echo htmlspecialchars($main_image_src); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="img-fluid rounded" alt="<?php echo htmlspecialchars($product['name']); ?>" width="500" height="500" fetchpriority="high" decoding="async" style="width: 100%; aspect-ratio: 1 / 1; object-fit: <?php echo htmlspecialchars($product['image_fit'] ?? 'contain'); ?>; transition: opacity 0.3s ease;">
+            <!-- Product Image Container with Zoom -->
+            <div class="card product-card shadow-sm border-0 bg-light p-3 mb-2" style="position: relative;">
+                <!-- Zoom Toolbar -->
+                <div class="d-flex justify-content-center align-items-center gap-2 mb-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" id="prdZoomOut" title="Zoom Out">
+                        <i class="fas fa-search-minus me-1"></i> Zoom Out
+                    </button>
+                    <span id="prdZoomLevel" class="badge bg-secondary px-3 py-2" style="font-size:0.78rem; min-width:52px;">100%</span>
+                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" id="prdZoomIn" title="Zoom In">
+                        <i class="fas fa-search-plus me-1"></i> Zoom In
+                    </button>
+                    <button type="button" class="btn btn-outline-dark btn-sm rounded-pill px-3" id="prdZoomReset" title="Reset">
+                        <i class="fas fa-compress-arrows-alt me-1"></i> Reset
+                    </button>
+                </div>
+                <!-- Image Wrapper -->
+                <div id="imageZoomContainer"
+                     style="overflow: hidden; cursor: default; user-select: none; background: #f8f9fa; border-radius: 8px; position: relative;">
+                    <img id="mainProductImage"
+                         src="<?php echo htmlspecialchars($main_image_src); ?>"
+                         onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';"
+                         class="img-fluid rounded"
+                         alt="<?php echo htmlspecialchars($product['name']); ?>"
+                         width="500" height="500"
+                         fetchpriority="high" decoding="async"
+                         style="width:100%; aspect-ratio:1/1; object-fit:<?php echo htmlspecialchars($product['image_fit'] ?? 'contain'); ?>; display:block; transform-origin: center center; transform: scale(1); transition: transform 0.15s ease;">
+                </div>
+                <p class="text-muted small text-center mt-2 mb-0">
+                    <i class="fas fa-mouse-pointer me-1"></i>Scroll to zoom &bull; Drag to pan when zoomed
+                </p>
             </div>
-            
+
             <style>
-                #imageZoomContainer {
-                    cursor: crosshair;
-                }
-                #imageZoomContainer img {
-                    transition: opacity 0.3s ease, transform 0.1s ease;
-                    transform-origin: center center;
-                }
+                #imageZoomContainer { cursor: default; }
+                #imageZoomContainer.zoomed { cursor: grab; }
+                #imageZoomContainer.dragging { cursor: grabbing !important; }
             </style>
-            
+
             <script>
-                const zoomContainer = document.getElementById('imageZoomContainer');
-                const mainImg = document.getElementById('mainProductImage');
-                
-                zoomContainer.addEventListener('mousemove', function(e) {
-                    const rect = this.getBoundingClientRect();
-                    const x = e.clientX - rect.left;
-                    const y = e.clientY - rect.top;
-                    
-                    const xPercent = x / rect.width * 100;
-                    const yPercent = y / rect.height * 100;
-                    
-                    mainImg.style.transformOrigin = `${xPercent}% ${yPercent}%`;
-                    mainImg.style.transform = 'scale(2)'; // 2x zoom
+            // ── Product Page Zoom ───────────────────────────────────────────
+            (function() {
+                var pScale   = 1,  pMin = 0.5, pMax = 4, pStep = 0.25;
+                var pPanX    = 0,  pPanY = 0;
+                var pDragSt  = null;
+
+                function pApply() {
+                    var img = document.getElementById('mainProductImage');
+                    var wrap = document.getElementById('imageZoomContainer');
+                    var lbl  = document.getElementById('prdZoomLevel');
+                    if (!img) return;
+                    img.style.transform = 'scale(' + pScale + ') translate(' + (pPanX/pScale) + 'px,' + (pPanY/pScale) + 'px)';
+                    if (lbl)  lbl.textContent  = Math.round(pScale * 100) + '%';
+                    if (wrap) {
+                        wrap.className = 'imageZoomContainer' + (pScale > 1 ? ' zoomed' : '');
+                        // Keep inline style
+                        wrap.style.overflow  = 'hidden';
+                        wrap.style.userSelect = 'none';
+                        wrap.style.background = '#f8f9fa';
+                        wrap.style.borderRadius = '8px';
+                        wrap.style.position = 'relative';
+                    }
+                }
+
+                window.prdZoomIn = function() {
+                    pScale = Math.min(pMax, parseFloat((pScale + pStep).toFixed(2)));
+                    pApply();
+                };
+                window.prdZoomOut = function() {
+                    pScale = Math.max(pMin, parseFloat((pScale - pStep).toFixed(2)));
+                    if (pScale <= 1) { pPanX = 0; pPanY = 0; }
+                    pApply();
+                };
+                window.prdZoomReset = function() {
+                    pScale = 1; pPanX = 0; pPanY = 0;
+                    var img = document.getElementById('mainProductImage');
+                    if (img) img.style.transition = 'transform 0.2s ease';
+                    pApply();
+                    setTimeout(function() {
+                        var img2 = document.getElementById('mainProductImage');
+                        if (img2) img2.style.transition = 'transform 0.15s ease';
+                    }, 250);
+                };
+
+                document.addEventListener('DOMContentLoaded', function() {
+                    var zIn  = document.getElementById('prdZoomIn');
+                    var zOut = document.getElementById('prdZoomOut');
+                    var zRes = document.getElementById('prdZoomReset');
+                    if (zIn)  zIn.addEventListener('click',  window.prdZoomIn);
+                    if (zOut) zOut.addEventListener('click',  window.prdZoomOut);
+                    if (zRes) zRes.addEventListener('click',  window.prdZoomReset);
+
+                    var wrap = document.getElementById('imageZoomContainer');
+                    if (!wrap) return;
+
+                    // Mouse wheel
+                    wrap.addEventListener('wheel', function(e) {
+                        e.preventDefault();
+                        if (e.deltaY < 0) window.prdZoomIn();
+                        else window.prdZoomOut();
+                    }, { passive: false });
+
+                    // Drag-to-pan
+                    wrap.addEventListener('mousedown', function(e) {
+                        if (pScale <= 1) return;
+                        e.preventDefault();
+                        pDragSt = { x: e.clientX, y: e.clientY, panX: pPanX, panY: pPanY };
+                        wrap.classList.add('dragging');
+                    });
+                    document.addEventListener('mousemove', function(e) {
+                        if (!pDragSt) return;
+                        pPanX = pDragSt.panX + (e.clientX - pDragSt.x);
+                        pPanY = pDragSt.panY + (e.clientY - pDragSt.y);
+                        var img = document.getElementById('mainProductImage');
+                        if (img) img.style.transition = 'none';
+                        pApply();
+                    });
+                    document.addEventListener('mouseup', function() {
+                        if (pDragSt) {
+                            pDragSt = null;
+                            wrap.classList.remove('dragging');
+                            var img = document.getElementById('mainProductImage');
+                            if (img) img.style.transition = 'transform 0.15s ease';
+                        }
+                    });
+
+                    // Pinch-to-zoom
+                    var lastPinch = null;
+                    wrap.addEventListener('touchstart', function(e) {
+                        if (e.touches.length === 2) {
+                            lastPinch = Math.hypot(
+                                e.touches[0].clientX - e.touches[1].clientX,
+                                e.touches[0].clientY - e.touches[1].clientY
+                            );
+                        }
+                    }, { passive: true });
+                    wrap.addEventListener('touchmove', function(e) {
+                        if (e.touches.length === 2 && lastPinch !== null) {
+                            e.preventDefault();
+                            var d = Math.hypot(
+                                e.touches[0].clientX - e.touches[1].clientX,
+                                e.touches[0].clientY - e.touches[1].clientY
+                            );
+                            pScale = Math.min(pMax, Math.max(pMin, parseFloat((pScale * (d / lastPinch)).toFixed(2))));
+                            lastPinch = d;
+                            pApply();
+                        }
+                    }, { passive: false });
+                    wrap.addEventListener('touchend', function() { lastPinch = null; });
                 });
-                
-                zoomContainer.addEventListener('mouseleave', function() {
-                    mainImg.style.transformOrigin = 'center center';
-                    mainImg.style.transform = 'scale(1)';
-                });
+            })();
             </script>
             
             <?php
@@ -256,16 +372,15 @@ if (!empty($global_settings['hero_banner_product'])) {
             
             <script>
             function changeMainImage(element, newSrc) {
-                // Update main image source
-                const mainImg = document.getElementById('mainProductImage');
+                var mainImg = document.getElementById('mainProductImage');
                 mainImg.style.opacity = 0.5;
-                setTimeout(() => {
+                // Reset zoom on gallery switch
+                if (typeof window.prdZoomReset === 'function') window.prdZoomReset();
+                setTimeout(function() {
                     mainImg.src = newSrc;
                     mainImg.style.opacity = 1;
                 }, 150);
-                
-                // Update active borders
-                document.querySelectorAll('.gallery-thumbnail').forEach(el => {
+                document.querySelectorAll('.gallery-thumbnail').forEach(function(el) {
                     el.style.borderColor = 'transparent';
                 });
                 element.style.borderColor = 'var(--primary-color)';
