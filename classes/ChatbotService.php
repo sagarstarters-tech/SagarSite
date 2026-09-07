@@ -63,7 +63,7 @@ class ChatbotService
                 'chatbot_openai_key'      => '',
                 'chatbot_openai_model'    => 'gpt-4o-mini',
                 'chatbot_groq_key'        => '',
-                'chatbot_groq_model'      => 'llama-3.3-70b-versatile',
+                'chatbot_groq_model'      => 'llama-3.1-8b-instant',
                 'chatbot_system_prompt'   => 'You are Sagar Sahayak, the intelligent, friendly, and expert AI Assistant for Sagar Starters (sagarstarters.com) — an Indian eCommerce store specializing in premium motor starters, submersible pump control panels (1-Phase & 3-Phase), Star Delta starters, DOL starters, circuit breakers, and agricultural motor automation. Respond in a warm, professional, and helpful tone. Answer in the same language the customer speaks (Hindi, Hinglish, English, Gujarati, etc.). When customers ask about products, recommend matching items with their specs and prices. Always offer help with order tracking, bulk discounts, and technical advice.',
                 'chatbot_whatsapp_number' => '918573934013',
                 'chatbot_position'        => 'bottom-right',

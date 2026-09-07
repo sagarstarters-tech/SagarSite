@@ -88,9 +88,17 @@ if (isset($_POST['ajax_action']) && $_POST['ajax_action'] === 'test_ai_connectio
                 if ($mCode === 200 && !empty($mJson['data'])) {
                     $available = array_column($mJson['data'], 'id');
                     $textModels = array_values(array_filter($available, function($id) {
-                        return (stripos($id, 'llama') !== false || stripos($id, 'mixtral') !== false || stripos($id, 'gemma') !== false || stripos($id, 'qwen') !== false || stripos($id, 'deepseek') !== false) 
+                        return (
+                            stripos($id, 'llama') !== false || 
+                            stripos($id, 'mixtral') !== false || 
+                            stripos($id, 'gemma') !== false || 
+                            stripos($id, 'qwen') !== false || 
+                            stripos($id, 'deepseek') !== false ||
+                            stripos($id, 'openai/') !== false
+                        ) 
                             && stripos($id, 'whisper') === false 
-                            && stripos($id, 'orpheus') === false;
+                            && stripos($id, 'orpheus') === false
+                            && stripos($id, 'vision') === false;
                     }));
 
                     if (!empty($model) && in_array($model, $available)) {
@@ -631,11 +639,11 @@ try {
                             <div class="row g-2 align-items-center">
                                 <div class="col-sm-7">
                                     <select name="chatbot_groq_model" id="groqModel" class="form-select form-select-sm">
-                                        <option value="llama-3.1-8b-instant" <?php echo ($chatbotService->getSetting('chatbot_groq_model') === 'llama-3.1-8b-instant' || empty($chatbotService->getSetting('chatbot_groq_model'))) ? 'selected' : ''; ?>>⚡ llama-3.1-8b-instant (Fastest)</option>
-                                        <option value="llama-3.3-70b-versatile" <?php echo $chatbotService->getSetting('chatbot_groq_model') === 'llama-3.3-70b-versatile' ? 'selected' : ''; ?>>🚀 llama-3.3-70b-versatile</option>
-                                        <option value="llama-3.1-70b-versatile" <?php echo $chatbotService->getSetting('chatbot_groq_model') === 'llama-3.1-70b-versatile' ? 'selected' : ''; ?>>🌟 llama-3.1-70b-versatile</option>
-                                        <option value="gemma2-9b-it" <?php echo $chatbotService->getSetting('chatbot_groq_model') === 'gemma2-9b-it' ? 'selected' : ''; ?>>✨ gemma2-9b-it</option>
-                                        <option value="mixtral-8x7b-32768" <?php echo $chatbotService->getSetting('chatbot_groq_model') === 'mixtral-8x7b-32768' ? 'selected' : ''; ?>>mixtral-8x7b-32768</option>
+                                        <option value="llama-3.1-8b-instant" <?php echo ($chatbotService->getSetting('chatbot_groq_model') === 'llama-3.1-8b-instant' || empty($chatbotService->getSetting('chatbot_groq_model'))) ? 'selected' : ''; ?>>⚡ llama-3.1-8b-instant (Fastest ~560 tps)</option>
+                                        <option value="llama-3.3-70b-versatile" <?php echo $chatbotService->getSetting('chatbot_groq_model') === 'llama-3.3-70b-versatile' ? 'selected' : ''; ?>>🚀 llama-3.3-70b-versatile (Best Quality)</option>
+                                        <option value="openai/gpt-oss-20b" <?php echo $chatbotService->getSetting('chatbot_groq_model') === 'openai/gpt-oss-20b' ? 'selected' : ''; ?>>🌟 openai/gpt-oss-20b (~1000 tps)</option>
+                                        <option value="openai/gpt-oss-120b" <?php echo $chatbotService->getSetting('chatbot_groq_model') === 'openai/gpt-oss-120b' ? 'selected' : ''; ?>>💎 openai/gpt-oss-120b (Powerful)</option>
+                                        <option value="qwen/qwen3.6-27b" <?php echo $chatbotService->getSetting('chatbot_groq_model') === 'qwen/qwen3.6-27b' ? 'selected' : ''; ?>>🔬 qwen/qwen3.6-27b (Preview)</option>
                                     </select>
                                 </div>
                                 <div class="col-sm-5 text-end">
