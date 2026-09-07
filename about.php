@@ -283,20 +283,20 @@ if (!empty($global_settings['hero_banner_about'])) {
     function showModalSafely(modalId) {
         var el = document.getElementById(modalId);
         if (!el) return;
+        // Try MDB (the modal library loaded on this site)
         if (typeof mdb !== 'undefined' && mdb.Modal) {
-            var inst = mdb.Modal.getInstance(el) || new mdb.Modal(el);
-            inst.show();
-            return;
+            try {
+                var inst = mdb.Modal.getInstance(el) || new mdb.Modal(el);
+                inst.show();
+                return;
+            } catch(e) {}
         }
-        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-            var inst = bootstrap.Modal.getInstance(el) || new bootstrap.Modal(el);
-            inst.show();
-            return;
-        }
+        // Pure vanilla fallback — no bootstrap dependency
         el.classList.add('show');
         el.style.display = 'block';
         el.removeAttribute('aria-hidden');
         el.setAttribute('aria-modal', 'true');
+        el.setAttribute('role', 'dialog');
         var bd = document.getElementById(modalId + '_bd');
         if (!bd) {
             bd = document.createElement('div');
@@ -311,14 +311,14 @@ if (!empty($global_settings['hero_banner_about'])) {
     function hideModalSafely(modalId) {
         var el = document.getElementById(modalId);
         if (!el) return;
+        // Try MDB first
         if (typeof mdb !== 'undefined' && mdb.Modal) {
-            var inst = mdb.Modal.getInstance(el);
-            if (inst) { inst.hide(); return; }
+            try {
+                var inst = mdb.Modal.getInstance(el);
+                if (inst) { inst.hide(); return; }
+            } catch(e) {}
         }
-        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-            var inst = bootstrap.Modal.getInstance(el);
-            if (inst) { inst.hide(); return; }
-        }
+        // Pure vanilla fallback
         el.classList.remove('show');
         el.style.display = 'none';
         el.setAttribute('aria-hidden', 'true');
