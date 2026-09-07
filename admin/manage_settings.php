@@ -23,8 +23,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         }
 
         if (isset($_POST['site_version'])) {
-            $site_version_val = $conn->real_escape_string(trim($_POST['site_version']));
-            $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('site_version', '$site_version_val') ON DUPLICATE KEY UPDATE setting_value='$site_version_val'");
+            $site_version_val = trim($_POST['site_version']);
+            $auto_version_val = isset($_POST['auto_version_enabled']) ? '1' : '0';
+            require_once BASE_PATH . '/classes/VersionManager.php';
+            VersionManager::setVersion($conn, $site_version_val, $auto_version_val);
         }
         
         // Logo Upload Logic
@@ -433,16 +435,45 @@ $active_tab = isset($_GET['tab']) ? $_GET['tab'] : 'general';
                                 <span>Website / Release Version</span>
                             </label>
                             <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2.5 py-1 small">
-                                Current: <?php echo htmlspecialchars($current_settings['site_version'] ?? (defined('APP_VERSION') ? APP_VERSION : 'v2.5.0')); ?>
+                                Current: <?php echo htmlspecialchars($site_version); ?>
                             </span>
                         </div>
-                        <div class="input-group">
+                        <div class="input-group mb-2">
                             <span class="input-group-text bg-white text-secondary"><i class="fas fa-tag"></i></span>
-                            <input type="text" name="site_version" class="form-control bg-white fw-bold text-primary" value="<?php echo htmlspecialchars($current_settings['site_version'] ?? (defined('APP_VERSION') ? APP_VERSION : 'v2.5.0')); ?>" placeholder="e.g. v2.5.0" required>
+                            <input type="text" name="site_version" id="settingsSiteVersionInput" class="form-control bg-white fw-bold text-primary" value="<?php echo htmlspecialchars($site_version); ?>" placeholder="e.g. v2.5.0" required>
                         </div>
-                        <small class="text-muted d-block mt-1">
-                            <i class="fas fa-info-circle me-1 text-info"></i> Ye version Admin Dashboard Hero header, System Status bar aur sidebar me display hota hai.
-                        </small>
+                        
+                        <!-- Quick Bump Pills -->
+                        <div class="d-flex align-items-center gap-1.5 flex-wrap mb-3">
+                            <span class="text-muted small me-1" style="font-size: 0.78rem;">Quick Bump:</span>
+                            <button type="button" class="btn btn-sm btn-outline-primary py-0.5 px-2 rounded-pill fw-semibold" style="font-size: 0.74rem;" onclick="document.getElementById('settingsSiteVersionInput').value = '<?php echo htmlspecialchars($version_metadata['next_patch'] ?? 'v2.5.1'); ?>';">
+                                +Patch (<?php echo htmlspecialchars($version_metadata['next_patch'] ?? 'v2.5.1'); ?>)
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary py-0.5 px-2 rounded-pill fw-semibold" style="font-size: 0.74rem;" onclick="document.getElementById('settingsSiteVersionInput').value = '<?php echo htmlspecialchars($version_metadata['next_minor'] ?? 'v2.6.0'); ?>';">
+                                +Minor (<?php echo htmlspecialchars($version_metadata['next_minor'] ?? 'v2.6.0'); ?>)
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary py-0.5 px-2 rounded-pill fw-semibold" style="font-size: 0.74rem;" onclick="document.getElementById('settingsSiteVersionInput').value = '<?php echo htmlspecialchars($version_metadata['next_major'] ?? 'v3.0.0'); ?>';">
+                                +Major (<?php echo htmlspecialchars($version_metadata['next_major'] ?? 'v3.0.0'); ?>)
+                            </button>
+                        </div>
+
+                        <!-- Auto Change Version Switch -->
+                        <div class="p-2.5 rounded-3 border bg-white mb-2">
+                            <div class="form-check form-switch d-flex align-items-center mb-1">
+                                <input class="form-check-input me-2" type="checkbox" role="switch" name="auto_version_enabled" id="settingsAutoVersionEnabled" value="1" <?php echo !empty($auto_version_enabled) ? 'checked' : ''; ?>>
+                                <label class="form-check-label fw-bold text-dark small" for="settingsAutoVersionEnabled">
+                                    <i class="fas fa-magic text-success me-1"></i> Auto Change Version on Updates
+                                </label>
+                            </div>
+                            <p class="text-muted mb-0" style="font-size: 0.76rem; padding-left: 2.2rem; line-height: 1.35;">
+                                Naye Git commits ya server deployment detect hone par website version automatically patch level increase hoga.
+                            </p>
+                        </div>
+
+                        <div class="d-flex align-items-center justify-content-between text-muted px-1" style="font-size: 0.74rem;">
+                            <span><i class="fas fa-code-commit me-1"></i> Commit: <code><?php echo htmlspecialchars($version_metadata['short_hash'] ?? 'abb1e58'); ?></code></span>
+                            <span><i class="far fa-clock me-1"></i> Last Bump: <?php echo !empty($version_metadata['last_bump_at']) ? date('M d, Y H:i', strtotime($version_metadata['last_bump_at'])) : 'Baseline'; ?></span>
+                        </div>
                     </div>
 
                     <div class="mb-4">

@@ -1,9 +1,10 @@
 <?php
 /**
- * AJAX Endpoint: Update Website / Release Version
+ * AJAX Endpoint: Update Website / Release Version (Auto Change Version System)
  */
 include_once __DIR__ . '/../includes/session_setup.php';
 require_once __DIR__ . '/../includes/db_connect.php';
+require_once BASE_PATH . '/classes/VersionManager.php';
 
 header('Content-Type: application/json');
 
@@ -15,29 +16,61 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = trim($_POST['action'] ?? 'save_version');
+
+    // 1. Action: Quick Bump (patch, minor, major)
+    if ($action === 'bump') {
+        $type = trim($_POST['type'] ?? 'patch');
+        $res = VersionManager::bumpVersionManually($conn, $type);
+        if ($res['success']) {
+            $meta = VersionManager::getVersionMetadata($conn);
+            echo json_encode([
+                'success'  => true,
+                'version'  => $res['new_version'],
+                'metadata' => $meta,
+                'message'  => ucfirst($type) . ' version successfully bumped to ' . $res['new_version'] . '!'
+            ]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to bump version.']);
+        }
+        exit;
+    }
+
+    // 2. Action: Save Version & Auto-Version Toggle
     $version = trim($_POST['version'] ?? '');
     if (empty($version)) {
         echo json_encode(['success' => false, 'message' => 'Version string cannot be empty.']);
         exit;
     }
 
-    $safe_version = $conn->real_escape_string($version);
-    $query = "INSERT INTO settings (setting_key, setting_value) 
-              VALUES ('site_version', '$safe_version') 
-              ON DUPLICATE KEY UPDATE setting_value='$safe_version'";
+    $autoEnabled = null;
+    if (isset($_POST['auto_version'])) {
+        $autoEnabled = ($_POST['auto_version'] == '1' || $_POST['auto_version'] === 'true') ? '1' : '0';
+    }
 
-    if ($conn->query($query)) {
+    $saved = VersionManager::setVersion($conn, $version, $autoEnabled);
+
+    if ($saved) {
+        $meta = VersionManager::getVersionMetadata($conn);
         echo json_encode([
-            'success' => true,
-            'version' => htmlspecialchars($version),
-            'message' => 'Website version successfully updated to ' . htmlspecialchars($version) . '!'
+            'success'      => true,
+            'version'      => htmlspecialchars($version),
+            'auto_enabled' => $meta['auto_enabled'],
+            'metadata'     => $meta,
+            'message'      => 'Website version successfully saved as ' . htmlspecialchars($version) . '!'
         ]);
     } else {
         echo json_encode([
             'success' => false,
-            'message' => 'Database error: ' . $conn->error
+            'message' => 'Database error while saving version.'
         ]);
     }
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && ($_GET['action'] ?? '') === 'get_meta') {
+    $meta = VersionManager::getVersionMetadata($conn);
+    echo json_encode(['success' => true, 'metadata' => $meta]);
     exit;
 }
 

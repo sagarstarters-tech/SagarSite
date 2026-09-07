@@ -234,9 +234,12 @@ a.dash-btn-white:hover {
                     <span class="badge bg-primary bg-opacity-25 text-white border border-primary border-opacity-50 rounded-pill px-3 py-1 small">
                         <i class="fas fa-store me-1"></i> Admin Command Center
                     </span>
-                    <span class="badge bg-white bg-opacity-10 text-white border border-white border-opacity-25 rounded-pill px-3 py-1 small d-inline-flex align-items-center gap-1.5 shadow-sm" style="cursor: pointer; transition: all 0.2s;" data-mdb-toggle="modal" data-mdb-target="#editVersionModal" title="Click to change version">
+                    <span class="badge bg-white bg-opacity-10 text-white border border-white border-opacity-25 rounded-pill px-3 py-1 small d-inline-flex align-items-center gap-1.5 shadow-sm" style="cursor: pointer; transition: all 0.2s;" data-mdb-toggle="modal" data-mdb-target="#editVersionModal" title="Click to change version / Auto Change Version">
                         <i class="fas fa-code-branch text-warning me-1"></i>
                         <span>Version <strong class="text-white" id="heroVersionText"><?php echo htmlspecialchars($site_version); ?></strong></span>
+                        <?php if (!empty($auto_version_enabled)): ?>
+                            <span class="badge bg-success bg-opacity-25 text-white border border-success border-opacity-50 rounded-pill px-1.5 py-0.5 ms-1" style="font-size: 0.62rem;" title="Auto Change Version Active">Auto</span>
+                        <?php endif; ?>
                         <i class="fas fa-pencil-alt text-white-50 ms-1" style="font-size: 0.65rem;"></i>
                     </span>
                     <span class="text-white-50 small"><i class="far fa-calendar-alt me-1"></i> <?php echo date('F j, Y'); ?></span>
@@ -454,6 +457,11 @@ a.dash-btn-white:hover {
                 <div class="px-3 py-1.5 rounded-3 bg-light border text-secondary small d-flex align-items-center gap-2">
                     <i class="fas fa-code-branch text-primary"></i>
                     <span>Website Version: <strong class="text-primary fw-bold" id="dashVersionDisplay"><?php echo htmlspecialchars($site_version); ?></strong></span>
+                    <?php if (!empty($auto_version_enabled)): ?>
+                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 0.72rem;" id="dashAutoBadge" title="Auto Change Version is ON">
+                            <i class="fas fa-magic me-1"></i> Auto ON
+                        </span>
+                    <?php endif; ?>
                 </div>
                 <button type="button" class="btn btn-sm btn-primary rounded-3 px-3 py-1.5 d-flex align-items-center gap-1.5 shadow-sm text-white fw-semibold" data-mdb-toggle="modal" data-mdb-target="#editVersionModal" style="font-size: 0.82rem;">
                     <i class="fas fa-edit"></i> Change Version
@@ -475,23 +483,55 @@ a.dash-btn-white:hover {
         <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
             <div class="modal-header bg-light border-0 py-3 px-4">
                 <h5 class="modal-title fw-bold text-dark fs-6 d-flex align-items-center gap-2 mb-0" id="editVersionModalLabel">
-                    <i class="fas fa-code-branch text-primary"></i> Update Website Version
+                    <i class="fas fa-code-branch text-primary"></i> Update Website Version & Release
                 </h5>
                 <button type="button" class="btn-close" data-mdb-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="quickVersionForm">
                 <div class="modal-body p-4">
                     <p class="text-muted small mb-3">
-                        Aap website ka release version yahan se badal sakte hain. Ye turant Dashboard, Settings aur headers par update ho jayega.
+                        Website ka release version yahan se badlein ya Auto Change Version logic configure karein. Ye turant store headers aur admin dashboard par sync ho jayega.
                     </p>
                     <div class="mb-3">
-                        <label class="form-label fw-bold text-dark small">Website / Release Version</label>
-                        <div class="input-group">
+                        <label class="form-label fw-bold text-dark small mb-1">Website / Release Version</label>
+                        <div class="input-group mb-2">
                             <span class="input-group-text bg-light text-secondary"><i class="fas fa-tag"></i></span>
                             <input type="text" class="form-control form-control-lg fs-6 fw-bold text-primary" id="modalVersionInput" name="version" value="<?php echo htmlspecialchars($site_version); ?>" placeholder="e.g. v2.5.0" required>
                         </div>
-                        <small class="text-muted mt-1 d-block">Format example: <code>v2.5.0</code>, <code>v2.5.1</code>, <code>v3.0.0</code></small>
+                        <!-- Quick Bump Helper Pills -->
+                        <div class="d-flex align-items-center gap-1.5 flex-wrap mt-2">
+                            <span class="text-muted small me-1" style="font-size: 0.78rem;">Quick Bump:</span>
+                            <button type="button" class="btn btn-sm btn-outline-primary py-1 px-2.5 rounded-pill fw-semibold btn-quick-bump" data-bump-version="<?php echo htmlspecialchars($version_metadata['next_patch'] ?? 'v2.5.1'); ?>" style="font-size: 0.76rem;">
+                                <i class="fas fa-arrow-up me-1"></i> +Patch (<?php echo htmlspecialchars($version_metadata['next_patch'] ?? 'v2.5.1'); ?>)
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-2.5 rounded-pill fw-semibold btn-quick-bump" data-bump-version="<?php echo htmlspecialchars($version_metadata['next_minor'] ?? 'v2.6.0'); ?>" style="font-size: 0.76rem;">
+                                <i class="fas fa-level-up-alt me-1"></i> +Minor (<?php echo htmlspecialchars($version_metadata['next_minor'] ?? 'v2.6.0'); ?>)
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-2.5 rounded-pill fw-semibold btn-quick-bump" data-bump-version="<?php echo htmlspecialchars($version_metadata['next_major'] ?? 'v3.0.0'); ?>" style="font-size: 0.76rem;">
+                                <i class="fas fa-rocket me-1"></i> +Major (<?php echo htmlspecialchars($version_metadata['next_major'] ?? 'v3.0.0'); ?>)
+                            </button>
+                        </div>
                     </div>
+
+                    <!-- Auto Change Version Switch Box -->
+                    <div class="p-3 mb-3 rounded-3 border" style="background: #f8fafc; border-left: 4px solid #10b981 !important;">
+                        <div class="form-check form-switch mb-1 d-flex align-items-center">
+                            <input class="form-check-input me-2" type="checkbox" role="switch" id="modalAutoVersionSwitch" name="auto_version" value="1" <?php echo !empty($auto_version_enabled) ? 'checked' : ''; ?>>
+                            <label class="form-check-label fw-bold text-dark small" for="modalAutoVersionSwitch">
+                                <i class="fas fa-magic text-success me-1"></i> Auto Change Version on Updates
+                            </label>
+                        </div>
+                        <p class="text-muted mb-0" style="font-size: 0.77rem; line-height: 1.4; padding-left: 2.2rem;">
+                            Jab bhi koi new Git commit ya code update aayega, website version automatically patch release me increase hota rahega (e.g. <code><?php echo htmlspecialchars($site_version); ?></code> &rarr; <code><?php echo htmlspecialchars($version_metadata['next_patch'] ?? 'v2.5.1'); ?></code>).
+                        </p>
+                    </div>
+
+                    <!-- Build & Commit Metadata Info -->
+                    <div class="d-flex align-items-center justify-content-between text-muted small px-1 mb-2" style="font-size: 0.75rem;">
+                        <span><i class="fas fa-code-branch text-secondary me-1"></i> Commit: <code class="text-dark fw-bold"><?php echo htmlspecialchars($version_metadata['short_hash'] ?? 'abb1e58'); ?></code></span>
+                        <span><i class="far fa-clock text-secondary me-1"></i> Last Bump: <?php echo !empty($version_metadata['last_bump_at']) ? date('M d, H:i', strtotime($version_metadata['last_bump_at'])) : 'Baseline'; ?></span>
+                    </div>
+
                     <div id="versionModalAlert" class="alert d-none py-2 px-3 small rounded-3 mb-0"></div>
                 </div>
                 <div class="modal-footer border-0 bg-light py-2 px-4 d-flex justify-content-between">
@@ -587,6 +627,21 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // Quick bump button listeners
+    document.querySelectorAll('.btn-quick-bump').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetVer = this.getAttribute('data-bump-version');
+            if (targetVer) {
+                const input = document.getElementById('modalVersionInput');
+                if (input) {
+                    input.value = targetVer;
+                    input.focus();
+                }
+            }
+        });
+    });
+
     // Quick Version Update AJAX Handler
     const versionForm = document.getElementById('quickVersionForm');
     if (versionForm) {
@@ -595,7 +650,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const btn = document.getElementById('saveVersionSubmitBtn');
             const alertBox = document.getElementById('versionModalAlert');
             const input = document.getElementById('modalVersionInput');
+            const autoSwitch = document.getElementById('modalAutoVersionSwitch');
             const newVersion = input.value.trim();
+            const autoEnabled = autoSwitch ? (autoSwitch.checked ? '1' : '0') : '1';
 
             if (!newVersion) return;
 
@@ -605,6 +662,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const formData = new FormData();
             formData.append('version', newVersion);
+            formData.append('auto_version', autoEnabled);
 
             fetch('ajax_update_version.php', {
                 method: 'POST',
@@ -622,6 +680,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (heroText) heroText.textContent = data.version;
                     const dashText = document.getElementById('dashVersionDisplay');
                     if (dashText) dashText.textContent = data.version;
+                    const dashBadge = document.getElementById('dashAutoBadge');
+                    if (dashBadge) {
+                        if (autoEnabled === '1') dashBadge.classList.remove('d-none');
+                        else dashBadge.classList.add('d-none');
+                    }
 
                     setTimeout(() => {
                         const modalEl = document.getElementById('editVersionModal');
