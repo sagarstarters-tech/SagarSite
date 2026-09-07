@@ -145,9 +145,9 @@ if (!empty($global_settings['hero_banner_about'])) {
     <div class="row align-items-center mb-5 pb-4">
         <div class="col-md-6 mb-4 mb-md-0">
             <?php if (!empty($about_who_image)): ?>
-                <img src="<?php echo htmlspecialchars(resolve_image_url($about_who_image)); ?>" alt="Our Team" class="img-fluid rounded-4 shadow-lg w-100" style="max-height: 440px; object-fit: cover;">
+                <img src="<?php echo htmlspecialchars(resolve_image_url($about_who_image)); ?>" alt="Our Team" class="img-fluid rounded-4 shadow-lg w-100" style="object-fit: contain; background: transparent;">
             <?php else: ?>
-                <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Our Team" class="img-fluid rounded-4 shadow-lg w-100" style="max-height: 440px; object-fit: cover;">
+                <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Our Team" class="img-fluid rounded-4 shadow-lg w-100" style="object-fit: contain; background: transparent;">
             <?php endif; ?>
         </div>
         <div class="col-md-6 px-md-5">
