@@ -311,9 +311,26 @@ if ($chatbot_enabled):
 ?>
     <!-- ChatBot Widget CSS & JS -->
     <link href="<?php echo ASSETS_URL; ?>/css/chatbot-widget.css?v=<?php echo file_exists(__DIR__ . '/../assets/css/chatbot-widget.css') ? filemtime(__DIR__ . '/../assets/css/chatbot-widget.css') : '1.0'; ?>" rel="stylesheet">
+    <?php
+    $chatbot_avatar_setting = $global_settings['chatbot_avatar'] ?? '';
+    if (empty($chatbot_avatar_setting) && isset($conn)) {
+        $cb_av = $conn->query("SELECT setting_value FROM settings WHERE setting_key = 'chatbot_avatar' LIMIT 1");
+        if ($cb_av && $cb_av->num_rows > 0) {
+            $chatbot_avatar_setting = $cb_av->fetch_assoc()['setting_value'];
+        }
+    }
+    $chatbot_avatar_url = ASSETS_URL . '/images/chatbot-avatar.png';
+    if (!empty($chatbot_avatar_setting)) {
+        $custom_avatar_file = BASE_PATH . '/' . ltrim($chatbot_avatar_setting, '/');
+        if (file_exists($custom_avatar_file)) {
+            $chatbot_avatar_url = SITE_URL . '/' . ltrim($chatbot_avatar_setting, '/') . '?v=' . filemtime($custom_avatar_file);
+        }
+    }
+    ?>
     <script>
         window.sagarChatConfig = {
-            apiEndpoint: '<?php echo SITE_URL; ?>/api/chatbot/chat.php'
+            apiEndpoint: '<?php echo SITE_URL; ?>/api/chatbot/chat.php',
+            avatarUrl: '<?php echo $chatbot_avatar_url; ?>'
         };
     </script>
     <script src="<?php echo ASSETS_URL; ?>/js/chatbot-widget.js?v=<?php echo file_exists(__DIR__ . '/../assets/js/chatbot-widget.js') ? filemtime(__DIR__ . '/../assets/js/chatbot-widget.js') : '1.0'; ?>" defer></script>

@@ -180,18 +180,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_chatbot_settings
         'chatbot_response_delay'  => trim($_POST['chatbot_response_delay'] ?? '800')
     ];
 
-    try {
-        $stmt = $conn->prepare("INSERT INTO settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)");
-        foreach ($keys as $k => $v) {
-            $stmt->bind_param("ss", $k, $v);
-            $stmt->execute();
+    $uploadError = '';
+
+    // Handle Reset to Default Avatar
+    if (isset($_POST['reset_chatbot_avatar']) && $_POST['reset_chatbot_avatar'] === '1') {
+        $keys['chatbot_avatar'] = '';
+    }
+
+    // Handle Avatar File Upload
+    if (empty($keys['chatbot_avatar']) && isset($_FILES['chatbot_avatar_file']) && $_FILES['chatbot_avatar_file']['error'] === UPLOAD_ERR_OK) {
+        $file = $_FILES['chatbot_avatar_file'];
+        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $allowedExts = ['png', 'jpg', 'jpeg', 'webp', 'svg'];
+
+        if (!in_array($ext, $allowedExts)) {
+            $uploadError = "Invalid file type. Allowed formats: PNG, JPG, JPEG, WEBP, SVG.";
+        } elseif ($file['size'] > 5 * 1024 * 1024) {
+            $uploadError = "Avatar image file size must be less than 5MB.";
+        } else {
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mime = finfo_file($finfo, $file['tmp_name']);
+            finfo_close($finfo);
+            $allowedMimes = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml', 'image/x-png', 'image/pjpeg'];
+
+            if (!in_array($mime, $allowedMimes)) {
+                $uploadError = "Invalid image file format ($mime).";
+            } else {
+                $uploadDir = __DIR__ . '/../uploads/chatbot/';
+                if (!is_dir($uploadDir)) {
+                    mkdir($uploadDir, 0755, true);
+                }
+                $newFilename = 'chatbot_avatar_' . time() . '_' . substr(md5(uniqid()), 0, 8) . '.' . $ext;
+                $targetFile = $uploadDir . $newFilename;
+                if (move_uploaded_file($file['tmp_name'], $targetFile)) {
+                    $keys['chatbot_avatar'] = 'uploads/chatbot/' . $newFilename;
+                } else {
+                    $uploadError = "Failed to save uploaded avatar file. Please check folder permissions.";
+                }
+            }
         }
-        $stmt->close();
-        $feedback = "AI ChatBot Settings have been updated successfully!";
-        $feedbackType = "success";
-    } catch (Exception $e) {
-        $feedback = "Error updating settings: " . $e->getMessage();
+    }
+
+    if (!empty($uploadError)) {
+        $feedback = $uploadError;
         $feedbackType = "danger";
+    } else {
+        try {
+            $stmt = $conn->prepare("INSERT INTO settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)");
+            foreach ($keys as $k => $v) {
+                $stmt->bind_param("ss", $k, $v);
+                $stmt->execute();
+            }
+            $stmt->close();
+            $feedback = "AI ChatBot Settings have been updated successfully!";
+            $feedbackType = "success";
+        } catch (Exception $e) {
+            $feedback = "Error updating settings: " . $e->getMessage();
+            $feedbackType = "danger";
+        }
     }
 }
 
@@ -318,7 +364,7 @@ try {
         </div>
     <?php endif; ?>
 
-    <form method="POST" action="manage_ai_chatbot.php">
+    <form method="POST" action="manage_ai_chatbot.php" enctype="multipart/form-data">
         <?php echo csrf_input(); ?>
         <div class="row g-4">
             <!-- Left Column: Core Controls & Personas -->
@@ -336,6 +382,57 @@ try {
                                 <div class="text-muted small">When enabled, the floating chat widget appears for customers on all pages.</div>
                             </div>
                             <input class="form-check-input fs-4 m-0" type="checkbox" role="switch" name="chatbot_enabled" id="chatbotEnabled" value="1" <?php echo $chatbotService->isEnabled() ? 'checked' : ''; ?>>
+                        </div>
+
+                        <!-- Bot Avatar & Icon Customization Section -->
+                        <div class="p-3 mb-4 rounded-3 border bg-light bg-opacity-50">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <div>
+                                    <label class="form-label fw-bold text-dark mb-0">
+                                        <i class="fas fa-robot text-primary me-1"></i> Bot Avatar Image & Icon
+                                    </label>
+                                    <div class="text-muted small">
+                                        Floating launcher button, chat header, aur bot greeting bubbles mein yahi avatar dikhai dega.
+                                    </div>
+                                </div>
+                                <span class="badge <?php echo $chatbotService->isCustomAvatar() ? 'bg-success' : 'bg-primary'; ?> rounded-pill px-3 py-2 small">
+                                    <i class="fas <?php echo $chatbotService->isCustomAvatar() ? 'fa-check-circle' : 'fa-robot'; ?> me-1"></i>
+                                    <?php echo $chatbotService->isCustomAvatar() ? 'Custom Avatar Active' : 'Default System Avatar'; ?>
+                                </span>
+                            </div>
+
+                            <div class="d-flex align-items-center gap-3 pt-2">
+                                <!-- Circular Avatar Live Preview -->
+                                <div class="position-relative flex-shrink-0" style="width: 68px; height: 68px;">
+                                    <div class="rounded-circle bg-white border border-2 border-white shadow-sm overflow-hidden d-flex align-items-center justify-content-center" style="width: 68px; height: 68px; box-shadow: 0 4px 14px rgba(0,122,255,0.22) !important;">
+                                        <img id="avatarLivePreview" src="<?php echo htmlspecialchars($chatbotService->getAvatarUrl()); ?>" alt="Bot Avatar" style="width: 100%; height: 100%; object-fit: cover;">
+                                    </div>
+                                    <!-- Online Status Badge -->
+                                    <span class="position-absolute rounded-circle" style="bottom: 1px; right: 1px; width: 15px; height: 15px; background-color: #00e676; border: 2.5px solid #ffffff;" title="Online Status"></span>
+                                </div>
+
+                                <!-- Action Buttons & Inputs -->
+                                <div class="flex-grow-1">
+                                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                                        <label for="chatbotAvatarInput" class="btn btn-sm btn-primary rounded-pill px-3 py-2 fw-semibold d-inline-flex align-items-center m-0" style="cursor: pointer;">
+                                            <i class="fas fa-camera me-1"></i> Choose New Avatar Image
+                                        </label>
+                                        <input type="file" name="chatbot_avatar_file" id="chatbotAvatarInput" class="d-none" accept=".png,.jpg,.jpeg,.webp,.svg" onchange="previewChatbotAvatar(this)">
+                                        
+                                        <?php if ($chatbotService->isCustomAvatar()): ?>
+                                            <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-2" onclick="resetToDefaultAvatar()">
+                                                <i class="fas fa-undo me-1"></i> Reset to Default
+                                            </button>
+                                            <input type="hidden" name="reset_chatbot_avatar" id="resetChatbotAvatarField" value="0">
+                                        <?php endif; ?>
+
+                                        <span id="avatarFileNameDisplay" class="text-muted small"></span>
+                                    </div>
+                                    <div class="text-muted small mt-2">
+                                        <i class="fas fa-info-circle text-info me-1"></i> Formats: <strong>PNG, JPG, WEBP, SVG</strong> (Max 5MB). Best quality: <strong>256×256 px</strong> transparent PNG/WebP.
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="row g-3">
@@ -706,6 +803,61 @@ function testConnection(provider) {
         output.className = "alert alert-danger py-2 px-3 small rounded-3 mt-3 d-block";
         output.innerHTML = "<i class='fas fa-times-circle me-1'></i> Error: " + err.message;
     });
+}
+
+function previewChatbotAvatar(input) {
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        const validTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
+        if (!validTypes.includes(file.type)) {
+            alert('Kripya valid image file (PNG, JPG, WEBP, SVG) select karein.');
+            input.value = '';
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            alert('Image file size 5MB se kam honi chahiye.');
+            input.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('avatarLivePreview');
+            if (preview) {
+                preview.src = e.target.result;
+            }
+            const nameDisplay = document.getElementById('avatarFileNameDisplay');
+            if (nameDisplay) {
+                nameDisplay.innerHTML = '<span class="badge bg-light text-dark border"><i class="fas fa-file-image text-primary me-1"></i> ' + file.name + ' (Selected - Click Save to Apply)</span>';
+            }
+            const resetField = document.getElementById('resetChatbotAvatarField');
+            if (resetField) {
+                resetField.value = '0';
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+function resetToDefaultAvatar() {
+    if (confirm('Kya aap sach me default Sagar Sahayak bot avatar par reset karna chahte hain?')) {
+        const resetField = document.getElementById('resetChatbotAvatarField');
+        if (resetField) {
+            resetField.value = '1';
+        }
+        const preview = document.getElementById('avatarLivePreview');
+        if (preview) {
+            preview.src = '<?php echo ASSETS_URL; ?>/images/chatbot-avatar.png';
+        }
+        const nameDisplay = document.getElementById('avatarFileNameDisplay');
+        if (nameDisplay) {
+            nameDisplay.innerHTML = '<span class="badge bg-warning text-dark"><i class="fas fa-exclamation-circle me-1"></i> Reset pending - Click "Save All ChatBot Settings" to confirm</span>';
+        }
+        const fileInput = document.getElementById('chatbotAvatarInput');
+        if (fileInput) {
+            fileInput.value = '';
+        }
+    }
 }
 </script>
 

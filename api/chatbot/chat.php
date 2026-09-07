@@ -47,6 +47,7 @@ try {
             'success'           => true,
             'bot_name'          => $botName,
             'bot_title'         => $botTitle,
+            'avatar_url'        => $chatbotService->getAvatarUrl(),
             'welcome_msg'       => $welcomeMsg,
             'quick_replies'     => $quickReplies,
             'wa_phone'          => $waPhone,

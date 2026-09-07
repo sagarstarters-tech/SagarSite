@@ -6,9 +6,9 @@
 /* ── Launcher Floating Button ─────────────────────────────────────────── */
 .sagar-chat-launcher {
     position: fixed;
-    bottom: 24px;
-    right: 24px;
-    z-index: 1040;
+    bottom: 105px; /* Neatly stacked above the WhatsApp widget */
+    right: 30px;
+    z-index: 9998;
     display: flex;
     align-items: center;
     gap: 10px;
@@ -21,42 +21,68 @@
 }
 
 .sagar-launcher-btn {
-    width: 60px;
-    height: 60px;
+    width: 62px;
+    height: 62px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #007aff 0%, #0056b3 100%);
-    color: #ffffff !important;
-    border: none;
+    background: #ffffff;
+    border: 2px solid #ffffff;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.6rem;
-    box-shadow: 0 8px 24px rgba(0, 122, 255, 0.4);
+    box-shadow: 0 8px 24px rgba(0, 122, 255, 0.32), 0 2px 8px rgba(0, 0, 0, 0.1);
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     outline: none;
     position: relative;
+    padding: 0;
+    overflow: visible;
 }
 
 .sagar-launcher-btn:hover {
     transform: scale(1.08);
-    box-shadow: 0 12px 30px rgba(0, 122, 255, 0.55);
+    box-shadow: 0 12px 30px rgba(0, 122, 255, 0.45);
 }
 
 .sagar-launcher-btn:active {
     transform: scale(0.95);
 }
 
+.sagar-launcher-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+    user-select: none;
+    pointer-events: none;
+}
+
+.sagar-launcher-close-icon {
+    display: none;
+    font-size: 1.5rem;
+    color: #007aff;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+.sagar-chat-launcher.chat-open .sagar-launcher-btn {
+    background: #ffffff;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
 .sagar-launcher-badge {
     position: absolute;
-    top: -2px;
-    right: -2px;
-    width: 14px;
-    height: 14px;
+    top: 0;
+    right: 0;
+    width: 15px;
+    height: 15px;
     background-color: #00e676;
-    border: 2px solid #ffffff;
+    border: 2.5px solid #ffffff;
     border-radius: 50%;
     animation: sagarPulse 2s infinite;
+    z-index: 2;
 }
 
 @keyframes sagarPulse {
@@ -87,6 +113,15 @@
     color: #007aff;
 }
 
+.sagar-launcher-teaser .sagar-teaser-avatar {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    object-fit: cover;
+    display: inline-block;
+    vertical-align: middle;
+}
+
 /* ── Chat Window Modal / Container ───────────────────────────────────── */
 .sagar-chat-window {
     position: fixed;
@@ -102,7 +137,7 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    z-index: 1050;
+    z-index: 10000;
     opacity: 0;
     transform: translateY(20px) scale(0.95);
     pointer-events: none;
@@ -132,27 +167,37 @@
 }
 
 .sagar-header-avatar {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
+    background: #ffffff;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.25rem;
     position: relative;
-    border: 1.5px solid rgba(255, 255, 255, 0.4);
+    border: 2px solid rgba(255, 255, 255, 0.7);
+    flex-shrink: 0;
+    overflow: visible;
+}
+
+.sagar-header-avatar .sagar-avatar-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
 }
 
 .sagar-header-avatar .status-dot {
     position: absolute;
-    bottom: 0;
-    right: 0;
-    width: 10px;
-    height: 10px;
+    bottom: -1px;
+    right: -1px;
+    width: 12px;
+    height: 12px;
     background: #00e676;
     border: 2px solid #007aff;
     border-radius: 50%;
+    z-index: 2;
 }
 
 .sagar-header-info {
@@ -212,15 +257,25 @@
 }
 
 .sagar-msg-avatar {
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
-    background: #e2e8f0;
+    background: #ffffff;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.85rem;
     flex-shrink: 0;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.sagar-msg-avatar .sagar-msg-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    display: block;
 }
 
 .sagar-msg-bubble {

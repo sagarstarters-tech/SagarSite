@@ -8,6 +8,7 @@
 
     let config = {
         apiEndpoint: (window.sagarChatConfig && window.sagarChatConfig.apiEndpoint) || '/api/chatbot/chat.php',
+        avatarUrl: (window.sagarChatConfig && window.sagarChatConfig.avatarUrl) || '/assets/images/chatbot-avatar.png',
         botName: 'Sagar Sahayak',
         botTitle: 'Sagar AI Assistant',
         welcomeMsg: 'Namaste! 🙏 Main Sagar Starters ka AI Assistant hu. Main aapko Motor Starters, Submersible Panels, Price aur Order Tracking me help kar sakta hu.',
@@ -84,10 +85,11 @@
         launcher.id = 'sagarChatLauncher';
         launcher.innerHTML = `
             <div class="sagar-launcher-teaser" id="sagarChatTeaser" style="display:none;">
-                <i class="fas fa-robot"></i> <span>Need Help? Ask AI</span>
+                <img src="${config.avatarUrl}" class="sagar-teaser-avatar" alt="AI"> <span>Need Help? Ask AI</span>
             </div>
             <button type="button" class="sagar-launcher-btn" id="sagarLauncherBtn" aria-label="Open AI Assistant Chat" title="Sagar AI ChatBot">
-                <i class="fas fa-robot" id="sagarLauncherIcon"></i>
+                <img src="${config.avatarUrl}" alt="AI Assistant" class="sagar-launcher-img" id="sagarLauncherImg">
+                <i class="fas fa-times sagar-launcher-close-icon" id="sagarLauncherCloseIcon" style="display:none;"></i>
                 <span class="sagar-launcher-badge"></span>
             </button>
         `;
@@ -102,7 +104,7 @@
             <div class="sagar-chat-header">
                 <div class="d-flex align-items-center">
                     <div class="sagar-header-avatar">
-                        <i class="fas fa-robot"></i>
+                        <img src="${config.avatarUrl}" alt="${config.botName}" class="sagar-avatar-img">
                         <span class="status-dot"></span>
                     </div>
                     <div class="sagar-header-info notranslate" translate="no">
@@ -212,14 +214,16 @@
     function toggleChat() {
         const win = document.getElementById('sagarChatWindow');
         const launcher = document.getElementById('sagarChatLauncher');
-        const icon = document.getElementById('sagarLauncherIcon');
+        const img = document.getElementById('sagarLauncherImg');
+        const closeIcon = document.getElementById('sagarLauncherCloseIcon');
         const teaser = document.getElementById('sagarChatTeaser');
 
         isOpen = !isOpen;
         if (isOpen) {
             win.classList.add('active');
             if (launcher) launcher.classList.add('chat-open');
-            if (icon) icon.className = 'fas fa-chevron-down';
+            if (img) img.style.display = 'none';
+            if (closeIcon) closeIcon.style.display = 'flex';
             if (teaser) teaser.style.display = 'none';
             sessionStorage.setItem('sagar_teaser_dismissed', '1');
             setTimeout(() => {
@@ -231,7 +235,8 @@
         } else {
             win.classList.remove('active');
             if (launcher) launcher.classList.remove('chat-open');
-            if (icon) icon.className = 'fas fa-robot';
+            if (img) img.style.display = 'block';
+            if (closeIcon) closeIcon.style.display = 'none';
         }
     }
 
@@ -383,7 +388,7 @@
 
         row.innerHTML = `
             <div class="sagar-msg-avatar">
-                <i class="fas fa-robot text-primary"></i>
+                <img src="${config.avatarUrl}" alt="Bot" class="sagar-msg-avatar-img">
             </div>
             <div class="sagar-msg-bubble">
                 ${formatMessageText(text)}

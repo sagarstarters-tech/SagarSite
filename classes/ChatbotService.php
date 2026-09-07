@@ -69,7 +69,8 @@ class ChatbotService
                 'chatbot_position'        => 'bottom-right',
                 'chatbot_theme_color'     => '#007aff',
                 'chatbot_quick_prompts'   => "5HP Submersible Starter,Single Phase vs 3 Phase,Track My Order,Bulk Purchase Discount,Talk to Expert on WhatsApp",
-                'chatbot_response_delay'  => '800'
+                'chatbot_response_delay'  => '800',
+                'chatbot_avatar'          => ''
             ];
 
             $stmt = $this->pdo->prepare("INSERT INTO settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_key=setting_key");
@@ -105,6 +106,40 @@ class ChatbotService
     public function getSetting(string $key, $default = '')
     {
         return $this->settings[$key] ?? $default;
+    }
+
+    /**
+     * Get resolved Avatar Image URL (custom upload or default system avatar)
+     */
+    public function getAvatarUrl(bool $withCacheBuster = true): string
+    {
+        $avatar = $this->getSetting('chatbot_avatar', '');
+        $basePath = defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__);
+        if (!empty($avatar)) {
+            $relPath = ltrim($avatar, '/');
+            $fullPath = $basePath . '/' . $relPath;
+            if (file_exists($fullPath)) {
+                $siteUrl = defined('SITE_URL') ? rtrim(SITE_URL, '/') : '';
+                $url = $siteUrl . '/' . $relPath;
+                if ($withCacheBuster) {
+                    $url .= '?v=' . filemtime($fullPath);
+                }
+                return $url;
+            }
+        }
+        $assetsUrl = defined('ASSETS_URL') ? rtrim(ASSETS_URL, '/') : '/assets';
+        return $assetsUrl . '/images/chatbot-avatar.png';
+    }
+
+    /**
+     * Check if currently using a custom uploaded avatar
+     */
+    public function isCustomAvatar(): bool
+    {
+        $avatar = $this->getSetting('chatbot_avatar', '');
+        if (empty($avatar)) return false;
+        $basePath = defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__);
+        return file_exists($basePath . '/' . ltrim($avatar, '/'));
     }
 
     /**
