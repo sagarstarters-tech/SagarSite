@@ -45,7 +45,6 @@ Thumbs.db
 # Vendor (if composer is used)
 # Backups & SQL Dumps
 *.sql
-!/export_ready_to_sell/clean_schema.sql
 *.zip
 *.tar.gz
 *.7z
@@ -56,6 +55,5 @@ Thumbs.db
 /scratch/
 scratch.php
 
-
-
-
+# Local export / ready-to-sell packages (Do NOT track or push to GitHub/Hostinger)
+/export_ready_to_sell/
