@@ -528,12 +528,14 @@ a.dash-btn-white:hover {
 
                     <!-- Export Ready-to-Sell Package Auto-Sync Box -->
                     <?php 
+                    $has_export_folder = is_dir(BASE_PATH . '/export_ready_to_sell');
                     $export_meta = class_exists('VersionManager') ? VersionManager::getExportPackageMetadata() : null; 
                     ?>
+                    <?php if ($has_export_folder): ?>
                     <div class="p-3 mb-3 rounded-3 border" style="background: #f0fdf4; border-left: 4px solid #3b82f6 !important;">
                         <div class="d-flex justify-content-between align-items-center mb-1">
                             <span class="fw-bold text-dark small">
-                                <i class="fas fa-box-open text-primary me-1"></i> Ready-to-Sell Package Auto-Sync
+                                <i class="fas fa-box-open text-primary me-1"></i> Ready-to-Sell Package Auto-Sync (Local PC)
                             </span>
                             <button type="button" class="btn btn-sm btn-outline-primary py-0.5 px-2.5 rounded-pill fw-semibold shadow-0" id="btnManualSyncExport" style="font-size: 0.72rem;">
                                 <i class="fas fa-sync-alt me-1"></i> Sync Package
@@ -549,6 +551,19 @@ a.dash-btn-white:hover {
                         </div>
                         <?php endif; ?>
                     </div>
+                    <?php else: ?>
+                    <div class="p-3 mb-3 rounded-3 border" style="background: #f8fafc; border-left: 4px solid #10b981 !important;">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 0.72rem;">
+                                <i class="fas fa-shield-alt me-1"></i> Hostinger Protection: Active
+                            </span>
+                            <span class="fw-bold text-dark small">Export Package Blocked</span>
+                        </div>
+                        <p class="text-muted mb-0" style="font-size: 0.76rem; line-height: 1.4;">
+                            Aapka <code>export_ready_to_sell</code> folder live Hostinger server par upload hone se <strong>permanently blocked</strong> hai. Yeh package sirf aapke local computer (<code>localhost</code>) par secretly create aur auto-update hota hai.
+                        </p>
+                    </div>
+                    <?php endif; ?>
 
                     <!-- Build & Commit Metadata Info -->
                     <div class="d-flex align-items-center justify-content-between text-muted small px-1 mb-2" style="font-size: 0.75rem;">

@@ -500,7 +500,10 @@ class VersionManager
                 return PackageBuilder::build($silent);
             }
         }
-        return ['success' => false, 'error' => 'Export package builder not found or folder omitted.'];
+        return [
+            'success' => false, 
+            'error'   => 'Yeh folder Hostinger live server se blocked hai. Export package sirf aapke local computer (localhost) par update hota hai.'
+        ];
     }
 
     /**
