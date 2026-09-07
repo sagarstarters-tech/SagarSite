@@ -35,6 +35,10 @@ class VersionManager
     /**
      * Parse a version string (e.g. "v2.5.0", "2.5.0", "v2.5") into structured components
      */
+    /**
+     * Parse a version string (e.g. "v2.5.0", "2.5.0", "v2.5") into structured components.
+     * Enforces single digit counting [0-9] (no 10, 20, 30, 99).
+     */
     public static function parseVersion($versionString)
     {
         $str = trim((string)$versionString);
@@ -57,6 +61,19 @@ class VersionManager
         $minor = (isset($parts[1]) && is_numeric($parts[1])) ? (int)$parts[1] : 5;
         $patch = (isset($parts[2]) && is_numeric($parts[2])) ? (int)$parts[2] : 0;
 
+        // If legacy multi-digit patch was passed (e.g. 30 -> 3, 17 -> 7, or 99 -> 9)
+        if ($patch > 9) {
+            // If ended with 0 (like 30, 20, 50), extract leading digit (30 -> 3)
+            $strPatch = (string)$patch;
+            $patch = (int)$strPatch[0];
+            if ($patch > 9) $patch = $patch % 10;
+        }
+        if ($minor > 9) {
+            $strMinor = (string)$minor;
+            $minor = (int)$strMinor[0];
+            if ($minor > 9) $minor = $minor % 10;
+        }
+
         return [
             'has_v'  => $hasV,
             'major'  => $major,
@@ -67,37 +84,56 @@ class VersionManager
     }
 
     /**
-     * Format parsed components back into a version string
+     * Format parsed components back into a version string (Strictly single digits for minor & patch)
      */
     public static function formatVersion(array $p)
     {
         $prefix = $p['has_v'] ? 'v' : '';
-        return "{$prefix}{$p['major']}.{$p['minor']}.{$p['patch']}";
+        $patch = abs((int)$p['patch']) % 10;
+        $minor = abs((int)$p['minor']) % 10;
+        $major = abs((int)$p['major']);
+        return "{$prefix}{$major}.{$minor}.{$patch}";
     }
 
     /**
-     * Increment Patch release (e.g. v2.5.0 -> v2.5.1)
+     * Increment Patch release (Single digit 0-9 counting):
+     * e.g. v2.5.0 -> v2.5.1 ... v2.5.8 -> v2.5.9 -> v2.6.0!
+     * (Rolls over to next minor when patch exceeds 9, so it never reaches 10)
      */
     public static function bumpPatch($versionString)
     {
         $p = self::parseVersion($versionString);
         $p['patch']++;
+        if ($p['patch'] > 9) {
+            $p['patch'] = 0;
+            $p['minor']++;
+            if ($p['minor'] > 9) {
+                $p['minor'] = 0;
+                $p['major']++;
+            }
+        }
         return self::formatVersion($p);
     }
 
     /**
-     * Increment Minor release (e.g. v2.5.0 -> v2.6.0)
+     * Increment Minor release:
+     * e.g. v2.5.3 -> v2.6.0 ... v2.9.0 -> v3.0.0
      */
     public static function bumpMinor($versionString)
     {
         $p = self::parseVersion($versionString);
         $p['minor']++;
+        if ($p['minor'] > 9) {
+            $p['minor'] = 0;
+            $p['major']++;
+        }
         $p['patch'] = 0;
         return self::formatVersion($p);
     }
 
     /**
-     * Increment Major release (e.g. v2.5.0 -> v3.0.0)
+     * Increment Major release:
+     * e.g. v2.5.3 -> v3.0.0
      */
     public static function bumpMajor($versionString)
     {
