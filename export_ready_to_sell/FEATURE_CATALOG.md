@@ -75,6 +75,14 @@ A modern, fast, and feature-rich PHP & MySQL E-Commerce solution designed specif
 
 ---
 
+### 7. 💬 Universal Contextual Hover Tooltip Engine
+* **Smart Auto-Detection:** Automatically explains the purpose of every button, navigation menu, icon, and link on mouse hover across both storefront and admin suite.
+* **Ultra-Modern Glassmorphism Design:** Floating backdrop blur (`backdrop-filter: blur(12px)`), glowing accents, micro-animations, and viewport collision avoidance (never clips off-screen).
+* **Admin Enable / Disable Controls:** Store owners can easily turn hover tooltips on or off anytime via System Settings (`manage_settings.php`) or Storefront Theme Customizer (`manage_theme.php`).
+* **100% Touch Safe:** Native hover active on desktop and gracefully bypassed on touchscreens to ensure pristine mobile tap and scroll ergonomics.
+
+---
+
 ## 💻 Technical Specifications
 
 * **Backend:** PHP 7.4 / 8.0 / 8.1 / 8.2 Compatible

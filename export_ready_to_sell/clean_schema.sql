@@ -1205,6 +1205,7 @@ INSERT INTO `settings` (`setting_key`, `setting_value`) VALUES
 ('admin_last_seen_customer_id', '14'),
 ('admin_last_seen_order_id', '5'),
 ('auto_text_contrast', '1'),
+('enable_hover_tooltips', '1'),
 ('chatbot_enabled', '1'),
 ('chatbot_gemini_key', ''),
 ('chatbot_gemini_model', 'gemini-1.5-flash'),
