@@ -446,11 +446,15 @@ class ChatbotService
         if (empty($clean)) return [];
 
         // Check if query is seeking products or specifications
-        $productKeywordPattern = '/(?:hp|h\.p|phase|starter|panel|submersible|pump|motor|borewell|contactor|relay|mcb|breaker|stabilizer|voltmeter|ammeter|capacitor|rate|price|kimat|daam|cost|kharidna|buy|purchase|model|watt|kva|spec|dikhao|show|btao|batao|kya rate|kitne ka|एचपी|फेज|पैनल|स्टार्टर)|\d+\s*(?:hp|h\.p|kva|watt|v|volt|amp|ampere)/iu';
-        $nonProductPattern = '/malik|owner|founder|director|kiska hai|kiske dwara|address|pata|kaha par|kaha hai|kahan hai|office|factory|dukan|location|complaint|shikayat|helpline|support number|delivery time|payment method|refund|return|मालिक|संस्थापक|ओनर|पता|कहाँ/iu';
+        // Product-specific keywords — intentionally excludes generic Hindi words like 'batao'/'dikhao'
+        // that can appear in ANY query ("company ke bare me batao", "price dikhao" etc.)
+        $productKeywordPattern = '/(?:hp|h\.p|phase|starter|panel|submersible|pump|motor|borewell|contactor|relay|mcb|breaker|stabilizer|voltmeter|ammeter|capacitor|rate|price|kimat|daam|cost|kharidna|buy|purchase|kya rate|kitne ka|एचपी|फेज|पैनल|स्टार्टर)|\d+\s*(?:hp|h\.p|kva|watt|v|volt|amp|ampere)/iu';
+
+        // Broad non-product filter: company info, about us, policy, contact queries
+        $nonProductPattern = '/malik|owner|founder|director|kiska hai|kiske dwara|address|pata|kaha par|kaha hai|kahan hai|office|factory|dukan|location|complaint|shikayat|helpline|support number|payment method|refund|return|bare\s*me|baare\s*me|ke\s*baare|about\s*(?:you|your|company|sagar|store|shop|us)|company|jaankari|parichay|क्या है|किसकी|मालिक|संस्थापक|ओनर|पता|कहाँ|कंपनी|परिचय|जानकारी/iu';
 
         if (!preg_match($productKeywordPattern, $clean) || preg_match($nonProductPattern, $clean)) {
-            return []; // Strictly do not retrieve products for owner/location/policy queries
+            return []; // Do not retrieve products for non-product queries
         }
 
         try {
@@ -553,6 +557,40 @@ class ChatbotService
         $phone = $this->getSetting('contact_phone', '+91 8573934013');
         $email = $this->getSetting('contact_email', 'support@sagarstarters.com');
         $address = 'Alipur Madra, Jakhanian, Ghazipur, Uttar Pradesh, India - PIN Code: 275203';
+
+        // 0. ABOUT COMPANY / "Sagar Starters ke bare me batao" — must be FIRST to avoid falling into product fallback
+        if (preg_match('/(?:bare\s*me|baare\s*me|ke\s*baare|about\s*(?:you|your|company|sagar|store|shop|us|yourselves)|apne\s*(?:bare|baare)|tumhare\s*(?:bare|baare)|aap\s*(?:kaun|kya|kon)|company\s*(?:kaun|kya|kiske|kiska)|tell\s*me\s*about|what\s*(?:is|are)\s*(?:sagar|you|your)|sagar\s*starters.*(?:kya|hai|ho|kaun|kon|about)|introduce|परिचय|जानकारी\s*(?:do|dete|chahiye|den)|आपके\s*बारे|सागर.*(?:बारे|परिचय|क्या है))/iu', $msg)) {
+            $isEnglish = (bool)preg_match('/[a-zA-Z]{3,}/', $msg) && !preg_match('/[\x{0900}-\x{097F}]{4,}/u', $msg);
+            if ($isEnglish) {
+                return "🏭 **About Sagar Starter's:**\n\n"
+                     . "**Sagar Starter's** (sagarstarters.com) is a trusted Indian manufacturer and seller of premium agricultural and industrial electrical starters based in Ghazipur, Uttar Pradesh.\n\n"
+                     . "🔧 **What We Make & Sell:**\n"
+                     . "• Single Phase Submersible Pump Panels (0.5 HP – 3 HP)\n"
+                     . "• Three Phase DOL Motor Starters (3 HP – 7.5 HP)\n"
+                     . "• Automatic Star Delta Starters for Flour Mills & Tubewells (7.5 HP – 35 HP)\n"
+                     . "• Low Voltage Copper Stabilizers (5 KVA / 10 KVA)\n"
+                     . "• Genuine Spare Parts (Contactors, Relays, Capacitors, Digital Meters)\n\n"
+                     . "👑 **Founded by**: Shri Pramod Kumar Sagar\n"
+                     . "📍 **Factory**: Alipur Madra, Jakhanian, Ghazipur, UP – 275203\n"
+                     . "📞 **Helpline / WhatsApp**: `{$phone}`\n"
+                     . "✅ **Pan-India Delivery | Cash on Delivery | ISO Certified Quality**\n\n"
+                     . "How can I help you today? Tell me your motor's HP or type, I'll recommend the perfect starter!";
+            } else {
+                return "🏭 **सागर स्टार्टर्स के बारे में:**\n\n"
+                     . "**सागर स्टार्टर्स (Sagar Starter's)** एक विश्वसनीय भारतीय निर्माता एवं विक्रेता है जो उत्तर प्रदेश के गाजीपुर जिले से उच्च गुणवत्ता वाले विद्युत स्टार्टर्स बनाता है।\n\n"
+                     . "🔧 **हम क्या बनाते और बेचते हैं:**\n"
+                     . "• सिंगल फेज सबमर्सिबल पंप पैनल (0.5 HP से 3 HP तक)\n"
+                     . "• थ्री फेज DOL मोटर स्टार्टर (3 HP से 7.5 HP)\n"
+                     . "• ऑटोमैटिक स्टार डेल्टा स्टार्टर — आटा चक्की, ट्यूबवेल (7.5 HP – 35 HP)\n"
+                     . "• लो वोल्टेज कॉपर स्टेबलाइजर (5 KVA / 10 KVA)\n"
+                     . "• स्पेयर पार्ट्स (कॉन्टैक्टर, रिले, कैपेसिटर, डिजिटल मीटर)\n\n"
+                     . "👑 **संस्थापक**: श्री प्रमोद कुमार सागर\n"
+                     . "📍 **फैक्ट्री**: अलीपुर मदरा, जखनियाँ, गाजीपुर, उ.प्र. — 275203\n"
+                     . "📞 **हेल्पलाइन / व्हाट्सएप**: `{$phone}`\n"
+                     . "✅ **पूरे भारत में डिलीवरी | कैश ऑन डिलीवरी | ISO प्रमाणित गुणवत्ता**\n\n"
+                     . "बताइए, आपकी मोटर कितने HP की है? मैं आपको बिल्कुल सही स्टार्टर suggest करूँगा! 😊";
+            }
+        }
 
         // 1. Direct Purchase Link Request (e.g. "मुझे इसे खरीदने का लिंक दीजिए", "Buy link do", "Purchase link")
         if (preg_match('/link|खरीदने का लिंक|खरीदने के लिए लिंक|खरीदना है|buy link|purchase link|order link|लिंक|link do|link dijiye|direct link|ऑनलाइन लिंक|website link/iu', $msg)) {
