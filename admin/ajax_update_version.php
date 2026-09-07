@@ -18,7 +18,25 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = trim($_POST['action'] ?? 'save_version');
 
-    // 1. Action: Quick Bump (patch, minor, major)
+    // 1. Action: Sync Export Ready-to-Sell Package
+    if ($action === 'sync_export_package') {
+        $res = VersionManager::syncExportPackage(false);
+        if ($res['success']) {
+            echo json_encode([
+                'success'        => true,
+                'message'        => "Export package successfully updated to {$res['version']}! ({$res['files_count']} files, {$res['size_mb']} MB)",
+                'export_package' => $res
+            ]);
+        } else {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Failed to build package: ' . ($res['error'] ?? 'Unknown error')
+            ]);
+        }
+        exit;
+    }
+
+    // 2. Action: Quick Bump (patch, minor, major)
     if ($action === 'bump') {
         $type = trim($_POST['type'] ?? 'patch');
         $res = VersionManager::bumpVersionManually($conn, $type);
@@ -36,50 +54,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // 2. Action: Save Version & Auto-Version Toggle
-    $version = trim($_POST['version'] ?? '');
-    if (empty($version)) {
-        echo json_encode(['success' => false, 'message' => 'Version string cannot be empty.']);
-        exit;
-    }
+    // 3. Action: Save Version & Auto-Version Toggle
+    if ($action === 'save_version') {
+        $version = trim($_POST['version'] ?? '');
+        if (empty($version)) {
+            echo json_encode(['success' => false, 'message' => 'Version string cannot be empty.']);
+            exit;
+        }
 
-    $autoEnabled = null;
-    if (isset($_POST['auto_version'])) {
-        $autoEnabled = ($_POST['auto_version'] == '1' || $_POST['auto_version'] === 'true') ? '1' : '0';
-    }
+        $autoEnabled = null;
+        if (isset($_POST['auto_version'])) {
+            $autoEnabled = ($_POST['auto_version'] == '1' || $_POST['auto_version'] === 'true') ? '1' : '0';
+        }
 
-    $saved = VersionManager::setVersion($conn, $version, $autoEnabled);
+        $saved = VersionManager::setVersion($conn, $version, $autoEnabled);
 
-    if ($saved) {
-        $meta = VersionManager::getVersionMetadata($conn);
-        echo json_encode([
-            'success'      => true,
-            'version'      => htmlspecialchars($version),
-            'auto_enabled' => $meta['auto_enabled'],
-            'metadata'     => $meta,
-            'message'      => 'Website version successfully saved as ' . htmlspecialchars($version) . '!'
-        ]);
-    } else {
-        echo json_encode([
-            'success' => false,
-            'message' => 'Database error while saving version.'
-        ]);
-        exit;
-    }
-
-    // 3. Action: Sync Export Ready-to-Sell Package
-    if ($action === 'sync_export_package') {
-        $res = VersionManager::syncExportPackage(false);
-        if ($res['success']) {
+        if ($saved) {
+            $meta = VersionManager::getVersionMetadata($conn);
             echo json_encode([
-                'success'        => true,
-                'message'        => "Export package successfully updated to {$res['version']}! ({$res['files_count']} files, {$res['size_mb']} MB)",
-                'export_package' => $res
+                'success'      => true,
+                'version'      => htmlspecialchars($version),
+                'auto_enabled' => $meta['auto_enabled'],
+                'metadata'     => $meta,
+                'message'      => 'Website version successfully saved as ' . htmlspecialchars($version) . '!'
             ]);
         } else {
             echo json_encode([
                 'success' => false,
-                'message' => 'Failed to build package: ' . ($res['error'] ?? 'Unknown error')
+                'message' => 'Database error while saving version.'
             ]);
         }
         exit;
