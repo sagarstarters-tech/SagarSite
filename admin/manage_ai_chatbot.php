@@ -31,7 +31,7 @@ if (isset($_POST['ajax_action']) && $_POST['ajax_action'] === 'test_ai_connectio
             echo json_encode(['success' => true, 'message' => 'Smart Local Hybrid Engine is active, tested & 100% operational!']);
             exit;
         } elseif ($provider === 'gemini') {
-            $testModel = $model ?: 'gemini-2.5-flash';
+            $testModel = $model ?: 'gemini-3.6-flash';
             $testUrl = "https://generativelanguage.googleapis.com/v1beta/models/{$testModel}:generateContent?key=" . urlencode($apiKey);
             $payload = [
                 'contents' => [['role' => 'user', 'parts' => [['text' => 'Hi, reply with "Gemini Connected Successfully" in 5 words.']]]]
@@ -608,7 +608,7 @@ try {
                             <div class="row g-2 align-items-center">
                                 <div class="col-sm-7">
                                     <select name="chatbot_gemini_model" id="geminiModel" class="form-select form-select-sm">
-                                        <option value="gemini-2.5-flash" <?php echo ($chatbotService->getSetting('chatbot_gemini_model') === 'gemini-2.5-flash' || empty($chatbotService->getSetting('chatbot_gemini_model'))) ? 'selected' : ''; ?>>⚡ gemini-2.5-flash (Fastest - Recommended)</option>
+                                        <option value="gemini-3.6-flash" <?php echo ($chatbotService->getSetting('chatbot_gemini_model') === 'gemini-3.6-flash' || empty($chatbotService->getSetting('chatbot_gemini_model')) || $chatbotService->getSetting('chatbot_gemini_model') === 'gemini-2.5-flash' || $chatbotService->getSetting('chatbot_gemini_model') === 'gemini-2.0-flash') ? 'selected' : ''; ?>>⚡ gemini-3.6-flash (Latest - Recommended)</option>
                                         <option value="gemini-2.5-pro" <?php echo $chatbotService->getSetting('chatbot_gemini_model') === 'gemini-2.5-pro' ? 'selected' : ''; ?>>👑 gemini-2.5-pro (Best Quality)</option>
                                         <option value="gemini-2.0-flash-lite" <?php echo $chatbotService->getSetting('chatbot_gemini_model') === 'gemini-2.0-flash-lite' ? 'selected' : ''; ?>>💡 gemini-2.0-flash-lite (Ultra Light)</option>
                                         <option value="gemini-1.5-flash" <?php echo $chatbotService->getSetting('chatbot_gemini_model') === 'gemini-1.5-flash' ? 'selected' : ''; ?>>🔄 gemini-1.5-flash (Legacy)</option>

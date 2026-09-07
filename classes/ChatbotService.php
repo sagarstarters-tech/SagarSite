@@ -59,7 +59,7 @@ class ChatbotService
                 'chatbot_welcome_msg'     => "Namaste! 🙏 Main Sagar Starters ka AI Assistant hu. Main aapko Motor Starters, Submersible Panels, Price, Bulk Discounts aur Order Tracking me help kar sakta hu.\n\nAap niche diye gaye options chun sakte hain ya direct message likh sakte hain!",
                 'chatbot_provider'        => 'hybrid',
                 'chatbot_gemini_key'      => '',
-                'chatbot_gemini_model'    => 'gemini-2.5-flash',
+                'chatbot_gemini_model'    => 'gemini-3.6-flash',
                 'chatbot_openai_key'      => '',
                 'chatbot_openai_model'    => 'gpt-4o-mini',
                 'chatbot_groq_key'        => '',
@@ -838,7 +838,7 @@ class ChatbotService
     private function callGeminiAPI(string $userMessage, array $history, array $products): string
     {
         $apiKey = $this->getSetting('chatbot_gemini_key');
-        $model = $this->getSetting('chatbot_gemini_model', 'gemini-2.5-flash');
+        $model = $this->getSetting('chatbot_gemini_model', 'gemini-3.6-flash');
 
         $systemInstruction = $this->buildSystemContext($products);
         $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key=" . urlencode($apiKey);
