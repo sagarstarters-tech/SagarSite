@@ -526,6 +526,30 @@ a.dash-btn-white:hover {
                         </p>
                     </div>
 
+                    <!-- Export Ready-to-Sell Package Auto-Sync Box -->
+                    <?php 
+                    $export_meta = class_exists('VersionManager') ? VersionManager::getExportPackageMetadata() : null; 
+                    ?>
+                    <div class="p-3 mb-3 rounded-3 border" style="background: #f0fdf4; border-left: 4px solid #3b82f6 !important;">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-bold text-dark small">
+                                <i class="fas fa-box-open text-primary me-1"></i> Ready-to-Sell Package Auto-Sync
+                            </span>
+                            <button type="button" class="btn btn-sm btn-outline-primary py-0.5 px-2.5 rounded-pill fw-semibold shadow-0" id="btnManualSyncExport" style="font-size: 0.72rem;">
+                                <i class="fas fa-sync-alt me-1"></i> Sync Package
+                            </button>
+                        </div>
+                        <p class="text-muted mb-1.5" style="font-size: 0.76rem; line-height: 1.4;">
+                            Code update ya Git commit par <code>export_ready_to_sell/</code> package auto-update ho jata hai (Local only — Hostinger push se permanently blocked).
+                        </p>
+                        <?php if ($export_meta): ?>
+                        <div class="text-secondary small d-flex justify-content-between flex-wrap gap-1" style="font-size: 0.72rem;">
+                            <span><i class="fas fa-file-archive text-primary me-1"></i> Package: <strong><?php echo htmlspecialchars($export_meta['size_mb'] ?? '48.7'); ?> MB</strong> (<?php echo intval($export_meta['total_files'] ?? 0); ?> files)</span>
+                            <span><i class="far fa-clock text-primary me-1"></i> Synced: <strong><?php echo !empty($export_meta['build_time']) ? date('M d, H:i', strtotime($export_meta['build_time'])) : 'Just now'; ?></strong></span>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+
                     <!-- Build & Commit Metadata Info -->
                     <div class="d-flex align-items-center justify-content-between text-muted small px-1 mb-2" style="font-size: 0.75rem;">
                         <span><i class="fas fa-code-branch text-secondary me-1"></i> Commit: <code class="text-dark fw-bold"><?php echo htmlspecialchars($version_metadata['short_hash'] ?? 'abb1e58'); ?></code></span>
@@ -709,6 +733,56 @@ document.addEventListener('DOMContentLoaded', function() {
                 btn.innerHTML = '<i class="fas fa-check me-1"></i> Save Version';
                 alertBox.className = 'alert alert-danger py-2 px-3 small rounded-3 mb-0';
                 alertBox.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i> Request failed. Please check connection.';
+            });
+        });
+    }
+
+    // Manual Sync Export Package Handler
+    const syncExportBtn = document.getElementById('btnManualSyncExport');
+    if (syncExportBtn) {
+        syncExportBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const alertBox = document.getElementById('versionModalAlert');
+            syncExportBtn.disabled = true;
+            syncExportBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Packaging...';
+
+            const fd = new FormData();
+            fd.append('action', 'sync_export_package');
+
+            fetch('ajax_update_version.php', {
+                method: 'POST',
+                body: fd
+            })
+            .then(res => res.json())
+            .then(data => {
+                syncExportBtn.disabled = false;
+                if (data.success) {
+                    syncExportBtn.innerHTML = '<i class="fas fa-check me-1"></i> Synced!';
+                    if (alertBox) {
+                        alertBox.className = 'alert alert-success py-2 px-3 small rounded-3 mb-0';
+                        alertBox.innerHTML = '<i class="fas fa-check-circle me-1"></i> ' + data.message;
+                        alertBox.classList.remove('d-none');
+                    }
+                } else {
+                    syncExportBtn.innerHTML = '<i class="fas fa-exclamation-circle me-1"></i> Error';
+                    if (alertBox) {
+                        alertBox.className = 'alert alert-danger py-2 px-3 small rounded-3 mb-0';
+                        alertBox.innerHTML = '<i class="fas fa-exclamation-circle me-1"></i> ' + (data.message || 'Sync failed.');
+                        alertBox.classList.remove('d-none');
+                    }
+                }
+                setTimeout(() => {
+                    syncExportBtn.innerHTML = '<i class="fas fa-sync-alt me-1"></i> Sync Package';
+                }, 3500);
+            })
+            .catch(err => {
+                syncExportBtn.disabled = false;
+                syncExportBtn.innerHTML = '<i class="fas fa-sync-alt me-1"></i> Sync Package';
+                if (alertBox) {
+                    alertBox.className = 'alert alert-danger py-2 px-3 small rounded-3 mb-0';
+                    alertBox.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i> Network error during packaging.';
+                    alertBox.classList.remove('d-none');
+                }
             });
         });
     }

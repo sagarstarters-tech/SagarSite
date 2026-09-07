@@ -54,6 +54,20 @@ if ($isPatch || $isMinor || $isMajor) {
     exit(0);
 }
 
+$isSyncPackage = in_array('--sync-package', $argv ?? []);
+
+if ($isSyncPackage) {
+    $res = VersionManager::syncExportPackage($silent);
+    if (!$silent) {
+        if ($res['success']) {
+            echo "[SUCCESS] Export package successfully updated! (Version: {$res['version']}, Files: {$res['files_count']}, Size: {$res['size_mb']} MB)\n";
+        } else {
+            echo "[ERROR] Failed to update export package: " . ($res['error'] ?? 'Unknown error') . "\n";
+        }
+    }
+    exit(0);
+}
+
 // Default: Auto Check & Bump
 $res = VersionManager::autoCheckAndBump($conn);
 if (!$silent) {
@@ -63,3 +77,4 @@ if (!$silent) {
         echo "Version check complete: " . ($res['reason'] ?? 'up_to_date') . " (Version: " . ($res['version'] ?? VersionManager::getCurrentVersion($conn)) . ")\n";
     }
 }
+

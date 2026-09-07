@@ -64,14 +64,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'success' => false,
             'message' => 'Database error while saving version.'
         ]);
+        exit;
     }
+
+    // 3. Action: Sync Export Ready-to-Sell Package
+    if ($action === 'sync_export_package') {
+        $res = VersionManager::syncExportPackage(false);
+        if ($res['success']) {
+            echo json_encode([
+                'success'        => true,
+                'message'        => "Export package successfully updated to {$res['version']}! ({$res['files_count']} files, {$res['size_mb']} MB)",
+                'export_package' => $res
+            ]);
+        } else {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Failed to build package: ' . ($res['error'] ?? 'Unknown error')
+            ]);
+        }
+        exit;
+    }
+
+    echo json_encode(['success' => false, 'message' => 'Unknown action requested.']);
     exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && ($_GET['action'] ?? '') === 'get_meta') {
     $meta = VersionManager::getVersionMetadata($conn);
-    echo json_encode(['success' => true, 'metadata' => $meta]);
+    $exportMeta = VersionManager::getExportPackageMetadata();
+    echo json_encode([
+        'success'        => true,
+        'metadata'       => $meta,
+        'export_package' => $exportMeta
+    ]);
     exit;
 }
 
 echo json_encode(['success' => false, 'message' => 'Invalid request method.']);
+

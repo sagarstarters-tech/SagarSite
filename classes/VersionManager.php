@@ -344,6 +344,9 @@ class VersionManager
         // Synchronize config/version.json
         self::syncVersionJsonFile($newVersion, $currentHash);
 
+        // Auto-update export_ready_to_sell package locally if folder exists
+        self::syncExportPackage(true);
+
         return [
             'bumped'      => true,
             'old_version' => $oldVersion,
@@ -392,6 +395,9 @@ class VersionManager
         }
 
         self::syncVersionJsonFile($newVersion, $currentHash);
+
+        // Auto-update export_ready_to_sell package locally if folder exists
+        self::syncExportPackage(true);
 
         return true;
     }
@@ -479,5 +485,37 @@ class VersionManager
             'next_minor'    => self::bumpMinor($version),
             'next_major'    => self::bumpMajor($version)
         ];
+    }
+
+    /**
+     * Trigger auto-update of export_ready_to_sell package if the directory exists locally.
+     */
+    public static function syncExportPackage($silent = true)
+    {
+        $base = self::getBasePath();
+        $builderScript = $base . '/export_ready_to_sell/build_zip.php';
+        if (file_exists($builderScript)) {
+            require_once $builderScript;
+            if (class_exists('PackageBuilder')) {
+                return PackageBuilder::build($silent);
+            }
+        }
+        return ['success' => false, 'error' => 'Export package builder not found or folder omitted.'];
+    }
+
+    /**
+     * Get export package metadata if available
+     */
+    public static function getExportPackageMetadata()
+    {
+        $base = self::getBasePath();
+        $metaFile = $base . '/export_ready_to_sell/package_meta.json';
+        if (file_exists($metaFile)) {
+            $data = @json_decode(@file_get_contents($metaFile), true);
+            if (is_array($data)) {
+                return $data;
+            }
+        }
+        return null;
     }
 }
