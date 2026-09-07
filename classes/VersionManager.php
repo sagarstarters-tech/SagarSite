@@ -427,13 +427,19 @@ class VersionManager
     /**
      * Synchronize config/version.json file
      */
-    public static function syncVersionJsonFile($version, $commitHash = null)
+    public static function syncVersionJsonFile($version, $commitHash = null, $force = false)
     {
+        $base = self::getBasePath();
+        // In local git development, avoid constantly dirtying tracked version.json on auto-bump
+        if (!$force && is_dir($base . '/.git') && file_exists($base . '/config/version.json')) {
+            return true;
+        }
+
         if ($commitHash === null) {
             $commitHash = self::getSystemCommitHash();
         }
 
-        $file = self::getBasePath() . '/config/version.json';
+        $file = $base . '/config/version.json';
         $data = [
             'version'    => $version,
             'commit'     => $commitHash,
