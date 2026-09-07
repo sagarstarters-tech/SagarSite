@@ -275,17 +275,36 @@ if (!empty($global_settings['hero_banner_about'])) {
                     <button type="button" class="btn-close" data-mdb-dismiss="modal" data-bs-dismiss="modal" onclick="hideModalSafely('frontendDocModal')" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-3 p-md-4 text-center bg-light">
+
+                    <style>
+                    /* Mobile-responsive zoom toolbar for doc modal */
+                    #feZoomBar { display:flex; justify-content:center; align-items:center; gap:6px; margin-bottom:8px; flex-wrap:nowrap; }
+                    .fe-btn { border:1px solid #adb5bd; background:transparent; color:#495057;
+                              border-radius:50px; padding:5px 12px; font-size:0.8rem; cursor:pointer;
+                              display:flex; align-items:center; gap:4px; transition:background 0.15s; white-space:nowrap; }
+                    .fe-btn:hover, .fe-btn:active { background:#e9ecef; }
+                    .fe-btn .fe-label { display:inline; }
+                    @media (max-width: 420px) {
+                        .fe-btn .fe-label { display:none; }
+                        .fe-btn { padding:6px 10px; font-size:0.88rem; }
+                        #feZoomLevel { min-width:38px !important; font-size:0.72rem !important; }
+                    }
+                    </style>
+
                     <!-- Zoom Controls Toolbar -->
-                    <div class="d-flex justify-content-center align-items-center gap-2 mb-2">
-                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" id="feZoomOut" title="Zoom Out">
-                            <i class="fas fa-search-minus me-1"></i> Zoom Out
+                    <div id="feZoomBar">
+                        <button type="button" class="fe-btn" id="feZoomOut" title="Zoom Out">
+                            <i class="fas fa-search-minus"></i>
+                            <span class="fe-label">Zoom Out</span>
                         </button>
-                        <span id="feZoomLevel" class="badge bg-secondary px-3 py-2" style="font-size:0.78rem; min-width:52px;">100%</span>
-                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" id="feZoomIn" title="Zoom In">
-                            <i class="fas fa-search-plus me-1"></i> Zoom In
+                        <span id="feZoomLevel" class="badge bg-secondary" style="font-size:0.78rem; min-width:48px; padding:5px 8px;">100%</span>
+                        <button type="button" class="fe-btn" id="feZoomIn" title="Zoom In">
+                            <i class="fas fa-search-plus"></i>
+                            <span class="fe-label">Zoom In</span>
                         </button>
-                        <button type="button" class="btn btn-outline-dark btn-sm rounded-pill px-3" id="feZoomReset" title="Reset Zoom">
-                            <i class="fas fa-compress-arrows-alt me-1"></i> Reset
+                        <button type="button" class="fe-btn" id="feZoomReset" title="Reset Zoom">
+                            <i class="fas fa-compress-arrows-alt"></i>
+                            <span class="fe-label">Reset</span>
                         </button>
                     </div>
                     <!-- Image Container with overflow for zoom/pan -->
@@ -459,18 +478,28 @@ if (!empty($global_settings['hero_banner_about'])) {
                 }
             });
 
-            // Pinch-to-zoom (touch devices)
+            // Pinch-to-zoom + Single-finger drag (touch devices)
             var lastPinchDist = null;
+            var feTouchDrag = null;  // single-finger drag state
+
             wrapper.addEventListener('touchstart', function(e) {
                 if (e.touches.length === 2) {
+                    // Pinch start
+                    feTouchDrag = null;  // cancel drag
                     lastPinchDist = Math.hypot(
                         e.touches[0].clientX - e.touches[1].clientX,
                         e.touches[0].clientY - e.touches[1].clientY
                     );
+                } else if (e.touches.length === 1) {
+                    // Single-finger drag start
+                    lastPinchDist = null;
+                    feTouchDrag = { x: e.touches[0].clientX, y: e.touches[0].clientY, panX: fePanX, panY: fePanY };
                 }
             }, { passive: true });
+
             wrapper.addEventListener('touchmove', function(e) {
                 if (e.touches.length === 2 && lastPinchDist !== null) {
+                    // Pinch zoom
                     e.preventDefault();
                     var newDist = Math.hypot(
                         e.touches[0].clientX - e.touches[1].clientX,
@@ -480,10 +509,32 @@ if (!empty($global_settings['hero_banner_about'])) {
                     feScale = Math.min(feMaxScale, Math.max(feMinScale, feScale * ratio));
                     feScale = parseFloat(feScale.toFixed(2));
                     lastPinchDist = newDist;
+                    var img = document.getElementById('feDocImg');
+                    if (img) img.style.transition = 'none';
+                    feApplyTransform();
+                } else if (e.touches.length === 1 && feTouchDrag !== null && feScale > 1) {
+                    // Single-finger drag pan (only when zoomed)
+                    e.preventDefault();
+                    fePanX = feTouchDrag.panX + (e.touches[0].clientX - feTouchDrag.x);
+                    fePanY = feTouchDrag.panY + (e.touches[0].clientY - feTouchDrag.y);
+                    var img = document.getElementById('feDocImg');
+                    if (img) img.style.transition = 'none';
                     feApplyTransform();
                 }
             }, { passive: false });
-            wrapper.addEventListener('touchend', function() { lastPinchDist = null; });
+
+            wrapper.addEventListener('touchend', function(e) {
+                if (e.touches.length === 0) {
+                    lastPinchDist = null;
+                    feTouchDrag = null;
+                    var img = document.getElementById('feDocImg');
+                    if (img) img.style.transition = 'transform 0.15s ease';
+                } else if (e.touches.length === 1) {
+                    // 2 fingers → 1 finger: switch to drag mode
+                    lastPinchDist = null;
+                    feTouchDrag = { x: e.touches[0].clientX, y: e.touches[0].clientY, panX: fePanX, panY: fePanY };
+                }
+            });
         }
     });
 
