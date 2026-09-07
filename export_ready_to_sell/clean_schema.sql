@@ -514,6 +514,8 @@ DROP TABLE IF EXISTS `documents`;
 CREATE TABLE `documents` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `title` varchar(255) NOT NULL,
+  `doc_number` varchar(100) DEFAULT NULL,
+  `description` text DEFAULT NULL,
   `image` varchar(255) NOT NULL,
   `status` tinyint(1) DEFAULT 1,
   `sort_order` int(11) DEFAULT 0,

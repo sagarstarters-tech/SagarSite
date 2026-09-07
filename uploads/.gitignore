@@ -1,3 +1,6 @@
 *
 !.gitignore
 !.gitkeep
+!documents/
+!documents/.gitkeep
+!documents/.htaccess

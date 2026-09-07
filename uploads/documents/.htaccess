@@ -1,0 +1,14 @@
+# Disable script execution in documents upload directory
+<FilesMatch "(?i)\.(php|phtml|php3|php4|php5|php7|phar|pl|py|cgi|sh|exe|shtml)$">
+    Deny from all
+</FilesMatch>
+
+<IfModule mod_php7.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+
+# Options to prevent browsing and script executions
+Options -Indexes -ExecCGI
