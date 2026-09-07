@@ -194,9 +194,9 @@ if (!empty($global_settings['hero_banner_product'])) {
             // Determine main image source with fallback to first gallery image
             $main_image_src = resolve_product_image_url($product['image'] ?? '', $conn, $id);
             ?>
-            <!-- Product Image Container with Zoom -->
-            <div class="card product-card shadow-sm border-0 bg-light p-3 mb-2" style="position: relative;">
-                <!-- Zoom Toolbar -->
+            <!-- Product Image Container with Zoom — same pattern as about.php certificate modal -->
+            <div class="card product-card shadow-sm border-0 bg-light p-3 mb-2">
+                <!-- Zoom Controls Toolbar — exact same as about.php -->
                 <div class="d-flex justify-content-center align-items-center gap-2 mb-2">
                     <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" id="prdZoomOut" title="Zoom Out">
                         <i class="fas fa-search-minus me-1"></i> Zoom Out
@@ -205,145 +205,128 @@ if (!empty($global_settings['hero_banner_product'])) {
                     <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" id="prdZoomIn" title="Zoom In">
                         <i class="fas fa-search-plus me-1"></i> Zoom In
                     </button>
-                    <button type="button" class="btn btn-outline-dark btn-sm rounded-pill px-3" id="prdZoomReset" title="Reset">
+                    <button type="button" class="btn btn-outline-dark btn-sm rounded-pill px-3" id="prdZoomReset" title="Reset Zoom">
                         <i class="fas fa-compress-arrows-alt me-1"></i> Reset
                     </button>
                 </div>
-                <!-- Image Wrapper -->
-                <div id="imageZoomContainer"
-                     style="overflow: hidden; cursor: default; user-select: none; background: #f8f9fa; border-radius: 8px; position: relative;">
+                <!-- Image Wrapper — exact same classes/style as about.php feDocImgWrapper -->
+                <div id="imageZoomContainer" class="p-2 bg-white rounded-3 border shadow-sm d-inline-block w-100"
+                     style="overflow: hidden; cursor: grab; user-select: none; position: relative;">
                     <img id="mainProductImage"
                          src="<?php echo htmlspecialchars($main_image_src); ?>"
                          onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';"
-                         class="img-fluid rounded"
+                         class="rounded"
                          alt="<?php echo htmlspecialchars($product['name']); ?>"
                          width="500" height="500"
                          fetchpriority="high" decoding="async"
-                         style="width:100%; aspect-ratio:1/1; object-fit:<?php echo htmlspecialchars($product['image_fit'] ?? 'contain'); ?>; display:block; transform-origin: center center; transform: scale(1); transition: transform 0.15s ease;">
+                         style="max-width:100%; display:block; margin:auto; aspect-ratio:1/1; object-fit:<?php echo htmlspecialchars($product['image_fit'] ?? 'contain'); ?>; transform-origin: center center; transform: scale(1); transition: transform 0.15s ease; cursor: grab;">
                 </div>
                 <p class="text-muted small text-center mt-2 mb-0">
                     <i class="fas fa-mouse-pointer me-1"></i>Scroll to zoom &bull; Drag to pan when zoomed
                 </p>
             </div>
 
-            <style>
-                #imageZoomContainer { cursor: default; }
-                #imageZoomContainer.zoomed { cursor: grab; }
-                #imageZoomContainer.dragging { cursor: grabbing !important; }
-            </style>
-
             <script>
-            // ── Product Page Zoom ───────────────────────────────────────────
-            (function() {
-                var pScale   = 1,  pMin = 0.5, pMax = 4, pStep = 0.25;
-                var pPanX    = 0,  pPanY = 0;
-                var pDragSt  = null;
+            // ── Product Image Zoom — exact same pattern as about.php ──────────
+            var prdScale = 1;
+            var prdMinScale = 0.5;
+            var prdMaxScale = 4;
+            var prdStep = 0.25;
+            var prdPanX = 0, prdPanY = 0;
+            var prdDragStart = null;
 
-                function pApply() {
-                    var img = document.getElementById('mainProductImage');
-                    var wrap = document.getElementById('imageZoomContainer');
-                    var lbl  = document.getElementById('prdZoomLevel');
-                    if (!img) return;
-                    img.style.transform = 'scale(' + pScale + ') translate(' + (pPanX/pScale) + 'px,' + (pPanY/pScale) + 'px)';
-                    if (lbl)  lbl.textContent  = Math.round(pScale * 100) + '%';
-                    if (wrap) {
-                        wrap.className = 'imageZoomContainer' + (pScale > 1 ? ' zoomed' : '');
-                        // Keep inline style
-                        wrap.style.overflow  = 'hidden';
-                        wrap.style.userSelect = 'none';
-                        wrap.style.background = '#f8f9fa';
-                        wrap.style.borderRadius = '8px';
-                        wrap.style.position = 'relative';
-                    }
-                }
+            function prdApplyTransform() {
+                var img = document.getElementById('mainProductImage');
+                if (!img) return;
+                img.style.transform = 'scale(' + prdScale + ') translate(' + (prdPanX/prdScale) + 'px, ' + (prdPanY/prdScale) + 'px)';
+                document.getElementById('prdZoomLevel').textContent = Math.round(prdScale * 100) + '%';
+                img.style.cursor = prdScale > 1 ? 'grab' : 'default';
+            }
 
-                window.prdZoomIn = function() {
-                    pScale = Math.min(pMax, parseFloat((pScale + pStep).toFixed(2)));
-                    pApply();
-                };
-                window.prdZoomOut = function() {
-                    pScale = Math.max(pMin, parseFloat((pScale - pStep).toFixed(2)));
-                    if (pScale <= 1) { pPanX = 0; pPanY = 0; }
-                    pApply();
-                };
-                window.prdZoomReset = function() {
-                    pScale = 1; pPanX = 0; pPanY = 0;
-                    var img = document.getElementById('mainProductImage');
-                    if (img) img.style.transition = 'transform 0.2s ease';
-                    pApply();
-                    setTimeout(function() {
-                        var img2 = document.getElementById('mainProductImage');
-                        if (img2) img2.style.transition = 'transform 0.15s ease';
-                    }, 250);
-                };
+            function prdZoomIn() {
+                prdScale = Math.min(prdMaxScale, parseFloat((prdScale + prdStep).toFixed(2)));
+                prdApplyTransform();
+            }
+            function prdZoomOut() {
+                prdScale = Math.max(prdMinScale, parseFloat((prdScale - prdStep).toFixed(2)));
+                if (prdScale <= 1) { prdPanX = 0; prdPanY = 0; }
+                prdApplyTransform();
+            }
+            function prdZoomReset() {
+                prdScale = 1; prdPanX = 0; prdPanY = 0;
+                var img = document.getElementById('mainProductImage');
+                if (img) { img.style.transition = 'transform 0.2s ease'; }
+                prdApplyTransform();
+            }
 
-                document.addEventListener('DOMContentLoaded', function() {
-                    var zIn  = document.getElementById('prdZoomIn');
-                    var zOut = document.getElementById('prdZoomOut');
-                    var zRes = document.getElementById('prdZoomReset');
-                    if (zIn)  zIn.addEventListener('click',  window.prdZoomIn);
-                    if (zOut) zOut.addEventListener('click',  window.prdZoomOut);
-                    if (zRes) zRes.addEventListener('click',  window.prdZoomReset);
+            // Bind buttons after DOM ready
+            document.addEventListener('DOMContentLoaded', function() {
+                var zIn  = document.getElementById('prdZoomIn');
+                var zOut = document.getElementById('prdZoomOut');
+                var zRes = document.getElementById('prdZoomReset');
+                if (zIn)  zIn.addEventListener('click',  prdZoomIn);
+                if (zOut) zOut.addEventListener('click',  prdZoomOut);
+                if (zRes) zRes.addEventListener('click',  prdZoomReset);
 
-                    var wrap = document.getElementById('imageZoomContainer');
-                    if (!wrap) return;
-
-                    // Mouse wheel
-                    wrap.addEventListener('wheel', function(e) {
+                // Mouse wheel zoom
+                var wrapper = document.getElementById('imageZoomContainer');
+                if (wrapper) {
+                    wrapper.addEventListener('wheel', function(e) {
                         e.preventDefault();
-                        if (e.deltaY < 0) window.prdZoomIn();
-                        else window.prdZoomOut();
+                        if (e.deltaY < 0) prdZoomIn(); else prdZoomOut();
                     }, { passive: false });
 
-                    // Drag-to-pan
-                    wrap.addEventListener('mousedown', function(e) {
-                        if (pScale <= 1) return;
+                    // Drag to pan
+                    wrapper.addEventListener('mousedown', function(e) {
+                        if (prdScale <= 1) return;
                         e.preventDefault();
-                        pDragSt = { x: e.clientX, y: e.clientY, panX: pPanX, panY: pPanY };
-                        wrap.classList.add('dragging');
+                        prdDragStart = { x: e.clientX, y: e.clientY, panX: prdPanX, panY: prdPanY };
+                        wrapper.style.cursor = 'grabbing';
                     });
                     document.addEventListener('mousemove', function(e) {
-                        if (!pDragSt) return;
-                        pPanX = pDragSt.panX + (e.clientX - pDragSt.x);
-                        pPanY = pDragSt.panY + (e.clientY - pDragSt.y);
+                        if (!prdDragStart) return;
+                        prdPanX = prdDragStart.panX + (e.clientX - prdDragStart.x);
+                        prdPanY = prdDragStart.panY + (e.clientY - prdDragStart.y);
                         var img = document.getElementById('mainProductImage');
                         if (img) img.style.transition = 'none';
-                        pApply();
+                        prdApplyTransform();
                     });
                     document.addEventListener('mouseup', function() {
-                        if (pDragSt) {
-                            pDragSt = null;
-                            wrap.classList.remove('dragging');
+                        if (prdDragStart) {
+                            prdDragStart = null;
+                            wrapper.style.cursor = prdScale > 1 ? 'grab' : 'default';
                             var img = document.getElementById('mainProductImage');
                             if (img) img.style.transition = 'transform 0.15s ease';
                         }
                     });
 
-                    // Pinch-to-zoom
-                    var lastPinch = null;
-                    wrap.addEventListener('touchstart', function(e) {
+                    // Pinch-to-zoom (touch devices)
+                    var lastPinchDist = null;
+                    wrapper.addEventListener('touchstart', function(e) {
                         if (e.touches.length === 2) {
-                            lastPinch = Math.hypot(
+                            lastPinchDist = Math.hypot(
                                 e.touches[0].clientX - e.touches[1].clientX,
                                 e.touches[0].clientY - e.touches[1].clientY
                             );
                         }
                     }, { passive: true });
-                    wrap.addEventListener('touchmove', function(e) {
-                        if (e.touches.length === 2 && lastPinch !== null) {
+                    wrapper.addEventListener('touchmove', function(e) {
+                        if (e.touches.length === 2 && lastPinchDist !== null) {
                             e.preventDefault();
-                            var d = Math.hypot(
+                            var newDist = Math.hypot(
                                 e.touches[0].clientX - e.touches[1].clientX,
                                 e.touches[0].clientY - e.touches[1].clientY
                             );
-                            pScale = Math.min(pMax, Math.max(pMin, parseFloat((pScale * (d / lastPinch)).toFixed(2))));
-                            lastPinch = d;
-                            pApply();
+                            var ratio = newDist / lastPinchDist;
+                            prdScale = Math.min(prdMaxScale, Math.max(prdMinScale, prdScale * ratio));
+                            prdScale = parseFloat(prdScale.toFixed(2));
+                            lastPinchDist = newDist;
+                            prdApplyTransform();
                         }
                     }, { passive: false });
-                    wrap.addEventListener('touchend', function() { lastPinch = null; });
-                });
-            })();
+                    wrapper.addEventListener('touchend', function() { lastPinchDist = null; });
+                }
+            });
             </script>
             
             <?php
