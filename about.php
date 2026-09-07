@@ -21,13 +21,27 @@ $about_docs_enabled  = $global_settings['about_docs_enabled'] ?? '1';
 $about_docs_title    = $global_settings['about_docs_title'] ?? 'Government Certifications & Legal Documents';
 $about_docs_subtitle = $global_settings['about_docs_subtitle'] ?? 'Official compliance, registration certificates, and quality standards of Sagar Starters.';
 
-// Fetch active legal documents
+// Fetch active legal documents (safe query with fallback for older DB schema)
 $legal_docs = [];
 if ($about_docs_enabled === '1') {
-    $docs_q = $conn->query("SELECT * FROM documents WHERE status = 1 ORDER BY sort_order ASC, id ASC");
-    if ($docs_q && $docs_q->num_rows > 0) {
-        while ($d = $docs_q->fetch_assoc()) {
-            $legal_docs[] = $d;
+    try {
+        $docs_q = $conn->query("SELECT * FROM documents WHERE status = 1 ORDER BY sort_order ASC, id ASC");
+        if ($docs_q && $docs_q->num_rows > 0) {
+            while ($d = $docs_q->fetch_assoc()) {
+                $legal_docs[] = $d;
+            }
+        }
+    } catch (Exception $e) {
+        // Fallback: query without new columns (handles older DB schema on live server)
+        $docs_q2 = @$conn->query("SELECT id, title, image FROM documents ORDER BY id ASC");
+        if ($docs_q2 && $docs_q2->num_rows > 0) {
+            while ($d = $docs_q2->fetch_assoc()) {
+                $d['doc_number']  = '';
+                $d['description'] = '';
+                $d['status']      = 1;
+                $d['sort_order']  = 0;
+                $legal_docs[] = $d;
+            }
         }
     }
 }

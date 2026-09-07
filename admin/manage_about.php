@@ -87,6 +87,29 @@ $conn->query("CREATE TABLE IF NOT EXISTS `documents` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;");
 
+// Safe column migration — adds missing columns to existing documents table (live server support)
+(function() use ($conn) {
+    $existing_cols = [];
+    $col_res = $conn->query("SHOW COLUMNS FROM `documents`");
+    if ($col_res) {
+        while ($col = $col_res->fetch_assoc()) {
+            $existing_cols[] = $col['Field'];
+        }
+    }
+    if (!in_array('doc_number', $existing_cols)) {
+        $conn->query("ALTER TABLE `documents` ADD COLUMN `doc_number` varchar(100) DEFAULT NULL AFTER `title`");
+    }
+    if (!in_array('description', $existing_cols)) {
+        $conn->query("ALTER TABLE `documents` ADD COLUMN `description` text DEFAULT NULL AFTER `doc_number`");
+    }
+    if (!in_array('status', $existing_cols)) {
+        $conn->query("ALTER TABLE `documents` ADD COLUMN `status` tinyint(1) DEFAULT 1");
+    }
+    if (!in_array('sort_order', $existing_cols)) {
+        $conn->query("ALTER TABLE `documents` ADD COLUMN `sort_order` int(11) DEFAULT 0");
+    }
+})();
+
 // Keys for About Us customization
 $about_keys = [
     'about_hero_title'        => 'About Us',
