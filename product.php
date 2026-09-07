@@ -194,141 +194,193 @@ if (!empty($global_settings['hero_banner_product'])) {
             // Determine main image source with fallback to first gallery image
             $main_image_src = resolve_product_image_url($product['image'] ?? '', $conn, $id);
             ?>
-            <!-- Product Image Container with Zoom — same pattern as about.php certificate modal -->
-            <div class="card product-card shadow-sm border-0 bg-light p-3 mb-2">
-                <!-- Zoom Controls Toolbar — exact same as about.php -->
-                <div class="d-flex justify-content-center align-items-center gap-2 mb-2">
-                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" id="prdZoomOut" title="Zoom Out">
-                        <i class="fas fa-search-minus me-1"></i> Zoom Out
-                    </button>
-                    <span id="prdZoomLevel" class="badge bg-secondary px-3 py-2" style="font-size:0.78rem; min-width:52px;">100%</span>
-                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" id="prdZoomIn" title="Zoom In">
-                        <i class="fas fa-search-plus me-1"></i> Zoom In
-                    </button>
-                    <button type="button" class="btn btn-outline-dark btn-sm rounded-pill px-3" id="prdZoomReset" title="Reset Zoom">
-                        <i class="fas fa-compress-arrows-alt me-1"></i> Reset
-                    </button>
-                </div>
-                <!-- Image Wrapper — exact same classes/style as about.php feDocImgWrapper -->
-                <div id="imageZoomContainer" class="p-2 bg-white rounded-3 border shadow-sm d-inline-block w-100"
-                     style="overflow: hidden; cursor: grab; user-select: none; position: relative;">
+            <!-- ── Clean Product Image Card (Amazon Style) ─────────────── -->
+            <div class="card product-card shadow-sm border-0 bg-light p-3 mb-2" style="position:relative;">
+                <div id="productImageCard" onclick="openImageLightbox()"
+                     style="cursor: zoom-in; position: relative; overflow: hidden; border-radius: 8px; background: #fff;">
                     <img id="mainProductImage"
                          src="<?php echo htmlspecialchars($main_image_src); ?>"
                          onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';"
-                         class="rounded"
+                         class="img-fluid rounded"
                          alt="<?php echo htmlspecialchars($product['name']); ?>"
                          width="500" height="500"
                          fetchpriority="high" decoding="async"
-                         style="max-width:100%; display:block; margin:auto; aspect-ratio:1/1; object-fit:<?php echo htmlspecialchars($product['image_fit'] ?? 'contain'); ?>; transform-origin: center center; transform: scale(1); transition: transform 0.15s ease; cursor: grab;">
+                         style="width:100%; aspect-ratio:1/1; object-fit:<?php echo htmlspecialchars($product['image_fit'] ?? 'contain'); ?>; display:block; transition: transform 0.2s ease;">
+                    <!-- Zoom hint overlay -->
+                    <div style="position:absolute; bottom:8px; right:10px; background:rgba(0,0,0,0.45); color:#fff; font-size:0.72rem; padding:3px 9px; border-radius:20px; pointer-events:none;">
+                        <i class="fas fa-search-plus me-1"></i>Click to zoom
+                    </div>
                 </div>
-                <p class="text-muted small text-center mt-2 mb-0">
-                    <i class="fas fa-mouse-pointer me-1"></i>Scroll to zoom &bull; Drag to pan when zoomed
-                </p>
+            </div>
+
+            <!-- ── Amazon-Style Fullscreen Image Lightbox ──────────────── -->
+            <div id="imgLightbox" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.92); flex-direction:column; align-items:center; justify-content:center;">
+
+                <!-- Top Bar -->
+                <div style="width:100%; display:flex; align-items:center; justify-content:space-between; padding:10px 16px; background:rgba(0,0,0,0.5); position:relative; z-index:2; flex-shrink:0;">
+                    <!-- Zoom Controls -->
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <button onclick="lbZoomOut()" title="Zoom Out"
+                                style="background:#333; color:#fff; border:1px solid #555; border-radius:50px; padding:5px 14px; font-size:0.82rem; cursor:pointer;">
+                            <i class="fas fa-search-minus me-1"></i>Zoom Out
+                        </button>
+                        <span id="lbZoomLevel" style="color:#fff; font-size:0.82rem; min-width:46px; text-align:center; background:#444; border-radius:20px; padding:4px 10px;">100%</span>
+                        <button onclick="lbZoomIn()" title="Zoom In"
+                                style="background:#333; color:#fff; border:1px solid #555; border-radius:50px; padding:5px 14px; font-size:0.82rem; cursor:pointer;">
+                            <i class="fas fa-search-plus me-1"></i>Zoom In
+                        </button>
+                        <button onclick="lbZoomReset()" title="Reset"
+                                style="background:#555; color:#fff; border:1px solid #777; border-radius:50px; padding:5px 14px; font-size:0.82rem; cursor:pointer;">
+                            <i class="fas fa-compress-arrows-alt me-1"></i>Reset
+                        </button>
+                    </div>
+                    <!-- Hint + Close -->
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <span style="color:#aaa; font-size:0.75rem; display:none;" class="d-md-inline">
+                            <i class="fas fa-mouse-pointer me-1"></i>Scroll to zoom &bull; Drag to pan
+                        </span>
+                        <button onclick="closeImageLightbox()" title="Close (ESC)"
+                                style="background:transparent; border:none; color:#fff; font-size:1.4rem; cursor:pointer; line-height:1; padding:0 4px;">
+                            &times;
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Image Wrapper -->
+                <div id="lbImgWrapper"
+                     style="flex:1; width:100%; overflow:hidden; cursor:grab; user-select:none; display:flex; align-items:center; justify-content:center;">
+                    <img id="lbImg" src="" alt="Product zoom"
+                         style="max-width:90%; max-height:85vh; object-fit:contain; transform-origin:center center; transform:scale(1); transition:transform 0.15s ease; cursor:grab; display:block;">
+                </div>
             </div>
 
             <script>
-            // ── Product Image Zoom — exact same pattern as about.php ──────────
-            var prdScale = 1;
-            var prdMinScale = 0.5;
-            var prdMaxScale = 4;
-            var prdStep = 0.25;
-            var prdPanX = 0, prdPanY = 0;
-            var prdDragStart = null;
+            // ── Amazon-Style Image Lightbox Zoom ─────────────────────────────
+            var lbScale = 1, lbMinScale = 0.5, lbMaxScale = 5, lbStep = 0.25;
+            var lbPanX = 0, lbPanY = 0, lbDragStart = null;
 
-            function prdApplyTransform() {
-                var img = document.getElementById('mainProductImage');
+            function lbApplyTransform() {
+                var img = document.getElementById('lbImg');
+                var lbl = document.getElementById('lbZoomLevel');
                 if (!img) return;
-                img.style.transform = 'scale(' + prdScale + ') translate(' + (prdPanX/prdScale) + 'px, ' + (prdPanY/prdScale) + 'px)';
-                document.getElementById('prdZoomLevel').textContent = Math.round(prdScale * 100) + '%';
-                img.style.cursor = prdScale > 1 ? 'grab' : 'default';
+                img.style.transform = 'scale(' + lbScale + ') translate(' + (lbPanX/lbScale) + 'px, ' + (lbPanY/lbScale) + 'px)';
+                if (lbl) lbl.textContent = Math.round(lbScale * 100) + '%';
+                img.style.cursor = lbScale > 1 ? 'grab' : 'grab';
             }
 
-            function prdZoomIn() {
-                prdScale = Math.min(prdMaxScale, parseFloat((prdScale + prdStep).toFixed(2)));
-                prdApplyTransform();
+            function lbZoomIn() {
+                lbScale = Math.min(lbMaxScale, parseFloat((lbScale + lbStep).toFixed(2)));
+                lbApplyTransform();
             }
-            function prdZoomOut() {
-                prdScale = Math.max(prdMinScale, parseFloat((prdScale - prdStep).toFixed(2)));
-                if (prdScale <= 1) { prdPanX = 0; prdPanY = 0; }
-                prdApplyTransform();
+            function lbZoomOut() {
+                lbScale = Math.max(lbMinScale, parseFloat((lbScale - lbStep).toFixed(2)));
+                if (lbScale <= 1) { lbPanX = 0; lbPanY = 0; }
+                lbApplyTransform();
             }
-            function prdZoomReset() {
-                prdScale = 1; prdPanX = 0; prdPanY = 0;
-                var img = document.getElementById('mainProductImage');
-                if (img) { img.style.transition = 'transform 0.2s ease'; }
-                prdApplyTransform();
+            function lbZoomReset() {
+                lbScale = 1; lbPanX = 0; lbPanY = 0;
+                var img = document.getElementById('lbImg');
+                if (img) img.style.transition = 'transform 0.2s ease';
+                lbApplyTransform();
+                setTimeout(function() {
+                    var img2 = document.getElementById('lbImg');
+                    if (img2) img2.style.transition = 'transform 0.15s ease';
+                }, 250);
             }
 
-            // Bind buttons after DOM ready
+            function openImageLightbox() {
+                var mainImg = document.getElementById('mainProductImage');
+                var lb = document.getElementById('imgLightbox');
+                var lbImg = document.getElementById('lbImg');
+                if (!lb || !lbImg || !mainImg) return;
+                lbImg.src = mainImg.src;
+                lbZoomReset();
+                lb.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeImageLightbox() {
+                var lb = document.getElementById('imgLightbox');
+                if (lb) lb.style.display = 'none';
+                document.body.style.overflow = '';
+                lbZoomReset();
+            }
+
             document.addEventListener('DOMContentLoaded', function() {
-                var zIn  = document.getElementById('prdZoomIn');
-                var zOut = document.getElementById('prdZoomOut');
-                var zRes = document.getElementById('prdZoomReset');
-                if (zIn)  zIn.addEventListener('click',  prdZoomIn);
-                if (zOut) zOut.addEventListener('click',  prdZoomOut);
-                if (zRes) zRes.addEventListener('click',  prdZoomReset);
+                var wrapper = document.getElementById('lbImgWrapper');
+                if (!wrapper) return;
+
+                // Close on backdrop click (not on image/controls)
+                document.getElementById('imgLightbox').addEventListener('click', function(e) {
+                    if (e.target === this || e.target === wrapper) closeImageLightbox();
+                });
+
+                // ESC key
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') closeImageLightbox();
+                });
 
                 // Mouse wheel zoom
-                var wrapper = document.getElementById('imageZoomContainer');
-                if (wrapper) {
-                    wrapper.addEventListener('wheel', function(e) {
-                        e.preventDefault();
-                        if (e.deltaY < 0) prdZoomIn(); else prdZoomOut();
-                    }, { passive: false });
+                wrapper.addEventListener('wheel', function(e) {
+                    e.preventDefault();
+                    if (e.deltaY < 0) lbZoomIn(); else lbZoomOut();
+                }, { passive: false });
 
-                    // Drag to pan
-                    wrapper.addEventListener('mousedown', function(e) {
-                        if (prdScale <= 1) return;
-                        e.preventDefault();
-                        prdDragStart = { x: e.clientX, y: e.clientY, panX: prdPanX, panY: prdPanY };
-                        wrapper.style.cursor = 'grabbing';
-                    });
-                    document.addEventListener('mousemove', function(e) {
-                        if (!prdDragStart) return;
-                        prdPanX = prdDragStart.panX + (e.clientX - prdDragStart.x);
-                        prdPanY = prdDragStart.panY + (e.clientY - prdDragStart.y);
-                        var img = document.getElementById('mainProductImage');
-                        if (img) img.style.transition = 'none';
-                        prdApplyTransform();
-                    });
-                    document.addEventListener('mouseup', function() {
-                        if (prdDragStart) {
-                            prdDragStart = null;
-                            wrapper.style.cursor = prdScale > 1 ? 'grab' : 'default';
-                            var img = document.getElementById('mainProductImage');
-                            if (img) img.style.transition = 'transform 0.15s ease';
-                        }
-                    });
+                // Double-click to zoom in/reset
+                wrapper.addEventListener('dblclick', function(e) {
+                    if (lbScale > 1) { lbZoomReset(); } else { lbZoomIn(); lbZoomIn(); }
+                });
 
-                    // Pinch-to-zoom (touch devices)
-                    var lastPinchDist = null;
-                    wrapper.addEventListener('touchstart', function(e) {
-                        if (e.touches.length === 2) {
-                            lastPinchDist = Math.hypot(
-                                e.touches[0].clientX - e.touches[1].clientX,
-                                e.touches[0].clientY - e.touches[1].clientY
-                            );
-                        }
-                    }, { passive: true });
-                    wrapper.addEventListener('touchmove', function(e) {
-                        if (e.touches.length === 2 && lastPinchDist !== null) {
-                            e.preventDefault();
-                            var newDist = Math.hypot(
-                                e.touches[0].clientX - e.touches[1].clientX,
-                                e.touches[0].clientY - e.touches[1].clientY
-                            );
-                            var ratio = newDist / lastPinchDist;
-                            prdScale = Math.min(prdMaxScale, Math.max(prdMinScale, prdScale * ratio));
-                            prdScale = parseFloat(prdScale.toFixed(2));
-                            lastPinchDist = newDist;
-                            prdApplyTransform();
-                        }
-                    }, { passive: false });
-                    wrapper.addEventListener('touchend', function() { lastPinchDist = null; });
-                }
+                // Drag to pan
+                wrapper.addEventListener('mousedown', function(e) {
+                    e.preventDefault();
+                    lbDragStart = { x: e.clientX, y: e.clientY, panX: lbPanX, panY: lbPanY };
+                    wrapper.style.cursor = 'grabbing';
+                });
+                document.addEventListener('mousemove', function(e) {
+                    if (!lbDragStart) return;
+                    lbPanX = lbDragStart.panX + (e.clientX - lbDragStart.x);
+                    lbPanY = lbDragStart.panY + (e.clientY - lbDragStart.y);
+                    var img = document.getElementById('lbImg');
+                    if (img) img.style.transition = 'none';
+                    lbApplyTransform();
+                });
+                document.addEventListener('mouseup', function() {
+                    if (lbDragStart) {
+                        lbDragStart = null;
+                        wrapper.style.cursor = 'grab';
+                        var img = document.getElementById('lbImg');
+                        if (img) img.style.transition = 'transform 0.15s ease';
+                    }
+                });
+
+                // Pinch-to-zoom (mobile)
+                var lastPinchDist = null;
+                wrapper.addEventListener('touchstart', function(e) {
+                    if (e.touches.length === 2) {
+                        lastPinchDist = Math.hypot(
+                            e.touches[0].clientX - e.touches[1].clientX,
+                            e.touches[0].clientY - e.touches[1].clientY
+                        );
+                    }
+                }, { passive: true });
+                wrapper.addEventListener('touchmove', function(e) {
+                    if (e.touches.length === 2 && lastPinchDist !== null) {
+                        e.preventDefault();
+                        var newDist = Math.hypot(
+                            e.touches[0].clientX - e.touches[1].clientX,
+                            e.touches[0].clientY - e.touches[1].clientY
+                        );
+                        var ratio = newDist / lastPinchDist;
+                        lbScale = Math.min(lbMaxScale, Math.max(lbMinScale, parseFloat((lbScale * ratio).toFixed(2))));
+                        lastPinchDist = newDist;
+                        lbApplyTransform();
+                    }
+                }, { passive: false });
+                wrapper.addEventListener('touchend', function() { lastPinchDist = null; });
             });
             </script>
-            
+
             <?php
             // Fetch gallery images
             $gallery = $conn->query("SELECT image FROM product_images WHERE product_id = $id ORDER BY position ASC, id ASC");
@@ -339,12 +391,12 @@ if (!empty($global_settings['hero_banner_product'])) {
                 <div class="gallery-thumbnail active-thumbnail" style="width: 80px; height: 80px; cursor: pointer; flex-shrink: 0; border: 2px solid var(--primary-color); border-radius: 8px; overflow: hidden; padding: 2px;" onclick="changeMainImage(this, '<?php echo htmlspecialchars($main_image_src); ?>')">
                     <img src="<?php echo htmlspecialchars($main_image_src); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="w-100 h-100 object-fit-cover rounded" width="80" height="80" loading="lazy" decoding="async">
                 </div>
-                
+
                 <!-- Output extra gallery images -->
-                <?php while($g = $gallery->fetch_assoc()): 
+                <?php while($g = $gallery->fetch_assoc()):
                     $g_src = resolve_product_image_url($g['image'] ?? '');
                     if (empty($g_src) || strpos($g_src, 'placeholder.svg') !== false || $g_src === $main_image_src) {
-                        continue; // Skip dummy or duplicate gallery thumbnails
+                        continue;
                     }
                 ?>
                 <div class="gallery-thumbnail" style="width: 80px; height: 80px; cursor: pointer; flex-shrink: 0; border: 2px solid transparent; border-radius: 8px; overflow: hidden; padding: 2px;" onclick="changeMainImage(this, '<?php echo htmlspecialchars($g_src); ?>')">
@@ -352,17 +404,18 @@ if (!empty($global_settings['hero_banner_product'])) {
                 </div>
                 <?php endwhile; ?>
             </div>
-            
+
             <script>
             function changeMainImage(element, newSrc) {
                 var mainImg = document.getElementById('mainProductImage');
                 mainImg.style.opacity = 0.5;
-                // Reset zoom on gallery switch
-                if (typeof window.prdZoomReset === 'function') window.prdZoomReset();
                 setTimeout(function() {
                     mainImg.src = newSrc;
                     mainImg.style.opacity = 1;
                 }, 150);
+                // Also update lightbox image src
+                var lbImg = document.getElementById('lbImg');
+                if (lbImg) lbImg.src = newSrc;
                 document.querySelectorAll('.gallery-thumbnail').forEach(function(el) {
                     el.style.borderColor = 'transparent';
                 });
