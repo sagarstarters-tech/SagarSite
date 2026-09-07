@@ -193,193 +193,41 @@ if (!empty($global_settings['hero_banner_product'])) {
             <?php
             // Determine main image source with fallback to first gallery image
             $main_image_src = resolve_product_image_url($product['image'] ?? '', $conn, $id);
+            $prd_img_fit = htmlspecialchars($product['image_fit'] ?? 'contain');
             ?>
-            <!-- ── Clean Product Image Card (Amazon Style) ─────────────── -->
-            <div class="card product-card shadow-sm border-0 bg-light p-3 mb-2" style="position:relative;">
-                <div id="productImageCard" onclick="openImageLightbox()"
-                     style="cursor: zoom-in; position: relative; overflow: hidden; border-radius: 8px; background: #fff;">
-                    <img id="mainProductImage"
-                         src="<?php echo htmlspecialchars($main_image_src); ?>"
-                         onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';"
-                         class="img-fluid rounded"
-                         alt="<?php echo htmlspecialchars($product['name']); ?>"
-                         width="500" height="500"
-                         fetchpriority="high" decoding="async"
-                         style="width:100%; aspect-ratio:1/1; object-fit:<?php echo htmlspecialchars($product['image_fit'] ?? 'contain'); ?>; display:block; transition: transform 0.2s ease;">
-                    <!-- Zoom hint overlay -->
-                    <div style="position:absolute; bottom:8px; right:10px; background:rgba(0,0,0,0.45); color:#fff; font-size:0.72rem; padding:3px 9px; border-radius:20px; pointer-events:none;">
-                        <i class="fas fa-search-plus me-1"></i>Click to zoom
-                    </div>
+
+            <!-- ══ AMAZON-STYLE PRODUCT IMAGE ══════════════════════════════ -->
+            <!-- Main Image Card (hover=lens zoom, click=lightbox) -->
+            <div id="prdImgCard" class="card product-card shadow-sm border-0 bg-light p-2 mb-3"
+                 style="position:relative; overflow:visible; cursor:zoom-in;"
+                 onclick="openPrdLightbox()">
+                <!-- Lens overlay (desktop hover) -->
+                <div id="prdLens" style="display:none; position:absolute; border:2px solid #0d6efd;
+                     background:rgba(13,110,253,0.10); pointer-events:none; z-index:10;
+                     box-sizing:border-box; border-radius:4px;"></div>
+                <img id="mainProductImage"
+                     src="<?php echo htmlspecialchars($main_image_src); ?>"
+                     onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';"
+                     class="img-fluid rounded"
+                     alt="<?php echo htmlspecialchars($product['name']); ?>"
+                     width="500" height="500"
+                     fetchpriority="high" decoding="async"
+                     style="width:100%; aspect-ratio:1/1; object-fit:<?php echo $prd_img_fit; ?>; display:block; pointer-events:none;">
+                <div class="text-center mt-2 pb-1">
+                    <span class="text-primary small fw-semibold" style="cursor:zoom-in;">
+                        <i class="fas fa-search-plus me-1"></i>Click to see full view
+                    </span>
                 </div>
             </div>
 
-            <!-- ── Amazon-Style Fullscreen Image Lightbox ──────────────── -->
-            <div id="imgLightbox" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.92); flex-direction:column; align-items:center; justify-content:center;">
-
-                <!-- Top Bar -->
-                <div style="width:100%; display:flex; align-items:center; justify-content:space-between; padding:10px 16px; background:rgba(0,0,0,0.5); position:relative; z-index:2; flex-shrink:0;">
-                    <!-- Zoom Controls -->
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <button onclick="lbZoomOut()" title="Zoom Out"
-                                style="background:#333; color:#fff; border:1px solid #555; border-radius:50px; padding:5px 14px; font-size:0.82rem; cursor:pointer;">
-                            <i class="fas fa-search-minus me-1"></i>Zoom Out
-                        </button>
-                        <span id="lbZoomLevel" style="color:#fff; font-size:0.82rem; min-width:46px; text-align:center; background:#444; border-radius:20px; padding:4px 10px;">100%</span>
-                        <button onclick="lbZoomIn()" title="Zoom In"
-                                style="background:#333; color:#fff; border:1px solid #555; border-radius:50px; padding:5px 14px; font-size:0.82rem; cursor:pointer;">
-                            <i class="fas fa-search-plus me-1"></i>Zoom In
-                        </button>
-                        <button onclick="lbZoomReset()" title="Reset"
-                                style="background:#555; color:#fff; border:1px solid #777; border-radius:50px; padding:5px 14px; font-size:0.82rem; cursor:pointer;">
-                            <i class="fas fa-compress-arrows-alt me-1"></i>Reset
-                        </button>
-                    </div>
-                    <!-- Hint + Close -->
-                    <div style="display:flex; align-items:center; gap:12px;">
-                        <span style="color:#aaa; font-size:0.75rem; display:none;" class="d-md-inline">
-                            <i class="fas fa-mouse-pointer me-1"></i>Scroll to zoom &bull; Drag to pan
-                        </span>
-                        <button onclick="closeImageLightbox()" title="Close (ESC)"
-                                style="background:transparent; border:none; color:#fff; font-size:1.4rem; cursor:pointer; line-height:1; padding:0 4px;">
-                            &times;
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Image Wrapper -->
-                <div id="lbImgWrapper"
-                     style="flex:1; width:100%; overflow:hidden; cursor:grab; user-select:none; display:flex; align-items:center; justify-content:center;">
-                    <img id="lbImg" src="" alt="Product zoom"
-                         style="max-width:90%; max-height:85vh; object-fit:contain; transform-origin:center center; transform:scale(1); transition:transform 0.15s ease; cursor:grab; display:block;">
-                </div>
+            <!-- Hover Zoom Panel (desktop only, appears to right of image) -->
+            <div id="prdZoomPanel" style="display:none; position:fixed; z-index:1049;
+                 border:2px solid #dee2e6; background:#fff;
+                 box-shadow:0 8px 32px rgba(0,0,0,0.22); overflow:hidden; pointer-events:none;
+                 border-radius:8px;">
+                <img id="prdZoomPanelImg" src=""
+                     style="position:absolute; max-width:none; display:block;">
             </div>
-
-            <script>
-            // ── Amazon-Style Image Lightbox Zoom ─────────────────────────────
-            var lbScale = 1, lbMinScale = 0.5, lbMaxScale = 5, lbStep = 0.25;
-            var lbPanX = 0, lbPanY = 0, lbDragStart = null;
-
-            function lbApplyTransform() {
-                var img = document.getElementById('lbImg');
-                var lbl = document.getElementById('lbZoomLevel');
-                if (!img) return;
-                img.style.transform = 'scale(' + lbScale + ') translate(' + (lbPanX/lbScale) + 'px, ' + (lbPanY/lbScale) + 'px)';
-                if (lbl) lbl.textContent = Math.round(lbScale * 100) + '%';
-                img.style.cursor = lbScale > 1 ? 'grab' : 'grab';
-            }
-
-            function lbZoomIn() {
-                lbScale = Math.min(lbMaxScale, parseFloat((lbScale + lbStep).toFixed(2)));
-                lbApplyTransform();
-            }
-            function lbZoomOut() {
-                lbScale = Math.max(lbMinScale, parseFloat((lbScale - lbStep).toFixed(2)));
-                if (lbScale <= 1) { lbPanX = 0; lbPanY = 0; }
-                lbApplyTransform();
-            }
-            function lbZoomReset() {
-                lbScale = 1; lbPanX = 0; lbPanY = 0;
-                var img = document.getElementById('lbImg');
-                if (img) img.style.transition = 'transform 0.2s ease';
-                lbApplyTransform();
-                setTimeout(function() {
-                    var img2 = document.getElementById('lbImg');
-                    if (img2) img2.style.transition = 'transform 0.15s ease';
-                }, 250);
-            }
-
-            function openImageLightbox() {
-                var mainImg = document.getElementById('mainProductImage');
-                var lb = document.getElementById('imgLightbox');
-                var lbImg = document.getElementById('lbImg');
-                if (!lb || !lbImg || !mainImg) return;
-                lbImg.src = mainImg.src;
-                lbZoomReset();
-                lb.style.display = 'flex';
-                document.body.style.overflow = 'hidden';
-            }
-
-            function closeImageLightbox() {
-                var lb = document.getElementById('imgLightbox');
-                if (lb) lb.style.display = 'none';
-                document.body.style.overflow = '';
-                lbZoomReset();
-            }
-
-            document.addEventListener('DOMContentLoaded', function() {
-                var wrapper = document.getElementById('lbImgWrapper');
-                if (!wrapper) return;
-
-                // Close on backdrop click (not on image/controls)
-                document.getElementById('imgLightbox').addEventListener('click', function(e) {
-                    if (e.target === this || e.target === wrapper) closeImageLightbox();
-                });
-
-                // ESC key
-                document.addEventListener('keydown', function(e) {
-                    if (e.key === 'Escape') closeImageLightbox();
-                });
-
-                // Mouse wheel zoom
-                wrapper.addEventListener('wheel', function(e) {
-                    e.preventDefault();
-                    if (e.deltaY < 0) lbZoomIn(); else lbZoomOut();
-                }, { passive: false });
-
-                // Double-click to zoom in/reset
-                wrapper.addEventListener('dblclick', function(e) {
-                    if (lbScale > 1) { lbZoomReset(); } else { lbZoomIn(); lbZoomIn(); }
-                });
-
-                // Drag to pan
-                wrapper.addEventListener('mousedown', function(e) {
-                    e.preventDefault();
-                    lbDragStart = { x: e.clientX, y: e.clientY, panX: lbPanX, panY: lbPanY };
-                    wrapper.style.cursor = 'grabbing';
-                });
-                document.addEventListener('mousemove', function(e) {
-                    if (!lbDragStart) return;
-                    lbPanX = lbDragStart.panX + (e.clientX - lbDragStart.x);
-                    lbPanY = lbDragStart.panY + (e.clientY - lbDragStart.y);
-                    var img = document.getElementById('lbImg');
-                    if (img) img.style.transition = 'none';
-                    lbApplyTransform();
-                });
-                document.addEventListener('mouseup', function() {
-                    if (lbDragStart) {
-                        lbDragStart = null;
-                        wrapper.style.cursor = 'grab';
-                        var img = document.getElementById('lbImg');
-                        if (img) img.style.transition = 'transform 0.15s ease';
-                    }
-                });
-
-                // Pinch-to-zoom (mobile)
-                var lastPinchDist = null;
-                wrapper.addEventListener('touchstart', function(e) {
-                    if (e.touches.length === 2) {
-                        lastPinchDist = Math.hypot(
-                            e.touches[0].clientX - e.touches[1].clientX,
-                            e.touches[0].clientY - e.touches[1].clientY
-                        );
-                    }
-                }, { passive: true });
-                wrapper.addEventListener('touchmove', function(e) {
-                    if (e.touches.length === 2 && lastPinchDist !== null) {
-                        e.preventDefault();
-                        var newDist = Math.hypot(
-                            e.touches[0].clientX - e.touches[1].clientX,
-                            e.touches[0].clientY - e.touches[1].clientY
-                        );
-                        var ratio = newDist / lastPinchDist;
-                        lbScale = Math.min(lbMaxScale, Math.max(lbMinScale, parseFloat((lbScale * ratio).toFixed(2))));
-                        lastPinchDist = newDist;
-                        lbApplyTransform();
-                    }
-                }, { passive: false });
-                wrapper.addEventListener('touchend', function() { lastPinchDist = null; });
-            });
-            </script>
 
             <?php
             // Fetch gallery images
@@ -391,7 +239,6 @@ if (!empty($global_settings['hero_banner_product'])) {
                 <div class="gallery-thumbnail active-thumbnail" style="width: 80px; height: 80px; cursor: pointer; flex-shrink: 0; border: 2px solid var(--primary-color); border-radius: 8px; overflow: hidden; padding: 2px;" onclick="changeMainImage(this, '<?php echo htmlspecialchars($main_image_src); ?>')">
                     <img src="<?php echo htmlspecialchars($main_image_src); ?>" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';" class="w-100 h-100 object-fit-cover rounded" width="80" height="80" loading="lazy" decoding="async">
                 </div>
-
                 <!-- Output extra gallery images -->
                 <?php while($g = $gallery->fetch_assoc()):
                     $g_src = resolve_product_image_url($g['image'] ?? '');
@@ -404,26 +251,243 @@ if (!empty($global_settings['hero_banner_product'])) {
                 </div>
                 <?php endwhile; ?>
             </div>
-
-            <script>
-            function changeMainImage(element, newSrc) {
-                var mainImg = document.getElementById('mainProductImage');
-                mainImg.style.opacity = 0.5;
-                setTimeout(function() {
-                    mainImg.src = newSrc;
-                    mainImg.style.opacity = 1;
-                }, 150);
-                // Also update lightbox image src
-                var lbImg = document.getElementById('lbImg');
-                if (lbImg) lbImg.src = newSrc;
-                document.querySelectorAll('.gallery-thumbnail').forEach(function(el) {
-                    el.style.borderColor = 'transparent';
-                });
-                element.style.borderColor = 'var(--primary-color)';
-            }
-            </script>
             <?php endif; ?>
+        </div><!-- end col-md-6 image col -->
+
+        <!-- ══ FULLSCREEN LIGHTBOX MODAL ══════════════════════════════════ -->
+        <div id="prdLightbox" style="display:none; position:fixed; inset:0; z-index:2000;
+             background:rgba(0,0,0,0.93); flex-direction:column; align-items:center;">
+            <!-- Top Bar -->
+            <div style="width:100%; display:flex; align-items:center; justify-content:space-between;
+                        padding:10px 16px; background:rgba(0,0,0,0.6); flex-shrink:0; gap:8px; flex-wrap:wrap;">
+                <!-- Zoom Controls -->
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <button onclick="lbZoomOut()" class="btn btn-outline-light btn-sm rounded-pill px-3">
+                        <i class="fas fa-search-minus me-1"></i> Zoom Out
+                    </button>
+                    <span id="lbZoomLevel" class="badge bg-secondary px-3 py-2" style="font-size:0.8rem; min-width:52px;">100%</span>
+                    <button onclick="lbZoomIn()" class="btn btn-outline-light btn-sm rounded-pill px-3">
+                        <i class="fas fa-search-plus me-1"></i> Zoom In
+                    </button>
+                    <button onclick="lbZoomReset()" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                        <i class="fas fa-compress-arrows-alt me-1"></i> Reset
+                    </button>
+                </div>
+                <!-- Close -->
+                <button onclick="closePrdLightbox()" class="btn btn-light btn-sm rounded-pill px-3 fw-bold">
+                    <i class="fas fa-times me-1"></i> Close
+                </button>
+            </div>
+            <!-- Image Wrapper -->
+            <div id="lbImgWrap" style="flex:1; width:100%; overflow:hidden; position:relative;
+                                        cursor:grab; user-select:none; display:flex;
+                                        align-items:center; justify-content:center;">
+                <img id="lbImg" src="" alt="Product"
+                     style="max-width:90vw; max-height:85vh; display:block;
+                            transform-origin:center center; transform:scale(1);
+                            transition:transform 0.15s ease; cursor:grab;
+                            object-fit:contain; border-radius:6px;">
+            </div>
+            <!-- Bottom hint -->
+            <div style="padding:8px; color:rgba(255,255,255,0.6); font-size:0.8rem; flex-shrink:0; text-align:center;">
+                <i class="fas fa-mouse-pointer me-1"></i>Scroll to zoom &bull; Drag to pan
+                <span class="ms-3"><i class="fas fa-hand-point-up me-1"></i>Pinch to zoom (mobile)</span>
+            </div>
         </div>
+        <!-- ══════════════════════════════════════════════════════════════ -->
+
+        <script>
+        // ── Gallery image switch ──────────────────────────────────────────
+        function changeMainImage(element, newSrc) {
+            var mainImg = document.getElementById('mainProductImage');
+            mainImg.style.opacity = 0.5;
+            setTimeout(function() {
+                mainImg.src = newSrc;
+                document.getElementById('prdZoomPanelImg').src = newSrc;
+                document.getElementById('lbImg').src = newSrc;
+                mainImg.style.opacity = 1;
+            }, 150);
+            document.querySelectorAll('.gallery-thumbnail').forEach(function(el) {
+                el.style.borderColor = 'transparent';
+            });
+            element.style.borderColor = 'var(--primary-color)';
+        }
+
+        // ── Desktop Hover Lens Zoom ───────────────────────────────────────
+        (function() {
+            var ZOOM_FACTOR = 2.5;   // magnification level in panel
+            var LENS_SIZE   = 120;   // px — size of the blue lens square
+
+            var card    = document.getElementById('prdImgCard');
+            var lens    = document.getElementById('prdLens');
+            var panel   = document.getElementById('prdZoomPanel');
+            var panelImg= document.getElementById('prdZoomPanelImg');
+
+            if (!card || !lens || !panel) return;
+
+            // Initialize panelImg src
+            panelImg.src = document.getElementById('mainProductImage').src;
+
+            card.addEventListener('mouseenter', function() {
+                // Only on desktop (pointer: fine)
+                if (!window.matchMedia('(pointer: fine)').matches) return;
+                lens.style.display = 'block';
+                var r = card.getBoundingClientRect();
+                var panelW = Math.min(r.width * 1.1, 420);
+                var panelH = r.height;
+                panel.style.width  = panelW + 'px';
+                panel.style.height = panelH + 'px';
+                panel.style.top    = r.top + 'px';
+                panel.style.left   = (r.right + 10) + 'px';
+                panelImg.src = document.getElementById('mainProductImage').src;
+                // Size the panel image
+                var imgW = r.width * ZOOM_FACTOR;
+                var imgH = r.height * ZOOM_FACTOR;
+                panelImg.style.width  = imgW + 'px';
+                panelImg.style.height = imgH + 'px';
+                panel.style.display = 'block';
+            });
+
+            card.addEventListener('mousemove', function(e) {
+                if (!window.matchMedia('(pointer: fine)').matches) return;
+                var r = card.getBoundingClientRect();
+                var x = e.clientX - r.left;
+                var y = e.clientY - r.top;
+
+                // Clamp lens inside card
+                var lx = Math.max(0, Math.min(r.width  - LENS_SIZE, x - LENS_SIZE/2));
+                var ly = Math.max(0, Math.min(r.height - LENS_SIZE, y - LENS_SIZE/2));
+                lens.style.left   = lx + 'px';
+                lens.style.top    = ly + 'px';
+                lens.style.width  = LENS_SIZE + 'px';
+                lens.style.height = LENS_SIZE + 'px';
+
+                // Move panelImg to show corresponding zoomed area
+                var panelW = panel.offsetWidth;
+                var panelH = panel.offsetHeight;
+                var imgW = r.width  * ZOOM_FACTOR;
+                var imgH = r.height * ZOOM_FACTOR;
+                var ratioX = (lx) / (r.width  - LENS_SIZE);
+                var ratioY = (ly) / (r.height - LENS_SIZE);
+                var ox = -ratioX * (imgW - panelW);
+                var oy = -ratioY * (imgH - panelH);
+                panelImg.style.left = ox + 'px';
+                panelImg.style.top  = oy + 'px';
+            });
+
+            card.addEventListener('mouseleave', function() {
+                lens.style.display  = 'none';
+                panel.style.display = 'none';
+            });
+        })();
+
+        // ── Fullscreen Lightbox ───────────────────────────────────────────
+        var lbScale = 1, lbMin = 0.5, lbMax = 5, lbStep = 0.25;
+        var lbPanX = 0, lbPanY = 0, lbDrag = null;
+
+        function lbApply() {
+            var img = document.getElementById('lbImg');
+            var wrap = document.getElementById('lbImgWrap');
+            if (!img) return;
+            img.style.transform = 'scale(' + lbScale + ') translate(' + (lbPanX/lbScale) + 'px,' + (lbPanY/lbScale) + 'px)';
+            document.getElementById('lbZoomLevel').textContent = Math.round(lbScale * 100) + '%';
+            img.style.cursor = lbScale > 1 ? 'grab' : 'grab';
+            if (wrap) wrap.style.cursor = lbScale > 1 ? 'grab' : 'default';
+        }
+        function lbZoomIn()  { lbScale = Math.min(lbMax, parseFloat((lbScale + lbStep).toFixed(2))); lbApply(); }
+        function lbZoomOut() { lbScale = Math.max(lbMin, parseFloat((lbScale - lbStep).toFixed(2))); if(lbScale<=1){lbPanX=0;lbPanY=0;} lbApply(); }
+        function lbZoomReset() { lbScale=1; lbPanX=0; lbPanY=0; var img=document.getElementById('lbImg'); if(img) img.style.transition='transform 0.2s ease'; lbApply(); }
+
+        function openPrdLightbox() {
+            var src = document.getElementById('mainProductImage').src;
+            document.getElementById('lbImg').src = src;
+            lbZoomReset();
+            var lb = document.getElementById('prdLightbox');
+            lb.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+        function closePrdLightbox() {
+            document.getElementById('prdLightbox').style.display = 'none';
+            document.body.style.overflow = '';
+            lbZoomReset();
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var wrap = document.getElementById('lbImgWrap');
+            if (!wrap) return;
+
+            // Close on backdrop click
+            wrap.addEventListener('click', function(e) {
+                if (e.target === wrap) closePrdLightbox();
+            });
+
+            // Keyboard: Escape to close, +/- to zoom
+            document.addEventListener('keydown', function(e) {
+                var lb = document.getElementById('prdLightbox');
+                if (lb.style.display === 'none') return;
+                if (e.key === 'Escape') closePrdLightbox();
+                if (e.key === '+' || e.key === '=') lbZoomIn();
+                if (e.key === '-') lbZoomOut();
+                if (e.key === '0') lbZoomReset();
+            });
+
+            // Mouse wheel zoom
+            wrap.addEventListener('wheel', function(e) {
+                e.preventDefault();
+                if (e.deltaY < 0) lbZoomIn(); else lbZoomOut();
+            }, { passive: false });
+
+            // Drag to pan
+            wrap.addEventListener('mousedown', function(e) {
+                e.preventDefault();
+                lbDrag = { x: e.clientX, y: e.clientY, px: lbPanX, py: lbPanY };
+                wrap.style.cursor = 'grabbing';
+            });
+            document.addEventListener('mousemove', function(e) {
+                if (!lbDrag) return;
+                lbPanX = lbDrag.px + (e.clientX - lbDrag.x);
+                lbPanY = lbDrag.py + (e.clientY - lbDrag.y);
+                var img = document.getElementById('lbImg');
+                if (img) img.style.transition = 'none';
+                lbApply();
+            });
+            document.addEventListener('mouseup', function() {
+                if (lbDrag) {
+                    lbDrag = null;
+                    wrap.style.cursor = lbScale > 1 ? 'grab' : 'default';
+                    var img = document.getElementById('lbImg');
+                    if (img) img.style.transition = 'transform 0.15s ease';
+                }
+            });
+
+            // Pinch-to-zoom (touch)
+            var lastPinch = null;
+            wrap.addEventListener('touchstart', function(e) {
+                if (e.touches.length === 2) {
+                    lastPinch = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                }
+            }, { passive: true });
+            wrap.addEventListener('touchmove', function(e) {
+                if (e.touches.length === 2 && lastPinch !== null) {
+                    e.preventDefault();
+                    var d = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    lbScale = Math.min(lbMax, Math.max(lbMin, parseFloat((lbScale * d / lastPinch).toFixed(2))));
+                    lastPinch = d;
+                    lbApply();
+                }
+            }, { passive: false });
+            wrap.addEventListener('touchend', function() { lastPinch = null; });
+        });
+        </script>
+
+        <!-- Dummy closing div to keep HTML structure intact - real col closes above -->
+        <div style="display:none" id="__prd_img_col_closed__"></div>
 
         <!-- Product Details -->
         <div class="col-md-6 px-lg-5" data-aos="fade-left" data-aos-delay="200">
