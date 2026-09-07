@@ -149,6 +149,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['subscribe_email'])) {
 <script src="<?php echo ASSETS_URL; ?>/js/main.js" defer></script>
 <!-- Animations Custom JS -->
 <script src="<?php echo ASSETS_URL; ?>/js/animations.js" defer></script>
+<!-- Contextual Tooltip Engine JS -->
+<script src="<?php echo ASSETS_URL; ?>/js/tooltip-engine.js?v=<?php echo file_exists(__DIR__ . '/../assets/js/tooltip-engine.js') ? filemtime(__DIR__ . '/../assets/js/tooltip-engine.js') : '1.0'; ?>" defer></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {

@@ -1,0 +1,139 @@
+/**
+ * Contextual Hover Tooltip System - Core Styling
+ * Ultra-modern, glassmorphism design with responsive positioning & micro-animations
+ */
+
+:root {
+    --ss-tooltip-bg: rgba(15, 23, 42, 0.94);
+    --ss-tooltip-border: rgba(255, 255, 255, 0.14);
+    --ss-tooltip-color: #f8fafc;
+    --ss-tooltip-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3), 0 0 15px rgba(59, 130, 246, 0.2);
+    --ss-tooltip-font: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --ss-tooltip-radius: 8px;
+    --ss-tooltip-arrow-size: 6px;
+}
+
+/* Base floating tooltip element */
+.ss-tooltip-box {
+    position: fixed;
+    z-index: 999999 !important;
+    pointer-events: none; /* Prevents cursor interference */
+    max-width: 280px;
+    min-width: 60px;
+    padding: 7px 12px;
+    background: var(--ss-tooltip-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: var(--ss-tooltip-color);
+    border: 1px solid var(--ss-tooltip-border);
+    border-radius: var(--ss-tooltip-radius);
+    box-shadow: var(--ss-tooltip-shadow);
+    font-family: var(--ss-tooltip-font);
+    font-size: 0.8125rem; /* ~13px */
+    font-weight: 500;
+    line-height: 1.35;
+    letter-spacing: 0.015em;
+    text-align: center;
+    word-break: break-word;
+    opacity: 0;
+    visibility: hidden;
+    transform: scale(0.94) translateY(4px);
+    transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+                visibility 0.18s ease;
+    will-change: transform, opacity;
+}
+
+/* Active Visible State */
+.ss-tooltip-box.ss-tooltip-show {
+    opacity: 1;
+    visibility: visible;
+    transform: scale(1) translateY(0);
+}
+
+/* Optional icon badge or accent dot inside tooltip */
+.ss-tooltip-box .ss-tooltip-icon {
+    display: inline-block;
+    margin-right: 5px;
+    font-size: 0.85em;
+    color: #60a5fa;
+    vertical-align: -0.05em;
+}
+
+/* Dynamic Direction Arrows */
+.ss-tooltip-box::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    pointer-events: none;
+}
+
+/* Tooltip positioned ON TOP of element (Arrow pointing down) */
+.ss-tooltip-box.pos-top {
+    transform: scale(0.94) translateY(4px);
+}
+.ss-tooltip-box.pos-top.ss-tooltip-show {
+    transform: scale(1) translateY(0);
+}
+.ss-tooltip-box.pos-top::after {
+    bottom: calc(-1 * var(--ss-tooltip-arrow-size) * 2);
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: var(--ss-tooltip-arrow-size);
+    border-color: var(--ss-tooltip-bg) transparent transparent transparent;
+}
+
+/* Tooltip positioned BELOW element (Arrow pointing up) */
+.ss-tooltip-box.pos-bottom {
+    transform: scale(0.94) translateY(-4px);
+}
+.ss-tooltip-box.pos-bottom.ss-tooltip-show {
+    transform: scale(1) translateY(0);
+}
+.ss-tooltip-box.pos-bottom::after {
+    top: calc(-1 * var(--ss-tooltip-arrow-size) * 2);
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: var(--ss-tooltip-arrow-size);
+    border-color: transparent transparent var(--ss-tooltip-bg) transparent;
+}
+
+/* Tooltip positioned LEFT of element (Arrow pointing right) */
+.ss-tooltip-box.pos-left {
+    transform: scale(0.94) translateX(4px);
+}
+.ss-tooltip-box.pos-left.ss-tooltip-show {
+    transform: scale(1) translateX(0);
+}
+.ss-tooltip-box.pos-left::after {
+    top: 50%;
+    right: calc(-1 * var(--ss-tooltip-arrow-size) * 2);
+    transform: translateY(-50%);
+    border-width: var(--ss-tooltip-arrow-size);
+    border-color: transparent transparent transparent var(--ss-tooltip-bg);
+}
+
+/* Tooltip positioned RIGHT of element (Arrow pointing left) */
+.ss-tooltip-box.pos-right {
+    transform: scale(0.94) translateX(-4px);
+}
+.ss-tooltip-box.pos-right.ss-tooltip-show {
+    transform: scale(1) translateX(0);
+}
+.ss-tooltip-box.pos-right::after {
+    top: 50%;
+    left: calc(-1 * var(--ss-tooltip-arrow-size) * 2);
+    transform: translateY(-50%);
+    border-width: var(--ss-tooltip-arrow-size);
+    border-color: transparent var(--ss-tooltip-bg) transparent transparent;
+}
+
+/* Respect user's reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+    .ss-tooltip-box {
+        transition: none !important;
+        transform: none !important;
+    }
+}

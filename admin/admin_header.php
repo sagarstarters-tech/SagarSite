@@ -51,6 +51,7 @@ $version_metadata = VersionManager::getVersionMetadata($conn);
     <link href="<?php echo ASSETS_URL; ?>/css/admin-sidebar.css?v=<?php echo file_exists(__DIR__ . '/../assets/css/admin-sidebar.css') ? filemtime(__DIR__ . '/../assets/css/admin-sidebar.css') : time(); ?>" rel="stylesheet">
     <link href="<?php echo ASSETS_URL; ?>/css/admin-responsive.css?v=<?php echo file_exists(__DIR__ . '/../assets/css/admin-responsive.css') ? filemtime(__DIR__ . '/../assets/css/admin-responsive.css') : time(); ?>" rel="stylesheet">
     <link href="<?php echo ASSETS_URL; ?>/css/admin-theme.css?v=<?php echo file_exists(__DIR__ . '/../assets/css/admin-theme.css') ? filemtime(__DIR__ . '/../assets/css/admin-theme.css') : time(); ?>" rel="stylesheet">
+    <link href="<?php echo ASSETS_URL; ?>/css/tooltip.css?v=<?php echo file_exists(__DIR__ . '/../assets/css/tooltip.css') ? filemtime(__DIR__ . '/../assets/css/tooltip.css') : time(); ?>" rel="stylesheet">
     <?php
     require_once __DIR__ . '/../includes/ThemeService.php';
     ThemeService::injectCSS($conn);
