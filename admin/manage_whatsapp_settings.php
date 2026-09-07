@@ -61,7 +61,7 @@ if (empty($settings['admin_message_template'])) {
 
 $success_msg = '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_settings') {
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_settings') {
     $sender_number    = $conn->real_escape_string($_POST['sender_number'] ?? '');
     $api_token        = $conn->real_escape_string($_POST['api_token'] ?? '');
     $phone_number_id  = $conn->real_escape_string($_POST['phone_number_id'] ?? '');
@@ -535,8 +535,8 @@ $logs = $conn->query($logs_query);
                                             <div class="small text-muted text-truncate" style="max-width:90px;"><?php echo htmlspecialchars($log['customer_name'] ?? 'N/A'); ?></div>
                                         </td>
                                         <td>
-                                            <div><?php echo htmlspecialchars($log['customer_number']); ?></div>
-                                            <span class="badge bg-<?php echo $log['sending_mode'] == 'api' ? 'info' : 'secondary'; ?>" style="font-size:0.65rem;"><?php echo strtoupper($log['sending_mode']); ?></span>
+                                            <div><?php echo htmlspecialchars($log['customer_number'] ?? ''); ?></div>
+                                            <span class="badge bg-<?php echo ($log['sending_mode'] ?? '') == 'api' ? 'info' : 'secondary'; ?>" style="font-size:0.65rem;"><?php echo strtoupper((string)($log['sending_mode'] ?? '')); ?></span>
                                         </td>
                                         <td>
                                             <?php 

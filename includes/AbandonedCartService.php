@@ -194,8 +194,8 @@ class AbandonedCartService {
         // Build recovery link
         $siteUrl = defined('SITE_URL') ? rtrim(SITE_URL, '/') : '';
         if (strpos($siteUrl, 'http') !== 0) {
-            // Fallback: try to build from global_settings
-            $res = $this->conn->query("SELECT setting_value FROM global_settings WHERE setting_key = 'site_url' LIMIT 1");
+            // Fallback: try to build from settings table
+            $res = $this->conn->query("SELECT setting_value FROM settings WHERE setting_key = 'site_url' LIMIT 1");
             if ($res && $row = $res->fetch_assoc()) {
                 $siteUrl = rtrim($row['setting_value'], '/');
             }

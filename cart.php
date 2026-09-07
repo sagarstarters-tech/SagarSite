@@ -15,9 +15,10 @@ $subtotal = 0;
 $is_retailer_user = (isset($_SESSION['role']) && $_SESSION['role'] === 'retailer');
 
 if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
-    $ids = implode(',', array_keys($_SESSION['cart']));
-    $result = $conn->query("SELECT * FROM products WHERE id IN ($ids)");
-    while ($row = $result->fetch_assoc()) {
+    $ids = implode(',', array_map('intval', array_keys($_SESSION['cart'])));
+    $result = !empty($ids) ? $conn->query("SELECT * FROM products WHERE id IN ($ids)") : false;
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
         $qty = $_SESSION['cart'][$row['id']];
         $moq = !empty($row['min_order_qty']) ? max(1, intval($row['min_order_qty'])) : 1;
         $bulk_price = !empty($row['bulk_price']) ? floatval($row['bulk_price']) : 0;
@@ -50,6 +51,7 @@ if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
         $row['is_retailer_applied'] = ($is_retailer_user && $is_bulk_applied && $qty < $bulk_min_qty);
         $row['total'] = $total;
         $cart_items[] = $row;
+    }
     }
 }
 ?>

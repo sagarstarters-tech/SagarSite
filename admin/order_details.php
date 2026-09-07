@@ -245,7 +245,7 @@ $stageIndex = $info['progress_stage_index'];
                 <?php if (isset($order['payment_mode']) && $order['payment_mode'] === 'COD_PARTIAL'): ?>
                 <h6 class="fw-bold">COD (Partial Advance)</h6>
                 <?php else: ?>
-                <h6 class="fw-bold"><?php echo strtoupper($order['payment_method']); ?></h6>
+                <h6 class="fw-bold"><?php echo strtoupper((string)($order['payment_method'] ?? 'COD')); ?></h6>
                 <?php endif; ?>
             </div>
 

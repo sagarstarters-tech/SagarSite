@@ -39,45 +39,51 @@ foreach ($static_pages as $p) {
 }
 
 // ── Dynamic pages ─────────────────────────────────────────────
-$pages_q = $conn->query("SELECT slug, updated_at FROM pages");
-if ($pages_q) {
-    while ($page = $pages_q->fetch_assoc()) {
-        $lastmod = date('Y-m-d', strtotime($page['updated_at'] ?? $today));
-        echo "  <url>\n";
-        echo "    <loc>" . htmlspecialchars($base_url . '/page/' . $page['slug']) . "</loc>\n";
-        echo "    <lastmod>{$lastmod}</lastmod>\n";
-        echo "    <changefreq>monthly</changefreq>\n";
-        echo "    <priority>0.6</priority>\n";
-        echo "  </url>\n";
+try {
+    $pages_q = $conn->query("SELECT slug, updated_at FROM pages");
+    if ($pages_q) {
+        while ($page = $pages_q->fetch_assoc()) {
+            $lastmod = date('Y-m-d', strtotime($page['updated_at'] ?? $today));
+            echo "  <url>\n";
+            echo "    <loc>" . htmlspecialchars($base_url . '/page/' . $page['slug']) . "</loc>\n";
+            echo "    <lastmod>{$lastmod}</lastmod>\n";
+            echo "    <changefreq>monthly</changefreq>\n";
+            echo "    <priority>0.6</priority>\n";
+            echo "  </url>\n";
+        }
     }
-}
+} catch (\Throwable $e) {}
 
 // ── Categories ────────────────────────────────────────────────
-$cats_q = $conn->query("SELECT slug FROM categories");
-if ($cats_q) {
-    while ($cat = $cats_q->fetch_assoc()) {
-        $lastmod = $today;
-        echo "  <url>\n";
-        echo "    <loc>" . htmlspecialchars($base_url . '/category/' . $cat['slug']) . "</loc>\n";
-        echo "    <lastmod>{$lastmod}</lastmod>\n";
-        echo "    <changefreq>weekly</changefreq>\n";
-        echo "    <priority>0.8</priority>\n";
-        echo "  </url>\n";
+try {
+    $cats_q = $conn->query("SELECT slug FROM categories");
+    if ($cats_q) {
+        while ($cat = $cats_q->fetch_assoc()) {
+            $lastmod = $today;
+            echo "  <url>\n";
+            echo "    <loc>" . htmlspecialchars($base_url . '/category/' . $cat['slug']) . "</loc>\n";
+            echo "    <lastmod>{$lastmod}</lastmod>\n";
+            echo "    <changefreq>weekly</changefreq>\n";
+            echo "    <priority>0.8</priority>\n";
+            echo "  </url>\n";
+        }
     }
-}
+} catch (\Throwable $e) {}
 
 // ── Products ─────────────────────────────────────────────────
-$prods_q = $conn->query("SELECT slug, created_at FROM products");
-if ($prods_q) {
-    while ($prod = $prods_q->fetch_assoc()) {
-        $lastmod = !empty($prod['created_at']) ? date('Y-m-d', strtotime($prod['created_at'])) : $today;
-        echo "  <url>\n";
-        echo "    <loc>" . htmlspecialchars($base_url . '/product/' . $prod['slug']) . "</loc>\n";
-        echo "    <lastmod>{$lastmod}</lastmod>\n";
-        echo "    <changefreq>daily</changefreq>\n";
-        echo "    <priority>0.9</priority>\n";
-        echo "  </url>\n";
+try {
+    $prods_q = $conn->query("SELECT slug, created_at FROM products");
+    if ($prods_q) {
+        while ($prod = $prods_q->fetch_assoc()) {
+            $lastmod = !empty($prod['created_at']) ? date('Y-m-d', strtotime($prod['created_at'])) : $today;
+            echo "  <url>\n";
+            echo "    <loc>" . htmlspecialchars($base_url . '/product/' . $prod['slug']) . "</loc>\n";
+            echo "    <lastmod>{$lastmod}</lastmod>\n";
+            echo "    <changefreq>daily</changefreq>\n";
+            echo "    <priority>0.9</priority>\n";
+            echo "  </url>\n";
+        }
     }
-}
+} catch (\Throwable $e) {}
 
 echo '</urlset>';

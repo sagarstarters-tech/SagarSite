@@ -178,7 +178,7 @@ $res = $conn->query("SELECT * FROM testimonials ORDER BY id DESC");
                                 </div>
                             </td>
                             <td class="text-end pe-4 text-nowrap">
-                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 me-2 fw-semibold" title="Edit Testimonial" onclick='editTestimonial(<?php echo json_encode($row); ?>)'>
+                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 me-2 fw-semibold" title="Edit Testimonial" onclick="editTestimonial(<?php echo htmlspecialchars(json_encode($row), ENT_QUOTES, 'UTF-8'); ?>)">
                                     <i class="fas fa-edit me-1"></i> Edit
                                 </button>
                                 <form method="POST" class="d-inline" onsubmit="return confirm('Delete this testimonial?');">

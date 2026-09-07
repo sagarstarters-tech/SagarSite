@@ -270,22 +270,22 @@ $stageIndex = $info['progress_stage_index'];
                 <div class="row mt-4">
                     <div class="col-md-6 border-end">
                         <p class="text-muted mb-1 small uppercase fw-bold">Courier Partner</p>
-                        <h6 class="fw-bold"><?php echo $shipping['courier_name'] ?: 'Not Assigned'; ?></h6>
+                        <h6 class="fw-bold"><?php echo htmlspecialchars(($shipping['courier_name'] ?? '') ?: 'Not Assigned'); ?></h6>
                         
                         <p class="text-muted mb-1 mt-3 small uppercase fw-bold">Estimated Delivery</p>
-                        <h6 class="fw-bold text-success"><?php echo $shipping['estimated_delivery'] ?: 'TBD'; ?></h6>
+                        <h6 class="fw-bold text-success"><?php echo htmlspecialchars(($shipping['estimated_delivery'] ?? '') ?: 'TBD'); ?></h6>
                     </div>
                     <div class="col-md-6 ps-md-4">
                         <p class="text-muted mb-1 small uppercase fw-bold">Tracking Number</p>
                         <h6 class="fw-bold">
-                            <?php echo $shipping['tracking_number'] ?: 'Awaiting dispatch'; ?> 
-                            <?php if($shipping['tracking_url']): ?>
-                                <a href="<?php echo $shipping['tracking_url']; ?>" target="_blank" class="ms-2"><i class="fas fa-external-link-alt"></i></a>
+                            <?php echo htmlspecialchars(($shipping['tracking_number'] ?? '') ?: 'Awaiting dispatch'); ?> 
+                            <?php if(!empty($shipping['tracking_url'])): ?>
+                                <a href="<?php echo htmlspecialchars($shipping['tracking_url']); ?>" target="_blank" class="ms-2"><i class="fas fa-external-link-alt"></i></a>
                             <?php endif; ?>
                         </h6>
                         
                         <p class="text-muted mb-1 mt-3 small uppercase fw-bold">Payment Method</p>
-                        <h6 class="fw-bold"><?php echo strtoupper($order['payment_method']); ?></h6>
+                        <h6 class="fw-bold"><?php echo strtoupper((string)($order['payment_method'] ?? 'COD')); ?></h6>
                     </div>
                 </div>
             </div>

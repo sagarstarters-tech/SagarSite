@@ -99,57 +99,59 @@ $seoData = $seoService->getPageSeo($entity_type, $entity_id, [
 /**
  * Ensure social images are absolute URLs and use consistent protocols.
  */
-function makeAbsoluteUrl($path) {
-    if (empty($path)) return '';
-    
-    // 1. If path is already an absolute URL, return it
-    if (strpos($path, 'http') === 0) {
-        return $path;
-    }
-    
-    $cleanPath = ltrim($path, '/');
-    
-    // Determine the base filename path
-    // If it contains a slash, assume it's already a relative path like 'assets/images/...'
-    // Otherwise, assume it's a filename intended for the default product image directory
-    if (strpos($cleanPath, '/') !== false) {
-        $resourcePath = $cleanPath;
-    } else {
-        // Fallback: If ASSETS_URL exists, try to use it, otherwise hardcode
-        $resourcePath = 'assets/images/' . $cleanPath;
-    }
-
-    // Determine protocol and host
-    $scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? "https" : "http";
-    if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
-        $scheme = "https";
-    }
-    
-    // Force HTTPS on production if defined
-    if (defined('APP_ENV') && APP_ENV === 'production') {
-        $scheme = "https";
-    }
-
-    // 2. Check if SITE_URL is a full URL or just a path
-    $siteUrl = defined('SITE_URL') ? rtrim(SITE_URL, '/') : '';
-    
-    if (strpos($siteUrl, 'http') === 0) {
-        // SITE_URL is a full URL. Swap protocol if it doesn't match current environment's security
-        $finalUrl = $siteUrl . '/' . $resourcePath;
-        if ($scheme === 'https' && strpos($finalUrl, 'http://') === 0) {
-            $finalUrl = str_replace('http://', 'https://', $finalUrl);
+if (!function_exists('makeAbsoluteUrl')) {
+    function makeAbsoluteUrl($path) {
+        if (empty($path)) return '';
+        
+        // 1. If path is already an absolute URL, return it
+        if (strpos($path, 'http') === 0) {
+            return $path;
         }
-        return $finalUrl;
+        
+        $cleanPath = ltrim($path, '/');
+        
+        // Determine the base filename path
+        // If it contains a slash, assume it's already a relative path like 'assets/images/...'
+        // Otherwise, assume it's a filename intended for the default product image directory
+        if (strpos($cleanPath, '/') !== false) {
+            $resourcePath = $cleanPath;
+        } else {
+            // Fallback: If ASSETS_URL exists, try to use it, otherwise hardcode
+            $resourcePath = 'assets/images/' . $cleanPath;
+        }
+
+        // Determine protocol and host
+        $scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? "https" : "http";
+        if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+            $scheme = "https";
+        }
+        
+        // Force HTTPS on production if defined
+        if (defined('APP_ENV') && APP_ENV === 'production') {
+            $scheme = "https";
+        }
+
+        // 2. Check if SITE_URL is a full URL or just a path
+        $siteUrl = defined('SITE_URL') ? rtrim(SITE_URL, '/') : '';
+        
+        if (strpos($siteUrl, 'http') === 0) {
+            // SITE_URL is a full URL. Swap protocol if it doesn't match current environment's security
+            $finalUrl = $siteUrl . '/' . $resourcePath;
+            if ($scheme === 'https' && strpos($finalUrl, 'http://') === 0) {
+                $finalUrl = str_replace('http://', 'https://', $finalUrl);
+            }
+            return $finalUrl;
+        }
+        
+        // 3. SITE_URL is a path prefix or empty
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        $baseUrl = $siteUrl; // e.g., "/store" or ""
+        
+        $finalPath = $baseUrl . '/' . $resourcePath;
+        $finalPath = preg_replace('#/+#', '/', '/' . $finalPath);
+        
+        return $scheme . "://" . $host . $finalPath;
     }
-    
-    // 3. SITE_URL is a path prefix or empty
-    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-    $baseUrl = $siteUrl; // e.g., "/store" or ""
-    
-    $finalPath = $baseUrl . '/' . $resourcePath;
-    $finalPath = preg_replace('#/+#', '/', '/' . $finalPath);
-    
-    return $scheme . "://" . $host . $finalPath;
 }
 
 if (!function_exists('encode_social_url_path')) {

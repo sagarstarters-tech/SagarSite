@@ -119,7 +119,7 @@ $total_pages = ceil($total_items / $limit);
                                             };
                                             ?>
                                             <span class="badge <?php echo $badgeClass; ?> px-2 py-1 rounded-pill">
-                                                <?php echo strtoupper($q['status']); ?>
+                                                <?php echo strtoupper((string)($q['status'] ?? '')); ?>
                                             </span>
                                         </td>
                                         <td><?php echo $q['attempts']; ?> / <?php echo $q['max_attempts']; ?></td>

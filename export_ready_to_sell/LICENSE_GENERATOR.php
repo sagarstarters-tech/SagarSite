@@ -237,11 +237,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <script>
 function copyToClipboard(text, btn) {
-    navigator.clipboard.writeText(text).then(() => {
-        const orig = btn.innerText;
-        btn.innerText = '✅ Copied!';
-        setTimeout(() => { btn.innerText = orig; }, 2000);
-    });
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(() => {
+            showCopiedStatus(btn);
+        }).catch(() => {
+            fallbackCopy(text, btn);
+        });
+    } else {
+        fallbackCopy(text, btn);
+    }
+}
+
+function fallbackCopy(text, btn) {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-9999px';
+    textArea.style.top = '0';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+        document.execCommand('copy');
+        showCopiedStatus(btn);
+    } catch (err) {
+        prompt('Copy manually:', text);
+    }
+    document.body.removeChild(textArea);
+}
+
+function showCopiedStatus(btn) {
+    const orig = btn.innerText;
+    btn.innerText = '✅ Copied!';
+    setTimeout(() => { btn.innerText = orig; }, 2000);
 }
 </script>
 

@@ -31,7 +31,7 @@ class AuthMiddleware
         }
 
         // 2. CSRF Check for Admin POST requests (only after auth is verified)
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             require_once __DIR__ . '/../helpers/csrf.php';
             csrf_verify();
         }

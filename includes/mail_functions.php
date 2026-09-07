@@ -66,10 +66,16 @@ function getEmailTemplate($conn, $key) {
  * @return string Parsed content
  */
 function parseTemplate($content, $vars) {
-    foreach ($vars as $key => $value) {
-        $content = str_replace('{' . $key . '}', $value, $content);
+    if ($content === null) {
+        $content = '';
     }
-    return $content;
+    if (!is_array($vars)) {
+        return (string)$content;
+    }
+    foreach ($vars as $key => $value) {
+        $content = str_replace('{' . $key . '}', (string)($value ?? ''), (string)$content);
+    }
+    return (string)$content;
 }
 
 /**
@@ -216,7 +222,8 @@ function sendOrderConfirmationEmail($conn, $order_id, $customer_email, $customer
     }
     
     $settings_q2 = $conn->query("SELECT setting_value FROM settings WHERE setting_key = 'admin_email'");
-    $admin_email = $settings_q2->fetch_assoc()['setting_value'] ?? SMTP_USER;
+    $default_smtp_user = defined('SMTP_USER') ? SMTP_USER : '';
+    $admin_email = ($settings_q2 && $row2 = $settings_q2->fetch_assoc()) ? ($row2['setting_value'] ?? $default_smtp_user) : $default_smtp_user;
 
     // Prevent duplicate order confirmation emails for the same order
     if ($conn && !empty($order_id)) {
@@ -553,7 +560,8 @@ function sendOrderConfirmationEmail($conn, $order_id, $customer_email, $customer
         try {
             $admin_mail = getMailerInstance();
             $admin_mail->addAddress($admin_email, 'Store Administrator');
-            $admin_mail->addReplyTo($customer_email ?? SMTP_USER, $customer_name);
+            $default_smtp_user = defined('SMTP_USER') ? SMTP_USER : '';
+            $admin_mail->addReplyTo($customer_email ?: $default_smtp_user, $customer_name);
             $admin_mail->isHTML(true);
 
             // Fetch template
@@ -602,7 +610,7 @@ function sendOrderStatusEmail($conn, $order_id, $customer_email, $customer_name,
     
     // 1. Check if emails are enabled globally
     $settings_q = $conn->query("SELECT setting_value FROM settings WHERE setting_key = 'enable_email_notifications'");
-    $emails_enabled = $settings_q->fetch_assoc()['setting_value'] ?? '0';
+    $emails_enabled = ($settings_q && $row = $settings_q->fetch_assoc()) ? ($row['setting_value'] ?? '0') : '0';
     
     if ($emails_enabled !== '1') {
         return false; // Emails are disabled

@@ -39,19 +39,21 @@ if (empty($_SESSION['cart'])) {
 
 // Fetch cart products
 $safe_ids = implode(',', array_map('intval', array_keys($_SESSION['cart'])));
-$result = $conn->query("SELECT * FROM products WHERE id IN ($safe_ids)");
+$result = !empty($safe_ids) ? $conn->query("SELECT * FROM products WHERE id IN ($safe_ids)") : false;
 
 $cart_items = [];
 $subtotal = 0;
-while ($row = $result->fetch_assoc()) {
-    $qty = (int) $_SESSION['cart'][$row['id']];
-    if ($qty > $row['stock']) {
-        $qty = $row['stock'];
-    }
-    if ($qty > 0) {
-        $row['qty'] = $qty;
-        $subtotal += (float) $row['price'] * $qty;
-        $cart_items[] = $row;
+if ($result) {
+    while ($row = $result->fetch_assoc()) {
+        $qty = (int) $_SESSION['cart'][$row['id']];
+        if ($qty > $row['stock']) {
+            $qty = $row['stock'];
+        }
+        if ($qty > 0) {
+            $row['qty'] = $qty;
+            $subtotal += (float) $row['price'] * $qty;
+            $cart_items[] = $row;
+        }
     }
 }
 
