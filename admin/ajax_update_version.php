@@ -20,11 +20,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // 1. Action: Sync Export Ready-to-Sell Package
     if ($action === 'sync_export_package') {
-        $res = VersionManager::syncExportPackage(false);
-        if ($res['success']) {
+        if (ob_get_level()) {
+            @ob_clean();
+        }
+        $res = VersionManager::syncExportPackage(true);
+        header('Content-Type: application/json; charset=utf-8');
+        if (!empty($res['success'])) {
             echo json_encode([
                 'success'        => true,
-                'message'        => "Export package successfully updated to {$res['version']}! ({$res['files_count']} files, {$res['size_mb']} MB)",
+                'message'        => "Export package successfully updated to " . ($res['version'] ?? '') . "! (" . ($res['files_count'] ?? 0) . " files, " . ($res['size_mb'] ?? 0) . " MB)",
                 'export_package' => $res
             ]);
         } else {

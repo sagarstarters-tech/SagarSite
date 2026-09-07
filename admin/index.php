@@ -544,12 +544,10 @@ a.dash-btn-white:hover {
                         <p class="text-muted mb-1.5" style="font-size: 0.76rem; line-height: 1.4;">
                             Code update ya Git commit par <code>export_ready_to_sell/</code> package auto-update ho jata hai (Local only — Hostinger push se permanently blocked).
                         </p>
-                        <?php if ($export_meta): ?>
-                        <div class="text-secondary small d-flex justify-content-between flex-wrap gap-1" style="font-size: 0.72rem;">
+                        <div class="text-secondary small d-flex justify-content-between flex-wrap gap-1" id="exportPackageInfoBox" style="font-size: 0.72rem;">
                             <span><i class="fas fa-file-archive text-primary me-1"></i> Package: <strong><?php echo htmlspecialchars($export_meta['size_mb'] ?? '48.7'); ?> MB</strong> (<?php echo intval($export_meta['total_files'] ?? 0); ?> files)</span>
                             <span><i class="far fa-clock text-primary me-1"></i> Synced: <strong><?php echo !empty($export_meta['build_time']) ? date('M d, H:i', strtotime($export_meta['build_time'])) : 'Just now'; ?></strong></span>
                         </div>
-                        <?php endif; ?>
                     </div>
                     <?php else: ?>
                     <div class="p-3 mb-3 rounded-3 border" style="background: #f8fafc; border-left: 4px solid #10b981 !important;">
@@ -768,21 +766,42 @@ document.addEventListener('DOMContentLoaded', function() {
                 method: 'POST',
                 body: fd
             })
-            .then(res => res.json())
-            .then(data => {
+            .then(res => res.text())
+            .then(text => {
                 syncExportBtn.disabled = false;
-                if (data.success) {
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch(e) {
+                    console.error("Non-JSON server response:", text);
+                    if (alertBox) {
+                        alertBox.className = 'alert alert-danger py-2 px-3 small rounded-3 mb-0';
+                        alertBox.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i> Packaging response error. Check console.';
+                        alertBox.classList.remove('d-none');
+                    }
+                    syncExportBtn.innerHTML = '<i class="fas fa-sync-alt me-1"></i> Sync Package';
+                    return;
+                }
+
+                if (data && data.success) {
                     syncExportBtn.innerHTML = '<i class="fas fa-check me-1"></i> Synced!';
                     if (alertBox) {
                         alertBox.className = 'alert alert-success py-2 px-3 small rounded-3 mb-0';
                         alertBox.innerHTML = '<i class="fas fa-check-circle me-1"></i> ' + data.message;
                         alertBox.classList.remove('d-none');
                     }
+                    if (data.export_package) {
+                        const infoBox = document.getElementById('exportPackageInfoBox');
+                        if (infoBox) {
+                            infoBox.innerHTML = `<span><i class="fas fa-file-archive text-primary me-1"></i> Package: <strong>${data.export_package.size_mb || '48.7'} MB</strong> (${data.export_package.files_count || 0} files)</span>
+                            <span><i class="far fa-clock text-primary me-1"></i> Synced: <strong>Just now</strong></span>`;
+                        }
+                    }
                 } else {
                     syncExportBtn.innerHTML = '<i class="fas fa-exclamation-circle me-1"></i> Error';
                     if (alertBox) {
                         alertBox.className = 'alert alert-danger py-2 px-3 small rounded-3 mb-0';
-                        alertBox.innerHTML = '<i class="fas fa-exclamation-circle me-1"></i> ' + (data.message || 'Sync failed.');
+                        alertBox.innerHTML = '<i class="fas fa-exclamation-circle me-1"></i> ' + ((data && data.message) ? data.message : 'Sync failed.');
                         alertBox.classList.remove('d-none');
                     }
                 }
@@ -795,7 +814,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 syncExportBtn.innerHTML = '<i class="fas fa-sync-alt me-1"></i> Sync Package';
                 if (alertBox) {
                     alertBox.className = 'alert alert-danger py-2 px-3 small rounded-3 mb-0';
-                    alertBox.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i> Network error during packaging.';
+                    alertBox.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i> Request failed: ' + (err.message || 'Network error');
                     alertBox.classList.remove('d-none');
                 }
             });
