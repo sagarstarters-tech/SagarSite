@@ -257,6 +257,23 @@ $active_tab = $_GET['tab'] ?? 'colors';
                                 </div>
                             </div>
 
+                            <!-- Contextual Hover Tooltips Toggle -->
+                            <div class="mb-4 p-3 rounded-3" style="background:#f0fdf4; border:1px solid #bbf7d0;">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <div class="fw-bold"><i class="fas fa-comment-dots me-2 text-success"></i>Interactive Contextual Tooltips</div>
+                                        <small class="text-muted">Display modern floating tooltips on buttons, icons, and links explaining their purpose on mouse hover.</small>
+                                    </div>
+                                    <div class="form-check form-switch fs-4 mb-0">
+                                        <input class="form-check-input" type="checkbox" role="switch"
+                                               id="hoverTooltipsToggle"
+                                               <?php echo (!isset($theme['enable_hover_tooltips']) || $theme['enable_hover_tooltips'] === '1') ? 'checked' : ''; ?>>
+                                        <input type="hidden" name="enable_hover_tooltips" id="hover_tooltips_hidden"
+                                               value="<?php echo htmlspecialchars($theme['enable_hover_tooltips'] ?? '1'); ?>">
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Background Color -->
                             <div class="mb-4 d-flex align-items-start gap-3">
                                 <input type="color" name="theme_bg_color" id="theme_bg_color"
@@ -652,6 +669,15 @@ document.addEventListener('DOMContentLoaded', function () {
     if (acToggle && acHidden) {
         acToggle.addEventListener('change', function () {
             acHidden.value = acToggle.checked ? '1' : '0';
+        });
+    }
+
+    // ── Contextual Hover Tooltips toggle ─────────────────────
+    var htToggle = document.getElementById('hoverTooltipsToggle');
+    var htHidden = document.getElementById('hover_tooltips_hidden');
+    if (htToggle && htHidden) {
+        htToggle.addEventListener('change', function () {
+            htHidden.value = htToggle.checked ? '1' : '0';
         });
     }
 

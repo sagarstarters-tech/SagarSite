@@ -39,6 +39,7 @@ class ThemeService
             'theme_footer_layout'      => 'default',
             'theme_sticky_header'      => '1',
             'auto_text_contrast'       => '1',
+            'enable_hover_tooltips'    => '1',
         ];
     }
 
@@ -129,7 +130,7 @@ class ThemeService
         if ($key === 'theme_mode') {
             return in_array($val, ['light', 'dark']) ? $val : 'light';
         }
-        if ($key === 'theme_sticky_header' || $key === 'auto_text_contrast') {
+        if ($key === 'theme_sticky_header' || $key === 'auto_text_contrast' || $key === 'enable_hover_tooltips') {
             return in_array($val, ['0', '1']) ? $val : '1';
         }
         // Font family, header_style, footer_layout — strip tags

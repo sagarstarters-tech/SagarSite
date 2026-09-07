@@ -150,7 +150,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['subscribe_email'])) {
 <!-- Animations Custom JS -->
 <script src="<?php echo ASSETS_URL; ?>/js/animations.js" defer></script>
 <!-- Contextual Tooltip Engine JS -->
+<?php if (!isset($global_settings['enable_hover_tooltips']) || $global_settings['enable_hover_tooltips'] == '1'): ?>
 <script src="<?php echo ASSETS_URL; ?>/js/tooltip-engine.js?v=<?php echo file_exists(__DIR__ . '/../assets/js/tooltip-engine.js') ? filemtime(__DIR__ . '/../assets/js/tooltip-engine.js') : '1.0'; ?>" defer></script>
+<?php endif; ?>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {

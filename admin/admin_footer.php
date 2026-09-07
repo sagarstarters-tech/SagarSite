@@ -420,6 +420,8 @@ document.addEventListener('DOMContentLoaded', function() {
 <!-- MDB JS -->
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.js"></script>
 <!-- Universal Contextual Tooltip Engine JS -->
+<?php if (!isset($global_settings['enable_hover_tooltips']) || $global_settings['enable_hover_tooltips'] == '1'): ?>
 <script src="<?php echo ASSETS_URL; ?>/js/tooltip-engine.js?v=<?php echo file_exists(__DIR__ . '/../assets/js/tooltip-engine.js') ? filemtime(__DIR__ . '/../assets/js/tooltip-engine.js') : time(); ?>" defer></script>
+<?php endif; ?>
 </body>
 </html>

@@ -379,8 +379,10 @@ if (isset($product['slug'])) {
     <link rel="preload" href="<?php echo ASSETS_URL; ?>/css/language-switcher.css?v=<?php echo file_exists(__DIR__ . '/../assets/css/language-switcher.css') ? filemtime(__DIR__ . '/../assets/css/language-switcher.css') : '1.0'; ?>" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link href="<?php echo ASSETS_URL; ?>/css/language-switcher.css?v=<?php echo file_exists(__DIR__ . '/../assets/css/language-switcher.css') ? filemtime(__DIR__ . '/../assets/css/language-switcher.css') : '1.0'; ?>" rel="stylesheet"></noscript>
     <!-- Universal Contextual Tooltip CSS (Non-blocking) -->
+    <?php if (!isset($global_settings['enable_hover_tooltips']) || $global_settings['enable_hover_tooltips'] == '1'): ?>
     <link rel="preload" href="<?php echo ASSETS_URL; ?>/css/tooltip.css?v=<?php echo file_exists(__DIR__ . '/../assets/css/tooltip.css') ? filemtime(__DIR__ . '/../assets/css/tooltip.css') : '1.0'; ?>" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link href="<?php echo ASSETS_URL; ?>/css/tooltip.css?v=<?php echo file_exists(__DIR__ . '/../assets/css/tooltip.css') ? filemtime(__DIR__ . '/../assets/css/tooltip.css') : '1.0'; ?>" rel="stylesheet"></noscript>
+    <?php endif; ?>
 
     <?php
     require_once 'ScriptService.php';
