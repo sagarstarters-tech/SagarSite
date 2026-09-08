@@ -437,23 +437,32 @@ $active_tab = $_GET['tab'] ?? 'trust';
                                    value="<?php echo htmlspecialchars(get_home_setting('home_selector_badge', $default_keys['home_selector_badge'])); ?>" placeholder="SMART PRODUCT FINDER">
                             <div class="form-text">Headline ke upar tag badge (e.g. SMART PRODUCT FINDER).</div>
                         </div>
-                        <div class="col-md-5">
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold">Badge Icon</label>
+                            <input type="text" name="home_selector_badge_icon" class="form-control" 
+                                   value="<?php echo htmlspecialchars(get_home_setting('home_selector_badge_icon', $default_keys['home_selector_badge_icon'])); ?>" placeholder="fas fa-sliders">
+                            <div class="form-text">FontAwesome icon (e.g. <code>fas fa-sliders</code>).</div>
+                        </div>
+                        <div class="col-md-4">
                             <label class="form-label fw-bold">Selector Headline</label>
                             <input type="text" name="home_selector_title" class="form-control" 
                                    value="<?php echo htmlspecialchars(get_home_setting('home_selector_title', $default_keys['home_selector_title'])); ?>" placeholder="Find the Right Starter for Your Motor">
                             <div class="form-text">Section ka main title heading.</div>
                         </div>
-                        <div class="col-md-2">
-                            <label class="form-label fw-bold">Search Button Text</label>
-                            <input type="text" name="home_selector_btn_text" class="form-control" 
-                                   value="<?php echo htmlspecialchars(get_home_setting('home_selector_btn_text', $default_keys['home_selector_btn_text'])); ?>" placeholder="Find Starters">
-                            <div class="form-text">Search button ka label name.</div>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label fw-bold text-success"><i class="fas fa-link me-1"></i>Default Page URL</label>
-                            <input type="text" name="home_selector_action_url" class="form-control" 
-                                   value="<?php echo htmlspecialchars(get_home_setting('home_selector_action_url', $default_keys['home_selector_action_url'])); ?>" placeholder="shop.php">
-                            <div class="form-text">Default search action page (e.g. <code>shop.php</code>).</div>
+                        <div class="col-md-3">
+                            <div class="row g-2">
+                                <div class="col-7">
+                                    <label class="form-label fw-bold">Button Text</label>
+                                    <input type="text" name="home_selector_btn_text" class="form-control" 
+                                           value="<?php echo htmlspecialchars(get_home_setting('home_selector_btn_text', $default_keys['home_selector_btn_text'])); ?>" placeholder="Find Starters">
+                                </div>
+                                <div class="col-5">
+                                    <label class="form-label fw-bold text-success">Action URL</label>
+                                    <input type="text" name="home_selector_action_url" class="form-control" 
+                                           value="<?php echo htmlspecialchars(get_home_setting('home_selector_action_url', $default_keys['home_selector_action_url'])); ?>" placeholder="shop.php">
+                                </div>
+                            </div>
+                            <div class="form-text">Search button ka label name &amp; URL.</div>
                         </div>
                         <div class="col-12">
                             <label class="form-label fw-bold">Selector Subtitle / Instructions</label>
@@ -487,6 +496,12 @@ $active_tab = $_GET['tab'] ?? 'trust';
                                         <input type="text" name="home_selector_phase1_text" class="form-control form-control-sm" 
                                                value="<?php echo htmlspecialchars(get_home_setting('home_selector_phase1_text', $default_keys['home_selector_phase1_text'])); ?>">
                                         <div class="form-text">Button par dikhne wala text (e.g. <code>All Phases</code>).</div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label small fw-bold">Icon (FontAwesome)</label>
+                                        <input type="text" name="home_selector_phase1_icon" class="form-control form-control-sm" 
+                                               value="<?php echo htmlspecialchars(get_home_setting('home_selector_phase1_icon', $default_keys['home_selector_phase1_icon'])); ?>" placeholder="fas fa-bolt">
+                                        <div class="form-text">FontAwesome icon (e.g. <code>fas fa-bolt</code>).</div>
                                     </div>
                                     <div class="mb-2">
                                         <label class="form-label small fw-bold">Filter Value (Empty for All)</label>

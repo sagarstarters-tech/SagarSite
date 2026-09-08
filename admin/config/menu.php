@@ -221,6 +221,14 @@ return [
                 'icon'  => 'fa-th-large',
                 'url'   => 'manage_homepage.php',
                 'pages' => ['manage_homepage.php'],
+                'params' => ['tab' => [null, '', 'trust', 'cats', 'prods', 'promo', 'stats', 'cta', 'faq']],
+            ],
+            [
+                'label' => 'Starter Selector',
+                'icon'  => 'fa-sliders',
+                'url'   => 'manage_homepage.php?tab=selector',
+                'pages' => ['manage_homepage.php'],
+                'params' => ['tab' => ['selector']],
             ],
             [
                 'label' => 'Hero Slider',
