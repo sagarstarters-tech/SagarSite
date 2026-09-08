@@ -34,16 +34,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $tmp_name = $_FILES['site_logo']['tmp_name'];
             $file_name = $_FILES['site_logo']['name'];
             $ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
-            $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+            $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
             
             if (in_array($ext, $allowed)) {
                 $new_name = 'logo_' . time() . '.' . $ext;
-                // Save to uploads/media/images/ — consistent with media library
+                $uploaded = false;
+                $saved_path = '';
+
+                // Try uploads/media/images/ first
                 $upload_dir = '../uploads/media/images/';
-                if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
-                if (move_uploaded_file($tmp_name, $upload_dir . $new_name)) {
-                    $full_path = 'uploads/media/images/' . $new_name;
-                    $safe_path = $conn->real_escape_string($full_path);
+                if (!is_dir($upload_dir)) @mkdir($upload_dir, 0777, true);
+                if (@move_uploaded_file($tmp_name, $upload_dir . $new_name)) {
+                    $saved_path = 'uploads/media/images/' . $new_name;
+                    $uploaded = true;
+                } else {
+                    // Fallback to assets/images/ if uploads is permission-restricted
+                    $fallback_dir = '../assets/images/';
+                    if (!is_dir($fallback_dir)) @mkdir($fallback_dir, 0777, true);
+                    if (@move_uploaded_file($tmp_name, $fallback_dir . $new_name)) {
+                        $saved_path = 'assets/images/' . $new_name;
+                        $uploaded = true;
+                    }
+                }
+
+                if ($uploaded) {
+                    $safe_path = $conn->real_escape_string($saved_path);
                     $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('header_logo_image', '$safe_path') ON DUPLICATE KEY UPDATE setting_value='$safe_path'");
                 }
             }
@@ -54,16 +69,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $tmp_name = $_FILES['footer_logo']['tmp_name'];
             $file_name = $_FILES['footer_logo']['name'];
             $ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
-            $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+            $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
             
             if (in_array($ext, $allowed)) {
                 $new_name = 'footer_logo_' . time() . '.' . $ext;
-                // Save to uploads/media/images/ — consistent with media library
+                $uploaded = false;
+                $saved_path = '';
+
+                // Try uploads/media/images/ first
                 $upload_dir = '../uploads/media/images/';
-                if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
-                if (move_uploaded_file($tmp_name, $upload_dir . $new_name)) {
-                    $full_path = 'uploads/media/images/' . $new_name;
-                    $safe_path = $conn->real_escape_string($full_path);
+                if (!is_dir($upload_dir)) @mkdir($upload_dir, 0777, true);
+                if (@move_uploaded_file($tmp_name, $upload_dir . $new_name)) {
+                    $saved_path = 'uploads/media/images/' . $new_name;
+                    $uploaded = true;
+                } else {
+                    // Fallback to assets/images/ if uploads is permission-restricted
+                    $fallback_dir = '../assets/images/';
+                    if (!is_dir($fallback_dir)) @mkdir($fallback_dir, 0777, true);
+                    if (@move_uploaded_file($tmp_name, $fallback_dir . $new_name)) {
+                        $saved_path = 'assets/images/' . $new_name;
+                        $uploaded = true;
+                    }
+                }
+
+                if ($uploaded) {
+                    $safe_path = $conn->real_escape_string($saved_path);
                     $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('footer_logo_image', '$safe_path') ON DUPLICATE KEY UPDATE setting_value='$safe_path'");
                 }
             }

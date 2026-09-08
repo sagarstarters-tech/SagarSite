@@ -408,6 +408,36 @@ return [
         ],
     ],
 
+    // ── Admin & Site Details ──────────────────────────────────
+    [
+        'label'    => 'Admin &amp; Site Details',
+        'icon'     => 'fa-user-shield',
+        'pages'    => ['manage_admin_site.php'],
+        'children' => [
+            [
+                'label'  => 'All Administrators',
+                'icon'   => 'fa-users-cog',
+                'url'    => 'manage_admin_site.php?tab=admins',
+                'pages'  => ['manage_admin_site.php'],
+                'params' => ['tab' => ['admins', null, '']],
+            ],
+            [
+                'label'  => 'Website Details',
+                'icon'   => 'fa-store',
+                'url'    => 'manage_admin_site.php?tab=site_details',
+                'pages'  => ['manage_admin_site.php'],
+                'params' => ['tab' => ['site_details']],
+            ],
+            [
+                'label'  => 'Custom Parameters',
+                'icon'   => 'fa-database',
+                'url'    => 'manage_admin_site.php?tab=custom_keys',
+                'pages'  => ['manage_admin_site.php'],
+                'params' => ['tab' => ['custom_keys']],
+            ],
+        ],
+    ],
+
     // ── Settings & Configs ────────────────────────────────────
     [
         'label'    => 'Settings &amp; Configs',
