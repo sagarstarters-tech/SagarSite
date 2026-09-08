@@ -599,7 +599,7 @@ $admin_count = count($admin_list);
                             <th>Phone</th>
                             <th>Status</th>
                             <th>Created On</th>
-                            <th class="text-end pe-4">Actions</th>
+                            <th class="text-end pe-4" style="width: 100px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -651,35 +651,47 @@ $admin_count = count($admin_list);
                             <td class="text-muted small">
                                 <?php echo date('M d, Y', strtotime($adm['created_at'] ?? 'now')); ?>
                             </td>
-                            <td class="text-end pe-4">
-                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 me-1 edit-admin-btn"
-                                    data-id="<?php echo $adm['id']; ?>"
-                                    data-name="<?php echo htmlspecialchars($adm['name']); ?>"
-                                    data-email="<?php echo htmlspecialchars($adm['email']); ?>"
-                                    data-phone="<?php echo htmlspecialchars($adm['phone'] ?? ''); ?>"
-                                    data-address="<?php echo htmlspecialchars($adm['address'] ?? ''); ?>"
-                                    data-city="<?php echo htmlspecialchars($adm['city'] ?? ''); ?>"
-                                    data-state="<?php echo htmlspecialchars($adm['state'] ?? ''); ?>"
-                                    data-country="<?php echo htmlspecialchars($adm['country'] ?? ''); ?>"
-                                    data-zip="<?php echo htmlspecialchars($adm['zip_code'] ?? ''); ?>"
-                                    data-photo="<?php echo htmlspecialchars($avatar_url); ?>">
-                                    <i class="fas fa-edit me-1"></i>Edit
-                                </button>
-                                <?php if (!$is_current_user && $admin_count > 1): ?>
-                                    <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 delete-admin-btn"
+                            <td class="text-end pe-4" style="white-space: nowrap;">
+                                <div class="d-flex align-items-center justify-content-end gap-1 flex-nowrap">
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-3 d-inline-flex align-items-center justify-content-center edit-admin-btn"
+                                        style="width: 32px; height: 32px;"
+                                        title="Edit Administrator"
                                         data-id="<?php echo $adm['id']; ?>"
-                                        data-name="<?php echo htmlspecialchars($adm['name']); ?>">
-                                        <i class="fas fa-trash-alt me-1"></i>Delete
+                                        data-name="<?php echo htmlspecialchars($adm['name']); ?>"
+                                        data-email="<?php echo htmlspecialchars($adm['email']); ?>"
+                                        data-phone="<?php echo htmlspecialchars($adm['phone'] ?? ''); ?>"
+                                        data-address="<?php echo htmlspecialchars($adm['address'] ?? ''); ?>"
+                                        data-city="<?php echo htmlspecialchars($adm['city'] ?? ''); ?>"
+                                        data-state="<?php echo htmlspecialchars($adm['state'] ?? ''); ?>"
+                                        data-country="<?php echo htmlspecialchars($adm['country'] ?? ''); ?>"
+                                        data-zip="<?php echo htmlspecialchars($adm['zip_code'] ?? ''); ?>"
+                                        data-photo="<?php echo htmlspecialchars($avatar_url); ?>">
+                                        <i class="fas fa-edit"></i>
                                     </button>
-                                <?php elseif ($is_current_user): ?>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" disabled title="You cannot delete your own account">
-                                        <i class="fas fa-lock me-1"></i>Self
-                                    </button>
-                                <?php else: ?>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" disabled title="At least one administrator must remain">
-                                        <i class="fas fa-shield-alt me-1"></i>Protected
-                                    </button>
-                                <?php endif; ?>
+                                    <?php if (!$is_current_user && $admin_count > 1): ?>
+                                        <button type="button" class="btn btn-sm btn-outline-danger rounded-3 d-inline-flex align-items-center justify-content-center delete-admin-btn"
+                                            style="width: 32px; height: 32px;"
+                                            title="Delete Administrator"
+                                            data-id="<?php echo $adm['id']; ?>"
+                                            data-name="<?php echo htmlspecialchars($adm['name']); ?>">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    <?php elseif ($is_current_user): ?>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-3 d-inline-flex align-items-center justify-content-center"
+                                            style="width: 32px; height: 32px;"
+                                            disabled
+                                            title="You cannot delete your own account">
+                                            <i class="fas fa-user-lock"></i>
+                                        </button>
+                                    <?php else: ?>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-3 d-inline-flex align-items-center justify-content-center"
+                                            style="width: 32px; height: 32px;"
+                                            disabled
+                                            title="At least one administrator must remain">
+                                            <i class="fas fa-shield-alt"></i>
+                                        </button>
+                                    <?php endif; ?>
+                                </div>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -1059,7 +1071,7 @@ $admin_count = count($admin_list);
                             <th class="ps-4" style="width: 25%;">Setting Key</th>
                             <th style="width: 45%;">Value</th>
                             <th style="width: 15%;">Type</th>
-                            <th class="text-end pe-4" style="width: 15%;">Actions</th>
+                            <th class="text-end pe-4" style="width: 100px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1090,22 +1102,31 @@ $admin_count = count($admin_list);
                                     <span class="badge bg-light text-dark border rounded-pill px-2 py-1 small">Text / Config</span>
                                 <?php endif; ?>
                             </td>
-                            <td class="text-end pe-4">
-                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-1 me-1 edit-setting-btn"
-                                    data-key="<?php echo htmlspecialchars($s_key); ?>"
-                                    data-val="<?php echo htmlspecialchars($s_val); ?>">
-                                    <i class="fas fa-pencil-alt me-1"></i>Edit
-                                </button>
-                                <?php if (!$is_protected): ?>
-                                    <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-1 delete-setting-btn"
-                                        data-key="<?php echo htmlspecialchars($s_key); ?>">
-                                        <i class="fas fa-trash-alt me-1"></i>Delete
+                            <td class="text-end pe-4" style="white-space: nowrap;">
+                                <div class="d-flex align-items-center justify-content-end gap-1 flex-nowrap">
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-3 d-inline-flex align-items-center justify-content-center edit-setting-btn"
+                                        style="width: 32px; height: 32px;"
+                                        title="Edit Parameter"
+                                        data-key="<?php echo htmlspecialchars($s_key); ?>"
+                                        data-val="<?php echo htmlspecialchars($s_val); ?>">
+                                        <i class="fas fa-pencil-alt"></i>
                                     </button>
-                                <?php else: ?>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1" disabled title="Core parameter cannot be deleted">
-                                        <i class="fas fa-lock"></i>
-                                    </button>
-                                <?php endif; ?>
+                                    <?php if (!$is_protected): ?>
+                                        <button type="button" class="btn btn-sm btn-outline-danger rounded-3 d-inline-flex align-items-center justify-content-center delete-setting-btn"
+                                            style="width: 32px; height: 32px;"
+                                            title="Delete Parameter"
+                                            data-key="<?php echo htmlspecialchars($s_key); ?>">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    <?php else: ?>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-3 d-inline-flex align-items-center justify-content-center"
+                                            style="width: 32px; height: 32px;"
+                                            disabled
+                                            title="Core parameter cannot be deleted">
+                                            <i class="fas fa-lock"></i>
+                                        </button>
+                                    <?php endif; ?>
+                                </div>
                             </td>
                         </tr>
                         <?php endforeach; ?>
