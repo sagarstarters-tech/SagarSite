@@ -214,7 +214,7 @@ if ($selector_enabled == '1'):
         <div class="row align-items-center g-4">
             <div class="col-lg-4 col-12">
                 <span class="section-badge-pill mb-2">
-                    <i class="fas fa-sliders me-1"></i> <?php echo htmlspecialchars(get_home_cfg('home_selector_badge', 'SMART PRODUCT FINDER')); ?>
+                    <i class="<?php echo htmlspecialchars(get_home_cfg('home_selector_badge_icon', 'fas fa-sliders')); ?> me-1"></i> <?php echo htmlspecialchars(get_home_cfg('home_selector_badge', 'SMART PRODUCT FINDER')); ?>
                 </span>
                 <h3 class="montserrat fw-bold mb-2 text-dark"><?php echo htmlspecialchars(get_home_cfg('home_selector_title', 'Find the Right Starter for Your Motor')); ?></h3>
                 <p class="text-muted mb-0 small"><?php echo htmlspecialchars(get_home_cfg('home_selector_subtitle', 'Select your motor specifications to get the exact matching starter panel instantly')); ?></p>
@@ -230,7 +230,7 @@ if ($selector_enabled == '1'):
                             </label>
                             <div class="selector-pill-group" id="phasePills">
                                 <span class="selector-pill-btn active" data-filter="phase" data-val="<?php echo htmlspecialchars(get_home_cfg('home_selector_phase1_val', '')); ?>" data-link="<?php echo htmlspecialchars(get_home_cfg('home_selector_phase1_link', '')); ?>">
-                                    <i class="fas fa-bolt"></i> <?php echo htmlspecialchars(get_home_cfg('home_selector_phase1_text', 'All Phases')); ?>
+                                    <i class="<?php echo htmlspecialchars(get_home_cfg('home_selector_phase1_icon', 'fas fa-bolt')); ?>"></i> <?php echo htmlspecialchars(get_home_cfg('home_selector_phase1_text', 'All Phases')); ?>
                                 </span>
                                 <span class="selector-pill-btn" data-filter="phase" data-val="<?php echo htmlspecialchars(get_home_cfg('home_selector_phase2_val', '1-Phase')); ?>" data-link="<?php echo htmlspecialchars(get_home_cfg('home_selector_phase2_link', 'shop.php?phase=1-Phase')); ?>">
                                     <?php echo htmlspecialchars(get_home_cfg('home_selector_phase2_text', '1-Phase (220V)')); ?>
@@ -283,7 +283,7 @@ if ($selector_enabled == '1'):
                                 </div>
                                 <div class="col-md-4 col-12">
                                     <button type="submit" class="btn-finder-search">
-                                        <i class="fas fa-search me-1"></i> <?php echo htmlspecialchars(get_home_cfg('home_selector_btn_text', 'Find Starters')); ?>
+                                        <i class="<?php echo htmlspecialchars(get_home_cfg('home_selector_btn_icon', 'fas fa-search')); ?> me-1"></i> <?php echo htmlspecialchars(get_home_cfg('home_selector_btn_text', 'Find Starters')); ?>
                                     </button>
                                 </div>
                             </div>

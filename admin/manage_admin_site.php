@@ -43,7 +43,9 @@ $protected_system_keys = [
     'admin_logo_height',
     'site_name',
     'site_version',
-    'auto_version_enabled'
+    'auto_version_enabled',
+    'home_selector_title',
+    'home_selector_badge'
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -382,6 +384,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (isset($_POST['currency_symbol'])) save_site_setting($conn, 'currency_symbol', trim($_POST['currency_symbol']));
         $maintenance_mode = isset($_POST['maintenance_mode']) ? '1' : '0';
         save_site_setting($conn, 'maintenance_mode', $maintenance_mode);
+
+        // Smart Product Finder / Starter Selector (Homepage Widget)
+        $selector_enabled = isset($_POST['home_selector_enabled']) ? '1' : '0';
+        save_site_setting($conn, 'home_selector_enabled', $selector_enabled);
+        if (isset($_POST['home_selector_badge'])) save_site_setting($conn, 'home_selector_badge', trim($_POST['home_selector_badge']));
+        if (isset($_POST['home_selector_title'])) save_site_setting($conn, 'home_selector_title', trim($_POST['home_selector_title']));
+        if (isset($_POST['home_selector_subtitle'])) save_site_setting($conn, 'home_selector_subtitle', trim($_POST['home_selector_subtitle']));
+        if (isset($_POST['home_selector_btn_text'])) save_site_setting($conn, 'home_selector_btn_text', trim($_POST['home_selector_btn_text']));
+        if (isset($_POST['home_selector_action_url'])) save_site_setting($conn, 'home_selector_action_url', trim($_POST['home_selector_action_url']));
+
+        if (isset($_POST['home_selector_step1_label'])) save_site_setting($conn, 'home_selector_step1_label', trim($_POST['home_selector_step1_label']));
+        if (isset($_POST['home_selector_phase1_text'])) save_site_setting($conn, 'home_selector_phase1_text', trim($_POST['home_selector_phase1_text']));
+        if (isset($_POST['home_selector_phase2_text'])) save_site_setting($conn, 'home_selector_phase2_text', trim($_POST['home_selector_phase2_text']));
+        if (isset($_POST['home_selector_phase3_text'])) save_site_setting($conn, 'home_selector_phase3_text', trim($_POST['home_selector_phase3_text']));
+
+        if (isset($_POST['home_selector_step2_label'])) save_site_setting($conn, 'home_selector_step2_label', trim($_POST['home_selector_step2_label']));
+        if (isset($_POST['home_selector_hp1_text'])) save_site_setting($conn, 'home_selector_hp1_text', trim($_POST['home_selector_hp1_text']));
+        if (isset($_POST['home_selector_hp2_text'])) save_site_setting($conn, 'home_selector_hp2_text', trim($_POST['home_selector_hp2_text']));
+        if (isset($_POST['home_selector_hp3_text'])) save_site_setting($conn, 'home_selector_hp3_text', trim($_POST['home_selector_hp3_text']));
+        if (isset($_POST['home_selector_hp4_text'])) save_site_setting($conn, 'home_selector_hp4_text', trim($_POST['home_selector_hp4_text']));
+
+        if (isset($_POST['home_selector_step3_label'])) save_site_setting($conn, 'home_selector_step3_label', trim($_POST['home_selector_step3_label']));
+        if (isset($_POST['home_selector_app1_text'])) save_site_setting($conn, 'home_selector_app1_text', trim($_POST['home_selector_app1_text']));
+        if (isset($_POST['home_selector_app2_text'])) save_site_setting($conn, 'home_selector_app2_text', trim($_POST['home_selector_app2_text']));
+        if (isset($_POST['home_selector_app3_text'])) save_site_setting($conn, 'home_selector_app3_text', trim($_POST['home_selector_app3_text']));
 
         set_flash('success', 'Website details have been updated successfully.');
         header("Location: manage_admin_site.php?tab=site_details");
@@ -1020,6 +1047,179 @@ $admin_count = count($admin_list);
                             <div class="col-md-6">
                                 <label class="form-label fw-bold text-dark"><i class="fab fa-whatsapp text-success me-2"></i>WhatsApp Direct Link</label>
                                 <input type="text" name="social_whatsapp" class="form-control form-control-sm" value="<?php echo htmlspecialchars($all_settings['social_whatsapp'] ?? ''); ?>" placeholder="https://wa.me/91...">
+                            </div>
+                        </div>
+
+            <!-- Section 5: Smart Product Finder / Starter Selector (Homepage Widget) -->
+            <div class="col-12">
+                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                    <div class="card-header bg-white border-0 pt-4 pb-2 px-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <div>
+                            <h5 class="fw-bold mb-1 text-primary d-flex align-items-center gap-2">
+                                <i class="fas fa-sliders"></i>
+                                <span>Smart Product Finder / Starter Selector (Homepage)</span>
+                            </h5>
+                            <p class="text-muted small mb-0">Manage all headlines, badges, phase options, HP ratings, application options, and search button on the storefront homepage finder widget.</p>
+                        </div>
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="form-check form-switch mb-0">
+                                <input class="form-check-input" type="checkbox" name="home_selector_enabled" id="home_selector_enabled" value="1" <?php echo (!isset($all_settings['home_selector_enabled']) || $all_settings['home_selector_enabled'] == '1') ? 'checked' : ''; ?>>
+                                <label class="form-check-label fw-bold small text-dark" for="home_selector_enabled">Show on Homepage</label>
+                            </div>
+                            <a href="manage_homepage.php?tab=selector" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1">
+                                <i class="fas fa-external-link-alt me-1"></i>Full Visual Builder
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body px-4 py-3">
+                        
+                        <!-- Row 1: Section Header Text & Search Button -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold text-dark small">Badge Text</label>
+                                <input type="text" name="home_selector_badge" class="form-control" value="<?php echo htmlspecialchars($all_settings['home_selector_badge'] ?? 'SMART PRODUCT FINDER'); ?>" placeholder="SMART PRODUCT FINDER">
+                                <div class="form-text">Small pill badge above headline.</div>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label fw-bold text-dark small">Main Headline / Title</label>
+                                <input type="text" name="home_selector_title" class="form-control" value="<?php echo htmlspecialchars($all_settings['home_selector_title'] ?? 'Find the Right Starter for Your Motor'); ?>" placeholder="Find the Right Starter for Your Motor">
+                                <div class="form-text">Primary headline for this section.</div>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label fw-bold text-dark small">Search Button Text</label>
+                                <input type="text" name="home_selector_btn_text" class="form-control" value="<?php echo htmlspecialchars($all_settings['home_selector_btn_text'] ?? 'Find Starters'); ?>" placeholder="Find Starters">
+                                <div class="form-text">Submit button label name.</div>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label fw-bold text-dark small">Default Action URL</label>
+                                <input type="text" name="home_selector_action_url" class="form-control" value="<?php echo htmlspecialchars($all_settings['home_selector_action_url'] ?? 'shop.php'); ?>" placeholder="shop.php">
+                                <div class="form-text">Target catalog search page.</div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-bold text-dark small">Subtitle / Instructions</label>
+                                <input type="text" name="home_selector_subtitle" class="form-control" value="<?php echo htmlspecialchars($all_settings['home_selector_subtitle'] ?? 'Select your motor specifications to get the exact matching starter panel instantly'); ?>" placeholder="Select your motor specifications to get the exact matching starter panel instantly">
+                                <div class="form-text">Help text explaining the widget to farmers and customers.</div>
+                            </div>
+                        </div>
+
+                        <hr class="my-3 text-muted">
+
+                        <!-- Row 2: Step 1 Power Phase -->
+                        <div class="mb-3">
+                            <div class="row g-3 align-items-center mb-2">
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold text-primary small mb-0"><i class="fas fa-bolt me-1"></i>Step 1 Label</label>
+                                    <input type="text" name="home_selector_step1_label" class="form-control form-control-sm mt-1" value="<?php echo htmlspecialchars($all_settings['home_selector_step1_label'] ?? '1. Power Phase'); ?>">
+                                </div>
+                                <div class="col-md-8 text-md-end text-muted small pt-3">
+                                    Pill display text shown to customers for Power Phase selection.
+                                </div>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <div class="p-3 rounded-3 border bg-light">
+                                        <label class="form-label fw-semibold text-dark small mb-1">Phase Option 1 Text</label>
+                                        <input type="text" name="home_selector_phase1_text" class="form-control form-control-sm" value="<?php echo htmlspecialchars($all_settings['home_selector_phase1_text'] ?? 'All Phases'); ?>">
+                                        <div class="form-text text-muted" style="font-size: 0.75rem;">Default: All Phases</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="p-3 rounded-3 border bg-light">
+                                        <label class="form-label fw-semibold text-dark small mb-1">Phase Option 2 Text</label>
+                                        <input type="text" name="home_selector_phase2_text" class="form-control form-control-sm" value="<?php echo htmlspecialchars($all_settings['home_selector_phase2_text'] ?? '1-Phase (220V)'); ?>">
+                                        <div class="form-text text-muted" style="font-size: 0.75rem;">Default: 1-Phase (220V)</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="p-3 rounded-3 border bg-light">
+                                        <label class="form-label fw-semibold text-dark small mb-1">Phase Option 3 Text</label>
+                                        <input type="text" name="home_selector_phase3_text" class="form-control form-control-sm" value="<?php echo htmlspecialchars($all_settings['home_selector_phase3_text'] ?? '3-Phase (415V)'); ?>">
+                                        <div class="form-text text-muted" style="font-size: 0.75rem;">Default: 3-Phase (415V)</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-3 text-muted">
+
+                        <!-- Row 3: Step 2 Motor Rating (HP) -->
+                        <div class="mb-3">
+                            <div class="row g-3 align-items-center mb-2">
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold text-primary small mb-0"><i class="fas fa-gauge-high me-1"></i>Step 2 Label</label>
+                                    <input type="text" name="home_selector_step2_label" class="form-control form-control-sm mt-1" value="<?php echo htmlspecialchars($all_settings['home_selector_step2_label'] ?? '2. Motor Rating (HP)'); ?>">
+                                </div>
+                                <div class="col-md-8 text-md-end text-muted small pt-3">
+                                    Pill display text shown to customers for Motor Rating (HP) selection.
+                                </div>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <div class="p-3 rounded-3 border bg-light">
+                                        <label class="form-label fw-semibold text-dark small mb-1">HP Option 1 Text</label>
+                                        <input type="text" name="home_selector_hp1_text" class="form-control form-control-sm" value="<?php echo htmlspecialchars($all_settings['home_selector_hp1_text'] ?? 'All HP'); ?>">
+                                        <div class="form-text text-muted" style="font-size: 0.75rem;">Default: All HP</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="p-3 rounded-3 border bg-light">
+                                        <label class="form-label fw-semibold text-dark small mb-1">HP Option 2 Text</label>
+                                        <input type="text" name="home_selector_hp2_text" class="form-control form-control-sm" value="<?php echo htmlspecialchars($all_settings['home_selector_hp2_text'] ?? '1 - 3 HP'); ?>">
+                                        <div class="form-text text-muted" style="font-size: 0.75rem;">Default: 1 - 3 HP</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="p-3 rounded-3 border bg-light">
+                                        <label class="form-label fw-semibold text-dark small mb-1">HP Option 3 Text</label>
+                                        <input type="text" name="home_selector_hp3_text" class="form-control form-control-sm" value="<?php echo htmlspecialchars($all_settings['home_selector_hp3_text'] ?? '5 - 7.5 HP'); ?>">
+                                        <div class="form-text text-muted" style="font-size: 0.75rem;">Default: 5 - 7.5 HP</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="p-3 rounded-3 border bg-light">
+                                        <label class="form-label fw-semibold text-dark small mb-1">HP Option 4 Text</label>
+                                        <input type="text" name="home_selector_hp4_text" class="form-control form-control-sm" value="<?php echo htmlspecialchars($all_settings['home_selector_hp4_text'] ?? '10 - 25+ HP'); ?>">
+                                        <div class="form-text text-muted" style="font-size: 0.75rem;">Default: 10 - 25+ HP</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-3 text-muted">
+
+                        <!-- Row 4: Application / Motor Type -->
+                        <div class="mb-2">
+                            <div class="row g-3 align-items-center mb-2">
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold text-primary small mb-0"><i class="fas fa-industry me-1"></i>Application / Motor Type (Pills Under Phase)</label>
+                                    <input type="text" name="home_selector_step3_label" class="form-control form-control-sm mt-1" value="<?php echo htmlspecialchars($all_settings['home_selector_step3_label'] ?? '3. Application / Motor Type'); ?>">
+                                </div>
+                                <div class="col-md-8 text-md-end text-muted small pt-3">
+                                    Display labels for application type buttons shown beneath Power Phase.
+                                </div>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <div class="p-3 rounded-3 border bg-light">
+                                        <label class="form-label fw-semibold text-dark small mb-1"><i class="fas fa-water text-primary me-1"></i>App Option 1 Text</label>
+                                        <input type="text" name="home_selector_app1_text" class="form-control form-control-sm" value="<?php echo htmlspecialchars($all_settings['home_selector_app1_text'] ?? 'Submersible Pump'); ?>">
+                                        <div class="form-text text-muted" style="font-size: 0.75rem;">Default: Submersible Pump</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="p-3 rounded-3 border bg-light">
+                                        <label class="form-label fw-semibold text-dark small mb-1"><i class="fas fa-industry text-secondary me-1"></i>App Option 2 Text</label>
+                                        <input type="text" name="home_selector_app2_text" class="form-control form-control-sm" value="<?php echo htmlspecialchars($all_settings['home_selector_app2_text'] ?? 'Openwell / Monoblock'); ?>">
+                                        <div class="form-text text-muted" style="font-size: 0.75rem;">Default: Openwell / Monoblock</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="p-3 rounded-3 border bg-light">
+                                        <label class="form-label fw-semibold text-dark small mb-1"><i class="fas fa-cog text-warning me-1"></i>App Option 3 Text</label>
+                                        <input type="text" name="home_selector_app3_text" class="form-control form-control-sm" value="<?php echo htmlspecialchars($all_settings['home_selector_app3_text'] ?? 'Flour Mill / Heavy Motor'); ?>">
+                                        <div class="form-text text-muted" style="font-size: 0.75rem;">Default: Flour Mill / Heavy Motor</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 

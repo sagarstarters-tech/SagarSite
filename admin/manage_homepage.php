@@ -51,13 +51,16 @@ $default_keys = [
     // 4. Starter Selector Widget
     'home_selector_enabled'     => '1',
     'home_selector_badge'       => 'SMART PRODUCT FINDER',
+    'home_selector_badge_icon'  => 'fas fa-sliders',
     'home_selector_title'       => 'Find the Right Starter for Your Motor',
     'home_selector_subtitle'    => 'Select your motor specifications to get the exact matching starter panel instantly',
     'home_selector_btn_text'    => 'Find Starters',
+    'home_selector_btn_icon'    => 'fas fa-search',
     'home_selector_action_url'  => 'shop.php',
     
     'home_selector_step1_label' => '1. Power Phase',
     'home_selector_phase1_text' => 'All Phases',
+    'home_selector_phase1_icon' => 'fas fa-bolt',
     'home_selector_phase1_val'  => '',
     'home_selector_phase1_link' => '',
     'home_selector_phase2_text' => '1-Phase (220V)',
