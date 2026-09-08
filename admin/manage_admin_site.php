@@ -39,6 +39,8 @@ $protected_system_keys = [
     'maintenance_mode',
     'header_logo_image',
     'footer_logo_image',
+    'admin_logo_image',
+    'admin_logo_height',
     'site_name',
     'site_version',
     'auto_version_enabled'
@@ -327,6 +329,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     save_site_setting($conn, 'footer_logo_image', 'assets/images/' . $new_flogo);
                 }
             }
+        }
+
+        // Admin Panel Sidebar Logo Upload
+        if (isset($_FILES['admin_logo_image']) && $_FILES['admin_logo_image']['error'] === UPLOAD_ERR_OK) {
+            $tmp = $_FILES['admin_logo_image']['tmp_name'];
+            $ext = strtolower(pathinfo($_FILES['admin_logo_image']['name'], PATHINFO_EXTENSION));
+            if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'])) {
+                $new_adm_logo = 'admin_logo_' . time() . '.' . $ext;
+                $upload_dir = '../uploads/media/images/';
+                if (!is_dir($upload_dir)) @mkdir($upload_dir, 0777, true);
+                if (@move_uploaded_file($tmp, $upload_dir . $new_adm_logo)) {
+                    save_site_setting($conn, 'admin_logo_image', 'uploads/media/images/' . $new_adm_logo);
+                } elseif (@move_uploaded_file($tmp, '../assets/images/' . $new_adm_logo)) {
+                    save_site_setting($conn, 'admin_logo_image', 'assets/images/' . $new_adm_logo);
+                }
+            }
+        }
+        if (isset($_POST['admin_logo_height'])) {
+            save_site_setting($conn, 'admin_logo_height', (string)intval($_POST['admin_logo_height']));
         }
 
         // Contact & Location Details
@@ -764,6 +785,42 @@ $admin_count = count($admin_list);
                                 </div>
                                 <div class="col-4">
                                     <input type="number" name="footer_logo_height" class="form-control form-control-sm" value="<?php echo htmlspecialchars($all_settings['footer_logo_height'] ?? '35'); ?>" min="20" max="120">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Admin Panel Logo (Sidebar) -->
+                        <div class="mb-3 p-3 bg-light rounded-3 border" style="border-left: 4px solid #1b3c53 !important;">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <label class="form-label fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                                    <i class="fas fa-shield-alt text-primary"></i>
+                                    <span>Admin Panel Logo (Sidebar)</span>
+                                </label>
+                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2 py-0.5 small">Admin Sidebar</span>
+                            </div>
+                            <?php 
+                            $adm_logo = !empty($all_settings['admin_logo_image']) ? $all_settings['admin_logo_image'] : ($all_settings['header_logo_image'] ?? 'logo.jpg');
+                            $adm_logo_url = resolve_image_url($adm_logo);
+                            if (empty($adm_logo_url) || strpos($adm_logo_url, 'placeholder') !== false) {
+                                $fallback = file_exists(BASE_PATH . '/assets/images/logo.jpg') ? 'logo.jpg' : 'logo_1772118384.jpeg';
+                                $adm_logo_url = ASSETS_URL . '/images/' . $fallback;
+                            }
+                            ?>
+                            <div class="d-flex align-items-center gap-3 mb-2">
+                                <div class="p-2 rounded border text-center" style="min-width: 100px; background: #132435;">
+                                    <img src="<?php echo htmlspecialchars($adm_logo_url); ?>" alt="Admin Panel Logo" style="max-height: 45px; max-width: 120px; object-fit: contain;">
+                                </div>
+                                <div class="flex-grow-1">
+                                    <input type="file" name="admin_logo_image" class="form-control form-control-sm" accept="image/*">
+                                    <div class="small text-muted mt-1">Displayed at the top of the Admin Panel left sidebar. Recommended: PNG, JPG, or SVG on dark background.</div>
+                                </div>
+                            </div>
+                            <div class="row g-2 align-items-center">
+                                <div class="col-auto">
+                                    <label class="small text-muted mb-0">Admin Logo Height (px):</label>
+                                </div>
+                                <div class="col-4">
+                                    <input type="number" name="admin_logo_height" class="form-control form-control-sm" value="<?php echo htmlspecialchars($all_settings['admin_logo_height'] ?? '45'); ?>" min="20" max="120">
                                 </div>
                             </div>
                         </div>

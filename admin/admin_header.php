@@ -89,17 +89,18 @@ $version_metadata = VersionManager::getVersionMetadata($conn);
             <!-- Logo -->
             <div class="admin-sidebar-logo text-center">
                 <?php
-                $admin_logo_val = $global_settings['header_logo_image'] ?? 'logo.jpg';
+                $admin_logo_val = !empty($global_settings['admin_logo_image']) ? $global_settings['admin_logo_image'] : ($global_settings['header_logo_image'] ?? 'logo.jpg');
                 $admin_logo_url = function_exists('resolve_image_url') ? resolve_image_url($admin_logo_val) : '';
                 if (empty($admin_logo_url) || strpos($admin_logo_url, 'placeholder') !== false) {
                     $fallback = file_exists(BASE_PATH . '/assets/images/logo.jpg') ? 'logo.jpg' : 'logo_1772118384.jpeg';
                     $admin_logo_url = ASSETS_URL . '/images/' . $fallback;
                 }
+                $admin_logo_h = !empty($global_settings['admin_logo_height']) ? $global_settings['admin_logo_height'] : ($global_settings['header_logo_height'] ?? '45');
                 ?>
                 <img src="<?php echo htmlspecialchars($admin_logo_url); ?>"
                      alt="Logo"
                      class="img-fluid"
-                     style="height:<?php echo htmlspecialchars($global_settings['header_logo_height'] ?? '45'); ?>px; width:auto; object-fit:contain;">
+                     style="height:<?php echo htmlspecialchars($admin_logo_h); ?>px; width:auto; object-fit:contain;">
             </div>
 
             <!-- Menu -->
