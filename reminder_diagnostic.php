@@ -168,7 +168,7 @@ if ($ws && $ws->num_rows > 0) {
                 }
             }
         }
-    }
+
 
         if (!empty($t_json['data'])) {
             foreach ($t_json['data'] as $tpl) {
