@@ -514,6 +514,7 @@ button.ac-btn-refresh:active {
 
             <form id="settingsForm">
                 <?php if (function_exists('csrf_input')) echo csrf_input(); ?>
+                <input type="hidden" name="meta_template_lang" id="metaTplLang" value="<?php echo htmlspecialchars($settings['meta_template_lang'] ?? 'en'); ?>">
 
                 <div class="form-check form-switch p-3 bg-light rounded-3 mb-4 d-flex align-items-center justify-content-between">
                     <div>
@@ -560,8 +561,8 @@ button.ac-btn-refresh:active {
                             <textarea class="form-control mb-2" name="reminder_1_message" rows="3"><?php echo htmlspecialchars($settings['reminder_1_message'] ?? ''); ?></textarea>
                             <div class="input-group input-group-sm">
                                 <span class="input-group-text bg-light fw-semibold">Meta Template</span>
-                                <input type="text" class="form-control" name="meta_template_1" id="metaTpl1" value="<?php echo htmlspecialchars($settings['meta_template_1'] ?? ''); ?>" placeholder="Template name...">
-                                <button class="btn btn-outline-primary btn-sync-tpl" type="button" data-target="metaTpl1"><i class="fas fa-list"></i> Fetch</button>
+                                <input type="text" class="form-control font-monospace" name="meta_template_1" id="metaTpl1" value="<?php echo htmlspecialchars($settings['meta_template_1'] ?? ''); ?>" placeholder="e.g. order_status_updates">
+                                <button class="btn btn-outline-primary" type="button" onclick="openMetaTemplatePicker('metaTpl1')"><i class="fas fa-list me-1"></i> Fetch / Select</button>
                             </div>
                         </div>
                     </div>
@@ -571,8 +572,8 @@ button.ac-btn-refresh:active {
                             <textarea class="form-control mb-2" name="reminder_2_message" rows="3"><?php echo htmlspecialchars($settings['reminder_2_message'] ?? ''); ?></textarea>
                             <div class="input-group input-group-sm">
                                 <span class="input-group-text bg-light fw-semibold">Meta Template</span>
-                                <input type="text" class="form-control" name="meta_template_2" id="metaTpl2" value="<?php echo htmlspecialchars($settings['meta_template_2'] ?? ''); ?>" placeholder="Template name...">
-                                <button class="btn btn-outline-primary btn-sync-tpl" type="button" data-target="metaTpl2"><i class="fas fa-list"></i> Fetch</button>
+                                <input type="text" class="form-control font-monospace" name="meta_template_2" id="metaTpl2" value="<?php echo htmlspecialchars($settings['meta_template_2'] ?? ''); ?>" placeholder="e.g. order_status_updates">
+                                <button class="btn btn-outline-primary" type="button" onclick="openMetaTemplatePicker('metaTpl2')"><i class="fas fa-list me-1"></i> Fetch / Select</button>
                             </div>
                         </div>
                     </div>
@@ -582,8 +583,8 @@ button.ac-btn-refresh:active {
                             <textarea class="form-control mb-2" name="reminder_3_message" rows="3"><?php echo htmlspecialchars($settings['reminder_3_message'] ?? ''); ?></textarea>
                             <div class="input-group input-group-sm">
                                 <span class="input-group-text bg-light fw-semibold">Meta Template</span>
-                                <input type="text" class="form-control" name="meta_template_3" id="metaTpl3" value="<?php echo htmlspecialchars($settings['meta_template_3'] ?? ''); ?>" placeholder="Template name...">
-                                <button class="btn btn-outline-primary btn-sync-tpl" type="button" data-target="metaTpl3"><i class="fas fa-list"></i> Fetch</button>
+                                <input type="text" class="form-control font-monospace" name="meta_template_3" id="metaTpl3" value="<?php echo htmlspecialchars($settings['meta_template_3'] ?? ''); ?>" placeholder="e.g. order_status_updates">
+                                <button class="btn btn-outline-primary" type="button" onclick="openMetaTemplatePicker('metaTpl3')"><i class="fas fa-list me-1"></i> Fetch / Select</button>
                             </div>
                         </div>
                     </div>
@@ -593,8 +594,8 @@ button.ac-btn-refresh:active {
                             <textarea class="form-control mb-2" name="reminder_4_message" rows="3"><?php echo htmlspecialchars($settings['reminder_4_message'] ?? ''); ?></textarea>
                             <div class="input-group input-group-sm">
                                 <span class="input-group-text bg-light fw-semibold">Meta Template</span>
-                                <input type="text" class="form-control" name="meta_template_4" id="metaTpl4" value="<?php echo htmlspecialchars($settings['meta_template_4'] ?? ''); ?>" placeholder="Template name...">
-                                <button class="btn btn-outline-primary btn-sync-tpl" type="button" data-target="metaTpl4"><i class="fas fa-list"></i> Fetch</button>
+                                <input type="text" class="form-control font-monospace" name="meta_template_4" id="metaTpl4" value="<?php echo htmlspecialchars($settings['meta_template_4'] ?? ''); ?>" placeholder="e.g. order_status_updates">
+                                <button class="btn btn-outline-primary" type="button" onclick="openMetaTemplatePicker('metaTpl4')"><i class="fas fa-list me-1"></i> Fetch / Select</button>
                             </div>
                         </div>
                     </div>
@@ -652,21 +653,6 @@ button.ac-btn-refresh:active {
                             </div>
                         </div>
                     </div>
-                </div>
-
-                <div id="metaTemplatesList" class="mb-4 d-none p-3 border rounded-3 bg-white shadow-sm overflow-auto" style="max-height: 250px;">
-                    <h6 class="fw-bold mb-2">Select Approved Meta Template</h6>
-                    <table class="table table-sm table-hover mb-0">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Language</th>
-                                <th>Category</th>
-                                <th class="text-end">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tplTableBody"></tbody>
-                    </table>
                 </div>
 
                 <div class="d-flex justify-content-end">
@@ -856,6 +842,63 @@ button.ac-btn-refresh:active {
                     </button>
                 </div>
                 <button type="button" class="btn btn-secondary px-4 rounded-3" data-mdb-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== UNIVERSAL META TEMPLATE PICKER MODAL ===== -->
+<div class="modal fade" id="metaTemplatePickerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-bottom p-4">
+                <div>
+                    <h5 class="modal-title fw-bold text-primary"><i class="fab fa-whatsapp me-2"></i>Select Meta Approved Template</h5>
+                    <small class="text-muted">Live sync from your WhatsApp Business Account (WABA).</small>
+                </div>
+                <button type="button" class="btn-close" data-mdb-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
+                    <input type="text" id="tplSearchFilter" class="form-control form-control-sm flex-grow-1 bg-light" placeholder="🔍 Search template by name..." oninput="filterTemplateRows(this.value)">
+                    <button type="button" id="btnRefreshModalTpl" class="btn btn-sm btn-outline-primary fw-bold rounded-pill text-nowrap" onclick="fetchMetaTemplates()">
+                        <i class="fas fa-sync-alt me-1"></i> Refresh from Meta
+                    </button>
+                </div>
+
+                <div id="modalTplStatus" class="alert alert-info py-2 small d-none"></div>
+
+                <!-- Quick Selection Chips -->
+                <div class="p-2 mb-3 bg-light rounded-3 d-flex align-items-center gap-2 flex-wrap small">
+                    <span class="fw-bold text-muted"><i class="fas fa-magic me-1"></i> Quick Select:</span>
+                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 rounded-pill" onclick="selectTemplate('order_status_updates', 'en')">order_status_updates</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 rounded-pill" onclick="selectTemplate('order_confirmation', 'en')">order_confirmation</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 rounded-pill" onclick="selectTemplate('hello_world', 'en_US')">hello_world (Test)</button>
+                </div>
+
+                <div class="table-responsive border rounded-3 bg-white" style="max-height: 380px; overflow-y: auto;">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light sticky-top">
+                            <tr>
+                                <th>Template Name & Preview</th>
+                                <th>Lang</th>
+                                <th>Status</th>
+                                <th class="text-end pe-3">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modalTplTableBody">
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-1"></i> Loading templates from Meta...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer bg-light border-top p-3 justify-content-between">
+                <div class="small text-muted">
+                    <i class="fas fa-info-circle me-1"></i> Templates must be created and approved in Meta WhatsApp Business Manager.
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm px-3 rounded-pill" data-mdb-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
@@ -1536,76 +1579,192 @@ $(document).ready(function() {
 
 // Meta Templates Sync
 let currentTplTarget = null;
-document.addEventListener('DOMContentLoaded', function() {
-    const btnSyncs = document.querySelectorAll('.btn-sync-tpl');
-    const tplStatus = document.getElementById('tplSyncStatus');
-    const tplList = document.getElementById('metaTemplatesList');
-    const tplTableBody = document.getElementById('tplTableBody');
 
-    btnSyncs.forEach(btn => {
-        btn.addEventListener('click', function() {
-            currentTplTarget = this.getAttribute('data-target');
+function openMetaTemplatePicker(targetInputId) {
+    currentTplTarget = targetInputId;
+    const modalEl = document.getElementById('metaTemplatePickerModal');
+    if (modalEl) {
+        let modal = null;
+        if (typeof mdb !== 'undefined' && mdb.Modal) {
+            modal = mdb.Modal.getInstance(modalEl) || new mdb.Modal(modalEl);
+        } else if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+            modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+        }
+        if (modal) {
+            modal.show();
+        } else if (window.jQuery && $(modalEl).modal) {
+            $(modalEl).modal('show');
+        } else {
+            modalEl.classList.add('show');
+            modalEl.style.display = 'block';
+        }
+        fetchMetaTemplates();
+    }
+}
 
-            btnSyncs.forEach(b => { b.disabled = true; });
-            const originalHtml = this.innerHTML;
-            this.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+function hideMetaTemplatePicker() {
+    const modalEl = document.getElementById('metaTemplatePickerModal');
+    if (!modalEl) return;
+    try {
+        if (typeof mdb !== 'undefined' && mdb.Modal) {
+            const m = mdb.Modal.getInstance(modalEl);
+            if (m) m.hide();
+        }
+    } catch (e) {}
+    try {
+        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+            const m = bootstrap.Modal.getInstance(modalEl);
+            if (m) m.hide();
+        }
+    } catch (e) {}
+    if (window.jQuery && $(modalEl).modal) {
+        try { $(modalEl).modal('hide'); } catch(e){}
+    }
+    // Clean up backdrop & classes
+    modalEl.classList.remove('show');
+    modalEl.style.display = 'none';
+    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+    document.body.classList.remove('modal-open');
+    document.body.style.removeProperty('overflow');
+    document.body.style.removeProperty('padding-right');
+}
 
-            tplStatus.className = 'small mt-2 fw-bold text-info';
-            tplStatus.innerText = 'Connecting to Meta API...';
-            tplStatus.classList.remove('d-none');
-            tplList.classList.add('d-none');
+function fetchMetaTemplates() {
+    const statusEl = document.getElementById('modalTplStatus');
+    const tbodyEl = document.getElementById('modalTplTableBody');
+    const btnRefresh = document.getElementById('btnRefreshModalTpl');
 
-            fetch('ajax_sync_meta_templates.php?waba_id=')
-                .then(res => res.json())
-                .then(data => {
-                    btnSyncs.forEach(b => { b.disabled = false; });
-                    this.innerHTML = originalHtml;
+    if (btnRefresh) {
+        btnRefresh.disabled = true;
+        btnRefresh.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Fetching...';
+    }
 
-                    if (data.error) {
-                        tplStatus.className = 'small mt-2 fw-bold text-danger';
-                        tplStatus.innerText = 'Error: ' + data.error;
-                    } else if (data.templates && data.templates.length > 0) {
-                        tplStatus.className = 'small mt-2 fw-bold text-success';
-                        tplStatus.innerText = 'Templates fetched successfully!';
+    if (statusEl) {
+        statusEl.className = 'alert alert-info py-2 small';
+        statusEl.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Connecting to Meta Graph API...';
+        statusEl.classList.remove('d-none');
+    }
 
-                        tplTableBody.innerHTML = '';
-                        data.templates.forEach(tpl => {
-                            const row = `
-                                <tr>
-                                    <td class="fw-bold fs-7">${tpl.name}</td>
-                                    <td class="fs-7">${tpl.language}</td>
-                                    <td class="fs-7"><span class="badge bg-light text-dark">${tpl.category}</span></td>
-                                    <td class="text-end">
-                                        <button type="button" class="btn btn-sm btn-primary py-1 px-2" onclick="selectTemplate('${tpl.name}', '${tpl.language}')">Select</button>
-                                    </td>
-                                </tr>
-                            `;
-                            tplTableBody.insertAdjacentHTML('beforeend', row);
-                        });
-                        tplList.classList.remove('d-none');
-                    } else {
-                        tplStatus.className = 'small mt-2 fw-bold text-warning';
-                        tplStatus.innerText = 'No approved templates found.';
-                    }
-                })
-                .catch(err => {
-                    btnSyncs.forEach(b => { b.disabled = false; });
-                    this.innerHTML = originalHtml;
-                    tplStatus.className = 'small mt-2 fw-bold text-danger';
-                    tplStatus.innerText = 'Network error: ' + err.message;
-                });
+    fetch('ajax_sync_meta_templates.php')
+        .then(res => res.json())
+        .then(data => {
+            if (btnRefresh) {
+                btnRefresh.disabled = false;
+                btnRefresh.innerHTML = '<i class="fas fa-sync-alt me-1"></i> Refresh from Meta';
+            }
+
+            if (data.error) {
+                if (statusEl) {
+                    statusEl.className = 'alert alert-danger py-3 small';
+                    statusEl.innerHTML = `
+                        <div class="fw-bold mb-1"><i class="fas fa-exclamation-triangle me-1"></i> ${htmlEscape(data.error)}</div>
+                        <div class="mt-2">
+                            <a href="manage_whatsapp_settings.php" target="_blank" class="btn btn-sm btn-outline-danger fw-bold me-2">
+                                <i class="fas fa-cog me-1"></i> Configure WhatsApp Credentials
+                            </a>
+                            <span class="text-muted">Or use the <strong>Quick Select</strong> buttons above.</span>
+                        </div>
+                    `;
+                }
+                if (tbodyEl) {
+                    tbodyEl.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted">
+                                <div class="text-danger mb-2"><i class="fas fa-exclamation-circle fs-4"></i></div>
+                                <div class="small fw-semibold text-danger">${htmlEscape(data.error)}</div>
+                                <div class="small text-muted mt-1">You can also type your template name manually in the box and save.</div>
+                            </td>
+                        </tr>
+                    `;
+                }
+            } else if (data.templates && data.templates.length > 0) {
+                if (statusEl) {
+                    statusEl.className = 'alert alert-success py-2 small';
+                    statusEl.innerHTML = `<i class="fas fa-check-circle me-1"></i> Found <strong>${data.templates.length}</strong> template(s) in Meta Account!`;
+                }
+
+                if (tbodyEl) {
+                    tbodyEl.innerHTML = '';
+                    data.templates.forEach(tpl => {
+                        const isApproved = tpl.status === 'APPROVED';
+                        const statusBadge = isApproved 
+                            ? '<span class="badge bg-success">APPROVED</span>' 
+                            : `<span class="badge bg-warning text-dark">${htmlEscape(tpl.status)}</span>`;
+
+                        const paramBadge = (tpl.param_count && tpl.param_count > 0)
+                            ? `<span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 ms-1">${tpl.param_count} params</span>`
+                            : '';
+                        const headerBadge = (tpl.header_type && tpl.header_type !== 'NONE')
+                            ? `<span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 ms-1"><i class="fas fa-image me-1"></i>${htmlEscape(tpl.header_type)}</span>`
+                            : '';
+
+                        const bodyText = tpl.body_text || '';
+                        const bodyPreview = bodyText ? `<div class="small text-muted font-monospace mt-1 text-truncate" style="max-width:320px;" title="${htmlEscape(bodyText)}">${htmlEscape(bodyText)}</div>` : '';
+
+                        const row = `
+                            <tr class="tpl-row" data-name="${htmlEscape((tpl.name || '').toLowerCase())}">
+                                <td>
+                                    <div class="fw-bold text-dark d-flex align-items-center">
+                                        ${htmlEscape(tpl.name)} ${paramBadge} ${headerBadge}
+                                    </div>
+                                    ${bodyPreview}
+                                </td>
+                                <td><span class="badge bg-light text-dark border">${htmlEscape(tpl.language || 'en')}</span></td>
+                                <td>${statusBadge}</td>
+                                <td class="text-end pe-3">
+                                    <button type="button" class="btn btn-sm btn-primary py-1 px-3 rounded-pill" onclick="selectTemplate('${htmlEscape(tpl.name)}', '${htmlEscape(tpl.language || 'en')}')">Select</button>
+                                </td>
+                            </tr>
+                        `;
+                        tbodyEl.insertAdjacentHTML('beforeend', row);
+                    });
+                }
+            } else {
+                if (statusEl) {
+                    statusEl.className = 'alert alert-warning py-2 small';
+                    statusEl.innerHTML = '<i class="fas fa-info-circle me-1"></i> No approved templates found in this WhatsApp Business Account.';
+                }
+                if (tbodyEl) {
+                    tbodyEl.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">No templates found in Meta account.</td></tr>';
+                }
+            }
+        })
+        .catch(err => {
+            if (btnRefresh) {
+                btnRefresh.disabled = false;
+                btnRefresh.innerHTML = '<i class="fas fa-sync-alt me-1"></i> Refresh from Meta';
+            }
+            if (statusEl) {
+                statusEl.className = 'alert alert-danger py-2 small';
+                statusEl.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i> Network error: ' + htmlEscape(err.message);
+            }
+            if (tbodyEl) {
+                tbodyEl.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-danger">Network error fetching templates.</td></tr>`;
+            }
         });
+}
+
+function filterTemplateRows(keyword) {
+    const term = (keyword || '').toLowerCase().trim();
+    document.querySelectorAll('.tpl-row').forEach(row => {
+        const name = row.getAttribute('data-name') || '';
+        row.style.display = (!term || name.includes(term)) ? '' : 'none';
     });
-});
+}
 
 function selectTemplate(name, lang) {
     if (currentTplTarget) {
-        document.getElementById(currentTplTarget).value = name;
-        document.getElementById('metaTplLang').value = lang;
-        document.getElementById('metaTemplatesList').classList.add('d-none');
-        document.getElementById('tplSyncStatus').className = 'small mt-2 fw-bold text-success';
-        document.getElementById('tplSyncStatus').innerText = 'Template selected: ' + name;
+        const input = document.getElementById(currentTplTarget);
+        if (input) {
+            input.value = name;
+            input.classList.add('is-valid');
+            setTimeout(() => input.classList.remove('is-valid'), 2500);
+        }
+        if (document.getElementById('metaTplLang')) {
+            document.getElementById('metaTplLang').value = lang || 'en';
+        }
     }
+    hideMetaTemplatePicker();
 }
 
 function triggerCronNow() {

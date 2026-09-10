@@ -1,6 +1,6 @@
 <?php
 include_once __DIR__ . '/../includes/session_setup.php';
-require_once '../includes/db_connect.php';
+require_once __DIR__ . '/../includes/db_connect.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -14,12 +14,16 @@ $set_q = $conn->query("SELECT api_token, phone_number_id, waba_id FROM whatsapp_
 $settings = $set_q ? $set_q->fetch_assoc() : [];
 
 // Allow query / post parameters to override stored values so user can test without saving first
-$token    = trim($_GET['token'] ?? ($_POST['token'] ?? ($settings['api_token'] ?? '')));
-$phone_id = trim($_GET['phone_id'] ?? ($_POST['phone_id'] ?? ($settings['phone_number_id'] ?? '')));
-$waba_id  = trim($_GET['waba_id'] ?? ($_POST['waba_id'] ?? ($settings['waba_id'] ?? '')));
+$rawToken   = trim($_GET['token'] ?? ($_POST['token'] ?? ''));
+$rawPhoneId = trim($_GET['phone_id'] ?? ($_POST['phone_id'] ?? ''));
+$rawWabaId  = trim($_GET['waba_id'] ?? ($_POST['waba_id'] ?? ''));
+
+$token    = !empty($rawToken) ? $rawToken : trim($settings['api_token'] ?? '');
+$phone_id = !empty($rawPhoneId) ? $rawPhoneId : trim($settings['phone_number_id'] ?? '');
+$waba_id  = !empty($rawWabaId) ? $rawWabaId : trim($settings['waba_id'] ?? '');
 
 if (empty($token) || (empty($phone_id) && empty($waba_id))) {
-    echo json_encode(['error' => 'Please enter your Meta API Token and either Phone Number ID or WABA ID.']);
+    echo json_encode(['error' => 'Please configure your Meta API Token and Phone Number ID in Admin -> WhatsApp Notifs -> Settings first.']);
     exit;
 }
 
@@ -49,28 +53,51 @@ function meta_curl_get($url, $token) {
     return ['success' => true, 'data' => $json, 'http_code' => $httpCode];
 }
 
-// Step 1: If WABA ID is missing, try to auto-discover it via Phone Number ID
-if (empty($waba_id) && !empty($phone_id)) {
-    // Try latest Graph API endpoints
-    $api_versions = ['v21.0', 'v20.0', 'v19.0'];
-    $discovered_waba = null;
-
-    foreach ($api_versions as $ver) {
-        $check = meta_curl_get("https://graph.facebook.com/{$ver}/{$phone_id}?fields=whatsapp_business_account_id,display_phone_number,name_status", $token);
-        if ($check['success'] && !empty($check['data']['whatsapp_business_account_id'])) {
-            $discovered_waba = $check['data']['whatsapp_business_account_id'];
-            break;
+// Step 1: If WABA ID is missing, auto-discover it via debug_token or /me
+if (empty($waba_id)) {
+    // Discovery Method A: debug_token inspection (returns exact WABA IDs in granular_scopes)
+    $debug = meta_curl_get("https://graph.facebook.com/debug_token?input_token=" . urlencode($token) . "&access_token=" . urlencode($token), $token);
+    if ($debug['success'] && !empty($debug['data']['data']['granular_scopes'])) {
+        foreach ($debug['data']['data']['granular_scopes'] as $scopeItem) {
+            $scopeName = $scopeItem['scope'] ?? '';
+            if (in_array($scopeName, ['whatsapp_business_management', 'whatsapp_business_messaging']) && !empty($scopeItem['target_ids'])) {
+                $waba_id = $scopeItem['target_ids'][0];
+                break;
+            }
         }
     }
 
-    if ($discovered_waba) {
-        $waba_id = $discovered_waba;
-        // Auto-save discovered WABA ID into database
+    // Discovery Method B: check businesses associated with token
+    if (empty($waba_id)) {
+        $checkMe = meta_curl_get("https://graph.facebook.com/v21.0/me?fields=id,name,businesses{owned_whatsapp_business_accounts,client_whatsapp_business_accounts}", $token);
+        if ($checkMe['success'] && !empty($checkMe['data']['businesses']['data'])) {
+            foreach ($checkMe['data']['businesses']['data'] as $biz) {
+                if (!empty($biz['owned_whatsapp_business_accounts']['data'][0]['id'])) {
+                    $waba_id = $biz['owned_whatsapp_business_accounts']['data'][0]['id'];
+                    break;
+                }
+                if (!empty($biz['client_whatsapp_business_accounts']['data'][0]['id'])) {
+                    $waba_id = $biz['client_whatsapp_business_accounts']['data'][0]['id'];
+                    break;
+                }
+            }
+        }
+    }
+
+    // Discovery Method C: check accounts via /me/accounts
+    if (empty($waba_id)) {
+        $checkAcc = meta_curl_get("https://graph.facebook.com/v21.0/me/accounts?fields=id,name", $token);
+        if ($checkAcc['success'] && !empty($checkAcc['data']['data'][0]['id'])) {
+            $waba_id = $checkAcc['data']['data'][0]['id'];
+        }
+    }
+
+    if (!empty($waba_id)) {
         $safe_waba = $conn->real_escape_string($waba_id);
         $conn->query("UPDATE whatsapp_settings SET waba_id = '$safe_waba' WHERE id = 1");
     } else {
         echo json_encode([
-            'error' => 'Could not auto-detect WhatsApp Business Account ID (WABA ID) from Phone Number ID. Please enter your WABA ID manually in the "WABA ID" field.'
+            'error' => 'WhatsApp Business Account ID (WABA ID) could not be auto-detected. Please copy your "WhatsApp Business Account ID" from Meta WhatsApp Manager (under API Setup tab) and enter it in Admin -> WhatsApp Notifs -> Settings.'
         ]);
         exit;
     }
