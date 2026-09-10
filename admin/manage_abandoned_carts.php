@@ -938,14 +938,22 @@ function renderEmptyTable() {
     $('#paginationContainer').empty();
 }
 
+let currentLoadedCarts = {};
+
 function renderCartsTable(carts) {
     if (!carts || carts.length === 0) {
         renderEmptyTable();
         return;
     }
 
+    currentLoadedCarts = {};
+    carts.forEach(cart => {
+        currentLoadedCarts[cart.id] = cart;
+    });
+
     let html = '';
     carts.forEach(cart => {
+        const cartId = parseInt(cart.id);
         const customerName = cart.customer_name || 'Guest User';
         const customerPhone = cart.customer_phone || 'No Phone';
         const initials = customerName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
@@ -963,7 +971,7 @@ function renderCartsTable(carts) {
             const isSent = Boolean(cart['reminder_' + i + '_sent']);
             let cls = isSent ? 'done' : 'pending';
             let title = isSent ? `Reminder ${i}: Sent on ${cart['reminder_' + i + '_sent']}` : `Reminder ${i}: Not Sent`;
-            timelineHtml += `<div class="ac-reminder-step ${cls}" title="${htmlEscape(title)}" style="cursor:pointer;" onclick='openCartModal(${cartJsonEscaped})'>${i}</div>`;
+            timelineHtml += `<div class="ac-reminder-step ${cls}" title="${htmlEscape(title)}" style="cursor:pointer;" onclick="openCartModalById(${cartId})">${i}</div>`;
         }
         timelineHtml += `<span class="small text-muted fw-bold ms-1">${step}/4</span></div>`;
 
@@ -981,24 +989,22 @@ function renderCartsTable(carts) {
         let cleanPhone = customerPhone.replace(/[^0-9]/g, '');
         if (cleanPhone.length === 10) cleanPhone = '91' + cleanPhone;
 
-        const cartJsonEscaped = htmlEscape(JSON.stringify(cart));
-
         html += `
             <tr>
                 <td class="ps-4">
                     <div class="d-flex align-items-center gap-3">
                         <div class="ac-avatar-circle">${initials}</div>
                         <div>
-                            <div class="fw-bold text-dark">${customerName}</div>
+                            <div class="fw-bold text-dark">${htmlEscape(customerName)}</div>
                             <div class="small text-muted d-flex align-items-center gap-1">
                                 <i class="fas fa-phone-alt fs-7"></i>
-                                ${customerPhone !== 'No Phone' ? `<a href="https://wa.me/${cleanPhone}" target="_blank" class="text-decoration-none text-muted">${customerPhone}</a>` : customerPhone}
+                                ${customerPhone !== 'No Phone' ? `<a href="https://wa.me/${cleanPhone}" target="_blank" class="text-decoration-none text-muted">${htmlEscape(customerPhone)}</a>` : customerPhone}
                             </div>
                         </div>
                     </div>
                 </td>
                 <td>
-                    <div class="fw-semibold text-dark mb-1" title="${htmlEscape(cart.product_names || '')}">${productText}</div>
+                    <div class="fw-semibold text-dark mb-1" title="${htmlEscape(cart.product_names || '')}">${htmlEscape(productText)}</div>
                     <span class="badge bg-light text-dark border">Cart ID #${cart.id}</span>
                 </td>
                 <td>
@@ -1014,7 +1020,7 @@ function renderCartsTable(carts) {
                         <button type="button" class="ac-btn-icon ac-btn-wa" onclick="handleRowWhatsAppClick(${cart.id}, this, '${htmlEscape(customerName)}', '${cleanPhone}')" title="${globalWaMode === 'web' ? 'Open in WhatsApp Web' : 'Send via Meta API'}">
                             <i class="fab fa-whatsapp"></i>
                         </button>
-                        <button type="button" class="ac-btn-icon ac-btn-info" onclick='openCartModal(${cartJsonEscaped})' title="Inspect Cart & Stages">
+                        <button type="button" class="ac-btn-icon ac-btn-info" onclick="openCartModalById(${cart.id})" title="Inspect Cart & Stages">
                             <i class="fas fa-eye"></i>
                         </button>
                         <button type="button" class="ac-btn-icon ac-btn-warn" onclick="resetReminders(${cart.id}, this)" title="Reset Reminder Stages (0/4)">
@@ -1035,6 +1041,13 @@ function renderCartsTable(carts) {
     });
 
     $('#cartsTableBody').html(html);
+}
+
+function openCartModalById(cartId) {
+    const cart = currentLoadedCarts[cartId];
+    if (cart) {
+        openCartModal(cart);
+    }
 }
 
 function htmlEscape(str) {
