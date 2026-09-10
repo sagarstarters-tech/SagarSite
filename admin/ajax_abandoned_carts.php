@@ -115,6 +115,11 @@ try {
             echo json_encode($result);
             break;
 
+        case 'get_api_log':
+            $result = $controller->getApiLog();
+            echo json_encode($result);
+            break;
+
         case 'get_stats':
             $result = $controller->getDashboard([
                 'status' => 'all',

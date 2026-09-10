@@ -879,7 +879,21 @@ button.ac-btn-refresh:active {
                     <div class="text-muted small"><i class="fas fa-spinner fa-spin me-1"></i> Loading stages & messages...</div>
                 </div>
 
-                <h6 class="fw-bold mb-2">WhatsApp Log History</h6>
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-history me-1"></i> WhatsApp Log History</h6>
+                    <button type="button" class="btn btn-outline-info btn-xs py-1 px-2 rounded-pill" onclick="toggleRawApiLog()">
+                        <i class="fas fa-terminal me-1"></i> Live Meta API Raw Log
+                    </button>
+                </div>
+                <div id="modalRawApiLogContainer" class="d-none mb-3">
+                    <div class="d-flex align-items-center justify-content-between bg-dark text-white px-3 py-1 rounded-top" style="font-size:11px;">
+                        <span><i class="fas fa-satellite-dish text-info me-1"></i> Live Meta Graph API Delivery Log (Recent)</span>
+                        <button type="button" class="btn-close btn-close-white" style="transform: scale(0.7);" onclick="$('#modalRawApiLogContainer').addClass('d-none')"></button>
+                    </div>
+                    <div class="bg-black text-light p-3 rounded-bottom border border-dark" style="font-family: monospace; font-size: 11px; max-height: 220px; overflow-y: auto; white-space: pre-wrap;" id="modalRawApiLogContent">
+                        <i class="fas fa-spinner fa-spin me-1"></i> Loading live API log...
+                    </div>
+                </div>
                 <div class="bg-white border rounded-3 p-3" id="modalCartLogs">
                     <!-- Logs list -->
                 </div>
@@ -920,9 +934,18 @@ button.ac-btn-refresh:active {
                 <!-- Quick Selection Chips -->
                 <div class="p-2 mb-3 bg-light rounded-3 d-flex align-items-center gap-2 flex-wrap small">
                     <span class="fw-bold text-muted"><i class="fas fa-magic me-1"></i> Quick Select:</span>
-                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 rounded-pill" onclick="selectTemplate('order_status_updates', 'en')">order_status_updates</button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 rounded-pill" onclick="selectTemplate('order_confirmation', 'en')">order_confirmation</button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 rounded-pill" onclick="selectTemplate('hello_world', 'en_US')">hello_world (Test)</button>
+                    <button type="button" class="btn btn-sm btn-success py-0 px-2 rounded-pill fw-bold" onclick="selectTemplate('order_status_updates', 'en')" title="100% Delivery - Utility Category">
+                        <i class="fas fa-check-circle me-1"></i> order_status_updates (Verified Utility)
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-success py-0 px-2 rounded-pill fw-bold" onclick="selectTemplate('order_confirmation', 'en')" title="100% Delivery - Utility Category">
+                        <i class="fas fa-check-circle me-1"></i> order_confirmation (Verified Utility)
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 rounded-pill" onclick="selectTemplate('reminder_1_gentle_nudge', 'en')" title="Abandoned Cart Marketing Template">
+                        reminder_1_gentle_nudge
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 rounded-pill" onclick="selectTemplate('hello_world', 'en_US')">
+                        hello_world (Test)
+                    </button>
                 </div>
 
                 <div class="table-responsive border rounded-3 bg-white" style="max-height: 380px; overflow-y: auto;">
@@ -1488,9 +1511,10 @@ function loadModalLogs(cartId) {
         data: { action: 'get_cart_logs', cart_id: cartId, _ts: Date.now() },
         dataType: 'json',
         success: function(res) {
-            if (res.success && res.data && res.data.length > 0) {
+            const logsList = (res && res.success && (res.logs || res.data)) ? (res.logs || res.data) : [];
+            if (logsList.length > 0) {
                 let logsHtml = '<ul class="list-group list-group-flush small">';
-                res.data.forEach(log => {
+                logsList.forEach(log => {
                     const statusText = log.status || '';
                     let badgeClass = 'bg-secondary';
                     if (statusText.toLowerCase().includes('sent via meta')) badgeClass = 'bg-success';
@@ -1515,6 +1539,39 @@ function loadModalLogs(cartId) {
         },
         error: function() {
             $('#modalCartLogs').html('<div class="small text-danger">Failed to fetch logs.</div>');
+        }
+    });
+}
+
+function toggleRawApiLog() {
+    const $container = $('#modalRawApiLogContainer');
+    if ($container.hasClass('d-none')) {
+        $container.removeClass('d-none');
+        loadRawApiLog();
+    } else {
+        $container.addClass('d-none');
+    }
+}
+
+function loadRawApiLog() {
+    $('#modalRawApiLogContent').html('<span class="text-info"><i class="fas fa-spinner fa-spin me-1"></i> Fetching live Meta Graph API log...</span>');
+    $.ajax({
+        url: 'ajax_abandoned_carts.php',
+        type: 'GET',
+        cache: false,
+        data: { action: 'get_api_log', _ts: Date.now() },
+        dataType: 'json',
+        success: function(res) {
+            if (res && res.success && res.log) {
+                $('#modalRawApiLogContent').text(res.log);
+                const el = document.getElementById('modalRawApiLogContent');
+                if (el) el.scrollTop = el.scrollHeight;
+            } else {
+                $('#modalRawApiLogContent').html('<span class="text-warning"><i class="fas fa-info-circle me-1"></i> Log file empty or no Meta API calls made yet.</span>');
+            }
+        },
+        error: function() {
+            $('#modalRawApiLogContent').html('<span class="text-danger"><i class="fas fa-exclamation-circle me-1"></i> Could not load live API log.</span>');
         }
     });
 }

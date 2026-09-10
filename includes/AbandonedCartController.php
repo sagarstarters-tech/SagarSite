@@ -208,7 +208,27 @@ class AbandonedCartController {
         try {
             $cartId = intval($cartId);
             $logs = $this->service->getCartLogs($cartId);
-            return ['success' => true, 'logs' => $logs];
+            return ['success' => true, 'logs' => $logs, 'data' => $logs];
+        } catch (\Throwable $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Get live Meta API cURL log snippet.
+     */
+    public function getApiLog() {
+        try {
+            $logFile = dirname(__DIR__) . '/logs/cart_abandonment_whatsapp.log';
+            $content = '';
+            if (file_exists($logFile)) {
+                $lines = file($logFile);
+                $slice = array_slice($lines, -80);
+                $content = implode('', $slice);
+            } else {
+                $content = 'No raw API log entries recorded yet.';
+            }
+            return ['success' => true, 'log' => $content];
         } catch (\Throwable $e) {
             return ['success' => false, 'error' => $e->getMessage()];
         }

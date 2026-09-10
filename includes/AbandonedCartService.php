@@ -386,6 +386,23 @@ class AbandonedCartService {
 
         $waLink = 'https://wa.me/' . $cleanNumber . '?text=' . urlencode($message);
 
+        // ── Check if recipient is the business sender number ─────────
+        $cleanSender = preg_replace('/[^0-9]/', '', (string)($waSettings['sender_number'] ?? ''));
+        if (strpos($cleanSender, '0') === 0) $cleanSender = ltrim($cleanSender, '0');
+        if (strlen($cleanSender) == 10) $cleanSender = '91' . $cleanSender;
+
+        if (!empty($cleanSender) && $cleanNumber === $cleanSender) {
+            $err = "Recipient phone (+{$cleanNumber}) is the same as your WhatsApp Business sender number (+{$cleanSender}). Meta does NOT deliver automated WhatsApp messages from a business number to itself. Please test with a different customer phone number.";
+            $this->logWhatsApp($cartId, $cleanNumber, $message, 'api', "Warning: " . $err);
+            return [
+                'success' => false,
+                'mode'    => 'api',
+                'is_sent' => false,
+                'error'   => $err,
+                'link'    => $waLink
+            ];
+        }
+
         // ── 1. API Mode (Meta Cloud API) ──────────────────────────────
         if (($waSettings['sending_mode'] ?? 'web') === 'api') {
             if (empty($waSettings['api_token']) || empty($waSettings['phone_number_id'])) {
@@ -398,6 +415,7 @@ class AbandonedCartService {
 
             $token = trim($waSettings['api_token']);
             $phoneId = trim($waSettings['phone_number_id']);
+            $wabaId = trim($waSettings['waba_id'] ?? '');
             $url = "https://graph.facebook.com/v21.0/{$phoneId}/messages";
 
             // Check if cart abandonment template is configured for this level
@@ -409,12 +427,17 @@ class AbandonedCartService {
                 $abandonTemplate = trim($this->settings['meta_template_1']);
             }
 
-            // CRITICAL: Meta Cloud API strict policy requirement.
-            // Free-form text messages CANNOT be delivered outside the 24-hour customer service window.
-            // Meta accepts raw text with HTTP 200 and a message ID, but permanently drops it.
-            // Therefore, outside the 24h window, an approved WhatsApp Template is MANDATORY.
+            // Fallback: check global WhatsApp settings templates
             if (empty($abandonTemplate)) {
-                $err = "Meta Template is not configured for Stage {$tplLevel}. Meta Cloud API strictly requires an approved WhatsApp Template to deliver messages to customers outside the 24-hour window. Please configure an approved Meta Template in Cart Templates.";
+                if (!empty($waSettings['meta_template_name'])) {
+                    $abandonTemplate = trim($waSettings['meta_template_name']);
+                } elseif (!empty($waSettings['order_confirmation_template_name'])) {
+                    $abandonTemplate = trim($waSettings['order_confirmation_template_name']);
+                }
+            }
+
+            if (empty($abandonTemplate)) {
+                $err = "Meta Template is not configured for Stage {$tplLevel}. Please configure an approved Meta Template in Cart Templates.";
                 $this->logWhatsApp($cartId, $cleanNumber, $message, 'api', "Skipped: " . $err);
                 return [
                     'success' => false,
@@ -423,6 +446,67 @@ class AbandonedCartService {
                     'error'   => $err,
                     'link'    => $waLink
                 ];
+            }
+
+            // Auto-discover WABA ID if missing
+            if (empty($wabaId)) {
+                $chW = curl_init("https://graph.facebook.com/v21.0/{$phoneId}?fields=whatsapp_business_account_id");
+                curl_setopt_array($chW, [
+                    CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . $token, 'Accept: application/json'],
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_SSL_VERIFYPEER => false,
+                    CURLOPT_TIMEOUT        => 8,
+                ]);
+                $wRes = curl_exec($chW);
+                curl_close($chW);
+                $wJson = json_decode($wRes, true);
+                if (!empty($wJson['whatsapp_business_account_id'])) {
+                    $wabaId = $wJson['whatsapp_business_account_id'];
+                    $this->conn->query("UPDATE whatsapp_settings SET waba_id = '" . $this->conn->real_escape_string($wabaId) . "' WHERE id = 1");
+                }
+            }
+
+            // Inspect template metadata live from Meta WABA
+            $tplMeta = null;
+            if (!empty($wabaId)) {
+                $chTpl = curl_init("https://graph.facebook.com/v21.0/{$wabaId}/message_templates?name=" . urlencode($abandonTemplate));
+                curl_setopt_array($chTpl, [
+                    CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . $token, 'Accept: application/json'],
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_SSL_VERIFYPEER => false,
+                    CURLOPT_TIMEOUT        => 8,
+                ]);
+                $tRes = curl_exec($chTpl);
+                curl_close($chTpl);
+                $tJson = json_decode($tRes, true);
+                if (!empty($tJson['data']) && is_array($tJson['data'])) {
+                    foreach ($tJson['data'] as $tItem) {
+                        if (strcasecmp($tItem['name'], $abandonTemplate) === 0) {
+                            if (($tItem['status'] ?? '') === 'APPROVED') {
+                                $tplMeta = $tItem;
+                                break;
+                            } elseif (!$tplMeta) {
+                                $tplMeta = $tItem;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // If template was found in Meta, verify approval status
+            if ($tplMeta) {
+                $tplStatus = strtoupper($tplMeta['status'] ?? 'UNKNOWN');
+                if ($tplStatus !== 'APPROVED') {
+                    $err = "Meta Template '{$abandonTemplate}' status is '{$tplStatus}' (not APPROVED) in Meta WhatsApp Business Manager. Messages cannot be delivered until Meta approves it.";
+                    $this->logWhatsApp($cartId, $cleanNumber, $message, 'api', "Error: " . $err);
+                    return [
+                        'success' => false,
+                        'mode'    => 'api',
+                        'is_sent' => false,
+                        'error'   => $err,
+                        'link'    => $waLink
+                    ];
+                }
             }
 
             $ch_exec = function($pay) use ($url, $token) {
@@ -445,15 +529,14 @@ class AbandonedCartService {
                 return [$res, $code, $err];
             };
 
-            $result = '';
-            $httpCode = 0;
-            $curlError = '';
-            $payload = [];
             $isMetaSuccess = false;
             $metaResponse = null;
 
             $langCode = trim($this->settings['meta_template_lang'] ?? 'en');
             if (empty($langCode)) $langCode = 'en';
+            if ($tplMeta && !empty($tplMeta['language'])) {
+                $langCode = $tplMeta['language'];
+            }
 
             if ($abandonTemplate === 'hello_world') {
                 $payload = [
@@ -470,75 +553,237 @@ class AbandonedCartService {
                 $metaResponse = json_decode($result, true);
                 $isMetaSuccess = ($httpCode == 200) && !empty($metaResponse['messages'][0]['id']) && empty($metaResponse['error']);
             } else {
-                // Build dynamic parameter sets (4 params, 3 params, 2 params, 1 param, 0 params)
-                $p1 = (string)($variables['{CustomerName}'] ?? 'Customer');
-                $p2 = (string)($variables['{ProductNames}'] ?? 'Cart Items');
-                $p3 = (string)($variables['{CartTotal}'] ?? '0.00');
-                $p4 = (string)($variables['{RecoveryLink}'] ?? '');
-                $p5 = (string)($variables['{CouponCode}'] ?? '');
-                $p6 = (string)($variables['{CouponDiscount}'] ?? '');
+                // Prepare variable strings
+                $pCustName   = (string)($variables['{CustomerName}'] ?? 'Customer');
+                $pProdNames  = (string)($variables['{ProductNames}'] ?? 'Cart Items');
+                $pCartTotal  = (string)($variables['{CartTotal}'] ?? '0.00');
+                $pRecLink    = (string)($variables['{RecoveryLink}'] ?? '');
+                $pStoreName  = "Sagar Starter's";
+                $pDate       = date('d M Y');
 
-                $paramsFull = [
-                    ["type" => "text", "text" => $p1],
-                    ["type" => "text", "text" => $p2],
-                    ["type" => "text", "text" => $p3],
-                    ["type" => "text", "text" => $p4],
-                ];
-                if (!empty($p5)) {
-                    $paramsFull[] = ["type" => "text", "text" => $p5];
-                    $paramsFull[] = ["type" => "text", "text" => $p6];
+                // Extract recovery token from recovery link
+                $pTokenOnly = '';
+                if (preg_match('/token=([^&]+)/', $pRecLink, $tm)) {
+                    $pTokenOnly = urldecode($tm[1]);
                 }
 
-                $candidateParams = [
-                    $paramsFull,
-                    array_slice($paramsFull, 0, 4),
-                    array_slice($paramsFull, 0, 3),
-                    array_slice($paramsFull, 0, 2),
-                    array_slice($paramsFull, 0, 1),
-                    []
+                // Check template components if retrieved from Meta
+                $hasHeaderImg = false;
+                $hasUrlButton = false;
+                $exactBodyCount = 0;
+
+                if ($tplMeta && !empty($tplMeta['components'])) {
+                    foreach ($tplMeta['components'] as $cmp) {
+                        $cType = strtoupper($cmp['type'] ?? '');
+                        if ($cType === 'HEADER' && strtoupper($cmp['format'] ?? '') === 'IMAGE') {
+                            $hasHeaderImg = true;
+                        }
+                        if ($cType === 'BODY') {
+                            preg_match_all('/\{\{(\d+)\}\}/', $cmp['text'] ?? '', $pms);
+                            if (!empty($pms[1])) {
+                                $exactBodyCount = max(array_map('intval', $pms[1]));
+                            }
+                        }
+                        if ($cType === 'BUTTONS' && !empty($cmp['buttons'])) {
+                            foreach ($cmp['buttons'] as $b) {
+                                if (strtoupper($b['type'] ?? '') === 'URL' && strpos($b['url'] ?? '', '{{') !== false) {
+                                    $hasUrlButton = true;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Standard candidate parameter sets tailored for ecommerce templates:
+                $candidateSets = [];
+
+                // If exact param count was discovered from Meta WABA:
+                if ($exactBodyCount > 0) {
+                    $exactParams = [];
+                    if ($exactBodyCount == 1) {
+                        $exactParams = [["type" => "text", "text" => $pCustName]];
+                    } elseif ($exactBodyCount == 2) {
+                        $exactParams = [
+                            ["type" => "text", "text" => $pCustName],
+                            ["type" => "text", "text" => $pRecLink]
+                        ];
+                    } elseif ($exactBodyCount == 3) {
+                        $exactParams = [
+                            ["type" => "text", "text" => $pCustName],
+                            ["type" => "text", "text" => $pProdNames],
+                            ["type" => "text", "text" => $pCartTotal]
+                        ];
+                    } elseif ($exactBodyCount == 4) {
+                        $exactParams = [
+                            ["type" => "text", "text" => $pCustName],
+                            ["type" => "text", "text" => $pProdNames],
+                            ["type" => "text", "text" => $pCartTotal],
+                            ["type" => "text", "text" => $pRecLink]
+                        ];
+                    } elseif ($exactBodyCount == 5) {
+                        $exactParams = [
+                            ["type" => "text", "text" => $pCustName],
+                            ["type" => "text", "text" => "Cart #" . $cartId],
+                            ["type" => "text", "text" => "Items in Cart"],
+                            ["type" => "text", "text" => "RECOVER"],
+                            ["type" => "text", "text" => $pCartTotal]
+                        ];
+                    } elseif ($exactBodyCount == 6) {
+                        $exactParams = [
+                            ["type" => "text", "text" => $pCustName],
+                            ["type" => "text", "text" => "Cart #" . $cartId],
+                            ["type" => "text", "text" => "Items in Cart"],
+                            ["type" => "text", "text" => "RECOVER"],
+                            ["type" => "text", "text" => $pCartTotal],
+                            ["type" => "text", "text" => $pStoreName]
+                        ];
+                    } elseif ($exactBodyCount >= 9) {
+                        $exactParams = [
+                            ["type" => "text", "text" => $pCustName],
+                            ["type" => "text", "text" => "Cart #" . $cartId],
+                            ["type" => "text", "text" => $pDate],
+                            ["type" => "text", "text" => $pCartTotal],
+                            ["type" => "text", "text" => "Pending"],
+                            ["type" => "text", "text" => "In Cart"],
+                            ["type" => "text", "text" => $pProdNames],
+                            ["type" => "text", "text" => "Store Checkout"],
+                            ["type" => "text", "text" => $pRecLink]
+                        ];
+                    }
+                    $candidateSets[] = [
+                        'params' => $exactParams,
+                        'header' => $hasHeaderImg,
+                        'button' => $hasUrlButton,
+                        'lang'   => $langCode
+                    ];
+                }
+
+                // General robust parameter candidates (covering all standard template structures)
+                $set_4 = [
+                    ["type" => "text", "text" => $pCustName],
+                    ["type" => "text", "text" => $pProdNames],
+                    ["type" => "text", "text" => $pCartTotal],
+                    ["type" => "text", "text" => $pRecLink]
+                ];
+                $set_5 = [
+                    ["type" => "text", "text" => $pCustName],
+                    ["type" => "text", "text" => "Cart #" . $cartId],
+                    ["type" => "text", "text" => "Items in Cart"],
+                    ["type" => "text", "text" => "RECOVER"],
+                    ["type" => "text", "text" => $pCartTotal]
+                ];
+                $set_6 = [
+                    ["type" => "text", "text" => $pCustName],
+                    ["type" => "text", "text" => "Cart #" . $cartId],
+                    ["type" => "text", "text" => "Items in Cart"],
+                    ["type" => "text", "text" => "RECOVER"],
+                    ["type" => "text", "text" => $pCartTotal],
+                    ["type" => "text", "text" => $pStoreName]
+                ];
+                $set_3 = [
+                    ["type" => "text", "text" => $pCustName],
+                    ["type" => "text", "text" => $pProdNames],
+                    ["type" => "text", "text" => $pCartTotal]
+                ];
+                $set_2 = [
+                    ["type" => "text", "text" => $pCustName],
+                    ["type" => "text", "text" => $pRecLink]
+                ];
+                $set_1 = [
+                    ["type" => "text", "text" => $pCustName]
+                ];
+                $set_9 = [
+                    ["type" => "text", "text" => $pCustName],
+                    ["type" => "text", "text" => "Cart #" . $cartId],
+                    ["type" => "text", "text" => $pDate],
+                    ["type" => "text", "text" => $pCartTotal],
+                    ["type" => "text", "text" => "Pending"],
+                    ["type" => "text", "text" => "In Cart"],
+                    ["type" => "text", "text" => $pProdNames],
+                    ["type" => "text", "text" => "Store Checkout"],
+                    ["type" => "text", "text" => $pRecLink]
                 ];
 
+                $fallbackParamGroups = [$set_4, $set_3, $set_5, $set_6, $set_2, $set_1, $set_9];
                 $candidateLangs = array_unique([$langCode, ($langCode === 'en' ? 'en_US' : 'en')]);
 
-                foreach ($candidateLangs as $currentLang) {
-                    foreach ($candidateParams as $params) {
-                        $tplPayload = [
-                            "messaging_product" => "whatsapp",
-                            "recipient_type"    => "individual",
-                            "to"                => $cleanNumber,
-                            "type"              => "template",
-                            "template"          => [
-                                "name"       => $abandonTemplate,
-                                "language"   => ["code" => $currentLang],
-                                "components" => []
+                foreach ($candidateLangs as $cL) {
+                    foreach ($fallbackParamGroups as $pGroup) {
+                        $candidateSets[] = ['params' => $pGroup, 'header' => false, 'button' => false, 'lang' => $cL];
+                        // If template might have a URL button:
+                        if (!empty($pTokenOnly) && (count($pGroup) <= 4)) {
+                            $candidateSets[] = ['params' => $pGroup, 'header' => false, 'button' => true, 'lang' => $cL];
+                        }
+                    }
+                }
+
+                $headerImgUrl = !empty($waSettings['wa_header_image_url']) 
+                    ? $waSettings['wa_header_image_url'] 
+                    : 'https://sagarstarters.com/assets/images/auth_banner.jpg';
+
+                foreach ($candidateSets as $cand) {
+                    if (empty($cand['params'])) continue; // CRITICAL: NEVER send empty parameters
+
+                    $components = [];
+
+                    // Optional Header Component
+                    if (!empty($cand['header'])) {
+                        $components[] = [
+                            "type" => "header",
+                            "parameters" => [
+                                [
+                                    "type" => "image",
+                                    "image" => ["link" => $headerImgUrl]
+                                ]
                             ]
                         ];
-                        if (!empty($params)) {
-                            $tplPayload["template"]["components"][] = [
-                                "type"       => "body",
-                                "parameters" => $params
-                            ];
-                        }
+                    }
 
-                        list($resTry, $codeTry, $errTry) = $ch_exec($tplPayload);
-                        $respTry = json_decode($resTry, true);
+                    // Body Component (Always required when template has body variables)
+                    $components[] = [
+                        "type"       => "body",
+                        "parameters" => $cand['params']
+                    ];
 
-                        $payload      = $tplPayload;
-                        $result       = $resTry;
-                        $httpCode     = $codeTry;
-                        $curlError    = $errTry;
-                        $metaResponse = $respTry;
+                    // Optional Button Component (for templates with dynamic URL button)
+                    if (!empty($cand['button']) && !empty($pTokenOnly)) {
+                        $components[] = [
+                            "type"       => "button",
+                            "sub_type"   => "url",
+                            "index"      => "0",
+                            "parameters" => [
+                                [
+                                    "type" => "text",
+                                    "text" => $pTokenOnly
+                                ]
+                            ]
+                        ];
+                    }
 
-                        if ($codeTry == 200 && !empty($respTry['messages'][0]['id']) && empty($respTry['error'])) {
-                            $isMetaSuccess = true;
-                            break 2;
-                        }
+                    $tplPayload = [
+                        "messaging_product" => "whatsapp",
+                        "recipient_type"    => "individual",
+                        "to"                => $cleanNumber,
+                        "type"              => "template",
+                        "template"          => [
+                            "name"       => $abandonTemplate,
+                            "language"   => ["code" => $cand['lang']],
+                            "components" => $components
+                        ]
+                    ];
 
-                        // If error is not parameter count mismatch (132000), break parameter loop
-                        $errCode = $respTry['error']['code'] ?? 0;
-                        if ($errCode != 132000) {
-                            break;
-                        }
+                    list($resTry, $codeTry, $errTry) = $ch_exec($tplPayload);
+                    $respTry = json_decode($resTry, true);
+
+                    $payload      = $tplPayload;
+                    $result       = $resTry;
+                    $httpCode     = $codeTry;
+                    $curlError    = $errTry;
+                    $metaResponse = $respTry;
+
+                    if ($codeTry == 200 && !empty($respTry['messages'][0]['id']) && empty($respTry['error'])) {
+                        $isMetaSuccess = true;
+                        break;
                     }
                 }
             }
@@ -565,7 +810,11 @@ class AbandonedCartService {
 
             if ($isMetaSuccess) {
                 $msgId = $metaResponse['messages'][0]['id'] ?? 'unknown';
-                $statusMsg = "Sent via Meta Template '{$abandonTemplate}' (ID: " . substr($msgId, 0, 30) . ')';
+                $tplCat = !empty($tplMeta['category']) ? strtoupper($tplMeta['category']) : '';
+                $catNote = ($tplCat === 'MARKETING') 
+                    ? " (Category: Marketing. Tip: If not received on device, Meta Marketing Frequency Capping may apply in India; use Utility template 'order_status_updates' for 100% instant delivery)" 
+                    : "";
+                $statusMsg = "Sent via Meta Template '{$abandonTemplate}' (ID: " . substr($msgId, 0, 30) . ')' . $catNote;
                 $this->logWhatsApp($cartId, $cleanNumber, $message, 'api', $statusMsg);
                 return [
                     'success'    => true,
@@ -574,7 +823,8 @@ class AbandonedCartService {
                     'level'      => $level,
                     'message_id' => $msgId,
                     'link'       => $waLink,
-                    'message'    => "Reminder Level {$level} sent successfully via Meta Template '{$abandonTemplate}'!"
+                    'category'   => $tplCat,
+                    'message'    => "Reminder Level {$level} sent successfully via Meta Template '{$abandonTemplate}'!" . $catNote
                 ];
             } else {
                 $errMsg = $metaResponse['error']['message'] ?? 'Meta API error occurred';
