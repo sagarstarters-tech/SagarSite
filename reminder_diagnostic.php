@@ -149,7 +149,7 @@ if ($ws && $ws->num_rows > 0) {
 
     // Query WABA templates
     if (!empty($token) && !empty($waba_id)) {
-        $chT = curl_init("https://graph.facebook.com/v21.0/{$waba_id}/message_templates?limit=100");
+        $chT = curl_init("https://graph.facebook.com/v21.0/{$waba_id}/message_templates?fields=name,status,category,language,components&limit=100");
         curl_setopt_array($chT, [
             CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . $token, 'Accept: application/json'],
             CURLOPT_RETURNTRANSFER => true,
@@ -160,7 +160,16 @@ if ($ws && $ws->num_rows > 0) {
         $t_code = curl_getinfo($chT, CURLINFO_HTTP_CODE);
         curl_close($chT);
         $t_json = json_decode($t_res, true);
-        echo PHP_EOL . "=== WABA MESSAGE TEMPLATES (HTTP {$t_code}) ===" . PHP_EOL;
+        echo PHP_EOL . "=== EXACT JSON FOR REMINDER TEMPLATES ===" . PHP_EOL;
+        if (!empty($t_json['data'])) {
+            foreach ($t_json['data'] as $tpl) {
+                if (strpos($tpl['name'], 'reminder') !== false) {
+                    echo json_encode($tpl, JSON_PRETTY_PRINT) . PHP_EOL;
+                }
+            }
+        }
+    }
+
         if (!empty($t_json['data'])) {
             foreach ($t_json['data'] as $tpl) {
                 echo "  Template: {$tpl['name']} | Lang: {$tpl['language']} | Status: {$tpl['status']} | Category: {$tpl['category']}" . PHP_EOL;
