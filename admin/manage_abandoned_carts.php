@@ -719,7 +719,8 @@ button.ac-btn-refresh:active {
                             </div>
                             <div class="d-flex align-items-center gap-1 flex-wrap">
                                 <span class="text-muted small fw-semibold"><i class="fas fa-magic text-primary me-1"></i> Quick:</span>
-                                <button type="button" class="btn btn-xs btn-primary py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl4', 'reminder_4_coupon_discount')">reminder_4_coupon_discount</button>
+                                <button type="button" class="btn btn-xs btn-primary py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl4', 'reminder_4_coupon_discou')">reminder_4_coupon_discou</button>
+                                <button type="button" class="btn btn-xs btn-outline-primary py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl4', 'reminder_4_coupon_discount')">reminder_4_coupon_discount</button>
                                 <button type="button" class="btn btn-xs btn-outline-success py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl4', 'order_confirmation')">order_confirmation</button>
                             </div>
                         </div>

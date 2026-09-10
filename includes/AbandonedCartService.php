@@ -450,27 +450,64 @@ class AbandonedCartService {
                 ];
             }
 
-            // Auto-discover WABA ID if missing
+            // Auto-discover WABA ID if missing using debug_token, /me businesses, and /me/accounts
             if (empty($wabaId)) {
-                $chW = curl_init("https://graph.facebook.com/v21.0/{$phoneId}?fields=whatsapp_business_account_id");
-                curl_setopt_array($chW, [
+                // Method 1: debug_token inspection (returns exact target WABA ID from token scopes)
+                $chD = curl_init("https://graph.facebook.com/debug_token?input_token=" . urlencode($token) . "&access_token=" . urlencode($token));
+                curl_setopt_array($chD, [
                     CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . $token, 'Accept: application/json'],
                     CURLOPT_RETURNTRANSFER => true,
                     CURLOPT_SSL_VERIFYPEER => false,
-                    CURLOPT_TIMEOUT        => 8,
+                    CURLOPT_TIMEOUT        => 5,
                 ]);
-                $wRes = curl_exec($chW);
-                curl_close($chW);
-                $wJson = json_decode($wRes, true);
-                if (!empty($wJson['whatsapp_business_account_id'])) {
-                    $wabaId = $wJson['whatsapp_business_account_id'];
-                    $this->conn->query("UPDATE whatsapp_settings SET waba_id = '" . $this->conn->real_escape_string($wabaId) . "' WHERE id = 1");
+                $dRes = curl_exec($chD);
+                curl_close($chD);
+                $dJson = json_decode($dRes, true);
+                if (!empty($dJson['data']['granular_scopes'])) {
+                    foreach ($dJson['data']['granular_scopes'] as $scopeItem) {
+                        $scopeName = $scopeItem['scope'] ?? '';
+                        if (in_array($scopeName, ['whatsapp_business_management', 'whatsapp_business_messaging']) && !empty($scopeItem['target_ids'])) {
+                            $wabaId = $scopeItem['target_ids'][0];
+                            break;
+                        }
+                    }
+                }
+
+                // Method 2: check /me businesses
+                if (empty($wabaId)) {
+                    $chMe = curl_init("https://graph.facebook.com/v21.0/me?fields=id,name,businesses{owned_whatsapp_business_accounts,client_whatsapp_business_accounts}");
+                    curl_setopt_array($chMe, [
+                        CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . $token, 'Accept: application/json'],
+                        CURLOPT_RETURNTRANSFER => true,
+                        CURLOPT_SSL_VERIFYPEER => false,
+                        CURLOPT_TIMEOUT        => 5,
+                    ]);
+                    $meRes = curl_exec($chMe);
+                    curl_close($chMe);
+                    $meJson = json_decode($meRes, true);
+                    if (!empty($meJson['businesses']['data'])) {
+                        foreach ($meJson['businesses']['data'] as $biz) {
+                            if (!empty($biz['owned_whatsapp_business_accounts']['data'][0]['id'])) {
+                                $wabaId = $biz['owned_whatsapp_business_accounts']['data'][0]['id'];
+                                break;
+                            }
+                            if (!empty($biz['client_whatsapp_business_accounts']['data'][0]['id'])) {
+                                $wabaId = $biz['client_whatsapp_business_accounts']['data'][0]['id'];
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (!empty($wabaId)) {
+                    $safeWaba = $this->conn->real_escape_string($wabaId);
+                    $this->conn->query("UPDATE whatsapp_settings SET waba_id = '{$safeWaba}' WHERE id = 1");
                 }
             }
 
             // Check registered phone number directly from Meta Phone ID to prevent self-messaging silent drops
             if (!empty($phoneId) && !empty($token)) {
-                $chPhone = curl_init("https://graph.facebook.com/v21.0/{$phoneId}?fields=display_phone_number,whatsapp_business_account_id");
+                $chPhone = curl_init("https://graph.facebook.com/v21.0/{$phoneId}?fields=display_phone_number");
                 curl_setopt_array($chPhone, [
                     CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . $token, 'Accept: application/json'],
                     CURLOPT_RETURNTRANSFER => true,
@@ -480,10 +517,6 @@ class AbandonedCartService {
                 $pRes = curl_exec($chPhone);
                 curl_close($chPhone);
                 $pJson = json_decode($pRes, true);
-                if (!empty($pJson['whatsapp_business_account_id']) && empty($wabaId)) {
-                    $wabaId = $pJson['whatsapp_business_account_id'];
-                    $this->conn->query("UPDATE whatsapp_settings SET waba_id = '" . $this->conn->real_escape_string($wabaId) . "' WHERE id = 1");
-                }
                 if (!empty($pJson['display_phone_number'])) {
                     $metaSenderDigits = preg_replace('/[^0-9]/', '', $pJson['display_phone_number']);
                     if (strlen($metaSenderDigits) == 10) $metaSenderDigits = '91' . $metaSenderDigits;
@@ -504,24 +537,30 @@ class AbandonedCartService {
             // Inspect template metadata live from Meta WABA
             $tplMeta = null;
             if (!empty($wabaId) && !empty($abandonTemplate)) {
-                $chTpl = curl_init("https://graph.facebook.com/v21.0/{$wabaId}/message_templates?name=" . urlencode($abandonTemplate));
+                $chTpl = curl_init("https://graph.facebook.com/v21.0/{$wabaId}/message_templates?limit=100");
                 curl_setopt_array($chTpl, [
                     CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . $token, 'Accept: application/json'],
                     CURLOPT_RETURNTRANSFER => true,
                     CURLOPT_SSL_VERIFYPEER => false,
-                    CURLOPT_TIMEOUT        => 3,
+                    CURLOPT_TIMEOUT        => 5,
                 ]);
                 $tRes = curl_exec($chTpl);
                 curl_close($chTpl);
                 $tJson = json_decode($tRes, true);
                 if (!empty($tJson['data']) && is_array($tJson['data'])) {
+                    $cleanTarget = strtolower(trim($abandonTemplate));
+                    $cleanAltTarget = str_replace('_discount', '_discou', $cleanTarget);
+
                     foreach ($tJson['data'] as $tItem) {
-                        if (strcasecmp($tItem['name'], $abandonTemplate) === 0) {
+                        $tName = strtolower($tItem['name'] ?? '');
+                        if ($tName === $cleanTarget || $tName === $cleanAltTarget) {
                             if (($tItem['status'] ?? '') === 'APPROVED') {
                                 $tplMeta = $tItem;
+                                $abandonTemplate = $tItem['name']; // Use exact Meta approved name
                                 break;
                             } elseif (!$tplMeta) {
                                 $tplMeta = $tItem;
+                                $abandonTemplate = $tItem['name'];
                             }
                         }
                     }
@@ -591,6 +630,10 @@ class AbandonedCartService {
             $metaResponse  = null;
             $successfulTpl = $abandonTemplate;
             $workingLang   = '';
+            $curlError     = '';
+            $httpCode      = 0;
+            $payload       = [];
+            $result        = '';
 
             $langCode = trim($this->settings['meta_template_lang'] ?? 'en_US');
             if (empty($langCode)) $langCode = 'en_US';
@@ -698,10 +741,12 @@ class AbandonedCartService {
                     ["type" => "text", "text" => $pRecLink]                            // 9: Link
                 ];
 
-                // Build language candidates in priority order.
-                // In Meta WhatsApp Business Manager, English templates default to 'en_US'.
-                // If 'en' throws Error #132001, 'en_US' will succeed.
-                // We test candidates in priority order so language mismatches NEVER cause failures.
+                // Priority:
+                // 1. Detected language from Meta WABA (if template found, e.g. 'en')
+                // 2. 'en' (Since Meta screenshot proves language is 'English' -> 'en')
+                // 3. 'en_US'
+                // 4. 'en_GB'
+                // 5. 'hi'
                 $configuredLang = trim($this->settings['meta_template_lang'] ?? '');
                 $detectedLang   = !empty($tplMeta['language']) ? trim($tplMeta['language']) : null;
 
@@ -709,12 +754,11 @@ class AbandonedCartService {
                 if (!empty($detectedLang)) {
                     $langCandidates[] = $detectedLang;
                 }
-                if (!empty($configuredLang) && !in_array($configuredLang, ['en', 'en_US'], true)) {
+                if (!empty($configuredLang) && !in_array($configuredLang, ['en', 'en_US', 'en_GB'], true)) {
                     $langCandidates[] = $configuredLang;
                 }
-                // en_US is prioritized for English templates since Meta defaults to en_US and 'en' threw #132001
-                $langCandidates[] = 'en_US';
                 $langCandidates[] = 'en';
+                $langCandidates[] = 'en_US';
                 $langCandidates[] = 'en_GB';
                 if (!empty($configuredLang) && $configuredLang === 'hi') {
                     array_unshift($langCandidates, 'hi');
@@ -725,48 +769,7 @@ class AbandonedCartService {
                 $tplCandidates = [];
 
                 if (!empty($abandonTemplate)) {
-                    // Exact match for the 4 official Meta-approved cart reminder templates
-                    if (in_array($abandonTemplate, ['reminder_1_gentle_nudge', 'reminder_2_follow_up', 'reminder_3_urgency'], true)) {
-                        foreach ($langCandidates as $lCode) {
-                            $tplCandidates[] = [
-                                'name'    => $abandonTemplate,
-                                'lang'    => $lCode,
-                                'params'  => $set_reminder_1_to_3,
-                                'header'  => false,
-                                'button'  => false
-                            ];
-                        }
-                    } elseif ($abandonTemplate === 'reminder_4_coupon_discount') {
-                        foreach ($langCandidates as $lCode) {
-                            $tplCandidates[] = [
-                                'name'    => $abandonTemplate,
-                                'lang'    => $lCode,
-                                'params'  => $set_reminder_4,
-                                'header'  => false,
-                                'button'  => false
-                            ];
-                        }
-                    } elseif ($abandonTemplate === 'order_confirmation') {
-                        foreach (['en', 'en_US'] as $lCode) {
-                            $tplCandidates[] = [
-                                'name'    => 'order_confirmation',
-                                'lang'    => $lCode,
-                                'params'  => $set_9_confirmation,
-                                'header'  => false,
-                                'button'  => false
-                            ];
-                        }
-                    } elseif (in_array($abandonTemplate, ['new_order_status', 'order_status_updates', 'order_status_update'], true)) {
-                        foreach (['en', 'en_US'] as $lCode) {
-                            $tplCandidates[] = [
-                                'name'    => $abandonTemplate,
-                                'lang'    => $lCode,
-                                'params'  => $set_5_status,
-                                'header'  => false,
-                                'button'  => false
-                            ];
-                        }
-                    } elseif ($tplMeta && !empty($exactBodyParamCount)) {
+                    if ($tplMeta && !empty($exactBodyParamCount)) {
                         $exactParams = array_slice($allPoolParams, 0, min($exactBodyParamCount, count($allPoolParams)));
                         foreach ($langCandidates as $lCode) {
                             $tplCandidates[] = [
@@ -786,6 +789,70 @@ class AbandonedCartService {
                                 'params'  => [],
                                 'header'  => $tplRequiresHeaderImage,
                                 'button'  => $tplRequiresButtonUrl
+                            ];
+                        }
+                    } elseif (in_array($abandonTemplate, ['reminder_1_gentle_nudge', 'reminder_2_follow_up', 'reminder_3_urgency'], true)) {
+                        // Candidate set 1: 4 parameters (CustomerName, ProductNames, CartTotal, RecoveryLink)
+                        foreach ($langCandidates as $lCode) {
+                            $tplCandidates[] = [
+                                'name'    => $abandonTemplate,
+                                'lang'    => $lCode,
+                                'params'  => $set_reminder_1_to_3,
+                                'header'  => false,
+                                'button'  => false
+                            ];
+                        }
+                        // Candidate set 2: 3 parameters (CustomerName, ProductNames, CartTotal)
+                        foreach (['en', 'en_US'] as $lCode) {
+                            $tplCandidates[] = [
+                                'name'    => $abandonTemplate,
+                                'lang'    => $lCode,
+                                'params'  => array_slice($allPoolParams, 0, 3),
+                                'header'  => false,
+                                'button'  => false
+                            ];
+                        }
+                        // Candidate set 3: 3 parameters + dynamic button URL
+                        foreach (['en', 'en_US'] as $lCode) {
+                            $tplCandidates[] = [
+                                'name'    => $abandonTemplate,
+                                'lang'    => $lCode,
+                                'params'  => array_slice($allPoolParams, 0, 3),
+                                'header'  => false,
+                                'button'  => true
+                            ];
+                        }
+                    } elseif (in_array($abandonTemplate, ['reminder_4_coupon_discount', 'reminder_4_coupon_discou'], true)) {
+                        $stage4Names = array_unique([$abandonTemplate, 'reminder_4_coupon_discou', 'reminder_4_coupon_discount']);
+                        foreach ($stage4Names as $tName) {
+                            foreach ($langCandidates as $lCode) {
+                                $tplCandidates[] = [
+                                    'name'    => $tName,
+                                    'lang'    => $lCode,
+                                    'params'  => $set_reminder_4,
+                                    'header'  => false,
+                                    'button'  => false
+                                ];
+                            }
+                        }
+                    } elseif ($abandonTemplate === 'order_confirmation') {
+                        foreach (['en', 'en_US'] as $lCode) {
+                            $tplCandidates[] = [
+                                'name'    => 'order_confirmation',
+                                'lang'    => $lCode,
+                                'params'  => $set_9_confirmation,
+                                'header'  => false,
+                                'button'  => false
+                            ];
+                        }
+                    } elseif (in_array($abandonTemplate, ['new_order_status', 'order_status_updates', 'order_status_update'], true)) {
+                        foreach (['en', 'en_US'] as $lCode) {
+                            $tplCandidates[] = [
+                                'name'    => $abandonTemplate,
+                                'lang'    => $lCode,
+                                'params'  => $set_5_status,
+                                'header'  => false,
+                                'button'  => false
                             ];
                         }
                     } else {
@@ -812,6 +879,10 @@ class AbandonedCartService {
                         ];
                     }
                 }
+
+                $attemptLogs = [];
+                $logDir = dirname(__DIR__) . '/logs';
+                if (!is_dir($logDir)) @mkdir($logDir, 0755, true);
 
                 foreach ($tplCandidates as $cand) {
                     $components = [];
@@ -862,29 +933,37 @@ class AbandonedCartService {
                     list($resTry, $codeTry, $errTry) = $ch_exec($tplPayload);
                     $respTry = json_decode($resTry, true);
 
-                    $payload      = $tplPayload;
-                    $result       = $resTry;
-                    $httpCode     = $codeTry;
-                    $curlError    = $errTry;
-                    $metaResponse = $respTry;
+                    // Log this specific attempt in real time
+                    $pCount  = count($cand['params']);
+                    $btnFlag = !empty($cand['button']) ? '+btn' : '';
+                    $logLine = '[' . date('Y-m-d H:i:s') . "] Cart#{$cartId} Try: [{$cand['name']}:{$cand['lang']}|{$pCount}p{$btnFlag}] HTTP:{$codeTry} Res: " . substr($resTry, 0, 160) . PHP_EOL;
+                    @file_put_contents($logDir . '/cart_abandonment_whatsapp.log', $logLine, FILE_APPEND);
 
                     if ($codeTry == 200 && !empty($respTry['messages'][0]['id']) && empty($respTry['error'])) {
                         $isMetaSuccess = true;
                         $successfulTpl = $cand['name'];
                         $workingLang   = $cand['lang'];
+                        $payload       = $tplPayload;
+                        $result        = $resTry;
+                        $httpCode      = $codeTry;
+                        $metaResponse  = $respTry;
                         break;
+                    } else {
+                        $errCodeNum = $respTry['error']['code'] ?? $codeTry;
+                        $errTxtMsg  = $respTry['error']['message'] ?? ($errTry ?: "HTTP {$codeTry}");
+                        $errDetails = $respTry['error']['error_data']['details'] ?? '';
+                        $attemptLogs[] = "[{$cand['name']}:{$cand['lang']}|{$pCount}p{$btnFlag}] (#{$errCodeNum}): {$errTxtMsg}" . ($errDetails ? " ({$errDetails})" : "");
+
+                        if (empty($metaResponse) || ($errCodeNum != 132001 && ($metaResponse['error']['code'] ?? 0) == 132001)) {
+                            $payload      = $tplPayload;
+                            $result       = $resTry;
+                            $httpCode     = $codeTry;
+                            $curlError    = $errTry;
+                            $metaResponse = $respTry;
+                        }
                     }
                 }
             }
-
-            // Log API call to file
-            $logDir = dirname(__DIR__) . '/logs';
-            if (!is_dir($logDir)) @mkdir($logDir, 0755, true);
-            $logEntry = '[' . date('Y-m-d H:i:s') . "] Cart-Abandon Cart#{$cartId} L{$level} HTTP:{$httpCode} To:{$cleanNumber}" . PHP_EOL;
-            $logEntry .= "Payload: " . json_encode($payload) . PHP_EOL;
-            $logEntry .= "Response: " . $result . PHP_EOL;
-            $logEntry .= str_repeat('-', 60) . PHP_EOL;
-            @file_put_contents($logDir . '/cart_abandonment_whatsapp.log', $logEntry, FILE_APPEND);
 
             if ($curlError) {
                 error_log("[AbandonedCart] cURL error cart #{$cartId}: {$curlError}");
@@ -899,7 +978,7 @@ class AbandonedCartService {
 
             if ($isMetaSuccess) {
                 $msgId = $metaResponse['messages'][0]['id'] ?? 'unknown';
-                $workingLang = $workingLang ?: ($cand['lang'] ?? 'en_US');
+                $workingLang = $workingLang ?: ($cand['lang'] ?? 'en');
 
                 // Persist the winning language so future calls and settings reflect it immediately
                 if (!empty($workingLang)) {
@@ -929,15 +1008,15 @@ class AbandonedCartService {
                 $errMsg = $metaResponse['error']['message'] ?? 'Meta API error occurred';
                 $errCode = $metaResponse['error']['code'] ?? $httpCode;
                 $errDetails = $metaResponse['error']['error_data']['details'] ?? '';
-                $detailedMsg = $errMsg . (!empty($errDetails) ? " ({$errDetails})" : "");
-                $statusMsg = "Failed API (Code {$errCode}): " . substr($detailedMsg, 0, 150);
+                $summaryDetails = !empty($attemptLogs) ? implode("\n", array_slice($attemptLogs, 0, 3)) : ($errMsg . (!empty($errDetails) ? " ({$errDetails})" : ""));
+                $statusMsg = "Failed API (Code {$errCode}): " . substr($errMsg, 0, 150);
                 $this->logWhatsApp($cartId, $cleanNumber, $message, 'api', $statusMsg);
                 return [
                     'success' => false,
                     'mode'    => 'api',
                     'is_sent' => false,
                     'level'   => $level,
-                    'error'   => "Meta Template '{$abandonTemplate}' Error (#{$errCode}): {$detailedMsg}",
+                    'error'   => "Meta Template '{$abandonTemplate}' Error (#{$errCode}):\n{$summaryDetails}",
                     'link'    => $waLink
                 ];
             }
