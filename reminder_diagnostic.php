@@ -69,6 +69,20 @@ if ($res) {
         echo "  R3=" . ($row['reminder_3_sent'] ?: 'NOT SENT') . PHP_EOL;
         echo "  R4=" . ($row['reminder_4_sent'] ?: 'NOT SENT') . PHP_EOL;
         
+        // Past carts for user
+        echo "=== PAST CARTS FOR CART 91 & 93 ===" . PHP_EOL;
+        $resPast = $conn->query("SELECT ac.id, ac.user_id, ac.status, ac.created_at, ac.reminder_1_sent, u.name, u.phone 
+                                 FROM abandoned_carts ac 
+                                 LEFT JOIN users u ON ac.user_id = u.id 
+                                 WHERE ac.id IN (91, 92, 93) OR u.phone LIKE '%8808714918%'
+                                 ORDER BY ac.id DESC");
+        if ($resPast) {
+            while ($p = $resPast->fetch_assoc()) {
+                echo "  Cart #{$p['id']} (User: {$p['name']}, Phone: {$p['phone']}, Status: {$p['status']}, Created: {$p['created_at']}, R1: {$p['reminder_1_sent']})" . PHP_EOL;
+            }
+        }
+        echo PHP_EOL;
+    
         // Calculate eligibility
         $delays = [
             1 => intval($settings['reminder_1_delay'] ?? 30),
