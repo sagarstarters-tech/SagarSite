@@ -6,15 +6,15 @@
  * Setup in Hostinger - cPanel:
  *
  * Option 1 (HTTP URL Cron - Recommended for Hostinger):
- * Command: curl -s -L 'https://www.sagarstarters.com/cron/cart_abandonment.php?key=sagar_cart_recovery_cron_secret'
+ * Command: curl -s -L -A "Mozilla/5.0" 'https://www.sagarstarters.com/cron/cart_abandonment.php?key=sagar_cart_recovery_cron_secret'
  * Schedule: Every 5 minutes
  *
  * Option 2 (PHP CLI):
- * Command: /usr/bin/php /home/u902894566/public_html/cron/cart_abandonment.php
+ * Command: /usr/bin/php /home/u902894566/domains/sagarstarters.com/public_html/cron/cart_abandonment.php
  * Schedule: Every 5 minutes
  *
  * NOTE: Always use https://www.sagarstarters.com (with www) to avoid 301 redirect.
- * The -L flag tells curl to follow redirects automatically.
+ * The -L flag tells curl to follow redirects automatically; -A provides User-Agent to bypass firewall.
  */
 
 

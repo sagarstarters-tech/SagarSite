@@ -547,7 +547,7 @@ class AbandonedCartService {
             }
 
             // If phoneId doesn't belong to this WABA (or was empty), auto-select the official WABA phone ID!
-            if (!$matchedPhone && !empty($wabaPhoneList[0]['id'])) {
+            if (!$matchedPhone && empty($phoneId) && !empty($wabaPhoneList[0]['id'])) {
                 $phoneId = $wabaPhoneList[0]['id'];
                 $senderDisplayPhone = $wabaPhoneList[0]['display_phone_number'] ?? '';
                 $safePhone = $this->conn->real_escape_string($phoneId);
@@ -608,12 +608,17 @@ class AbandonedCartService {
                 if (!empty($tJson['data']) && is_array($tJson['data'])) {
                     $allWabaTemplates = $tJson['data'];
                     $cleanTarget = strtolower(trim($abandonTemplate));
+                    $cleanNorm = preg_replace('/_+/', '_', $cleanTarget);
                     $cleanAlt1 = str_replace('_discount', '_discou', $cleanTarget);
                     $cleanAlt2 = str_replace('_discou', '_discount', $cleanTarget);
+                    $cleanNormAlt1 = str_replace('_discount', '_discou', $cleanNorm);
+                    $cleanNormAlt2 = str_replace('_discou', '_discount', $cleanNorm);
 
                     foreach ($allWabaTemplates as $tItem) {
                         $tName = strtolower(trim($tItem['name'] ?? ''));
-                        if (in_array($tName, [$cleanTarget, $cleanAlt1, $cleanAlt2], true)) {
+                        $tNameNorm = preg_replace('/_+/', '_', $tName);
+                        if (in_array($tName, [$cleanTarget, $cleanNorm, $cleanAlt1, $cleanAlt2], true) ||
+                            in_array($tNameNorm, [$cleanNorm, $cleanNormAlt1, $cleanNormAlt2], true)) {
                             if (strtoupper($tItem['status'] ?? '') === 'APPROVED') {
                                 $tplMeta = $tItem;
                                 $abandonTemplate = $tItem['name']; // Use exact Meta approved name
@@ -766,13 +771,17 @@ class AbandonedCartService {
                         ["type" => "text", "text" => $pProdNames],
                         ["type" => "text", "text" => $pCartTotal]
                     ];
-                } else {
+                } elseif ($exactBodyParamCount == 2) {
                     $liveParams = [
                         ["type" => "text", "text" => $pCustName],
-                        ["type" => "text", "text" => $pProdNames],
-                        ["type" => "text", "text" => $pCartTotal],
-                        ["type" => "text", "text" => $pRecLink]
+                        ["type" => "text", "text" => $pProdNames]
                     ];
+                } elseif ($exactBodyParamCount == 1) {
+                    $liveParams = [
+                        ["type" => "text", "text" => $pCustName]
+                    ];
+                } else {
+                    $liveParams = [];
                 }
 
                 foreach ($langCandidates as $lCode) {
@@ -842,10 +851,14 @@ class AbandonedCartService {
                         ["type" => "text", "text" => $pRecLink]
                     ];
 
+                $cleanNorm = preg_replace('/_+/', '_', $abandonTemplate);
                 $possibleNames = array_unique([
                     $abandonTemplate,
+                    $cleanNorm,
                     str_replace('_discount', '_discou', $abandonTemplate),
-                    str_replace('_discou', '_discount', $abandonTemplate)
+                    str_replace('_discou', '_discount', $abandonTemplate),
+                    str_replace('_discount', '_discou', $cleanNorm),
+                    str_replace('_discou', '_discount', $cleanNorm)
                 ]);
 
                 foreach ($possibleNames as $pName) {
@@ -1004,10 +1017,14 @@ class AbandonedCartService {
 
                 // Persist the winning language so future calls and settings reflect it immediately
                 if (!empty($workingLang)) {
-                    $this->settings['meta_template_lang'] = $workingLang;
-                    $safeLang = $this->conn->real_escape_string($workingLang);
-                    $this->conn->query("UPDATE cart_abandonment_settings SET meta_template_lang = '{$safeLang}' WHERE id = 1");
-                    $this->conn->query("UPDATE whatsapp_settings SET meta_template_lang = '{$safeLang}' WHERE id = 1");
+                    try {
+                        $this->settings['meta_template_lang'] = $workingLang;
+                        $safeLang = $this->conn->real_escape_string($workingLang);
+                        $this->repo->updateSetting('meta_template_lang', $workingLang);
+                        $this->conn->query("UPDATE whatsapp_settings SET meta_template_lang = '{$safeLang}' WHERE id = 1");
+                    } catch (\Throwable $e) {
+                        error_log("[AbandonedCart] Language persistence warning: " . $e->getMessage());
+                    }
                 }
 
                 $tplCat = !empty($tplMeta['category']) ? strtoupper($tplMeta['category']) : '';

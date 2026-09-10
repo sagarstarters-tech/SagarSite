@@ -70,7 +70,12 @@ if ($res) {
         echo "  R4=" . ($row['reminder_4_sent'] ?: 'NOT SENT') . PHP_EOL;
         
         // Calculate eligibility
-        $delays = [1=>30, 2=>360, 3=>1440, 4=>4320];
+        $delays = [
+            1 => intval($settings['reminder_1_delay'] ?? 30),
+            2 => intval($settings['reminder_2_delay'] ?? 360),
+            3 => intval($settings['reminder_3_delay'] ?? 1440),
+            4 => intval($settings['reminder_4_delay'] ?? 4320)
+        ];
         foreach ($delays as $lvl => $delay) {
             $col = "reminder_{$lvl}_sent";
             if (!empty($row[$col])) {

@@ -766,7 +766,7 @@ button.ac-btn-refresh:active {
                         <div class="col-md-6">
                             <label class="form-label small fw-bold">Option 2: URL / Custom Cron Command</label>
                             <div class="input-group input-group-sm">
-                                <input type="text" class="form-control font-monospace bg-white" readonly id="cronUrlHttp" value="curl -s -L &quot;https://www.sagarstarters.com/cron/cart_abandonment.php?key=<?php echo htmlspecialchars($settings['cron_secret_key'] ?? 'sagar_cart_recovery_cron_secret'); ?>&quot;">
+                                <input type="text" class="form-control font-monospace bg-white" readonly id="cronUrlHttp" value="curl -s -L -A &quot;Mozilla/5.0&quot; &quot;https://www.sagarstarters.com/cron/cart_abandonment.php?key=<?php echo htmlspecialchars($settings['cron_secret_key'] ?? 'sagar_cart_recovery_cron_secret'); ?>&quot;">
                                 <button class="btn btn-outline-secondary" type="button" onclick="navigator.clipboard.writeText($('#cronUrlHttp').val()); alert('URL Cron Command Copied!');"><i class="fas fa-copy"></i></button>
                             </div>
                         </div>
