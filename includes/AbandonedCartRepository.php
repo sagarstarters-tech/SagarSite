@@ -84,7 +84,7 @@ class AbandonedCartRepository {
                 'meta_template_2'         => 'reminder_2_follow_up',
                 'meta_template_3'         => 'reminder_3_urgency',
                 'meta_template_4'         => 'reminder_4_coupon_discount',
-                'meta_template_lang'      => 'en',
+                'meta_template_lang'      => 'en_US',
                 'cron_secret_key'         => 'sagar_cart_recovery_cron_secret',
             ];
 

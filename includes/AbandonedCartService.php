@@ -590,9 +590,10 @@ class AbandonedCartService {
             $isMetaSuccess = false;
             $metaResponse  = null;
             $successfulTpl = $abandonTemplate;
+            $workingLang   = '';
 
-            $langCode = trim($this->settings['meta_template_lang'] ?? 'en');
-            if (empty($langCode)) $langCode = 'en';
+            $langCode = trim($this->settings['meta_template_lang'] ?? 'en_US');
+            if (empty($langCode)) $langCode = 'en_US';
             if ($tplMeta && !empty($tplMeta['language'])) {
                 $langCode = $tplMeta['language'];
             }
@@ -612,6 +613,7 @@ class AbandonedCartService {
                 $metaResponse = json_decode($result, true);
                 $isMetaSuccess = ($httpCode == 200) && !empty($metaResponse['messages'][0]['id']) && empty($metaResponse['error']);
                 $successfulTpl = 'hello_world';
+                $workingLang   = 'en_US';
             } else {
                 // Prepare variable strings
                 $pCustName   = (string)($variables['{CustomerName}'] ?? 'Customer');
@@ -696,80 +698,119 @@ class AbandonedCartService {
                     ["type" => "text", "text" => $pRecLink]                            // 9: Link
                 ];
 
-                // Build lean candidates list
+                // Build language candidates in priority order.
+                // In Meta WhatsApp Business Manager, English templates default to 'en_US'.
+                // If 'en' throws Error #132001, 'en_US' will succeed.
+                // We test candidates in priority order so language mismatches NEVER cause failures.
+                $configuredLang = trim($this->settings['meta_template_lang'] ?? '');
+                $detectedLang   = !empty($tplMeta['language']) ? trim($tplMeta['language']) : null;
+
+                $langCandidates = [];
+                if (!empty($detectedLang)) {
+                    $langCandidates[] = $detectedLang;
+                }
+                if (!empty($configuredLang) && !in_array($configuredLang, ['en', 'en_US'], true)) {
+                    $langCandidates[] = $configuredLang;
+                }
+                // en_US is prioritized for English templates since Meta defaults to en_US and 'en' threw #132001
+                $langCandidates[] = 'en_US';
+                $langCandidates[] = 'en';
+                $langCandidates[] = 'en_GB';
+                if (!empty($configuredLang) && $configuredLang === 'hi') {
+                    array_unshift($langCandidates, 'hi');
+                }
+                $langCandidates = array_values(array_unique(array_filter($langCandidates)));
+
+                // Build candidates list with automatic multi-language fallback
                 $tplCandidates = [];
 
                 if (!empty($abandonTemplate)) {
                     // Exact match for the 4 official Meta-approved cart reminder templates
                     if (in_array($abandonTemplate, ['reminder_1_gentle_nudge', 'reminder_2_follow_up', 'reminder_3_urgency'], true)) {
-                        $tplCandidates[] = [
-                            'name'    => $abandonTemplate,
-                            'lang'    => ($tplMeta['language'] ?? 'en'),
-                            'params'  => $set_reminder_1_to_3,
-                            'header'  => false,
-                            'button'  => false
-                        ];
+                        foreach ($langCandidates as $lCode) {
+                            $tplCandidates[] = [
+                                'name'    => $abandonTemplate,
+                                'lang'    => $lCode,
+                                'params'  => $set_reminder_1_to_3,
+                                'header'  => false,
+                                'button'  => false
+                            ];
+                        }
                     } elseif ($abandonTemplate === 'reminder_4_coupon_discount') {
-                        $tplCandidates[] = [
-                            'name'    => $abandonTemplate,
-                            'lang'    => ($tplMeta['language'] ?? 'en'),
-                            'params'  => $set_reminder_4,
-                            'header'  => false,
-                            'button'  => false
-                        ];
+                        foreach ($langCandidates as $lCode) {
+                            $tplCandidates[] = [
+                                'name'    => $abandonTemplate,
+                                'lang'    => $lCode,
+                                'params'  => $set_reminder_4,
+                                'header'  => false,
+                                'button'  => false
+                            ];
+                        }
                     } elseif ($abandonTemplate === 'order_confirmation') {
+                        foreach (['en', 'en_US'] as $lCode) {
+                            $tplCandidates[] = [
+                                'name'    => 'order_confirmation',
+                                'lang'    => $lCode,
+                                'params'  => $set_9_confirmation,
+                                'header'  => false,
+                                'button'  => false
+                            ];
+                        }
+                    } elseif (in_array($abandonTemplate, ['new_order_status', 'order_status_updates', 'order_status_update'], true)) {
+                        foreach (['en', 'en_US'] as $lCode) {
+                            $tplCandidates[] = [
+                                'name'    => $abandonTemplate,
+                                'lang'    => $lCode,
+                                'params'  => $set_5_status,
+                                'header'  => false,
+                                'button'  => false
+                            ];
+                        }
+                    } elseif ($tplMeta && !empty($exactBodyParamCount)) {
+                        $exactParams = array_slice($allPoolParams, 0, min($exactBodyParamCount, count($allPoolParams)));
+                        foreach ($langCandidates as $lCode) {
+                            $tplCandidates[] = [
+                                'name'    => $abandonTemplate,
+                                'lang'    => $lCode,
+                                'params'  => $exactParams,
+                                'header'  => $tplRequiresHeaderImage,
+                                'button'  => $tplRequiresButtonUrl
+                            ];
+                        }
+                    } elseif ($tplMeta && empty($exactBodyParamCount)) {
+                        // Static template without body parameters
+                        foreach ($langCandidates as $lCode) {
+                            $tplCandidates[] = [
+                                'name'    => $abandonTemplate,
+                                'lang'    => $lCode,
+                                'params'  => [],
+                                'header'  => $tplRequiresHeaderImage,
+                                'button'  => $tplRequiresButtonUrl
+                            ];
+                        }
+                    } else {
+                        // Generic custom template
+                        foreach ($langCandidates as $lCode) {
+                            $tplCandidates[] = [
+                                'name'    => $abandonTemplate,
+                                'lang'    => $lCode,
+                                'params'  => $set_4_simple,
+                                'header'  => false,
+                                'button'  => false
+                            ];
+                        }
+                    }
+                } else {
+                    // Fallback to order_confirmation only if merchant did not configure any template
+                    foreach (['en', 'en_US'] as $lCode) {
                         $tplCandidates[] = [
                             'name'    => 'order_confirmation',
-                            'lang'    => 'en',
+                            'lang'    => $lCode,
                             'params'  => $set_9_confirmation,
                             'header'  => false,
                             'button'  => false
                         ];
-                    } elseif (in_array($abandonTemplate, ['new_order_status', 'order_status_updates', 'order_status_update'], true)) {
-                        $tplCandidates[] = [
-                            'name'    => $abandonTemplate,
-                            'lang'    => 'en',
-                            'params'  => $set_5_status,
-                            'header'  => false,
-                            'button'  => false
-                        ];
-                    } elseif ($tplMeta && !empty($exactBodyParamCount)) {
-                        $exactParams = array_slice($allPoolParams, 0, min($exactBodyParamCount, count($allPoolParams)));
-                        $tplCandidates[] = [
-                            'name'    => $abandonTemplate,
-                            'lang'    => ($tplMeta['language'] ?? $langCode),
-                            'params'  => $exactParams,
-                            'header'  => $tplRequiresHeaderImage,
-                            'button'  => $tplRequiresButtonUrl
-                        ];
-                    } elseif ($tplMeta && empty($exactBodyParamCount)) {
-                        // Static template without body parameters
-                        $tplCandidates[] = [
-                            'name'    => $abandonTemplate,
-                            'lang'    => ($tplMeta['language'] ?? $langCode),
-                            'params'  => [],
-                            'header'  => $tplRequiresHeaderImage,
-                            'button'  => $tplRequiresButtonUrl
-                        ];
-                    } else {
-                        // Generic custom template
-                        $tplCandidates[] = [
-                            'name'    => $abandonTemplate,
-                            'lang'    => $langCode,
-                            'params'  => $set_4_simple,
-                            'header'  => false,
-                            'button'  => false
-                        ];
                     }
-                } else {
-                    // Fallback to order_confirmation only if merchant did not configure any template
-                    $tplCandidates[] = [
-                        'name'    => 'order_confirmation',
-                        'lang'    => 'en',
-                        'params'  => $set_9_confirmation,
-                        'header'  => false,
-                        'button'  => false
-                    ];
                 }
 
                 foreach ($tplCandidates as $cand) {
@@ -830,6 +871,7 @@ class AbandonedCartService {
                     if ($codeTry == 200 && !empty($respTry['messages'][0]['id']) && empty($respTry['error'])) {
                         $isMetaSuccess = true;
                         $successfulTpl = $cand['name'];
+                        $workingLang   = $cand['lang'];
                         break;
                     }
                 }
@@ -857,31 +899,45 @@ class AbandonedCartService {
 
             if ($isMetaSuccess) {
                 $msgId = $metaResponse['messages'][0]['id'] ?? 'unknown';
+                $workingLang = $workingLang ?: ($cand['lang'] ?? 'en_US');
+
+                // Persist the winning language so future calls and settings reflect it immediately
+                if (!empty($workingLang)) {
+                    $this->settings['meta_template_lang'] = $workingLang;
+                    $safeLang = $this->conn->real_escape_string($workingLang);
+                    $this->conn->query("UPDATE cart_abandonment_settings SET meta_template_lang = '{$safeLang}' WHERE id = 1");
+                    $this->conn->query("UPDATE whatsapp_settings SET meta_template_lang = '{$safeLang}' WHERE id = 1");
+                }
+
                 $tplCat = !empty($tplMeta['category']) ? strtoupper($tplMeta['category']) : '';
-                $statusMsg = "Sent via Meta Template '{$successfulTpl}' (ID: " . substr($msgId, 0, 30) . ')';
+                $statusMsg = "Sent via Meta Template '{$successfulTpl}' [{$workingLang}] (ID: " . substr($msgId, 0, 30) . ')';
                 $this->logWhatsApp($cartId, $cleanNumber, $message, 'api', $statusMsg);
                 return [
-                    'success'    => true,
-                    'mode'       => 'api',
-                    'is_sent'    => true,
-                    'level'      => $level,
-                    'message_id' => $msgId,
-                    'link'       => $waLink,
-                    'category'   => $tplCat,
-                    'template'   => $successfulTpl,
-                    'message'    => "Reminder Level {$level} sent successfully via Meta Template '{$successfulTpl}'!"
+                    'success'       => true,
+                    'mode'          => 'api',
+                    'is_sent'       => true,
+                    'level'         => $level,
+                    'message_id'    => $msgId,
+                    'link'          => $waLink,
+                    'category'      => $tplCat,
+                    'template'      => $successfulTpl,
+                    'template_used' => "{$successfulTpl} ({$workingLang})",
+                    'language'      => $workingLang,
+                    'message'       => "Reminder Level {$level} sent successfully via Meta Template '{$successfulTpl}' ({$workingLang})!"
                 ];
             } else {
                 $errMsg = $metaResponse['error']['message'] ?? 'Meta API error occurred';
                 $errCode = $metaResponse['error']['code'] ?? $httpCode;
-                $statusMsg = "Failed API (Code {$errCode}): " . substr($errMsg, 0, 120);
+                $errDetails = $metaResponse['error']['error_data']['details'] ?? '';
+                $detailedMsg = $errMsg . (!empty($errDetails) ? " ({$errDetails})" : "");
+                $statusMsg = "Failed API (Code {$errCode}): " . substr($detailedMsg, 0, 150);
                 $this->logWhatsApp($cartId, $cleanNumber, $message, 'api', $statusMsg);
                 return [
                     'success' => false,
                     'mode'    => 'api',
                     'is_sent' => false,
                     'level'   => $level,
-                    'error'   => "Meta Template '{$abandonTemplate}' Error (#{$errCode}): {$errMsg}",
+                    'error'   => "Meta Template '{$abandonTemplate}' Error (#{$errCode}): {$detailedMsg}",
                     'link'    => $waLink
                 ];
             }

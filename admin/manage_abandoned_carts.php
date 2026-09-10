@@ -744,8 +744,13 @@ button.ac-btn-refresh:active {
                 <div class="row g-3 mb-4">
                     <div class="col-md-6">
                         <label class="form-label fw-semibold small">Meta Template Language Code</label>
-                        <input type="text" class="form-control rounded-3" name="meta_template_lang" id="metaTplLang" value="<?php echo htmlspecialchars($settings['meta_template_lang'] ?? 'en'); ?>">
-                        <small class="text-muted">Default: 'en' or 'hi'</small>
+                        <div class="input-group input-group-sm mb-1">
+                            <input type="text" class="form-control font-monospace" name="meta_template_lang" id="metaTplLang" value="<?php echo htmlspecialchars($settings['meta_template_lang'] ?? 'en_US'); ?>" placeholder="en_US">
+                            <button type="button" class="btn btn-outline-primary fw-bold" onclick="document.getElementById('metaTplLang').value='en_US';">en_US (Recommended)</button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('metaTplLang').value='en';">en</button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('metaTplLang').value='hi';">hi</button>
+                        </div>
+                        <small class="text-muted">Standard Meta English is <code>en_US</code>. Meta throws <em>#132001</em> if requested language doesn't match approval locale. System auto-retries <code>en_US</code>, <code>en</code>, <code>en_GB</code>.</small>
                         <div id="tplSyncStatus" class="small mt-2 d-none"></div>
                     </div>
                     <div class="col-md-6">
@@ -1952,11 +1957,11 @@ function applyOfficialCartTemplates() {
     if (t2) t2.value = 'reminder_2_follow_up';
     if (t3) t3.value = 'reminder_3_urgency';
     if (t4) t4.value = 'reminder_4_coupon_discount';
-    if (lang) lang.value = 'en';
+    if (lang) lang.value = 'en_US';
 
     saveSettings(function(res) {
         if (res.success) {
-            alert("✅ All 4 Official Meta Templates Applied Successfully!\n\n• Stage 1: reminder_1_gentle_nudge\n• Stage 2: reminder_2_follow_up\n• Stage 3: reminder_3_urgency\n• Stage 4: reminder_4_coupon_discount\n\nSettings saved successfully.");
+            alert("✅ All 4 Official Meta Templates Applied Successfully!\n\n• Stage 1: reminder_1_gentle_nudge\n• Stage 2: reminder_2_follow_up\n• Stage 3: reminder_3_urgency\n• Stage 4: reminder_4_coupon_discount\n• Language: en_US\n\nSettings saved successfully.");
             location.reload();
         } else {
             alert("Settings saved. Please refresh the page.");
