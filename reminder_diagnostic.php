@@ -154,8 +154,8 @@ if ($ws && $ws->num_rows > 0) {
                     foreach ($tpl['components'] as $cmp) {
                         $ctype = $cmp['type'] ?? '';
                         $cformat = $cmp['format'] ?? '';
-                        $ctext = substr(str_replace(["\r", "\n"], ' ', $cmp['text'] ?? ''), 0, 80);
-                        echo "    [{$ctype}" . ($cformat ? ":$cformat" : "") . "] $ctext" . PHP_EOL;
+                        $ctext = str_replace(["\r\n", "\r"], "\n", $cmp['text'] ?? '');
+                        echo "    [{$ctype}" . ($cformat ? ":$cformat" : "") . "] " . PHP_EOL . "      " . str_replace("\n", "\n      ", $ctext) . PHP_EOL;
                         if (!empty($cmp['buttons'])) {
                             foreach ($cmp['buttons'] as $b) {
                                 echo "      Button: " . ($b['type'] ?? '') . " | " . ($b['text'] ?? '') . " | " . ($b['url'] ?? '') . PHP_EOL;
@@ -163,6 +163,7 @@ if ($ws && $ws->num_rows > 0) {
                         }
                     }
                 }
+
             }
         } else {
             echo "  Templates Response: " . substr($t_res, 0, 300) . PHP_EOL;
@@ -228,7 +229,15 @@ if (isset($_GET['run']) && $_GET['run'] === '1') {
     $conn->query("UPDATE abandoned_cart_settings SET setting_value = '0' WHERE setting_key = 'last_auto_run'");
     $result = $service->processAutoReminders();
     echo "Result: " . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+} elseif (isset($_GET['test_cart'])) {
+    $cId = intval($_GET['test_cart']);
+    $tPhone = $_GET['test_phone'] ?? '';
+    $tLevel = intval($_GET['level'] ?? 1);
+    echo "=== TESTING REMINDER SEND FOR CART #{$cId} (Level {$tLevel}, Phone: {$tPhone}) ===" . PHP_EOL;
+    $result = $service->sendReminder($cId, $tLevel, true, $tPhone);
+    echo "Result: " . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
 } else {
-    echo "Add ?run=1 to URL to force-run reminders" . PHP_EOL;
+    echo "Add ?run=1 to URL to force-run reminders, or ?test_cart=93[&test_phone=91...&level=1] to test send" . PHP_EOL;
 }
+
 
