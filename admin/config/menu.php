@@ -205,8 +205,8 @@ return [
         'pages'    => [
             'manage_homepage.php', 'hero-slider-settings.php', 'manage-slides.php',
             'manage_homepage_features.php', 'manage_banners.php',
-            'manage_pages.php', 'manage_about.php',
-            'manage_site_content.php', 'manage_product_share.php'
+            'manage_pages.php', 'manage_about.php', 'manage_contact.php',
+            'manage_product_share.php', 'manage_testimonials.php'
         ],
         'children' => [
             [
@@ -271,12 +271,6 @@ return [
                 'icon'  => 'fa-envelope-open-text',
                 'url'   => 'manage_contact.php',
                 'pages' => ['manage_contact.php'],
-            ],
-            [
-                'label' => 'Footer & Site Details',
-                'icon'  => 'fa-level-down-alt',
-                'url'   => 'manage_admin_site.php?tab=site_details',
-                'pages' => ['manage_site_content.php', 'manage_admin_site.php'],
             ],
             [
                 'label' => 'Product Share',

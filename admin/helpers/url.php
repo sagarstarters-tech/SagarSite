@@ -22,9 +22,17 @@ require_once CONFIG_PATH . 'config.php';
  */
 function admin_url(string $page = '', array $params = []): string
 {
+    if (strpos($page, 'http://') === 0 || strpos($page, 'https://') === 0) {
+        if (!empty($params)) {
+            $sep = (strpos($page, '?') !== false) ? '&' : '?';
+            $page .= $sep . http_build_query($params);
+        }
+        return $page;
+    }
     $url = ADMIN_BASE_URL . ltrim($page, '/');
     if (!empty($params)) {
-        $url .= '?' . http_build_query($params);
+        $sep = (strpos($url, '?') !== false) ? '&' : '?';
+        $url .= $sep . http_build_query($params);
     }
     return $url;
 }

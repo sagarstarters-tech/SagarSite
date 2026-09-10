@@ -9,15 +9,6 @@
  *   $global_settings - app settings array
  */
 
-if (!function_exists('admin_url')) {
-    function admin_url(string $url): string {
-        if (strpos($url, 'http://') === 0 || strpos($url, 'https://') === 0) {
-            return $url;
-        }
-        $base = defined('ADMIN_BASE_URL') ? ADMIN_BASE_URL : '/admin/';
-        return $base . ltrim($url, '/');
-    }
-}
 
 /**
  * Helper: Determine if a menu item is "active" (expanded / highlighted).
@@ -303,7 +294,7 @@ if (isset($conn)) {
         <i class="fas fa-external-link-alt"></i>
         <span>View Store</span>
     </a>
-    <a href="../includes/auth.php?action=logout" class="list-group-item list-group-item-action text-danger">
+    <a href="<?php echo defined('STORE_BASE_URL') ? htmlspecialchars(STORE_BASE_URL . 'includes/auth.php?action=logout') : '../includes/auth.php?action=logout'; ?>" class="list-group-item list-group-item-action text-danger">
         <i class="fas fa-sign-out-alt"></i>
         <span>Logout</span>
     </a>

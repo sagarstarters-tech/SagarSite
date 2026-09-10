@@ -14,28 +14,6 @@ try {
 // Handle Add/Edit Banner & Dimension Settings
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
-    
-    // Update Slider & Banner Dimensions
-    if ($action === 'update_dimensions') {
-        $desktop_height = $conn->real_escape_string(trim($_POST['desktop_height'] ?? '560px'));
-        $tablet_height = $conn->real_escape_string(trim($_POST['tablet_height'] ?? '460px'));
-        $mobile_height = $conn->real_escape_string(trim($_POST['mobile_height'] ?? '380px'));
-        $layout = $conn->real_escape_string($_POST['layout'] ?? 'full');
-        $container_width = $conn->real_escape_string(trim($_POST['container_width'] ?? '100%'));
-        $image_fit = $conn->real_escape_string($_POST['image_fit'] ?? 'cover');
-
-        $conn->query("UPDATE hero_slider_settings SET 
-            desktop_height='$desktop_height', 
-            tablet_height='$tablet_height', 
-            mobile_height='$mobile_height', 
-            layout='$layout', 
-            container_width='$container_width', 
-            image_fit='$image_fit' 
-            WHERE id=1");
-
-        header("Location: manage_banners.php?success=Banner & Slider dimensions updated successfully");
-        exit;
-    }
 
     // Add new banner
     if ($action === 'add') {
@@ -370,18 +348,6 @@ $slider_settings = $slider_settings_q ? $slider_settings_q->fetch_assoc() : [];
 </div>
 
 <script>
-function setMbVal(id, val) {
-    const el = document.getElementById(id);
-    if (el) el.value = val;
-}
-function toggleMbContainerWidth() {
-    const sel = document.getElementById('mbLayoutSelect');
-    const grp = document.getElementById('mbContainerWidthGroup');
-    if (sel && grp) {
-        grp.style.display = (sel.value === 'boxed') ? 'block' : 'none';
-    }
-}
-
 document.querySelectorAll('.edit-banner-btn').forEach(button => {
     button.addEventListener('click', function() {
         document.getElementById('edit_banner_id').value = this.dataset.id;

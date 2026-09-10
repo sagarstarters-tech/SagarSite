@@ -362,8 +362,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $val = intval($_POST['testimonial_show_count']);
             $conn->query("INSERT INTO settings (setting_key, setting_value) VALUES ('testimonial_show_count', '$val') ON DUPLICATE KEY UPDATE setting_value='$val'");
         }
-        $_SESSION['flash_success'] = "Settings updated successfully.";
-        header("Location: manage_settings.php");
+        $_SESSION['flash_success'] = "Testimonials section settings updated successfully.";
+        header("Location: manage_settings.php?tab=testimonials");
         exit;
     }
 }
@@ -413,6 +413,9 @@ while($r = $set_q->fetch_assoc()) {
 $top_menus = $conn->query("SELECT * FROM menus WHERE parent_id IS NULL ORDER BY order_index ASC");
 
 $active_tab = isset($_GET['tab']) ? $_GET['tab'] : 'general';
+if ($active_tab === 'frontend') {
+    $active_tab = 'testimonials';
+}
 ?>
 
 <div class="container-fluid px-4 py-4 adm-wrapper">
@@ -444,7 +447,7 @@ $active_tab = isset($_GET['tab']) ? $_GET['tab'] : 'general';
         <a class="adm-filter-tab <?php echo $active_tab == 'menus' ? 'active' : ''; ?>" href="?tab=menus"><i class="fas fa-bars me-1"></i>User Menus</a>
         <a class="adm-filter-tab <?php echo $active_tab == 'banners' ? 'active' : ''; ?>" href="?tab=banners"><i class="fas fa-images me-1"></i>Page Hero Banners</a>
         <a class="adm-filter-tab <?php echo $active_tab == 'social_login' ? 'active' : ''; ?>" href="?tab=social_login"><i class="fas fa-user-lock me-1"></i>Social Login</a>
-        <a class="adm-filter-tab <?php echo $active_tab == 'frontend' ? 'active' : ''; ?>" href="?tab=frontend"><i class="fas fa-desktop me-1"></i>Frontend Content</a>
+        <a class="adm-filter-tab <?php echo $active_tab == 'testimonials' ? 'active' : ''; ?>" href="?tab=testimonials"><i class="fas fa-comment-dots me-1"></i>Testimonials</a>
     </div>
 
 <div class="tab-content" id="settingsTabContent">
@@ -1236,14 +1239,17 @@ $active_tab = isset($_GET['tab']) ? $_GET['tab'] : 'general';
         </div>
     </div> <!-- End Social Login Tab -->
 
-    <!-- Frontend Content Tab -->
-    <div class="tab-pane fade <?php echo $active_tab == 'frontend' ? 'show active' : ''; ?>" id="tab-frontend" role="tabpanel">
-        <div class="card border-0 shadow-sm rounded-4 mb-4" style="max-width: 600px;">
-            <div class="card-header bg-white border-0 pt-4 pb-0">
-                <h5 class="fw-bold m-0"><i class="fas fa-desktop me-2 text-primary"></i>Testimonials Section Control</h5>
+    <!-- Testimonials Tab -->
+    <div class="tab-pane fade <?php echo $active_tab == 'testimonials' ? 'show active' : ''; ?>" id="tab-testimonials" role="tabpanel">
+        <div class="card border-0 shadow-sm rounded-4 mb-4" style="max-width: 650px;">
+            <div class="card-header bg-white border-0 pt-4 pb-0 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <h5 class="fw-bold m-0"><i class="fas fa-comment-dots me-2 text-primary"></i>Testimonials Section Control</h5>
+                <a href="manage_testimonials.php" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold">
+                    <i class="fas fa-list-alt me-1"></i>Manage Reviews
+                </a>
             </div>
             <div class="card-body p-4">
-                <form method="POST" action="manage_settings.php?tab=frontend">
+                <form method="POST" action="manage_settings.php?tab=testimonials">
                     <?php echo csrf_input(); ?>
                     <input type="hidden" name="action" value="update_settings">
                     <input type="hidden" name="frontend_settings_update" value="1">
@@ -1276,14 +1282,14 @@ $active_tab = isset($_GET['tab']) ? $_GET['tab'] : 'general';
                     </div>
 
                     <hr class="my-4">
-                    <div class="d-flex align-items-center justify-content-between">
-                         <div class="text-muted small"><i class="fas fa-info-circle me-1"></i> These settings control the visible slider on the website.</div>
-                         <button type="submit" class="btn btn-primary btn-custom px-4">Update Frontend Content</button>
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                         <div class="text-muted small"><i class="fas fa-info-circle me-1"></i> These settings control the visible reviews slider on the website.</div>
+                         <button type="submit" class="btn btn-primary btn-custom px-4">Save Testimonials Settings</button>
                     </div>
                 </form>
             </div>
         </div>
-    </div> <!-- End Frontend Tab -->
+    </div> <!-- End Testimonials Tab -->
     
     <!-- Shipping Tab -->
     <div class="tab-pane fade <?php echo $active_tab == 'shipping' ? 'show active' : ''; ?>" id="tab-shipping" role="tabpanel">
