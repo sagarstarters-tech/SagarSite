@@ -441,46 +441,156 @@ class AbandonedCartService {
             }
 
             $wabaName = '';
-            // Query Phone Number ID directly from Meta Graph API
-            // This verifies token validity, checks self-sending, and discovers the parent WABA ID
-            if (!empty($phoneId) && !empty($token)) {
-                $chPhone = curl_init("https://graph.facebook.com/v21.0/{$phoneId}?fields=id,display_phone_number,whatsapp_business_account{id,name}");
-                curl_setopt_array($chPhone, [
+
+            // Step 1: Auto-discover WABA ID if missing using debug_token, /me businesses, and /me/accounts
+            if (empty($wabaId)) {
+                // Method A: debug_token inspection (returns exact target WABA ID from token scopes)
+                $chD = curl_init("https://graph.facebook.com/debug_token?input_token=" . urlencode($token) . "&access_token=" . urlencode($token));
+                curl_setopt_array($chD, [
+                    CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . $token, 'Accept: application/json'],
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_SSL_VERIFYPEER => false,
+                    CURLOPT_SSL_VERIFYHOST => 0,
+                    CURLOPT_TIMEOUT        => 6,
+                ]);
+                $dRes = curl_exec($chD);
+                curl_close($chD);
+                $dJson = json_decode($dRes, true);
+                if (!empty($dJson['data']['granular_scopes'])) {
+                    foreach ($dJson['data']['granular_scopes'] as $scopeItem) {
+                        $scopeName = $scopeItem['scope'] ?? '';
+                        if (in_array($scopeName, ['whatsapp_business_management', 'whatsapp_business_messaging']) && !empty($scopeItem['target_ids'])) {
+                            $wabaId = $scopeItem['target_ids'][0];
+                            break;
+                        }
+                    }
+                }
+
+                // Method B: check /me businesses
+                if (empty($wabaId)) {
+                    $chMe = curl_init("https://graph.facebook.com/v21.0/me?fields=id,name,businesses{owned_whatsapp_business_accounts,client_whatsapp_business_accounts}");
+                    curl_setopt_array($chMe, [
+                        CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . $token, 'Accept: application/json'],
+                        CURLOPT_RETURNTRANSFER => true,
+                        CURLOPT_SSL_VERIFYPEER => false,
+                        CURLOPT_SSL_VERIFYHOST => 0,
+                        CURLOPT_TIMEOUT        => 6,
+                    ]);
+                    $meRes = curl_exec($chMe);
+                    curl_close($chMe);
+                    $meJson = json_decode($meRes, true);
+                    if (!empty($meJson['businesses']['data'])) {
+                        foreach ($meJson['businesses']['data'] as $biz) {
+                            if (!empty($biz['owned_whatsapp_business_accounts']['data'][0]['id'])) {
+                                $wabaId = $biz['owned_whatsapp_business_accounts']['data'][0]['id'];
+                                break;
+                            }
+                            if (!empty($biz['client_whatsapp_business_accounts']['data'][0]['id'])) {
+                                $wabaId = $biz['client_whatsapp_business_accounts']['data'][0]['id'];
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // Method C: check accounts via /me/accounts
+                if (empty($wabaId)) {
+                    $chAcc = curl_init("https://graph.facebook.com/v21.0/me/accounts?fields=id,name");
+                    curl_setopt_array($chAcc, [
+                        CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . $token, 'Accept: application/json'],
+                        CURLOPT_RETURNTRANSFER => true,
+                        CURLOPT_SSL_VERIFYPEER => false,
+                        CURLOPT_SSL_VERIFYHOST => 0,
+                        CURLOPT_TIMEOUT        => 6,
+                    ]);
+                    $accRes = curl_exec($chAcc);
+                    curl_close($chAcc);
+                    $accJson = json_decode($accRes, true);
+                    if (!empty($accJson['data'][0]['id'])) {
+                        $wabaId = $accJson['data'][0]['id'];
+                    }
+                }
+
+                if (!empty($wabaId)) {
+                    $safeWaba = $this->conn->real_escape_string($wabaId);
+                    $this->conn->query("UPDATE whatsapp_settings SET waba_id = '{$safeWaba}' WHERE id = 1");
+                }
+            }
+
+            // Step 2: Query phone numbers belonging to this WABA & auto-heal Phone Number ID if mismatched
+            $senderDisplayPhone = '';
+            $wabaPhoneList = [];
+            if (!empty($wabaId)) {
+                $chPl = curl_init("https://graph.facebook.com/v21.0/{$wabaId}/phone_numbers?fields=id,display_phone_number,verified_name,code_verification_status");
+                curl_setopt_array($chPl, [
+                    CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . $token, 'Accept: application/json'],
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_SSL_VERIFYPEER => false,
+                    CURLOPT_SSL_VERIFYHOST => 0,
+                    CURLOPT_TIMEOUT        => 6,
+                ]);
+                $plRes = curl_exec($chPl);
+                curl_close($chPl);
+                $plJson = json_decode($plRes, true);
+                if (!empty($plJson['data']) && is_array($plJson['data'])) {
+                    $wabaPhoneList = $plJson['data'];
+                }
+            }
+
+            $matchedPhone = false;
+            foreach ($wabaPhoneList as $pItem) {
+                if (($pItem['id'] ?? '') === $phoneId) {
+                    $matchedPhone = true;
+                    $senderDisplayPhone = $pItem['display_phone_number'] ?? '';
+                    break;
+                }
+            }
+
+            // If phoneId doesn't belong to this WABA (or was empty), auto-select the official WABA phone ID!
+            if (!$matchedPhone && !empty($wabaPhoneList[0]['id'])) {
+                $phoneId = $wabaPhoneList[0]['id'];
+                $senderDisplayPhone = $wabaPhoneList[0]['display_phone_number'] ?? '';
+                $safePhone = $this->conn->real_escape_string($phoneId);
+                $this->conn->query("UPDATE whatsapp_settings SET phone_number_id = '{$safePhone}' WHERE id = 1");
+            } elseif (!$matchedPhone && !empty($phoneId)) {
+                // Query phone directly if WABA phone list was unavailable
+                $chSingle = curl_init("https://graph.facebook.com/v21.0/{$phoneId}?fields=id,display_phone_number");
+                curl_setopt_array($chSingle, [
                     CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . $token, 'Accept: application/json'],
                     CURLOPT_RETURNTRANSFER => true,
                     CURLOPT_SSL_VERIFYPEER => false,
                     CURLOPT_SSL_VERIFYHOST => 0,
                     CURLOPT_TIMEOUT        => 5,
                 ]);
-                $pRes = curl_exec($chPhone);
-                curl_close($chPhone);
-                $pJson = json_decode($pRes, true);
-
-                if (!empty($pJson['whatsapp_business_account']['id'])) {
-                    $wabaId = $pJson['whatsapp_business_account']['id'];
-                    $wabaName = $pJson['whatsapp_business_account']['name'] ?? '';
-                    $safeWaba = $this->conn->real_escape_string($wabaId);
-                    $this->conn->query("UPDATE whatsapp_settings SET waba_id = '{$safeWaba}' WHERE id = 1");
-                }
-
-                if (!empty($pJson['display_phone_number'])) {
-                    $metaSenderDigits = preg_replace('/[^0-9]/', '', $pJson['display_phone_number']);
-                    if (strlen($metaSenderDigits) == 10) $metaSenderDigits = '91' . $metaSenderDigits;
-                    if (!empty($metaSenderDigits) && $cleanNumber === $metaSenderDigits) {
-                        $err = "Self-Sending Blocked: The recipient phone (+{$cleanNumber}) is the EXACT same number as your WhatsApp Business sender SIM (+{$metaSenderDigits}). Meta Cloud API will NOT deliver messages from a business number to itself. Please test with a different customer mobile number.";
-                        $this->logWhatsApp($cartId, $cleanNumber, $message, 'api', "Warning: " . $err);
-                        return [
-                            'success' => false,
-                            'mode'    => 'api',
-                            'is_sent' => false,
-                            'error'   => $err,
-                            'link'    => $waLink
-                        ];
-                    }
+                $sRes = curl_exec($chSingle);
+                curl_close($chSingle);
+                $sJson = json_decode($sRes, true);
+                if (!empty($sJson['display_phone_number'])) {
+                    $senderDisplayPhone = $sJson['display_phone_number'];
                 }
             }
 
-            // Inspect template metadata live from Meta WABA
+            // Recompute target Meta API URL with verified phoneId
+            $url = "https://graph.facebook.com/v21.0/{$phoneId}/messages";
+
+            // Check Self-Sending Block
+            if (!empty($senderDisplayPhone)) {
+                $metaSenderDigits = preg_replace('/[^0-9]/', '', $senderDisplayPhone);
+                if (strlen($metaSenderDigits) == 10) $metaSenderDigits = '91' . $metaSenderDigits;
+                if (!empty($metaSenderDigits) && $cleanNumber === $metaSenderDigits) {
+                    $err = "Self-Sending Blocked: The recipient phone (+{$cleanNumber}) is the EXACT same number as your WhatsApp Business sender SIM (+{$metaSenderDigits}). Meta Cloud API will NOT deliver messages from a business number to itself. Please test with a different customer mobile number.";
+                    $this->logWhatsApp($cartId, $cleanNumber, $message, 'api', "Warning: " . $err);
+                    return [
+                        'success' => false,
+                        'mode'    => 'api',
+                        'is_sent' => false,
+                        'error'   => $err,
+                        'link'    => $waLink
+                    ];
+                }
+            }
+
+            // Step 3: Inspect template metadata live from Meta WABA
             $allWabaTemplates = [];
             $tplMeta = null;
             if (!empty($wabaId)) {
@@ -538,6 +648,7 @@ class AbandonedCartService {
                             $headerImageParam = true;
                         } elseif ($hFormat === 'TEXT') {
                             $hText = $c['text'] ?? '';
+                            // Only dynamic header text with variable {{1}} requires header component in API
                             if (preg_match('/\{\{(\d+)\}\}/', $hText)) {
                                 $headerTextParam = true;
                             }
@@ -665,18 +776,31 @@ class AbandonedCartService {
                 }
 
                 foreach ($langCandidates as $lCode) {
+                    // Standard live candidate (with button if dynamic)
                     $tplCandidates[] = [
                         'name'         => $abandonTemplate,
                         'lang'         => $lCode,
                         'params'       => $liveParams,
                         'header_img'   => $headerImageParam,
                         'header_text'  => $headerTextParam,
-                        'button_index' => $buttonUrlIndex
+                        'button_index' => $buttonUrlIndex,
+                        'button_val'   => $pTokenOnly
                     ];
-                }
 
-                if ($buttonUrlIndex !== null) {
-                    foreach ($langCandidates as $lCode) {
+                    if ($buttonUrlIndex !== null) {
+                        // Candidate with full recovery link in button
+                        if (!empty($pRecLink)) {
+                            $tplCandidates[] = [
+                                'name'         => $abandonTemplate,
+                                'lang'         => $lCode,
+                                'params'       => $liveParams,
+                                'header_img'   => $headerImageParam,
+                                'header_text'  => $headerTextParam,
+                                'button_index' => $buttonUrlIndex,
+                                'button_val'   => $pRecLink
+                            ];
+                        }
+                        // Candidate without button component
                         $tplCandidates[] = [
                             'name'         => $abandonTemplate,
                             'lang'         => $lCode,
@@ -684,6 +808,19 @@ class AbandonedCartService {
                             'header_img'   => $headerImageParam,
                             'header_text'  => $headerTextParam,
                             'button_index' => null
+                        ];
+                    }
+
+                    if ($headerTextParam) {
+                        // Also try without header text parameter
+                        $tplCandidates[] = [
+                            'name'         => $abandonTemplate,
+                            'lang'         => $lCode,
+                            'params'       => $liveParams,
+                            'header_img'   => false,
+                            'header_text'  => false,
+                            'button_index' => $buttonUrlIndex,
+                            'button_val'   => $pTokenOnly
                         ];
                     }
                 }
@@ -713,6 +850,7 @@ class AbandonedCartService {
 
                 foreach ($possibleNames as $pName) {
                     foreach ($langCandidates as $lCode) {
+                        // Variation A: Standard body params, no button
                         $tplCandidates[] = [
                             'name'         => $pName,
                             'lang'         => $lCode,
@@ -721,6 +859,30 @@ class AbandonedCartService {
                             'header_text'  => false,
                             'button_index' => null
                         ];
+                        // Variation B: Dynamic button with token
+                        if (!empty($pTokenOnly)) {
+                            $tplCandidates[] = [
+                                'name'         => $pName,
+                                'lang'         => $lCode,
+                                'params'       => $paramsStage,
+                                'header_img'   => false,
+                                'header_text'  => false,
+                                'button_index' => '0',
+                                'button_val'   => $pTokenOnly
+                            ];
+                        }
+                        // Variation C: Dynamic button with link
+                        if (!empty($pRecLink)) {
+                            $tplCandidates[] = [
+                                'name'         => $pName,
+                                'lang'         => $lCode,
+                                'params'       => $paramsStage,
+                                'header_img'   => false,
+                                'header_text'  => false,
+                                'button_index' => '0',
+                                'button_val'   => $pRecLink
+                            ];
+                        }
                     }
                 }
             }
@@ -761,18 +923,21 @@ class AbandonedCartService {
                     ];
                 }
 
-                if ($cand['button_index'] !== null && !empty($pTokenOnly)) {
-                    $components[] = [
-                        "type"       => "button",
-                        "sub_type"   => "url",
-                        "index"      => (string)$cand['button_index'],
-                        "parameters" => [
-                            [
-                                "type" => "text",
-                                "text" => $pTokenOnly
+                if ($cand['button_index'] !== null) {
+                    $bVal = !empty($cand['button_val']) ? $cand['button_val'] : $pTokenOnly;
+                    if (!empty($bVal)) {
+                        $components[] = [
+                            "type"       => "button",
+                            "sub_type"   => "url",
+                            "index"      => (string)$cand['button_index'],
+                            "parameters" => [
+                                [
+                                    "type" => "text",
+                                    "text" => $bVal
+                                ]
                             ]
-                        ]
-                    ];
+                        ];
+                    }
                 }
 
                 $tplPayload = [
@@ -865,15 +1030,16 @@ class AbandonedCartService {
                 $errMsg = $metaResponse['error']['message'] ?? 'Meta API error occurred';
                 $errCode = $metaResponse['error']['code'] ?? $httpCode;
                 $errDetails = $metaResponse['error']['error_data']['details'] ?? '';
-                $summaryDetails = !empty($attemptLogs) ? implode("\n", array_slice($attemptLogs, 0, 3)) : ($errMsg . (!empty($errDetails) ? " ({$errDetails})" : ""));
+                $summaryDetails = !empty($attemptLogs) ? implode("\n", array_slice($attemptLogs, 0, 4)) : ($errMsg . (!empty($errDetails) ? " ({$errDetails})" : ""));
                 $statusMsg = "Failed API (Code {$errCode}): " . substr($errMsg, 0, 150);
                 $this->logWhatsApp($cartId, $cleanNumber, $message, 'api', $statusMsg);
+                $diagPrefix = "[Phone: {$phoneId} | WABA: " . ($wabaId ?: 'Unknown') . " | Tpl: {$abandonTemplate}]\n";
                 return [
                     'success' => false,
                     'mode'    => 'api',
                     'is_sent' => false,
                     'level'   => $level,
-                    'error'   => "Meta Template '{$abandonTemplate}' Error (#{$errCode}):\n{$summaryDetails}",
+                    'error'   => "{$diagPrefix}Meta Template '{$abandonTemplate}' Error (#{$errCode}):\n{$summaryDetails}",
                     'link'    => $waLink
                 ];
             }

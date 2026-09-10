@@ -80,7 +80,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action']) && 
 
     // General Meta API Meta Fields
     $meta_template_lang = $conn->real_escape_string(trim($_POST['meta_template_lang'] ?? 'en'));
-    $waba_id            = $conn->real_escape_string(trim($_POST['waba_id'] ?? ''));
+    $posted_waba        = trim($_POST['waba_id'] ?? '');
+    $waba_id            = !empty($posted_waba) ? $conn->real_escape_string($posted_waba) : $conn->real_escape_string($settings['waba_id'] ?? '');
     $wa_header_image_url = $conn->real_escape_string(trim($_POST['wa_header_image_url'] ?? ''));
 
     // Admin Notification Fields
