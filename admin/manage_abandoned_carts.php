@@ -1472,9 +1472,14 @@ function sendModalApiReminder(cartId, level, btn) {
                 loadModalLogs(cartId);
             }
         },
-        error: function() {
+        error: function(xhr, status, errorThrown) {
             $btn.html(origHtml).prop('disabled', false);
-            alert('Network request failed.');
+            let errText = 'Network request failed.';
+            if (xhr.status) errText += ' (HTTP ' + xhr.status + ')';
+            if (xhr.responseJSON && xhr.responseJSON.error) {
+                errText = xhr.responseJSON.error;
+            }
+            alert(`❌ ${errText}\n\n💡 Tip: You can click "Open Web" above to send manually via WhatsApp Web.`);
         }
     });
 }
@@ -1551,9 +1556,14 @@ function handleRowWhatsAppClick(cartId, btn, customerName, phone) {
                     refreshTableAndStats();
                 }
             },
-            error: function() {
+            error: function(xhr, status, errorThrown) {
                 $btn.html(origHtml).prop('disabled', false);
-                alert('Network error occurred while contacting the server.');
+                let errText = 'Server error occurred.';
+                if (xhr.status) errText += ' (HTTP ' + xhr.status + ')';
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                    errText = xhr.responseJSON.error;
+                }
+                alert(`❌ ${errText}\n\n💡 Tip: To send manually via WhatsApp Web, click the [ ↗ ] button next to this cart.`);
             }
         });
     }

@@ -11,6 +11,7 @@ require_once __DIR__ . '/../includes/AbandonedCartController.php';
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
+@set_time_limit(45);
 
 // Security check: Only admins can access
 if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {

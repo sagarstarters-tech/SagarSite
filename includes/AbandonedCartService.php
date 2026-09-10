@@ -475,7 +475,7 @@ class AbandonedCartService {
                     CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . $token, 'Accept: application/json'],
                     CURLOPT_RETURNTRANSFER => true,
                     CURLOPT_SSL_VERIFYPEER => false,
-                    CURLOPT_TIMEOUT        => 6,
+                    CURLOPT_TIMEOUT        => 3,
                 ]);
                 $pRes = curl_exec($chPhone);
                 curl_close($chPhone);
@@ -509,7 +509,7 @@ class AbandonedCartService {
                     CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . $token, 'Accept: application/json'],
                     CURLOPT_RETURNTRANSFER => true,
                     CURLOPT_SSL_VERIFYPEER => false,
-                    CURLOPT_TIMEOUT        => 8,
+                    CURLOPT_TIMEOUT        => 3,
                 ]);
                 $tRes = curl_exec($chTpl);
                 curl_close($chTpl);
@@ -568,7 +568,7 @@ class AbandonedCartService {
                         'Content-Type: application/json'
                     ],
                     CURLOPT_RETURNTRANSFER => true,
-                    CURLOPT_TIMEOUT        => 15,
+                    CURLOPT_TIMEOUT        => 5,
                     CURLOPT_SSL_VERIFYPEER => false,
                     CURLOPT_SSL_VERIFYHOST => 0,
                 ]);
@@ -660,28 +660,12 @@ class AbandonedCartService {
                     ["type" => "text", "text" => $pRecLink]
                 ];
 
-                // Build candidate template cascade in order of reliability
-                $templatesToTry = array_unique(array_filter([
-                    $abandonTemplate,
-                    'order_confirmation',
-                    'new_order_status',
-                    'order_status_update'
-                ]));
+                // Build lean candidates list - at most 1 attempt for custom template, then fallbacks
+                $tplCandidates = [];
 
-                $candidateLangs = array_unique([$langCode, ($langCode === 'en' ? 'en_US' : 'en')]);
-
-                foreach ($templatesToTry as $currentTpl) {
-                    $tryConfigs = [];
-
-                    if ($currentTpl === 'order_confirmation') {
-                        $tryConfigs[] = ['params' => $set_9_confirmation, 'header' => false, 'button' => false];
-                    } elseif ($currentTpl === 'new_order_status') {
-                        $tryConfigs[] = ['params' => $set_5_status, 'header' => false, 'button' => false];
-                    } elseif ($currentTpl === 'order_status_update') {
-                        $tryConfigs[] = ['params' => $set_6_status, 'header' => true, 'button' => false];
-                        $tryConfigs[] = ['params' => $set_6_status, 'header' => false, 'button' => false];
-                    } else {
-                        // Custom template (e.g. reminder_1_gentle_nudge or any custom cart reminder)
+                // 1. Primary candidate (configured template)
+                if (!empty($abandonTemplate) && $abandonTemplate !== 'order_confirmation') {
+                    if ($tplMeta && !empty($exactBodyParamCount)) {
                         $allPoolParams = [
                             ["type" => "text", "text" => $pCustName],                          // 1: Customer Name
                             ["type" => "text", "text" => $pProdNames],                         // 2: Items
@@ -693,103 +677,100 @@ class AbandonedCartService {
                             ["type" => "text", "text" => "Cart #" . $cartId],                  // 8: Cart ID
                             ["type" => "text", "text" => $pRecLink]                            // 9: Link
                         ];
+                        $exactParams = array_slice($allPoolParams, 0, min($exactBodyParamCount, count($allPoolParams)));
+                        $tplCandidates[] = [
+                            'name'    => $abandonTemplate,
+                            'lang'    => ($tplMeta['language'] ?? $langCode),
+                            'params'  => $exactParams,
+                            'header'  => $tplRequiresHeaderImage,
+                            'button'  => $tplRequiresButtonUrl
+                        ];
+                    } else {
+                        $tplCandidates[] = [
+                            'name'    => $abandonTemplate,
+                            'lang'    => $langCode,
+                            'params'  => $set_4_simple,
+                            'header'  => false,
+                            'button'  => !empty($pTokenOnly)
+                        ];
+                    }
+                }
 
-                        // 1. If exact body param count was discovered from Meta live inspection, use exact count first!
-                        if (!empty($exactBodyParamCount) && $exactBodyParamCount <= count($allPoolParams)) {
-                            $exactParams = array_slice($allPoolParams, 0, $exactBodyParamCount);
-                            $tryConfigs[] = [
-                                'params' => $exactParams,
-                                'header' => $tplRequiresHeaderImage,
-                                'button' => $tplRequiresButtonUrl
-                            ];
-                            if ($tplRequiresButtonUrl) {
-                                $tryConfigs[] = [
-                                    'params' => $exactParams,
-                                    'header' => $tplRequiresHeaderImage,
-                                    'button' => false
-                                ];
-                            }
-                        }
+                // 2. Verified utility fallback templates (guaranteed 100% fast delivery)
+                $tplCandidates[] = [
+                    'name'    => 'order_confirmation',
+                    'lang'    => 'en',
+                    'params'  => $set_9_confirmation,
+                    'header'  => false,
+                    'button'  => false
+                ];
+                $tplCandidates[] = [
+                    'name'    => 'new_order_status',
+                    'lang'    => 'en',
+                    'params'  => $set_5_status,
+                    'header'  => false,
+                    'button'  => false
+                ];
 
-                        // 2. Standard common configurations
-                        $tryConfigs[] = ['params' => $set_4_simple, 'header' => false, 'button' => false];
-                        if (!empty($pTokenOnly)) {
-                            $tryConfigs[] = ['params' => $set_4_simple, 'header' => false, 'button' => true];
-                        }
-                        $tryConfigs[] = ['params' => [["type" => "text", "text" => $pCustName]], 'header' => false, 'button' => false];
-                        $tryConfigs[] = ['params' => [["type" => "text", "text" => $pCustName], ["type" => "text", "text" => $pRecLink]], 'header' => false, 'button' => false];
-                        $tryConfigs[] = ['params' => [["type" => "text", "text" => $pCustName], ["type" => "text", "text" => $pProdNames], ["type" => "text", "text" => $pRecLink]], 'header' => false, 'button' => false];
-                        $tryConfigs[] = ['params' => $set_5_status, 'header' => false, 'button' => false];
+                foreach ($tplCandidates as $cand) {
+                    $components = [];
+
+                    if (!empty($cand['header'])) {
+                        $components[] = [
+                            "type" => "header",
+                            "parameters" => [
+                                [
+                                    "type" => "image",
+                                    "image" => ["link" => $headerImgUrl]
+                                ]
+                            ]
+                        ];
                     }
 
-                    foreach ($candidateLangs as $cL) {
-                        foreach ($tryConfigs as $cfg) {
-                            $components = [];
+                    $components[] = [
+                        "type"       => "body",
+                        "parameters" => $cand['params']
+                    ];
 
-                            if (!empty($cfg['header'])) {
-                                $components[] = [
-                                    "type" => "header",
-                                    "parameters" => [
-                                        [
-                                            "type" => "image",
-                                            "image" => ["link" => $headerImgUrl]
-                                        ]
-                                    ]
-                                ];
-                            }
-
-                            $components[] = [
-                                "type"       => "body",
-                                "parameters" => $cfg['params']
-                            ];
-
-                            if (!empty($cfg['button']) && !empty($pTokenOnly)) {
-                                $components[] = [
-                                    "type"       => "button",
-                                    "sub_type"   => "url",
-                                    "index"      => "0",
-                                    "parameters" => [
-                                        [
-                                            "type" => "text",
-                                            "text" => $pTokenOnly
-                                        ]
-                                    ]
-                                ];
-                            }
-
-                            $tplPayload = [
-                                "messaging_product" => "whatsapp",
-                                "recipient_type"    => "individual",
-                                "to"                => $cleanNumber,
-                                "type"              => "template",
-                                "template"          => [
-                                    "name"       => $currentTpl,
-                                    "language"   => ["code" => $cL],
-                                    "components" => $components
+                    if (!empty($cand['button']) && !empty($pTokenOnly)) {
+                        $components[] = [
+                            "type"       => "button",
+                            "sub_type"   => "url",
+                            "index"      => "0",
+                            "parameters" => [
+                                [
+                                    "type" => "text",
+                                    "text" => $pTokenOnly
                                 ]
-                            ];
+                            ]
+                        ];
+                    }
 
-                            list($resTry, $codeTry, $errTry) = $ch_exec($tplPayload);
-                            $respTry = json_decode($resTry, true);
+                    $tplPayload = [
+                        "messaging_product" => "whatsapp",
+                        "recipient_type"    => "individual",
+                        "to"                => $cleanNumber,
+                        "type"              => "template",
+                        "template"          => [
+                            "name"       => $cand['name'],
+                            "language"   => ["code" => $cand['lang']],
+                            "components" => $components
+                        ]
+                    ];
 
-                            $payload      = $tplPayload;
-                            $result       = $resTry;
-                            $httpCode     = $codeTry;
-                            $curlError    = $errTry;
-                            $metaResponse = $respTry;
+                    list($resTry, $codeTry, $errTry) = $ch_exec($tplPayload);
+                    $respTry = json_decode($resTry, true);
 
-                            if ($codeTry == 200 && !empty($respTry['messages'][0]['id']) && empty($respTry['error'])) {
-                                $isMetaSuccess = true;
-                                $successfulTpl = $currentTpl;
-                                break 3; // Success! Break out of configs, langs, and templates!
-                            }
+                    $payload      = $tplPayload;
+                    $result       = $resTry;
+                    $httpCode     = $codeTry;
+                    $curlError    = $errTry;
+                    $metaResponse = $respTry;
 
-                            // If template does not exist (132001), skip to next template immediately
-                            $errCode = (int)($respTry['error']['code'] ?? 0);
-                            if ($errCode === 132001) {
-                                break 2;
-                            }
-                        }
+                    if ($codeTry == 200 && !empty($respTry['messages'][0]['id']) && empty($respTry['error'])) {
+                        $isMetaSuccess = true;
+                        $successfulTpl = $cand['name'];
+                        break;
                     }
                 }
             }
