@@ -639,6 +639,20 @@ $logs = $conn->query($logs_query);
 let currentTargetInputId = '';
 let currentTestType = 'order_confirm';
 
+function safeJsonParse(text) {
+    try {
+        return JSON.parse(text);
+    } catch (e) {
+        const match = text.match(/\{[\s\S]*\}/);
+        if (match) {
+            try {
+                return JSON.parse(match[0]);
+            } catch (err) {}
+        }
+        throw new Error(text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 150) || 'Invalid server response');
+    }
+}
+
 function insertVar(textareaId, tag) {
     const el = document.getElementById(textareaId);
     if (!el) return;
@@ -679,7 +693,8 @@ function fetchMetaTemplates() {
     const params = new URLSearchParams({ token, phone_id: phoneId, waba_id: wabaId });
 
     fetch('ajax_sync_meta_templates.php?' + params.toString())
-        .then(res => res.json())
+        .then(res => res.text())
+        .then(text => safeJsonParse(text))
         .then(data => {
             if (data.error) {
                 statusEl.className = 'alert alert-danger py-2 small';
@@ -824,7 +839,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         fetch(url)
-            .then(res => res.json())
+            .then(res => res.text())
+            .then(text => safeJsonParse(text))
             .then(data => {
                 btnRunUniversalTest.disabled = false;
                 btnRunUniversalTest.innerText = 'Send Test Message';
@@ -872,7 +888,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const adminTpl = document.getElementById('adminTplInput')?.value.trim() || '';
         
         fetch('ajax_log_whatsapp.php?test_admin=1&number=' + encodeURIComponent(rawNumber) + '&admin_template_name=' + encodeURIComponent(adminTpl))
-            .then(res => res.json())
+            .then(res => res.text())
+            .then(text => safeJsonParse(text))
             .then(data => {
                 btnQuickTestAdmin.disabled = false;
                 btnQuickTestAdmin.innerHTML = '<i class="fab fa-whatsapp me-1"></i> Send Test Admin Alert to this number';

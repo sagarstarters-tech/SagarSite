@@ -1,25 +1,40 @@
 <?php
+ob_start();
+@error_reporting(0);
+@ini_set('display_errors', '0');
+
 include_once __DIR__ . '/../includes/session_setup.php';
-require_once '../includes/db_connect.php';
+require_once __DIR__ . '/../includes/db_connect.php';
 
-header('Content-Type: application/json');
+// Re-assert error suppression in case config.php enabled display_errors
+@error_reporting(0);
+@ini_set('display_errors', '0');
 
-// ── Auth guard: must be logged-in admin ─────────────────────
-if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
-    http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'Permission denied']);
+function send_whatsapp_json(array $data, int $statusCode = 200): void {
+    if (ob_get_level()) {
+        ob_clean();
+    }
+    http_response_code($statusCode);
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    header('Pragma: no-cache');
+    echo json_encode($data);
     exit;
 }
 
-require_once '../includes/whatsapp_functions.php';
+// ── Auth guard: must be logged-in admin ─────────────────────
+if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
+    send_whatsapp_json(['success' => false, 'error' => 'Permission denied'], 403);
+}
+
+require_once __DIR__ . '/../includes/whatsapp_functions.php';
 
 // Fetch Complete Settings
 $set_q = $conn->query("SELECT * FROM whatsapp_settings WHERE id = 1");
 $settings = $set_q ? $set_q->fetch_assoc() : [];
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' && !(isset($_GET['test']) && $_GET['test'] == '1') && !(isset($_GET['test_admin']) && $_GET['test_admin'] == '1') && !(isset($_GET['test_order_confirm']) && $_GET['test_order_confirm'] == '1')) {
-    echo json_encode(['success' => false, 'error' => 'Invalid request method']);
-    exit;
+    send_whatsapp_json(['success' => false, 'error' => 'Invalid request method']);
 }
 
 $is_admin_test         = false;
@@ -29,8 +44,7 @@ if (isset($_GET['test_admin']) && $_GET['test_admin'] == '1') {
     // Test Admin Notification
     $admin_number = trim($_GET['number'] ?? '');
     if (empty($admin_number)) {
-        echo json_encode(['success' => false, 'error' => 'Please enter admin phone number.']);
-        exit;
+        send_whatsapp_json(['success' => false, 'error' => 'Please enter admin phone number.']);
     }
     
     // Fetch latest order for demo data
@@ -132,6 +146,7 @@ if (isset($_GET['test_admin']) && $_GET['test_admin'] == '1') {
     $paymentMode     = strtoupper($order['payment_mode'] ?? ($order['payment_method'] ?? 'COD'));
     $orderDate       = date('d M Y', strtotime($order['created_at'] ?? 'now'));
     $orderTime       = date('h:i A', strtotime($order['created_at'] ?? 'now'));
+    $orderDateTime   = date('d M Y, h:i A', strtotime($order['created_at'] ?? 'now'));
     $orderStatus     = ucwords(str_replace('_', ' ', $order['status'] ?? 'Confirmed'));
     $deliveryAddress = trim(($order['customer_address'] ?? '') . ', ' . ($order['customer_city'] ?? ''));
     if (empty($deliveryAddress)) $deliveryAddress = 'Varanasi, UP - 221001';
@@ -308,11 +323,12 @@ $stmt = $conn->prepare(
 if ($sending_mode === 'api') {
     if (empty($settings['api_token']) || empty($settings['phone_number_id'])) {
         $status = "Failed: Missing API Token or Phone Number ID";
-        $stmt->bind_param("issss", $order_id, $customer_number, $message, $sending_mode, $status);
-        $stmt->execute();
-        $stmt->close();
-        echo json_encode(['success' => false, 'error' => 'API Token or Phone Number ID is missing in settings.']);
-        exit;
+        try {
+            $stmt->bind_param("issss", $order_id, $customer_number, $message, $sending_mode, $status);
+            $stmt->execute();
+            $stmt->close();
+        } catch (\Throwable $e) {}
+        send_whatsapp_json(['success' => false, 'error' => 'API Token or Phone Number ID is missing in settings.']);
     }
 
     $token = trim($settings['api_token']);
@@ -708,9 +724,12 @@ if ($sending_mode === 'api') {
 
     if ($curl_error) {
         $status = "Failed: cURL error - " . substr($curl_error, 0, 100);
-        $stmt->bind_param("issss", $order_id, $customer_number, $message, $sending_mode, $status);
-        $stmt->execute(); $stmt->close();
-        echo json_encode(['success' => false, 'error' => 'Network error: ' . $curl_error]);
+        try {
+            $stmt->bind_param("issss", $order_id, $customer_number, $message, $sending_mode, $status);
+            $stmt->execute();
+            $stmt->close();
+        } catch (\Throwable $e) {}
+        send_whatsapp_json(['success' => false, 'error' => 'Network error: ' . $curl_error]);
 
     } elseif ($http_code == 200 && isset($meta_response['messages'])) {
         $msg_id     = $meta_response['messages'][0]['id'] ?? 'unknown';
@@ -726,12 +745,17 @@ if ($sending_mode === 'api') {
                 ? 'Sent via Fallback Template (ID: ' . substr($msg_id, 0, 30) . ')'
                 : 'Sent via Meta API (ID: ' . substr($msg_id, 0, 30) . ')';
         }
-        $stmt->bind_param("issss", $order_id, $customer_number, $message, $sending_mode, $status);
-        $stmt->execute(); $stmt->close();
+        try {
+            $stmt->bind_param("issss", $order_id, $customer_number, $message, $sending_mode, $status);
+            $stmt->execute();
+            $stmt->close();
+        } catch (\Throwable $e) {}
 
         // Auto-save working template name into DB ONLY if user actually provided a template name
         if ($is_admin_test && $is_template_sent && !empty($used_template) && !empty($_GET['admin_template_name'])) {
-            $conn->query("UPDATE whatsapp_settings SET admin_template_name = '" . $conn->real_escape_string($used_template) . "' WHERE id = 1");
+            try {
+                $conn->query("UPDATE whatsapp_settings SET admin_template_name = '" . $conn->real_escape_string($used_template) . "' WHERE id = 1");
+            } catch (\Throwable $e) {}
         }
 
         $clean_sender = normalize_whatsapp_phone_number($settings['sender_number'] ?? '');
@@ -739,7 +763,7 @@ if ($sending_mode === 'api') {
 
         $delivery_type = $is_template_sent ? 'template' : (empty($meta_template_name) ? 'fallback_text' : 'text');
 
-        echo json_encode([
+        send_whatsapp_json([
             'success'             => true,
             'message_id'          => $msg_id,
             'message_status'      => $msg_status,
@@ -760,9 +784,12 @@ if ($sending_mode === 'api') {
         // Also log to error-specific file
         file_put_contents($log_dir . '/whatsapp_errors.log', $log_entry, FILE_APPEND);
 
-        $stmt->bind_param("issss", $order_id, $customer_number, $message, $sending_mode, $status);
-        $stmt->execute(); $stmt->close();
-        echo json_encode([
+        try {
+            $stmt->bind_param("issss", $order_id, $customer_number, $message, $sending_mode, $status);
+            $stmt->execute();
+            $stmt->close();
+        } catch (\Throwable $e) {}
+        send_whatsapp_json([
             'success'    => false,
             'error'      => "Meta API Error (#{$error_code}): " . $error_desc,
             'error_code' => $error_code,
@@ -771,11 +798,16 @@ if ($sending_mode === 'api') {
     }
 } else {
     // Web Mode
-    $stmt->bind_param("issss", $order_id, $customer_number, $message, $sending_mode, $status);
-    if ($stmt->execute()) {
-        echo json_encode(['success' => true]);
+    $webSuccess = false;
+    try {
+        $stmt->bind_param("issss", $order_id, $customer_number, $message, $sending_mode, $status);
+        $webSuccess = $stmt->execute();
+        $stmt->close();
+    } catch (\Throwable $e) {}
+
+    if ($webSuccess) {
+        send_whatsapp_json(['success' => true]);
     } else {
-        echo json_encode(['success' => false, 'error' => 'Database error']);
+        send_whatsapp_json(['success' => false, 'error' => 'Database error']);
     }
-    $stmt->close();
 }
