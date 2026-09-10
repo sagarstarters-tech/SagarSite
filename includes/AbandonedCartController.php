@@ -35,7 +35,7 @@ class AbandonedCartController {
     /**
      * Send a manual WhatsApp reminder for a specific cart.
      */
-    public function sendReminder($cartId, $level = 0) {
+    public function sendReminder($cartId, $level = 0, $overridePhone = '') {
         try {
             $cartId = intval($cartId);
             $level  = intval($level);
@@ -43,7 +43,7 @@ class AbandonedCartController {
                 return ['success' => false, 'error' => 'Invalid cart ID'];
             }
 
-            $result = $this->service->sendManualReminder($cartId, $level);
+            $result = $this->service->sendManualReminder($cartId, $level, $overridePhone);
             return $result;
         } catch (\Throwable $e) {
             return ['success' => false, 'error' => $e->getMessage()];

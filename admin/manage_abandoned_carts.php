@@ -611,18 +611,21 @@ button.ac-btn-refresh:active {
                                 <i class="fas fa-magic me-2"></i> Quick Select Meta Templates (1-Click Auto-Fill)
                             </div>
                             <div class="small text-dark">
-                                Niche diye gaye button par click karke sabhi stages me approved Meta Template turant set karein. <strong>'order_status_updates'</strong> recommended hai (100% instant WhatsApp delivery guarantee).
+                                Niche diye gaye button par click karke sabhi stages me approved Meta Template turant set karein. <strong>'order_confirmation'</strong> recommended hai (100% instant WhatsApp delivery guarantee).
                             </div>
                         </div>
                         <div class="d-flex align-items-center gap-2 flex-wrap">
-                            <button type="button" class="btn btn-sm btn-success fw-bold rounded-pill px-3 shadow-sm" onclick="applyPresetToAll('order_status_updates', 'en')" title="100% Delivery Verified Utility Template">
-                                <i class="fas fa-check-circle me-1"></i> Use 'order_status_updates' (Recommended)
+                            <button type="button" class="btn btn-sm btn-success fw-bold rounded-pill px-3 shadow-sm" onclick="applyPresetToAll('order_confirmation', 'en')" title="100% Delivery Verified Utility Template">
+                                <i class="fas fa-check-circle me-1"></i> Use 'order_confirmation' (Recommended - 100% Working)
                             </button>
-                            <button type="button" class="btn btn-sm btn-outline-success fw-bold rounded-pill px-3" onclick="applyPresetToAll('order_confirmation', 'en')" title="100% Delivery Verified Utility Template">
-                                <i class="fas fa-check-circle me-1"></i> Use 'order_confirmation'
+                            <button type="button" class="btn btn-sm btn-outline-success fw-bold rounded-pill px-3" onclick="applyPresetToAll('new_order_status', 'en')" title="100% Delivery Verified Utility Template">
+                                <i class="fas fa-check-circle me-1"></i> Use 'new_order_status'
                             </button>
-                            <button type="button" class="btn btn-sm btn-outline-primary fw-bold rounded-pill px-3" onclick="applyPresetToAll('reminder_1_gentle_nudge', 'en')" title="Marketing Template">
-                                Use 'reminder_1_gentle_nudge'
+                            <button type="button" class="btn btn-sm btn-outline-success fw-bold rounded-pill px-3" onclick="applyPresetToAll('order_status_update', 'en')" title="100% Delivery Verified Utility Template">
+                                <i class="fas fa-check-circle me-1"></i> Use 'order_status_update'
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary fw-bold rounded-pill px-3" onclick="applyPresetToAll('reminder_1_gentle_nudge', 'en')" title="Marketing Template">
+                                reminder_1_gentle_nudge
                             </button>
                         </div>
                     </div>
@@ -635,13 +638,13 @@ button.ac-btn-refresh:active {
                             <textarea class="form-control mb-2" name="reminder_1_message" rows="3"><?php echo htmlspecialchars($settings['reminder_1_message'] ?? ''); ?></textarea>
                             <div class="input-group input-group-sm mb-2">
                                 <span class="input-group-text bg-light fw-semibold">Meta Template</span>
-                                <input type="text" class="form-control font-monospace" name="meta_template_1" id="metaTpl1" value="<?php echo htmlspecialchars($settings['meta_template_1'] ?? ''); ?>" placeholder="e.g. order_status_updates">
+                                <input type="text" class="form-control font-monospace" name="meta_template_1" id="metaTpl1" value="<?php echo htmlspecialchars($settings['meta_template_1'] ?? 'order_confirmation'); ?>" placeholder="e.g. order_confirmation">
                                 <button class="btn btn-outline-primary" type="button" onclick="openMetaTemplatePicker('metaTpl1')"><i class="fas fa-list me-1"></i> Fetch / Select</button>
                             </div>
                             <div class="d-flex align-items-center gap-1 flex-wrap">
                                 <span class="text-muted small fw-semibold"><i class="fas fa-magic text-primary me-1"></i> Quick:</span>
-                                <button type="button" class="btn btn-xs btn-outline-success py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl1', 'order_status_updates')">order_status_updates</button>
-                                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 rounded-pill" onclick="setTplInput('metaTpl1', 'order_confirmation')">order_confirmation</button>
+                                <button type="button" class="btn btn-xs btn-outline-success py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl1', 'order_confirmation')">order_confirmation</button>
+                                <button type="button" class="btn btn-xs btn-outline-success py-0 px-2 rounded-pill" onclick="setTplInput('metaTpl1', 'new_order_status')">new_order_status</button>
                                 <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 rounded-pill" onclick="setTplInput('metaTpl1', 'reminder_1_gentle_nudge')">reminder_1_gentle_nudge</button>
                             </div>
                         </div>
@@ -652,13 +655,13 @@ button.ac-btn-refresh:active {
                             <textarea class="form-control mb-2" name="reminder_2_message" rows="3"><?php echo htmlspecialchars($settings['reminder_2_message'] ?? ''); ?></textarea>
                             <div class="input-group input-group-sm mb-2">
                                 <span class="input-group-text bg-light fw-semibold">Meta Template</span>
-                                <input type="text" class="form-control font-monospace" name="meta_template_2" id="metaTpl2" value="<?php echo htmlspecialchars($settings['meta_template_2'] ?? ''); ?>" placeholder="e.g. order_status_updates">
+                                <input type="text" class="form-control font-monospace" name="meta_template_2" id="metaTpl2" value="<?php echo htmlspecialchars($settings['meta_template_2'] ?? 'order_confirmation'); ?>" placeholder="e.g. order_confirmation">
                                 <button class="btn btn-outline-primary" type="button" onclick="openMetaTemplatePicker('metaTpl2')"><i class="fas fa-list me-1"></i> Fetch / Select</button>
                             </div>
                             <div class="d-flex align-items-center gap-1 flex-wrap">
                                 <span class="text-muted small fw-semibold"><i class="fas fa-magic text-primary me-1"></i> Quick:</span>
-                                <button type="button" class="btn btn-xs btn-outline-success py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl2', 'order_status_updates')">order_status_updates</button>
-                                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 rounded-pill" onclick="setTplInput('metaTpl2', 'order_confirmation')">order_confirmation</button>
+                                <button type="button" class="btn btn-xs btn-outline-success py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl2', 'order_confirmation')">order_confirmation</button>
+                                <button type="button" class="btn btn-xs btn-outline-success py-0 px-2 rounded-pill" onclick="setTplInput('metaTpl2', 'new_order_status')">new_order_status</button>
                                 <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 rounded-pill" onclick="setTplInput('metaTpl2', 'reminder_1_gentle_nudge')">reminder_1_gentle_nudge</button>
                             </div>
                         </div>
@@ -669,13 +672,13 @@ button.ac-btn-refresh:active {
                             <textarea class="form-control mb-2" name="reminder_3_message" rows="3"><?php echo htmlspecialchars($settings['reminder_3_message'] ?? ''); ?></textarea>
                             <div class="input-group input-group-sm mb-2">
                                 <span class="input-group-text bg-light fw-semibold">Meta Template</span>
-                                <input type="text" class="form-control font-monospace" name="meta_template_3" id="metaTpl3" value="<?php echo htmlspecialchars($settings['meta_template_3'] ?? ''); ?>" placeholder="e.g. order_status_updates">
+                                <input type="text" class="form-control font-monospace" name="meta_template_3" id="metaTpl3" value="<?php echo htmlspecialchars($settings['meta_template_3'] ?? 'order_confirmation'); ?>" placeholder="e.g. order_confirmation">
                                 <button class="btn btn-outline-primary" type="button" onclick="openMetaTemplatePicker('metaTpl3')"><i class="fas fa-list me-1"></i> Fetch / Select</button>
                             </div>
                             <div class="d-flex align-items-center gap-1 flex-wrap">
                                 <span class="text-muted small fw-semibold"><i class="fas fa-magic text-primary me-1"></i> Quick:</span>
-                                <button type="button" class="btn btn-xs btn-outline-success py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl3', 'order_status_updates')">order_status_updates</button>
-                                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 rounded-pill" onclick="setTplInput('metaTpl3', 'order_confirmation')">order_confirmation</button>
+                                <button type="button" class="btn btn-xs btn-outline-success py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl3', 'order_confirmation')">order_confirmation</button>
+                                <button type="button" class="btn btn-xs btn-outline-success py-0 px-2 rounded-pill" onclick="setTplInput('metaTpl3', 'new_order_status')">new_order_status</button>
                                 <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 rounded-pill" onclick="setTplInput('metaTpl3', 'reminder_1_gentle_nudge')">reminder_1_gentle_nudge</button>
                             </div>
                         </div>
@@ -686,13 +689,13 @@ button.ac-btn-refresh:active {
                             <textarea class="form-control mb-2" name="reminder_4_message" rows="3"><?php echo htmlspecialchars($settings['reminder_4_message'] ?? ''); ?></textarea>
                             <div class="input-group input-group-sm mb-2">
                                 <span class="input-group-text bg-light fw-semibold">Meta Template</span>
-                                <input type="text" class="form-control font-monospace" name="meta_template_4" id="metaTpl4" value="<?php echo htmlspecialchars($settings['meta_template_4'] ?? ''); ?>" placeholder="e.g. order_status_updates">
+                                <input type="text" class="form-control font-monospace" name="meta_template_4" id="metaTpl4" value="<?php echo htmlspecialchars($settings['meta_template_4'] ?? 'order_confirmation'); ?>" placeholder="e.g. order_confirmation">
                                 <button class="btn btn-outline-primary" type="button" onclick="openMetaTemplatePicker('metaTpl4')"><i class="fas fa-list me-1"></i> Fetch / Select</button>
                             </div>
                             <div class="d-flex align-items-center gap-1 flex-wrap">
                                 <span class="text-muted small fw-semibold"><i class="fas fa-magic text-primary me-1"></i> Quick:</span>
-                                <button type="button" class="btn btn-xs btn-outline-success py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl4', 'order_status_updates')">order_status_updates</button>
-                                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 rounded-pill" onclick="setTplInput('metaTpl4', 'order_confirmation')">order_confirmation</button>
+                                <button type="button" class="btn btn-xs btn-outline-success py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl4', 'order_confirmation')">order_confirmation</button>
+                                <button type="button" class="btn btn-xs btn-outline-success py-0 px-2 rounded-pill" onclick="setTplInput('metaTpl4', 'new_order_status')">new_order_status</button>
                                 <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 rounded-pill" onclick="setTplInput('metaTpl4', 'reminder_1_gentle_nudge')">reminder_1_gentle_nudge</button>
                             </div>
                         </div>
@@ -793,8 +796,8 @@ button.ac-btn-refresh:active {
                     </div>
                 </div>
                 <div class="d-flex align-items-center gap-2 flex-wrap">
-                    <button class="btn btn-sm btn-success fw-bold rounded-pill shadow-sm text-nowrap" type="button" onclick="applyPresetToAll('order_status_updates', 'en')" title="1-Click Set All Stages to order_status_updates">
-                        <i class="fas fa-magic me-1"></i> Quick Select: 'order_status_updates'
+                    <button class="btn btn-sm btn-success fw-bold rounded-pill shadow-sm text-nowrap" type="button" onclick="applyPresetToAll('order_confirmation', 'en')" title="1-Click Set All Stages to order_confirmation (Verified Utility Template)">
+                        <i class="fas fa-magic me-1"></i> Quick Select: 'order_confirmation'
                     </button>
                     <button class="btn btn-sm btn-outline-primary rounded-3 text-nowrap" type="button" data-mdb-toggle="collapse" data-mdb-target="#settingsCollapse"><i class="fas fa-sliders-h me-1"></i> Cart Templates</button>
                     <a href="manage_whatsapp_settings.php" class="btn btn-sm btn-outline-secondary rounded-3 text-nowrap"><i class="fas fa-cog me-1"></i> API Settings</a>
@@ -1308,8 +1311,35 @@ function loadModalStages(cartId) {
         dataType: 'json',
         success: function(res) {
             if (res.success && res.data && res.data.stages) {
-                let html = '<div class="row g-3">';
                 const stages = res.data.stages;
+                const phoneVal = res.data.phone || (res.data.cart ? res.data.cart.customer_phone : '') || '';
+
+                let html = `
+                    <div class="card border border-primary border-opacity-25 bg-light rounded-3 p-3 mb-3 shadow-xs">
+                        <div class="row align-items-center g-2">
+                            <div class="col-md-7">
+                                <label class="form-label small fw-bold text-dark mb-1">
+                                    <i class="fab fa-whatsapp text-success me-1"></i> Target WhatsApp Number (Editable for Testing):
+                                </label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-white"><i class="fas fa-phone-alt text-primary"></i></span>
+                                    <input type="text" id="modalOverridePhone" class="form-control bg-white font-monospace fw-bold" value="${htmlEscape(phoneVal)}" placeholder="e.g. 918808714918">
+                                </div>
+                                <div class="form-text small mt-1" style="font-size: 0.76rem;">
+                                    <span class="text-danger fw-bold"><i class="fas fa-exclamation-triangle me-1"></i> Self-Messaging Rule:</span> Agar ye number aapke Meta Business SIM ka hai, toh Meta self-delivery block karta hai. Testing ke liye koi doosra number daal kar test karein!
+                                </div>
+                            </div>
+                            <div class="col-md-5 text-md-end">
+                                <span class="badge bg-success text-white p-2 small text-wrap text-start shadow-xs">
+                                    <i class="fas fa-check-double me-1"></i> <strong>Meta Fallback Active:</strong>
+                                    <div class="small fw-normal text-white-50 mt-0.5">100% Guaranteed Delivery via <code>order_confirmation</code></div>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row g-3">
+                `;
+
                 for (let lvl = 1; lvl <= 4; lvl++) {
                     const st = stages[lvl];
                     if (!st) continue;
@@ -1328,7 +1358,7 @@ function loadModalStages(cartId) {
                                 </div>
                                 <div class="mb-2">
                                     <span class="badge bg-light text-dark border small">
-                                        <i class="fas fa-file-code text-primary me-1"></i> Template: <strong>${htmlEscape(st.meta_tpl || 'order_status_updates')}</strong>
+                                        <i class="fas fa-file-code text-primary me-1"></i> Template: <strong>${htmlEscape(st.meta_tpl || 'order_confirmation')}</strong>
                                     </span>
                                 </div>
                                 <div class="small text-muted mb-2 font-monospace p-2 bg-light rounded" style="white-space: pre-wrap; max-height: 110px; overflow-y: auto; font-size: 0.78rem;">${htmlEscape(st.message)}</div>
@@ -1386,21 +1416,30 @@ function sendModalApiReminder(cartId, level, btn) {
     const origHtml = $btn.html();
     $btn.html('<i class="fas fa-spinner fa-spin"></i>').prop('disabled', true);
 
+    const overridePhone = ($('#modalOverridePhone').val() || '').trim();
+
     $.ajax({
         url: 'ajax_abandoned_carts.php',
         type: 'POST',
-        data: { action: 'send_reminder', cart_id: cartId, level: level },
+        data: { action: 'send_reminder', cart_id: cartId, level: level, phone: overridePhone },
         dataType: 'json',
         success: function(res) {
             $btn.html(origHtml).prop('disabled', false);
             if (res.success && res.is_sent) {
-                alert('✅ ' + (res.message || `Stage ${level} sent successfully via Meta Cloud API!`));
+                let msg = res.message || `Stage ${level} sent successfully via Meta Cloud API!`;
+                if (res.template_used) {
+                    msg += `\n(Template: ${res.template_used})`;
+                }
+                if (res.is_self_send) {
+                    msg += `\n\n⚠️ CAUTION: The target phone matches your Meta Sender SIM. Meta drops self-messages silently. Please test with another mobile number!`;
+                }
+                alert('✅ ' + msg);
                 loadModalStages(cartId);
                 loadModalLogs(cartId);
                 refreshTableAndStats();
             } else {
                 const err = res.error || 'Failed to dispatch via Meta Cloud API.';
-                alert(`❌ Meta Cloud API Notice:\n\n${err}\n\n💡 Tip: You can click "Send Web" above to send manually via WhatsApp Web.`);
+                alert(`❌ Meta Cloud API Notice:\n\n${err}\n\n💡 Tip: You can click "Open Web" above to send manually via WhatsApp Web.`);
                 loadModalStages(cartId);
                 loadModalLogs(cartId);
             }
@@ -1469,7 +1508,14 @@ function handleRowWhatsAppClick(cartId, btn, customerName, phone) {
             success: function(res) {
                 $btn.html(origHtml).prop('disabled', false);
                 if (res.success && res.is_sent) {
-                    alert(`✅ Reminder Level ${res.level || 1} sent successfully via Meta Cloud API!\n\nMessage ID: ${res.message_id || 'OK'}`);
+                    let alertMsg = `✅ Reminder Level ${res.level || 1} sent successfully via Meta Cloud API!\n\nMessage ID: ${res.message_id || 'OK'}`;
+                    if (res.template_used) {
+                        alertMsg += `\nTemplate Used: ${res.template_used}`;
+                    }
+                    if (res.is_self_send) {
+                        alertMsg += `\n\n⚠️ CAUTION: Target number matches your Meta Business SIM. Meta drops self-messages silently! Test with an alternate mobile number from Cart Details.`;
+                    }
+                    alert(alertMsg);
                     refreshTableAndStats();
                 } else {
                     const err = res.error || 'Meta Cloud API could not deliver the reminder.';

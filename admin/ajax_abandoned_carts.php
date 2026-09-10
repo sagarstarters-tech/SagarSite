@@ -37,7 +37,8 @@ try {
         case 'send_reminder':
             $cartId = intval($_POST['cart_id'] ?? 0);
             $level   = intval($_POST['level'] ?? 0);
-            $result  = $controller->sendReminder($cartId, $level);
+            $overridePhone = trim($_POST['phone'] ?? '');
+            $result  = $controller->sendReminder($cartId, $level, $overridePhone);
             echo json_encode($result);
             break;
 

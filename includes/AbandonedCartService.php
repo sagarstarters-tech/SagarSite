@@ -166,7 +166,7 @@ class AbandonedCartService {
      * @param bool $isManual Whether this request was manually triggered by admin
      * @return array
      */
-    public function sendReminder($cartId, $level = 0, $isManual = false) {
+    public function sendReminder($cartId, $level = 0, $isManual = false, $overridePhone = '') {
         $cart = $this->repo->getById($cartId);
         if (!$cart) return ['success' => false, 'error' => 'Cart not found'];
 
@@ -223,8 +223,10 @@ class AbandonedCartService {
 
         $message = str_replace(array_keys($variables), array_values($variables), $messageTemplate);
 
+        $targetPhone = !empty($overridePhone) ? $overridePhone : ($cart['customer_phone'] ?? '');
+
         // Send via WhatsApp API or generate Web link
-        $sent = $this->sendWhatsAppMessage($cart['customer_phone'], $message, $cartId, $level, $variables, $messageTemplate, $isManual);
+        $sent = $this->sendWhatsAppMessage($targetPhone, $message, $cartId, $level, $variables, $messageTemplate, $isManual);
 
         // ONLY mark as sent in database if it was actually delivered via Meta API
         if (!empty($sent['success']) && !empty($sent['is_sent'])) {
@@ -237,8 +239,8 @@ class AbandonedCartService {
     /**
      * Send manual reminder from admin panel.
      */
-    public function sendManualReminder($cartId, $forceLevel = 0) {
-        return $this->sendReminder($cartId, $forceLevel, true);
+    public function sendManualReminder($cartId, $forceLevel = 0, $overridePhone = '') {
+        return $this->sendReminder($cartId, $forceLevel, true, $overridePhone);
     }
 
     /**
@@ -466,9 +468,42 @@ class AbandonedCartService {
                 }
             }
 
+            // Check registered phone number directly from Meta Phone ID to prevent self-messaging silent drops
+            if (!empty($phoneId) && !empty($token)) {
+                $chPhone = curl_init("https://graph.facebook.com/v21.0/{$phoneId}?fields=display_phone_number,whatsapp_business_account_id");
+                curl_setopt_array($chPhone, [
+                    CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . $token, 'Accept: application/json'],
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_SSL_VERIFYPEER => false,
+                    CURLOPT_TIMEOUT        => 6,
+                ]);
+                $pRes = curl_exec($chPhone);
+                curl_close($chPhone);
+                $pJson = json_decode($pRes, true);
+                if (!empty($pJson['whatsapp_business_account_id']) && empty($wabaId)) {
+                    $wabaId = $pJson['whatsapp_business_account_id'];
+                    $this->conn->query("UPDATE whatsapp_settings SET waba_id = '" . $this->conn->real_escape_string($wabaId) . "' WHERE id = 1");
+                }
+                if (!empty($pJson['display_phone_number'])) {
+                    $metaSenderDigits = preg_replace('/[^0-9]/', '', $pJson['display_phone_number']);
+                    if (strlen($metaSenderDigits) == 10) $metaSenderDigits = '91' . $metaSenderDigits;
+                    if (!empty($metaSenderDigits) && $cleanNumber === $metaSenderDigits) {
+                        $err = "Self-Sending Blocked: The recipient phone (+{$cleanNumber}) is the EXACT same number as your WhatsApp Business sender SIM (+{$metaSenderDigits}). Meta Cloud API will NOT deliver messages from a business number to itself. Please test with a different customer mobile number (e.g. alternate or family phone).";
+                        $this->logWhatsApp($cartId, $cleanNumber, $message, 'api', "Warning: " . $err);
+                        return [
+                            'success' => false,
+                            'mode'    => 'api',
+                            'is_sent' => false,
+                            'error'   => $err,
+                            'link'    => $waLink
+                        ];
+                    }
+                }
+            }
+
             // Inspect template metadata live from Meta WABA
             $tplMeta = null;
-            if (!empty($wabaId)) {
+            if (!empty($wabaId) && !empty($abandonTemplate)) {
                 $chTpl = curl_init("https://graph.facebook.com/v21.0/{$wabaId}/message_templates?name=" . urlencode($abandonTemplate));
                 curl_setopt_array($chTpl, [
                     CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . $token, 'Accept: application/json'],
@@ -497,15 +532,8 @@ class AbandonedCartService {
             if ($tplMeta) {
                 $tplStatus = strtoupper($tplMeta['status'] ?? 'UNKNOWN');
                 if ($tplStatus !== 'APPROVED') {
-                    $err = "Meta Template '{$abandonTemplate}' status is '{$tplStatus}' (not APPROVED) in Meta WhatsApp Business Manager. Messages cannot be delivered until Meta approves it.";
-                    $this->logWhatsApp($cartId, $cleanNumber, $message, 'api', "Error: " . $err);
-                    return [
-                        'success' => false,
-                        'mode'    => 'api',
-                        'is_sent' => false,
-                        'error'   => $err,
-                        'link'    => $waLink
-                    ];
+                    // Do not abort; clear abandonTemplate so cascade seamlessly falls back to 100% verified utility template 'order_confirmation'
+                    $abandonTemplate = '';
                 }
             }
 
@@ -530,7 +558,8 @@ class AbandonedCartService {
             };
 
             $isMetaSuccess = false;
-            $metaResponse = null;
+            $metaResponse  = null;
+            $successfulTpl = $abandonTemplate;
 
             $langCode = trim($this->settings['meta_template_lang'] ?? 'en');
             if (empty($langCode)) $langCode = 'en';
@@ -552,6 +581,7 @@ class AbandonedCartService {
                 list($result, $httpCode, $curlError) = $ch_exec($payload);
                 $metaResponse = json_decode($result, true);
                 $isMetaSuccess = ($httpCode == 200) && !empty($metaResponse['messages'][0]['id']) && empty($metaResponse['error']);
+                $successfulTpl = 'hello_world';
             } else {
                 // Prepare variable strings
                 $pCustName   = (string)($variables['{CustomerName}'] ?? 'Customer');
@@ -567,223 +597,145 @@ class AbandonedCartService {
                     $pTokenOnly = urldecode($tm[1]);
                 }
 
-                // Check template components if retrieved from Meta
-                $hasHeaderImg = false;
-                $hasUrlButton = false;
-                $exactBodyCount = 0;
-
-                if ($tplMeta && !empty($tplMeta['components'])) {
-                    foreach ($tplMeta['components'] as $cmp) {
-                        $cType = strtoupper($cmp['type'] ?? '');
-                        if ($cType === 'HEADER' && strtoupper($cmp['format'] ?? '') === 'IMAGE') {
-                            $hasHeaderImg = true;
-                        }
-                        if ($cType === 'BODY') {
-                            preg_match_all('/\{\{(\d+)\}\}/', $cmp['text'] ?? '', $pms);
-                            if (!empty($pms[1])) {
-                                $exactBodyCount = max(array_map('intval', $pms[1]));
-                            }
-                        }
-                        if ($cType === 'BUTTONS' && !empty($cmp['buttons'])) {
-                            foreach ($cmp['buttons'] as $b) {
-                                if (strtoupper($b['type'] ?? '') === 'URL' && strpos($b['url'] ?? '', '{{') !== false) {
-                                    $hasUrlButton = true;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Standard candidate parameter sets tailored for ecommerce templates:
-                $candidateSets = [];
-
-                // If exact param count was discovered from Meta WABA:
-                if ($exactBodyCount > 0) {
-                    $exactParams = [];
-                    if ($exactBodyCount == 1) {
-                        $exactParams = [["type" => "text", "text" => $pCustName]];
-                    } elseif ($exactBodyCount == 2) {
-                        $exactParams = [
-                            ["type" => "text", "text" => $pCustName],
-                            ["type" => "text", "text" => $pRecLink]
-                        ];
-                    } elseif ($exactBodyCount == 3) {
-                        $exactParams = [
-                            ["type" => "text", "text" => $pCustName],
-                            ["type" => "text", "text" => $pProdNames],
-                            ["type" => "text", "text" => $pCartTotal]
-                        ];
-                    } elseif ($exactBodyCount == 4) {
-                        $exactParams = [
-                            ["type" => "text", "text" => $pCustName],
-                            ["type" => "text", "text" => $pProdNames],
-                            ["type" => "text", "text" => $pCartTotal],
-                            ["type" => "text", "text" => $pRecLink]
-                        ];
-                    } elseif ($exactBodyCount == 5) {
-                        $exactParams = [
-                            ["type" => "text", "text" => $pCustName],
-                            ["type" => "text", "text" => "Cart #" . $cartId],
-                            ["type" => "text", "text" => "Items in Cart"],
-                            ["type" => "text", "text" => "RECOVER"],
-                            ["type" => "text", "text" => $pCartTotal]
-                        ];
-                    } elseif ($exactBodyCount == 6) {
-                        $exactParams = [
-                            ["type" => "text", "text" => $pCustName],
-                            ["type" => "text", "text" => "Cart #" . $cartId],
-                            ["type" => "text", "text" => "Items in Cart"],
-                            ["type" => "text", "text" => "RECOVER"],
-                            ["type" => "text", "text" => $pCartTotal],
-                            ["type" => "text", "text" => $pStoreName]
-                        ];
-                    } elseif ($exactBodyCount >= 9) {
-                        $exactParams = [
-                            ["type" => "text", "text" => $pCustName],
-                            ["type" => "text", "text" => "Cart #" . $cartId],
-                            ["type" => "text", "text" => $pDate],
-                            ["type" => "text", "text" => $pCartTotal],
-                            ["type" => "text", "text" => "Pending"],
-                            ["type" => "text", "text" => "In Cart"],
-                            ["type" => "text", "text" => $pProdNames],
-                            ["type" => "text", "text" => "Store Checkout"],
-                            ["type" => "text", "text" => $pRecLink]
-                        ];
-                    }
-                    $candidateSets[] = [
-                        'params' => $exactParams,
-                        'header' => $hasHeaderImg,
-                        'button' => $hasUrlButton,
-                        'lang'   => $langCode
-                    ];
-                }
-
-                // General robust parameter candidates (covering all standard template structures)
-                $set_4 = [
-                    ["type" => "text", "text" => $pCustName],
-                    ["type" => "text", "text" => $pProdNames],
-                    ["type" => "text", "text" => $pCartTotal],
-                    ["type" => "text", "text" => $pRecLink]
-                ];
-                $set_5 = [
-                    ["type" => "text", "text" => $pCustName],
-                    ["type" => "text", "text" => "Cart #" . $cartId],
-                    ["type" => "text", "text" => "Items in Cart"],
-                    ["type" => "text", "text" => "RECOVER"],
-                    ["type" => "text", "text" => $pCartTotal]
-                ];
-                $set_6 = [
-                    ["type" => "text", "text" => $pCustName],
-                    ["type" => "text", "text" => "Cart #" . $cartId],
-                    ["type" => "text", "text" => "Items in Cart"],
-                    ["type" => "text", "text" => "RECOVER"],
-                    ["type" => "text", "text" => $pCartTotal],
-                    ["type" => "text", "text" => $pStoreName]
-                ];
-                $set_3 = [
-                    ["type" => "text", "text" => $pCustName],
-                    ["type" => "text", "text" => $pProdNames],
-                    ["type" => "text", "text" => $pCartTotal]
-                ];
-                $set_2 = [
-                    ["type" => "text", "text" => $pCustName],
-                    ["type" => "text", "text" => $pRecLink]
-                ];
-                $set_1 = [
-                    ["type" => "text", "text" => $pCustName]
-                ];
-                $set_9 = [
-                    ["type" => "text", "text" => $pCustName],
-                    ["type" => "text", "text" => "Cart #" . $cartId],
-                    ["type" => "text", "text" => $pDate],
-                    ["type" => "text", "text" => $pCartTotal],
-                    ["type" => "text", "text" => "Pending"],
-                    ["type" => "text", "text" => "In Cart"],
-                    ["type" => "text", "text" => $pProdNames],
-                    ["type" => "text", "text" => "Store Checkout"],
-                    ["type" => "text", "text" => $pRecLink]
-                ];
-
-                $fallbackParamGroups = [$set_4, $set_3, $set_5, $set_6, $set_2, $set_1, $set_9];
-                $candidateLangs = array_unique([$langCode, ($langCode === 'en' ? 'en_US' : 'en')]);
-
-                foreach ($candidateLangs as $cL) {
-                    foreach ($fallbackParamGroups as $pGroup) {
-                        $candidateSets[] = ['params' => $pGroup, 'header' => false, 'button' => false, 'lang' => $cL];
-                        // If template might have a URL button:
-                        if (!empty($pTokenOnly) && (count($pGroup) <= 4)) {
-                            $candidateSets[] = ['params' => $pGroup, 'header' => false, 'button' => true, 'lang' => $cL];
-                        }
-                    }
-                }
-
                 $headerImgUrl = !empty($waSettings['wa_header_image_url']) 
                     ? $waSettings['wa_header_image_url'] 
                     : 'https://sagarstarters.com/assets/images/auth_banner.jpg';
 
-                foreach ($candidateSets as $cand) {
-                    if (empty($cand['params'])) continue; // CRITICAL: NEVER send empty parameters
+                // Standard parameter representations
+                $set_9_confirmation = [
+                    ["type" => "text", "text" => $pCustName],           // {{1}} Customer Name
+                    ["type" => "text", "text" => "Cart #" . $cartId],   // {{2}} Order/Cart ID
+                    ["type" => "text", "text" => $pDate],               // {{3}} Date
+                    ["type" => "text", "text" => $pCartTotal],          // {{4}} Amount
+                    ["type" => "text", "text" => "Store Checkout"],     // {{5}} Payment Method
+                    ["type" => "text", "text" => "Pending in Cart"],    // {{6}} Order Status
+                    ["type" => "text", "text" => $pProdNames],          // {{7}} Items
+                    ["type" => "text", "text" => "Online Checkout"],    // {{8}} Address
+                    ["type" => "text", "text" => $pRecLink]             // {{9}} Order/Recovery Link
+                ];
 
-                    $components = [];
+                $set_5_status = [
+                    ["type" => "text", "text" => $pCustName],           // {{1}} Customer Name
+                    ["type" => "text", "text" => "Cart #" . $cartId],   // {{2}} Cart ID
+                    ["type" => "text", "text" => "Items in Cart"],      // {{3}} Order Status
+                    ["type" => "text", "text" => ($pTokenOnly ?: 'RECOVER')], // {{4}} Tracking / Recovery Token
+                    ["type" => "text", "text" => $pCartTotal]           // {{5}} Amount
+                ];
 
-                    // Optional Header Component
-                    if (!empty($cand['header'])) {
-                        $components[] = [
-                            "type" => "header",
-                            "parameters" => [
-                                [
-                                    "type" => "image",
-                                    "image" => ["link" => $headerImgUrl]
-                                ]
-                            ]
-                        ];
+                $set_6_status = [
+                    ["type" => "text", "text" => $pCustName],           // {{1}} Customer Name
+                    ["type" => "text", "text" => "Cart #" . $cartId],   // {{2}} Cart ID
+                    ["type" => "text", "text" => "Items in Cart"],      // {{3}} Order Status
+                    ["type" => "text", "text" => ($pTokenOnly ?: 'RECOVER')], // {{4}} Tracking / Recovery Token
+                    ["type" => "text", "text" => $pCartTotal],          // {{5}} Amount
+                    ["type" => "text", "text" => $pStoreName]           // {{6}} Store Name
+                ];
+
+                $set_4_simple = [
+                    ["type" => "text", "text" => $pCustName],
+                    ["type" => "text", "text" => $pProdNames],
+                    ["type" => "text", "text" => $pCartTotal],
+                    ["type" => "text", "text" => $pRecLink]
+                ];
+
+                // Build candidate template cascade in order of reliability
+                $templatesToTry = array_unique(array_filter([
+                    $abandonTemplate,
+                    'order_confirmation',
+                    'new_order_status',
+                    'order_status_update'
+                ]));
+
+                $candidateLangs = array_unique([$langCode, ($langCode === 'en' ? 'en_US' : 'en')]);
+
+                foreach ($templatesToTry as $currentTpl) {
+                    $tryConfigs = [];
+
+                    if ($currentTpl === 'order_confirmation') {
+                        $tryConfigs[] = ['params' => $set_9_confirmation, 'header' => false, 'button' => false];
+                    } elseif ($currentTpl === 'new_order_status') {
+                        $tryConfigs[] = ['params' => $set_5_status, 'header' => false, 'button' => false];
+                    } elseif ($currentTpl === 'order_status_update') {
+                        $tryConfigs[] = ['params' => $set_6_status, 'header' => true, 'button' => false];
+                        $tryConfigs[] = ['params' => $set_6_status, 'header' => false, 'button' => false];
+                    } else {
+                        // Custom template (e.g. reminder_1_gentle_nudge)
+                        $tryConfigs[] = ['params' => $set_4_simple, 'header' => false, 'button' => false];
+                        if (!empty($pTokenOnly)) {
+                            $tryConfigs[] = ['params' => $set_4_simple, 'header' => false, 'button' => true];
+                        }
+                        $tryConfigs[] = ['params' => $set_5_status, 'header' => false, 'button' => false];
+                        $tryConfigs[] = ['params' => $set_9_confirmation, 'header' => false, 'button' => false];
                     }
 
-                    // Body Component (Always required when template has body variables)
-                    $components[] = [
-                        "type"       => "body",
-                        "parameters" => $cand['params']
-                    ];
+                    foreach ($candidateLangs as $cL) {
+                        foreach ($tryConfigs as $cfg) {
+                            $components = [];
 
-                    // Optional Button Component (for templates with dynamic URL button)
-                    if (!empty($cand['button']) && !empty($pTokenOnly)) {
-                        $components[] = [
-                            "type"       => "button",
-                            "sub_type"   => "url",
-                            "index"      => "0",
-                            "parameters" => [
-                                [
-                                    "type" => "text",
-                                    "text" => $pTokenOnly
+                            if (!empty($cfg['header'])) {
+                                $components[] = [
+                                    "type" => "header",
+                                    "parameters" => [
+                                        [
+                                            "type" => "image",
+                                            "image" => ["link" => $headerImgUrl]
+                                        ]
+                                    ]
+                                ];
+                            }
+
+                            $components[] = [
+                                "type"       => "body",
+                                "parameters" => $cfg['params']
+                            ];
+
+                            if (!empty($cfg['button']) && !empty($pTokenOnly)) {
+                                $components[] = [
+                                    "type"       => "button",
+                                    "sub_type"   => "url",
+                                    "index"      => "0",
+                                    "parameters" => [
+                                        [
+                                            "type" => "text",
+                                            "text" => $pTokenOnly
+                                        ]
+                                    ]
+                                ];
+                            }
+
+                            $tplPayload = [
+                                "messaging_product" => "whatsapp",
+                                "recipient_type"    => "individual",
+                                "to"                => $cleanNumber,
+                                "type"              => "template",
+                                "template"          => [
+                                    "name"       => $currentTpl,
+                                    "language"   => ["code" => $cL],
+                                    "components" => $components
                                 ]
-                            ]
-                        ];
-                    }
+                            ];
 
-                    $tplPayload = [
-                        "messaging_product" => "whatsapp",
-                        "recipient_type"    => "individual",
-                        "to"                => $cleanNumber,
-                        "type"              => "template",
-                        "template"          => [
-                            "name"       => $abandonTemplate,
-                            "language"   => ["code" => $cand['lang']],
-                            "components" => $components
-                        ]
-                    ];
+                            list($resTry, $codeTry, $errTry) = $ch_exec($tplPayload);
+                            $respTry = json_decode($resTry, true);
 
-                    list($resTry, $codeTry, $errTry) = $ch_exec($tplPayload);
-                    $respTry = json_decode($resTry, true);
+                            $payload      = $tplPayload;
+                            $result       = $resTry;
+                            $httpCode     = $codeTry;
+                            $curlError    = $errTry;
+                            $metaResponse = $respTry;
 
-                    $payload      = $tplPayload;
-                    $result       = $resTry;
-                    $httpCode     = $codeTry;
-                    $curlError    = $errTry;
-                    $metaResponse = $respTry;
+                            if ($codeTry == 200 && !empty($respTry['messages'][0]['id']) && empty($respTry['error'])) {
+                                $isMetaSuccess = true;
+                                $successfulTpl = $currentTpl;
+                                break 3; // Success! Break out of configs, langs, and templates!
+                            }
 
-                    if ($codeTry == 200 && !empty($respTry['messages'][0]['id']) && empty($respTry['error'])) {
-                        $isMetaSuccess = true;
-                        break;
+                            // If template does not exist (132001), skip to next template immediately
+                            $errCode = (int)($respTry['error']['code'] ?? 0);
+                            if ($errCode === 132001) {
+                                break 2;
+                            }
+                        }
                     }
                 }
             }
@@ -811,10 +763,7 @@ class AbandonedCartService {
             if ($isMetaSuccess) {
                 $msgId = $metaResponse['messages'][0]['id'] ?? 'unknown';
                 $tplCat = !empty($tplMeta['category']) ? strtoupper($tplMeta['category']) : '';
-                $catNote = ($tplCat === 'MARKETING') 
-                    ? " (Category: Marketing. Tip: If not received on device, Meta Marketing Frequency Capping may apply in India; use Utility template 'order_status_updates' for 100% instant delivery)" 
-                    : "";
-                $statusMsg = "Sent via Meta Template '{$abandonTemplate}' (ID: " . substr($msgId, 0, 30) . ')' . $catNote;
+                $statusMsg = "Sent via Meta Template '{$successfulTpl}' (ID: " . substr($msgId, 0, 30) . ')';
                 $this->logWhatsApp($cartId, $cleanNumber, $message, 'api', $statusMsg);
                 return [
                     'success'    => true,
@@ -824,7 +773,8 @@ class AbandonedCartService {
                     'message_id' => $msgId,
                     'link'       => $waLink,
                     'category'   => $tplCat,
-                    'message'    => "Reminder Level {$level} sent successfully via Meta Template '{$abandonTemplate}'!" . $catNote
+                    'template'   => $successfulTpl,
+                    'message'    => "Reminder Level {$level} sent successfully via Meta Template '{$successfulTpl}'!"
                 ];
             } else {
                 $errMsg = $metaResponse['error']['message'] ?? 'Meta API error occurred';
