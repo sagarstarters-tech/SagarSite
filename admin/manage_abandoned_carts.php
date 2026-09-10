@@ -689,17 +689,28 @@ button.ac-btn-refresh:active {
                         <i class="fas fa-robot"></i>
                     </div>
                     <div>
-                        <div class="fw-bold text-dark d-flex align-items-center gap-2">
+                        <div class="fw-bold text-dark d-flex align-items-center gap-2 flex-wrap">
                             WhatsApp Mode: <span class="badge bg-primary">Meta Cloud API (Automated 24/7 Delivery)</span>
                             <?php if (!$waInfo['has_api_creds']): ?>
                                 <span class="badge bg-danger"><i class="fas fa-exclamation-triangle me-1"></i> API Credentials Incomplete</span>
+                            <?php elseif (empty($settings['meta_template_1'])): ?>
+                                <span class="badge bg-warning text-dark"><i class="fas fa-exclamation-circle me-1"></i> Meta Template Not Configured</span>
+                            <?php else: ?>
+                                <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i> Template: <?php echo htmlspecialchars($settings['meta_template_1']); ?></span>
                             <?php endif; ?>
                         </div>
-                        <div class="small text-muted">Customer ko automated WhatsApp messages Meta Cloud API se direct bheje jate hain.</div>
+                        <div class="small text-muted mt-1">
+                            <?php if (empty($settings['meta_template_1'])): ?>
+                                <span class="text-danger fw-semibold"><i class="fas fa-info-circle me-1"></i> Meta Cloud API Notice:</span> Customer ko message pahuchane ke liye Meta Business Manager ka approved Template zaroori hai (outside 24h window). Kripya <strong>Settings & Templates</strong> me template select karein ya WhatsApp icon click karke <strong>WhatsApp Web</strong> se turant bhejein.
+                            <?php else: ?>
+                                Customer ko automated WhatsApp messages Meta Cloud API template se direct bheje jate hain.
+                            <?php endif; ?>
+                        </div>
                     </div>
                 </div>
-                <div class="d-flex align-items-center gap-2">
-                    <a href="manage_whatsapp_settings.php" class="btn btn-sm btn-outline-primary rounded-3 text-nowrap"><i class="fas fa-cog me-1"></i> WhatsApp Settings</a>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <button class="btn btn-sm btn-outline-primary rounded-3 text-nowrap" type="button" data-mdb-toggle="collapse" data-mdb-target="#settingsCollapse"><i class="fas fa-sliders-h me-1"></i> Cart Templates</button>
+                    <a href="manage_whatsapp_settings.php" class="btn btn-sm btn-outline-secondary rounded-3 text-nowrap"><i class="fas fa-cog me-1"></i> API Settings</a>
                 </div>
             </div>
         <?php else: ?>

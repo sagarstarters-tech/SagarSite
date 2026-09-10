@@ -406,6 +406,22 @@ class AbandonedCartService {
                 $abandonTemplate = trim($this->settings['meta_template_1']);
             }
 
+            // CRITICAL: Meta Cloud API strict policy requirement.
+            // Free-form text messages CANNOT be delivered outside the 24-hour customer service window.
+            // Meta accepts raw text with HTTP 200 and a message ID, but permanently drops it.
+            // Therefore, outside the 24h window, an approved WhatsApp Template is MANDATORY.
+            if (empty($abandonTemplate)) {
+                $err = "Meta Template is not configured for Stage {$tplLevel}. Meta Cloud API strictly requires an approved WhatsApp Template to deliver messages to customers outside the 24-hour window. Please select an approved Meta Template in Settings & Templates, or click the WhatsApp button to send via WhatsApp Web.";
+                $this->logWhatsApp($cartId, $cleanNumber, $message, 'api', "Skipped: " . $err);
+                return [
+                    'success' => false,
+                    'mode'    => 'api',
+                    'is_sent' => false,
+                    'error'   => $err,
+                    'link'    => $waLink
+                ];
+            }
+
             $ch_exec = function($pay) use ($url, $token) {
                 $ch = curl_init($url);
                 curl_setopt_array($ch, [
@@ -433,60 +449,94 @@ class AbandonedCartService {
             $isMetaSuccess = false;
             $metaResponse = null;
 
-            // Strategy A: If Meta Template is defined, use Template Message
-            if (!empty($abandonTemplate)) {
-                preg_match_all('/\{(CustomerName|ProductNames|CartTotal|RecoveryLink|CouponCode|CouponDiscount)\}/', $messageTemplate, $matches);
-                $params = [];
-                if (!empty($matches[0])) {
-                    foreach ($matches[0] as $varKey) {
-                        $val = (string)($variables[$varKey] ?? '');
-                        if ($val === '') $val = ' ';
-                        $params[] = ["type" => "text", "text" => $val];
-                    }
-                }
+            $langCode = trim($this->settings['meta_template_lang'] ?? 'en');
+            if (empty($langCode)) $langCode = 'en';
 
+            if ($abandonTemplate === 'hello_world') {
                 $payload = [
                     "messaging_product" => "whatsapp",
                     "recipient_type"    => "individual",
                     "to"                => $cleanNumber,
                     "type"              => "template",
                     "template"          => [
-                        "name"     => $abandonTemplate,
-                        "language" => ["code" => trim($this->settings['meta_template_lang'] ?? 'en')],
-                        "components" => []
+                        "name"     => "hello_world",
+                        "language" => ["code" => "en_US"]
                     ]
                 ];
-
-                if (!empty($params)) {
-                    $payload["template"]["components"][] = [
-                        "type" => "body",
-                        "parameters" => $params
-                    ];
-                }
-
                 list($result, $httpCode, $curlError) = $ch_exec($payload);
                 $metaResponse = json_decode($result, true);
                 $isMetaSuccess = ($httpCode == 200) && !empty($metaResponse['messages'][0]['id']) && empty($metaResponse['error']);
-            }
+            } else {
+                // Build dynamic parameter sets (4 params, 3 params, 2 params, 1 param, 0 params)
+                $p1 = (string)($variables['{CustomerName}'] ?? 'Customer');
+                $p2 = (string)($variables['{ProductNames}'] ?? 'Cart Items');
+                $p3 = (string)($variables['{CartTotal}'] ?? '0.00');
+                $p4 = (string)($variables['{RecoveryLink}'] ?? '');
+                $p5 = (string)($variables['{CouponCode}'] ?? '');
+                $p6 = (string)($variables['{CouponDiscount}'] ?? '');
 
-            // Strategy B: Fallback to Direct Text Message if template is not configured or failed
-            if (!$isMetaSuccess && (empty($abandonTemplate) || ($httpCode != 200 && ($metaResponse['error']['code'] ?? 0) == 132001))) {
-                $textPayload = [
-                    "messaging_product" => "whatsapp",
-                    "recipient_type"    => "individual",
-                    "to"                => $cleanNumber,
-                    "type"              => "text",
-                    "text"              => ["preview_url" => true, "body" => $message]
+                $paramsFull = [
+                    ["type" => "text", "text" => $p1],
+                    ["type" => "text", "text" => $p2],
+                    ["type" => "text", "text" => $p3],
+                    ["type" => "text", "text" => $p4],
                 ];
-                list($textResult, $textCode, $textErr) = $ch_exec($textPayload);
-                $textResponse = json_decode($textResult, true);
-                if ($textCode == 200 && !empty($textResponse['messages'][0]['id']) && empty($textResponse['error'])) {
-                    $payload = $textPayload;
-                    $result = $textResult;
-                    $httpCode = $textCode;
-                    $curlError = $textErr;
-                    $metaResponse = $textResponse;
-                    $isMetaSuccess = true;
+                if (!empty($p5)) {
+                    $paramsFull[] = ["type" => "text", "text" => $p5];
+                    $paramsFull[] = ["type" => "text", "text" => $p6];
+                }
+
+                $candidateParams = [
+                    $paramsFull,
+                    array_slice($paramsFull, 0, 4),
+                    array_slice($paramsFull, 0, 3),
+                    array_slice($paramsFull, 0, 2),
+                    array_slice($paramsFull, 0, 1),
+                    []
+                ];
+
+                $candidateLangs = array_unique([$langCode, ($langCode === 'en' ? 'en_US' : 'en')]);
+
+                foreach ($candidateLangs as $currentLang) {
+                    foreach ($candidateParams as $params) {
+                        $tplPayload = [
+                            "messaging_product" => "whatsapp",
+                            "recipient_type"    => "individual",
+                            "to"                => $cleanNumber,
+                            "type"              => "template",
+                            "template"          => [
+                                "name"       => $abandonTemplate,
+                                "language"   => ["code" => $currentLang],
+                                "components" => []
+                            ]
+                        ];
+                        if (!empty($params)) {
+                            $tplPayload["template"]["components"][] = [
+                                "type"       => "body",
+                                "parameters" => $params
+                            ];
+                        }
+
+                        list($resTry, $codeTry, $errTry) = $ch_exec($tplPayload);
+                        $respTry = json_decode($resTry, true);
+
+                        $payload      = $tplPayload;
+                        $result       = $resTry;
+                        $httpCode     = $codeTry;
+                        $curlError    = $errTry;
+                        $metaResponse = $respTry;
+
+                        if ($codeTry == 200 && !empty($respTry['messages'][0]['id']) && empty($respTry['error'])) {
+                            $isMetaSuccess = true;
+                            break 2;
+                        }
+
+                        // If error is not parameter count mismatch (132000), break parameter loop
+                        $errCode = $respTry['error']['code'] ?? 0;
+                        if ($errCode != 132000) {
+                            break;
+                        }
+                    }
                 }
             }
 
@@ -512,14 +562,14 @@ class AbandonedCartService {
 
             if ($isMetaSuccess) {
                 $msgId = $metaResponse['messages'][0]['id'] ?? 'unknown';
-                $statusMsg = 'Sent via Meta API (ID: ' . substr($msgId, 0, 30) . ')';
+                $statusMsg = "Sent via Meta Template '{$abandonTemplate}' (ID: " . substr($msgId, 0, 30) . ')';
                 $this->logWhatsApp($cartId, $cleanNumber, $message, 'api', $statusMsg);
                 return [
                     'success'    => true,
                     'mode'       => 'api',
                     'is_sent'    => true,
                     'message_id' => $msgId,
-                    'message'    => "Reminder Level {$level} sent successfully via Meta Cloud API!"
+                    'message'    => "Reminder Level {$level} sent successfully via Meta Template '{$abandonTemplate}'!"
                 ];
             } else {
                 $errMsg = $metaResponse['error']['message'] ?? 'Meta API error occurred';
@@ -530,7 +580,7 @@ class AbandonedCartService {
                     'success' => false,
                     'mode'    => 'api',
                     'is_sent' => false,
-                    'error'   => "Meta API Error (#{$errCode}): {$errMsg}",
+                    'error'   => "Meta Template '{$abandonTemplate}' Error (#{$errCode}): {$errMsg}",
                     'link'    => $waLink
                 ];
             }
