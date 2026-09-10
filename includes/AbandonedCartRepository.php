@@ -99,16 +99,28 @@ class AbandonedCartRepository {
 
             // Ensure all required columns exist in abandoned_carts table (for existing installations)
             $columnsToEnsure = [
-                'product_names'   => "TEXT DEFAULT NULL",
-                'product_image'   => "VARCHAR(255) DEFAULT NULL",
-                'reminder_1_sent' => "DATETIME DEFAULT NULL",
-                'reminder_2_sent' => "DATETIME DEFAULT NULL",
-                'reminder_3_sent' => "DATETIME DEFAULT NULL",
-                'reminder_4_sent' => "DATETIME DEFAULT NULL",
-                'coupon_code'     => "VARCHAR(50) DEFAULT NULL",
-                'coupon_discount' => "DECIMAL(5,2) DEFAULT NULL",
-                'recovery_token'  => "VARCHAR(64) DEFAULT NULL",
-                'recovered_at'    => "DATETIME DEFAULT NULL",
+                'session_id'          => "VARCHAR(128) DEFAULT NULL",
+                'customer_name'       => "VARCHAR(100) NOT NULL DEFAULT ''",
+                'customer_phone'      => "VARCHAR(20) DEFAULT NULL",
+                'customer_email'      => "VARCHAR(100) DEFAULT NULL",
+                'product_names'       => "TEXT DEFAULT NULL",
+                'product_image'       => "VARCHAR(255) DEFAULT NULL",
+                'coupon_code'         => "VARCHAR(50) DEFAULT NULL",
+                'coupon_discount'     => "DECIMAL(10,2) DEFAULT NULL",
+                'restore_token'       => "VARCHAR(64) DEFAULT NULL",
+                'restore_token_expiry'=> "DATETIME DEFAULT NULL",
+                'checkout_url'        => "VARCHAR(255) DEFAULT NULL",
+                'reminder_count'      => "TINYINT(4) NOT NULL DEFAULT 0",
+                'last_reminder_at'    => "DATETIME DEFAULT NULL",
+                'recovered_order_id'  => "INT(11) DEFAULT NULL",
+                'is_active'           => "TINYINT(4) NOT NULL DEFAULT 1",
+                'retry_count'         => "INT(11) NOT NULL DEFAULT 0",
+                'reminder_1_sent'     => "DATETIME DEFAULT NULL",
+                'reminder_2_sent'     => "DATETIME DEFAULT NULL",
+                'reminder_3_sent'     => "DATETIME DEFAULT NULL",
+                'reminder_4_sent'     => "DATETIME DEFAULT NULL",
+                'recovery_token'      => "VARCHAR(64) DEFAULT NULL",
+                'recovered_at'        => "DATETIME DEFAULT NULL",
             ];
 
             foreach ($columnsToEnsure as $colName => $colDef) {
