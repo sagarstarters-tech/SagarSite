@@ -44,16 +44,43 @@ class AbandonedCartController {
             }
 
             $result = $this->service->sendManualReminder($cartId, $level);
+            return $result;
+        } catch (\Throwable $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
 
-            if (!empty($result['success'])) {
-                $response = ['success' => true, 'message' => $result['message'] ?? 'Reminder sent successfully'];
-                if (!empty($result['link'])) {
-                    $response['link'] = $result['link'];
-                }
-                return $response;
-            } else {
-                return ['success' => false, 'error' => $result['error'] ?? 'Failed to send reminder. Check WhatsApp settings.'];
+    /**
+     * Mark or unmark a reminder stage manually.
+     */
+    public function markStageManual($cartId, $level, $action = 'mark_sent') {
+        try {
+            $cartId = intval($cartId);
+            $level  = intval($level);
+            if ($cartId <= 0 || !in_array($level, [1, 2, 3, 4])) {
+                return ['success' => false, 'error' => 'Invalid cart ID or reminder level'];
             }
+
+            $ok = $this->service->markReminderStageManual($cartId, $level, $action);
+            return $ok
+                ? ['success' => true, 'message' => ($action === 'mark_sent' ? "Stage {$level} marked as sent!" : "Stage {$level} reset to unsent!")]
+                : ['success' => false, 'error' => 'Failed to update reminder stage status'];
+        } catch (\Throwable $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Get preview of all reminder messages and links for a cart.
+     */
+    public function getCartPreview($cartId) {
+        try {
+            $cartId = intval($cartId);
+            if ($cartId <= 0) return ['success' => false, 'error' => 'Invalid cart ID'];
+            $preview = $this->service->getCartRemindersPreview($cartId);
+            return $preview
+                ? ['success' => true, 'data' => $preview]
+                : ['success' => false, 'error' => 'Cart not found'];
         } catch (\Throwable $e) {
             return ['success' => false, 'error' => $e->getMessage()];
         }

@@ -6,6 +6,7 @@ $abandonedCartService = new AbandonedCartService($conn);
 $dashboardData = $abandonedCartService->getAdminDashboardData();
 $stats = $dashboardData['stats'];
 $settings = $dashboardData['settings'];
+$waInfo = $dashboardData['whatsapp_info'] ?? ['mode' => 'web', 'is_enabled' => true, 'has_api_creds' => false];
 $currency = isset($global_currency) ? htmlspecialchars($global_currency) : '₹';
 ?>
 <style>
@@ -678,6 +679,52 @@ button.ac-btn-refresh:active {
     </div>
 
     <!-- ═══════════════════════════════════════════════════════════ -->
+    <!--  WHATSAPP SENDING MODE STATUS BANNER                        -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div class="mb-4">
+        <?php if (($waInfo['mode'] ?? 'web') === 'api'): ?>
+            <div class="alert alert-primary border-0 rounded-4 p-3 shadow-sm d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width: 44px; height: 44px; font-size: 1.25rem;">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-dark d-flex align-items-center gap-2">
+                            WhatsApp Mode: <span class="badge bg-primary">Meta Cloud API (Automated 24/7 Delivery)</span>
+                            <?php if (!$waInfo['has_api_creds']): ?>
+                                <span class="badge bg-danger"><i class="fas fa-exclamation-triangle me-1"></i> API Credentials Incomplete</span>
+                            <?php endif; ?>
+                        </div>
+                        <div class="small text-muted">Customer ko automated WhatsApp messages Meta Cloud API se direct bheje jate hain.</div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="manage_whatsapp_settings.php" class="btn btn-sm btn-outline-primary rounded-3 text-nowrap"><i class="fas fa-cog me-1"></i> WhatsApp Settings</a>
+                </div>
+            </div>
+        <?php else: ?>
+            <div class="alert border-0 rounded-4 p-3 shadow-sm d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3" style="background-color: #fffbeb; border: 1px solid #fde68a !important;">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width: 44px; height: 44px; font-size: 1.35rem; background-color: #25d366;">
+                        <i class="fab fa-whatsapp"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-dark d-flex align-items-center gap-2">
+                            WhatsApp Mode: <span class="badge bg-warning text-dark border">WhatsApp Web (Manual Redirect)</span>
+                        </div>
+                        <div class="small text-dark mt-1">
+                            Abhi WhatsApp <strong>Web Mode</strong> par hai. WhatsApp icon click karne par WhatsApp Web chat window khulega jahan aapko <strong>Send</strong> button dabana hoga. (Bina WhatsApp Web khole 24/7 automated direct messages ke liye WhatsApp Settings me <strong>Meta API Mode</strong> configure karein).
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="manage_whatsapp_settings.php" class="btn btn-sm btn-outline-dark rounded-3 text-nowrap"><i class="fas fa-cog me-1"></i> WhatsApp Settings</a>
+                </div>
+            </div>
+        <?php endif; ?>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
     <!--  4. DATA FILTER BAR & TABLE                                -->
     <!-- ═══════════════════════════════════════════════════════════ -->
     <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-3">
@@ -777,6 +824,15 @@ button.ac-btn-refresh:active {
                     <!-- Cart items list -->
                 </div>
 
+                <!-- Reminder Stages & WhatsApp Dispatch -->
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <h6 class="fw-bold mb-0 text-dark"><i class="fab fa-whatsapp text-success me-1"></i> Reminder Stages & WhatsApp Dispatch</h6>
+                    <span class="small text-muted" id="modalWaModeTag"></span>
+                </div>
+                <div class="bg-white border rounded-3 p-3 mb-4" id="modalCartStages">
+                    <div class="text-muted small"><i class="fas fa-spinner fa-spin me-1"></i> Loading stages & messages...</div>
+                </div>
+
                 <h6 class="fw-bold mb-2">WhatsApp Log History</h6>
                 <div class="bg-white border rounded-3 p-3" id="modalCartLogs">
                     <!-- Logs list -->
@@ -785,10 +841,7 @@ button.ac-btn-refresh:active {
             <div class="modal-footer bg-white border-top p-3 justify-content-between">
                 <div class="d-flex align-items-center gap-2">
                     <button type="button" class="btn btn-outline-warning btn-sm rounded-3" onclick="resetModalReminders()">
-                        <i class="fas fa-undo me-1"></i> Reset Stages to 0
-                    </button>
-                    <button type="button" class="btn btn-success btn-sm rounded-3" onclick="sendModalReminder(1)">
-                        <i class="fab fa-whatsapp me-1"></i> Send Stage 1
+                        <i class="fas fa-undo me-1"></i> Reset All Stages to 0
                     </button>
                 </div>
                 <button type="button" class="btn btn-secondary px-4 rounded-3" data-mdb-dismiss="modal">Close</button>
@@ -801,6 +854,8 @@ button.ac-btn-refresh:active {
 let currentStatusFilter = 'all';
 let currentPage = 1;
 const globalCurrency = '<?php echo $currency; ?>';
+const globalWaMode = '<?php echo addslashes($waInfo['mode'] ?? 'web'); ?>';
+const globalWaHasCreds = <?php echo (!empty($waInfo['has_api_creds']) ? 'true' : 'false'); ?>;
 
 function parseSqlDate(dateStr) {
     if (!dateStr) return new Date();
@@ -901,14 +956,14 @@ function renderCartsTable(carts) {
         const cartTotal = parseFloat(cart.cart_total || 0).toFixed(2);
         const timeDisplay = timeAgo(cart.updated_at || cart.created_at);
 
-        // Timeline dots
+        // Timeline dots (1 to 4)
         const step = parseInt(cart.reminder_step || 0);
         let timelineHtml = '<div class="ac-reminder-timeline">';
         for (let i = 1; i <= 4; i++) {
-            let cls = 'pending';
-            if (i < step) cls = 'done';
-            else if (i === step) cls = 'done';
-            timelineHtml += `<div class="ac-reminder-step ${cls}" title="Reminder ${i}">${i}</div>`;
+            const isSent = Boolean(cart['reminder_' + i + '_sent']);
+            let cls = isSent ? 'done' : 'pending';
+            let title = isSent ? `Reminder ${i}: Sent on ${cart['reminder_' + i + '_sent']}` : `Reminder ${i}: Not Sent`;
+            timelineHtml += `<div class="ac-reminder-step ${cls}" title="${htmlEscape(title)}" style="cursor:pointer;" onclick='openCartModal(${cartJsonEscaped})'>${i}</div>`;
         }
         timelineHtml += `<span class="small text-muted fw-bold ms-1">${step}/4</span></div>`;
 
@@ -956,10 +1011,10 @@ function renderCartsTable(carts) {
                 <td>${statusHtml}</td>
                 <td class="pe-4 text-end">
                     <div class="d-flex align-items-center justify-content-end gap-1">
-                        <button type="button" class="ac-btn-icon ac-btn-wa" onclick="sendReminder(${cart.id}, this, 0)" title="Send Next Reminder">
+                        <button type="button" class="ac-btn-icon ac-btn-wa" onclick="handleRowWhatsAppClick(${cart.id}, this, '${htmlEscape(customerName)}', '${cleanPhone}')" title="${globalWaMode === 'web' ? 'Open in WhatsApp Web' : 'Send via Meta API'}">
                             <i class="fab fa-whatsapp"></i>
                         </button>
-                        <button type="button" class="ac-btn-icon ac-btn-info" onclick='openCartModal(${cartJsonEscaped})' title="Inspect Cart & Logs">
+                        <button type="button" class="ac-btn-icon ac-btn-info" onclick='openCartModal(${cartJsonEscaped})' title="Inspect Cart & Stages">
                             <i class="fas fa-eye"></i>
                         </button>
                         <button type="button" class="ac-btn-icon ac-btn-warn" onclick="resetReminders(${cart.id}, this)" title="Reset Reminder Stages (0/4)">
@@ -1012,9 +1067,11 @@ function renderPagination(totalPages, page, totalRecords) {
 }
 
 let currentModalCartId = 0;
+let currentModalCartData = null;
 
 function openCartModal(cart) {
     currentModalCartId = cart.id;
+    currentModalCartData = cart;
     const customerName = cart.customer_name || 'Guest User';
     const customerPhone = cart.customer_phone || 'No Phone';
     const initials = customerName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
@@ -1033,10 +1090,227 @@ function openCartModal(cart) {
     let itemsHtml = `<div class="fw-bold text-dark mb-2">${htmlEscape(cart.product_names || 'Cart Items')}</div>`;
     $('#modalCartItems').html(itemsHtml);
 
+    // Render stages with actions and previews
+    loadModalStages(cart.id);
+
+    // Load WhatsApp logs
     loadModalLogs(cart.id);
 
     const modal = new mdb.Modal(document.getElementById('cartDetailModal'));
     modal.show();
+}
+
+function loadModalStages(cartId) {
+    $('#modalCartStages').html('<div class="small text-muted"><i class="fas fa-spinner fa-spin me-1"></i> Loading stages & messages...</div>');
+    $('#modalWaModeTag').html(globalWaMode === 'api' ? '<span class="badge bg-primary">Meta Cloud API</span>' : '<span class="badge bg-warning text-dark border">WhatsApp Web</span>');
+
+    $.ajax({
+        url: 'ajax_abandoned_carts.php',
+        type: 'GET',
+        data: { action: 'get_cart_preview', cart_id: cartId },
+        dataType: 'json',
+        success: function(res) {
+            if (res.success && res.data && res.data.stages) {
+                let html = '<div class="row g-3">';
+                const stages = res.data.stages;
+                for (let lvl = 1; lvl <= 4; lvl++) {
+                    const st = stages[lvl];
+                    if (!st) continue;
+
+                    const isSent = Boolean(st.is_sent);
+                    const sentBadge = isSent
+                        ? `<span class="badge bg-success"><i class="fas fa-check-circle me-1"></i> Sent (${st.sent_at})</span>`
+                        : `<span class="badge bg-secondary"><i class="far fa-clock me-1"></i> Pending / Not Sent</span>`;
+
+                    html += `
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded-3 h-100 ${isSent ? 'border-success bg-light bg-opacity-25' : 'bg-white'}">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <div class="fw-bold text-dark">Stage ${lvl} Reminder</div>
+                                    ${sentBadge}
+                                </div>
+                                <div class="small text-muted mb-2 font-monospace p-2 bg-light rounded" style="white-space: pre-wrap; max-height: 110px; overflow-y: auto; font-size: 0.78rem;">${htmlEscape(st.message)}</div>
+                                <div class="d-flex flex-wrap gap-1 mt-2">
+                                    ${st.wa_link ? `
+                                        <a href="${st.wa_link}" target="_blank" class="btn btn-sm btn-outline-success py-1 px-2 rounded-pill" onclick="handleModalWebLinkClick(${cartId}, ${lvl})">
+                                            <i class="fab fa-whatsapp me-1"></i> Open Web
+                                        </a>
+                                    ` : ''}
+                                    ${globalWaMode === 'api' ? `
+                                        <button type="button" class="btn btn-sm btn-outline-primary py-1 px-2 rounded-pill" onclick="sendModalApiReminder(${cartId}, ${lvl}, this)">
+                                            <i class="fas fa-robot me-1"></i> Send API
+                                        </button>
+                                    ` : ''}
+                                    ${isSent ? `
+                                        <button type="button" class="btn btn-sm btn-outline-danger py-1 px-2 rounded-pill" onclick="markStage(${cartId}, ${lvl}, 'unmark_sent', function(){ loadModalStages(${cartId}); loadModalLogs(${cartId}); refreshTableAndStats(); })" title="Reset this stage to unsent">
+                                            <i class="fas fa-undo me-1"></i> Reset
+                                        </button>
+                                    ` : `
+                                        <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-2 rounded-pill" onclick="markStage(${cartId}, ${lvl}, 'mark_sent', function(){ loadModalStages(${cartId}); loadModalLogs(${cartId}); refreshTableAndStats(); })" title="Mark this stage as sent">
+                                            <i class="fas fa-check me-1"></i> Mark Sent
+                                        </button>
+                                    `}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                html += '</div>';
+                $('#modalCartStages').html(html);
+            } else {
+                $('#modalCartStages').html('<div class="small text-danger">Unable to load reminder stages preview.</div>');
+            }
+        },
+        error: function() {
+            $('#modalCartStages').html('<div class="small text-danger">Failed to connect to server.</div>');
+        }
+    });
+}
+
+function handleModalWebLinkClick(cartId, level) {
+    setTimeout(function() {
+        if (confirm(`WhatsApp Web opened in new tab for Stage ${level}!\n\n👉 Did you click 'Send' in WhatsApp Web?\n\nClick [OK] to mark Stage ${level} as SENT.\nClick [Cancel] if you did not send it.`)) {
+            markStage(cartId, level, 'mark_sent', function() {
+                loadModalStages(cartId);
+                loadModalLogs(cartId);
+                refreshTableAndStats();
+            });
+        }
+    }, 800);
+}
+
+function sendModalApiReminder(cartId, level, btn) {
+    const $btn = $(btn);
+    const origHtml = $btn.html();
+    $btn.html('<i class="fas fa-spinner fa-spin"></i>').prop('disabled', true);
+
+    $.ajax({
+        url: 'ajax_abandoned_carts.php',
+        type: 'POST',
+        data: { action: 'send_reminder', cart_id: cartId, level: level },
+        dataType: 'json',
+        success: function(res) {
+            $btn.html(origHtml).prop('disabled', false);
+            if (res.success && res.is_sent) {
+                alert('✅ ' + (res.message || `Stage ${level} sent successfully via Meta Cloud API!`));
+                loadModalStages(cartId);
+                loadModalLogs(cartId);
+                refreshTableAndStats();
+            } else {
+                const err = res.error || 'Failed to dispatch via Meta API.';
+                if (res.link && confirm(`❌ Meta API Notice:\n${err}\n\nWould you like to open WhatsApp Web instead?`)) {
+                    window.open(res.link, '_blank');
+                    handleModalWebLinkClick(cartId, level);
+                } else {
+                    alert(`❌ Error: ${err}`);
+                }
+            }
+        },
+        error: function() {
+            $btn.html(origHtml).prop('disabled', false);
+            alert('Network request failed.');
+        }
+    });
+}
+
+function handleRowWhatsAppClick(cartId, btn, customerName, phone) {
+    if (globalWaMode === 'web') {
+        // Pre-open blank tab synchronously in user gesture stack to prevent Chrome popup blocker
+        const waTab = window.open('about:blank', '_blank');
+        const $btn = $(btn);
+        const origHtml = $btn.html();
+        $btn.html('<i class="fas fa-spinner fa-spin"></i>').prop('disabled', true);
+
+        $.ajax({
+            url: 'ajax_abandoned_carts.php',
+            type: 'POST',
+            data: { action: 'send_reminder', cart_id: cartId, level: 0 },
+            dataType: 'json',
+            success: function(res) {
+                $btn.html(origHtml).prop('disabled', false);
+                if (res.success && res.link) {
+                    // Navigate tab to WhatsApp Web link
+                    waTab.location.href = res.link;
+
+                    setTimeout(function() {
+                        const promptMsg = `WhatsApp Web has been opened in a new tab for:\n${customerName} (+${phone})\n\n` +
+                                          `Reminder Stage: Level ${res.level || 'Next'}\n\n` +
+                                          `👉 Please click the 'Send' button inside WhatsApp Web to deliver the message.\n\n` +
+                                          `Did you send the message to the customer?\n\n` +
+                                          `• Click [OK] to mark Stage ${res.level || 1} as SENT in dashboard.\n` +
+                                          `• Click [Cancel] if you did not send it yet.`;
+                        if (confirm(promptMsg)) {
+                            markStage(cartId, res.level || 1, 'mark_sent');
+                        }
+                    }, 600);
+                } else {
+                    waTab.close();
+                    alert('Error preparing WhatsApp reminder: ' + (res.error || res.message || 'Unknown error'));
+                }
+            },
+            error: function() {
+                waTab.close();
+                $btn.html(origHtml).prop('disabled', false);
+                alert('Request failed. Please check network connection.');
+            }
+        });
+    } else {
+        // Meta API Mode
+        const $btn = $(btn);
+        const origHtml = $btn.html();
+        $btn.html('<i class="fas fa-spinner fa-spin"></i>').prop('disabled', true);
+
+        $.ajax({
+            url: 'ajax_abandoned_carts.php',
+            type: 'POST',
+            data: { action: 'send_reminder', cart_id: cartId, level: 0 },
+            dataType: 'json',
+            success: function(res) {
+                $btn.html(origHtml).prop('disabled', false);
+                if (res.success && res.is_sent) {
+                    alert('✅ ' + (res.message || `Reminder Stage ${res.level || 1} sent directly via Meta Cloud API!`));
+                    refreshTableAndStats();
+                } else {
+                    const err = res.error || 'Meta API could not deliver message.';
+                    if (res.link && confirm(`❌ Meta WhatsApp API Notice:\n${err}\n\nWould you like to open WhatsApp Web instead to send manually?`)) {
+                        const waTab = window.open(res.link, '_blank');
+                        setTimeout(function() {
+                            if (confirm(`Did you send the message in WhatsApp Web?\n\nClick [OK] to mark Stage ${res.level || 1} as SENT.`)) {
+                                markStage(cartId, res.level || 1, 'mark_sent');
+                            }
+                        }, 600);
+                    } else {
+                        alert(`❌ Delivery Notice:\n${err}`);
+                    }
+                }
+            },
+            error: function() {
+                $btn.html(origHtml).prop('disabled', false);
+                alert('Network error occurred.');
+            }
+        });
+    }
+}
+
+function markStage(cartId, level, action = 'mark_sent', callback = null) {
+    const postAction = (action === 'unmark_sent') ? 'unmark_stage_sent' : 'mark_stage_sent';
+    $.ajax({
+        url: 'ajax_abandoned_carts.php',
+        type: 'POST',
+        data: { action: postAction, cart_id: cartId, level: level },
+        dataType: 'json',
+        success: function(res) {
+            if (res.success) {
+                refreshTableAndStats();
+                if (callback) callback();
+            } else {
+                alert(res.error || res.message || 'Error updating stage');
+            }
+        },
+        error: function() {
+            alert('Request failed while updating stage.');
+        }
+    });
 }
 
 function loadModalLogs(cartId) {
@@ -1055,7 +1329,7 @@ function loadModalLogs(cartId) {
                     let badgeClass = 'bg-secondary';
                     if (statusText.toLowerCase().includes('sent via meta')) badgeClass = 'bg-success';
                     else if (statusText.toLowerCase().includes('failed') || statusText.toLowerCase().includes('error')) badgeClass = 'bg-danger';
-                    else if (statusText.toLowerCase().includes('wa.me') || statusText.toLowerCase().includes('reset')) badgeClass = 'bg-warning text-dark';
+                    else if (statusText.toLowerCase().includes('wa.me') || statusText.toLowerCase().includes('reset') || statusText.toLowerCase().includes('manual')) badgeClass = 'bg-warning text-dark';
 
                     logsHtml += `
                         <li class="list-group-item px-0 py-2 d-flex align-items-center justify-content-between gap-2">
@@ -1082,14 +1356,7 @@ function loadModalLogs(cartId) {
 function resetModalReminders() {
     if (currentModalCartId > 0) {
         resetReminders(currentModalCartId, null, function() {
-            loadModalLogs(currentModalCartId);
-        });
-    }
-}
-
-function sendModalReminder(level = 1) {
-    if (currentModalCartId > 0) {
-        sendReminder(currentModalCartId, null, level, function() {
+            loadModalStages(currentModalCartId);
             loadModalLogs(currentModalCartId);
         });
     }
@@ -1115,38 +1382,6 @@ function resetReminders(cartId, btn, callback = null) {
                 if (callback) callback();
             } else {
                 alert(res.error || res.message || 'Error resetting reminders');
-            }
-        },
-        error: function() {
-            if ($btn) $btn.html(originalHtml).prop('disabled', false);
-            alert('Request failed');
-        }
-    });
-}
-
-function sendReminder(cartId, btn, level = 0, callback = null) {
-    const $btn = btn ? $(btn) : null;
-    const originalHtml = $btn ? $btn.html() : '';
-    if ($btn) $btn.html('<i class="fas fa-spinner fa-spin"></i>').prop('disabled', true);
-
-    $.ajax({
-        url: 'ajax_abandoned_carts.php',
-        type: 'POST',
-        data: { action: 'send_reminder', cart_id: cartId, level: level },
-        dataType: 'json',
-        success: function(res) {
-            if ($btn) $btn.html(originalHtml).prop('disabled', false);
-            if (res.success) {
-                if (res.link) {
-                    window.open(res.link, '_blank');
-                    alert('WhatsApp Web opened in new tab.');
-                } else {
-                    alert(res.message || 'Reminder sent successfully!');
-                }
-                refreshTableAndStats();
-                if (callback) callback();
-            } else {
-                alert(res.error || res.message || 'Error sending reminder');
             }
         },
         error: function() {

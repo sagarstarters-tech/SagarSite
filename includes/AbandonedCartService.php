@@ -220,10 +220,11 @@ class AbandonedCartService {
 
         $message = str_replace(array_keys($variables), array_values($variables), $messageTemplate);
 
-        // Send via WhatsApp API (reuse existing infrastructure)
+        // Send via WhatsApp API or generate Web link
         $sent = $this->sendWhatsAppMessage($cart['customer_phone'], $message, $cartId, $level, $variables, $messageTemplate, $isManual);
 
-        if (!empty($sent['success'])) {
+        // ONLY mark as sent in database if it was actually delivered via Meta API
+        if (!empty($sent['success']) && !empty($sent['is_sent'])) {
             $this->repo->markReminderSent($cartId, $level);
         }
 
@@ -235,6 +236,31 @@ class AbandonedCartService {
      */
     public function sendManualReminder($cartId, $forceLevel = 0) {
         return $this->sendReminder($cartId, $forceLevel, true);
+    }
+
+    /**
+     * Manually mark or unmark a specific reminder stage.
+     */
+    public function markReminderStageManual($cartId, $level, $action = 'mark_sent') {
+        $cartId = intval($cartId);
+        $level  = intval($level);
+        if ($cartId <= 0 || !in_array($level, [1, 2, 3, 4])) {
+            return false;
+        }
+
+        if ($action === 'mark_sent') {
+            $result = $this->repo->markReminderSent($cartId, $level);
+            if ($result) {
+                $this->logWhatsApp($cartId, '', "Stage {$level} marked sent manually", 'admin', "Admin confirmed Stage {$level} was sent");
+            }
+            return $result;
+        } else {
+            $result = $this->repo->unmarkReminderSent($cartId, $level);
+            if ($result) {
+                $this->logWhatsApp($cartId, '', "Stage {$level} reset to unsent", 'admin', "Admin reset Stage {$level} to unsent");
+            }
+            return $result;
+        }
     }
 
     /**
@@ -250,6 +276,67 @@ class AbandonedCartService {
     }
 
     /**
+     * Get compiled reminder preview and links for all 4 stages of a cart.
+     */
+    public function getCartRemindersPreview($cartId) {
+        $cart = $this->repo->getById(intval($cartId));
+        if (!$cart) return null;
+
+        // Auto-generate recovery token if missing
+        if (empty($cart['recovery_token'])) {
+            $cart['recovery_token'] = bin2hex(random_bytes(32));
+            $this->conn->query("UPDATE abandoned_carts SET recovery_token = '" . $this->conn->real_escape_string($cart['recovery_token']) . "' WHERE id = " . intval($cartId));
+        }
+
+        $siteUrl = defined('SITE_URL') ? rtrim(SITE_URL, '/') : 'https://www.sagarstarters.com';
+        $siteUrl = preg_replace('#/(admin|api|user|auth|cron)(/.*)?$#i', '', $siteUrl);
+        if (empty($siteUrl)) $siteUrl = 'https://www.sagarstarters.com';
+        $recoveryLink = $siteUrl . '/recover_cart.php?token=' . urlencode($cart['recovery_token']);
+
+        // Clean phone
+        $phone = $cart['customer_phone'] ?? '';
+        $cleanNumber = preg_replace('/[^0-9]/', '', (string)$phone);
+        $cleanNumber = ltrim($cleanNumber, '0');
+        if (strlen($cleanNumber) == 10) $cleanNumber = '91' . $cleanNumber;
+
+        $stages = [];
+        for ($lvl = 1; $lvl <= 4; $lvl++) {
+            $couponCode = ($lvl == 4) ? ($cart['coupon_code'] ?? 'RECOVER10') : '';
+            $couponDiscount = ($lvl == 4) ? floatval($this->settings['coupon_discount_percent'] ?? 10) . '%' : '';
+
+            $variables = [
+                '{CustomerName}'   => $cart['customer_name'] ?? 'Customer',
+                '{ProductNames}'   => $cart['product_names'] ?? 'Your items',
+                '{CartTotal}'      => number_format($cart['cart_total'] ?? 0, 2),
+                '{RecoveryLink}'   => $recoveryLink,
+                '{CouponCode}'     => $couponCode,
+                '{CouponDiscount}' => $couponDiscount,
+            ];
+
+            $tpl = $this->settings["reminder_{$lvl}_message"] ?? "Hi {CustomerName}, you left items in your cart: {RecoveryLink}";
+            $msg = str_replace(array_keys($variables), array_values($variables), $tpl);
+            $waLink = !empty($cleanNumber) ? ('https://wa.me/' . $cleanNumber . '?text=' . urlencode($msg)) : '';
+
+            $sentAt = $cart["reminder_{$lvl}_sent"] ?? null;
+
+            $stages[$lvl] = [
+                'level'       => $lvl,
+                'is_sent'     => !empty($sentAt),
+                'sent_at'     => $sentAt,
+                'message'     => $msg,
+                'wa_link'     => $waLink,
+                'meta_tpl'    => $this->settings["meta_template_{$lvl}"] ?? ''
+            ];
+        }
+
+        return [
+            'cart'   => $cart,
+            'phone'  => $cleanNumber,
+            'stages' => $stages
+        ];
+    }
+
+    /**
      * Generate a unique coupon code for cart recovery.
      */
     private function generateCouponCode($cartId) {
@@ -259,7 +346,7 @@ class AbandonedCartService {
     }
 
     /**
-     * Send WhatsApp message using the existing Meta Cloud API setup.
+     * Send WhatsApp message using Meta Cloud API or generate WhatsApp Web redirect.
      */
     private function sendWhatsAppMessage($phone, $message, $cartId = 0, $level = 0, $variables = [], $messageTemplate = '', $isManual = false) {
         // Get WhatsApp settings
@@ -279,87 +366,131 @@ class AbandonedCartService {
             return ['success' => false, 'error' => 'WhatsApp Notifications are disabled in Admin -> WhatsApp Notifs Settings'];
         }
 
-        // Clean phone number (same logic as existing whatsapp_functions.php)
-        $cleanNumber = preg_replace('/[^0-9]/', '', $phone);
-        if (strpos($cleanNumber, '0') === 0) $cleanNumber = ltrim($cleanNumber, '0');
-        if (strlen($cleanNumber) == 10) $cleanNumber = '91' . $cleanNumber;
+        // Clean phone number (supports Indian and international formats)
+        $cleanNumber = preg_replace('/[^0-9]/', '', (string)$phone);
+        $cleanNumber = ltrim($cleanNumber, '0');
+        if (strlen($cleanNumber) == 14 && substr($cleanNumber, 0, 4) === '9191') {
+            $cleanNumber = substr($cleanNumber, 2);
+        }
+        if (strlen($cleanNumber) == 10) {
+            $cleanNumber = '91' . $cleanNumber;
+        }
 
         if (empty($cleanNumber)) {
             error_log("[AbandonedCart] Empty phone for cart #{$cartId}");
             return ['success' => false, 'error' => 'Customer phone number is empty or invalid'];
         }
 
-        // API mode
+        $waLink = 'https://wa.me/' . $cleanNumber . '?text=' . urlencode($message);
+
+        // ── 1. API Mode (Meta Cloud API) ──────────────────────────────
         if (($waSettings['sending_mode'] ?? 'web') === 'api') {
             if (empty($waSettings['api_token']) || empty($waSettings['phone_number_id'])) {
-                return ['success' => false, 'error' => 'Meta API Token or Phone Number ID is missing in WhatsApp Notifs Settings'];
+                return [
+                    'success' => false,
+                    'error'   => 'Meta API Token or Phone Number ID is missing in WhatsApp Notifs Settings.',
+                    'link'    => $waLink
+                ];
             }
 
             $token = trim($waSettings['api_token']);
             $phoneId = trim($waSettings['phone_number_id']);
-            $url = "https://graph.facebook.com/v19.0/{$phoneId}/messages";
+            $url = "https://graph.facebook.com/v21.0/{$phoneId}/messages";
 
             // Check if cart abandonment template is configured for this level
             $tplLevel = $level > 0 ? $level : 1;
             $abandonTemplate = trim($this->settings["meta_template_{$tplLevel}"] ?? '');
 
-            // Fallback: check Level 1 template only (do NOT fallback to order_status_updates template)
+            // Fallback: check Level 1 template
             if (empty($abandonTemplate) && !empty($this->settings['meta_template_1'])) {
                 $abandonTemplate = trim($this->settings['meta_template_1']);
             }
 
-            if (empty($abandonTemplate)) {
-                $err = "Meta Template for Cart Recovery (Level {$tplLevel}) is not set in Cart Recovery -> Settings & Templates.";
-                $this->logWhatsApp($cartId, $cleanNumber, $message, 'api', "Failed: " . $err);
-                return ['success' => false, 'error' => $err];
+            $ch_exec = function($pay) use ($url, $token) {
+                $ch = curl_init($url);
+                curl_setopt_array($ch, [
+                    CURLOPT_POSTFIELDS     => json_encode($pay),
+                    CURLOPT_HTTPHEADER     => [
+                        'Authorization: Bearer ' . $token,
+                        'Content-Type: application/json'
+                    ],
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_TIMEOUT        => 15,
+                    CURLOPT_SSL_VERIFYPEER => false,
+                    CURLOPT_SSL_VERIFYHOST => 0,
+                ]);
+                $res  = curl_exec($ch);
+                $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                $err  = curl_error($ch);
+                curl_close($ch);
+                return [$res, $code, $err];
+            };
+
+            $result = '';
+            $httpCode = 0;
+            $curlError = '';
+            $payload = [];
+            $isMetaSuccess = false;
+            $metaResponse = null;
+
+            // Strategy A: If Meta Template is defined, use Template Message
+            if (!empty($abandonTemplate)) {
+                preg_match_all('/\{(CustomerName|ProductNames|CartTotal|RecoveryLink|CouponCode|CouponDiscount)\}/', $messageTemplate, $matches);
+                $params = [];
+                if (!empty($matches[0])) {
+                    foreach ($matches[0] as $varKey) {
+                        $val = (string)($variables[$varKey] ?? '');
+                        if ($val === '') $val = ' ';
+                        $params[] = ["type" => "text", "text" => $val];
+                    }
+                }
+
+                $payload = [
+                    "messaging_product" => "whatsapp",
+                    "recipient_type"    => "individual",
+                    "to"                => $cleanNumber,
+                    "type"              => "template",
+                    "template"          => [
+                        "name"     => $abandonTemplate,
+                        "language" => ["code" => trim($this->settings['meta_template_lang'] ?? 'en')],
+                        "components" => []
+                    ]
+                ];
+
+                if (!empty($params)) {
+                    $payload["template"]["components"][] = [
+                        "type" => "body",
+                        "parameters" => $params
+                    ];
+                }
+
+                list($result, $httpCode, $curlError) = $ch_exec($payload);
+                $metaResponse = json_decode($result, true);
+                $isMetaSuccess = ($httpCode == 200) && !empty($metaResponse['messages'][0]['id']) && empty($metaResponse['error']);
             }
 
-            // Template mode
-            preg_match_all('/\{(CustomerName|ProductNames|CartTotal|RecoveryLink|CouponCode|CouponDiscount)\}/', $messageTemplate, $matches);
-            $params = [];
-            if (!empty($matches[0])) {
-                foreach ($matches[0] as $varKey) {
-                    $val = (string)($variables[$varKey] ?? '');
-                    if ($val === '') $val = ' '; // Meta API doesn't like empty strings for parameters
-                    $params[] = ["type" => "text", "text" => $val];
+            // Strategy B: Fallback to Direct Text Message if template is not configured or failed
+            if (!$isMetaSuccess && (empty($abandonTemplate) || ($httpCode != 200 && ($metaResponse['error']['code'] ?? 0) == 132001))) {
+                $textPayload = [
+                    "messaging_product" => "whatsapp",
+                    "recipient_type"    => "individual",
+                    "to"                => $cleanNumber,
+                    "type"              => "text",
+                    "text"              => ["preview_url" => true, "body" => $message]
+                ];
+                list($textResult, $textCode, $textErr) = $ch_exec($textPayload);
+                $textResponse = json_decode($textResult, true);
+                if ($textCode == 200 && !empty($textResponse['messages'][0]['id']) && empty($textResponse['error'])) {
+                    $payload = $textPayload;
+                    $result = $textResult;
+                    $httpCode = $textCode;
+                    $curlError = $textErr;
+                    $metaResponse = $textResponse;
+                    $isMetaSuccess = true;
                 }
             }
 
-            $payload = [
-                "messaging_product" => "whatsapp",
-                "recipient_type"    => "individual",
-                "to"                => $cleanNumber,
-                "type"              => "template",
-                "template"          => [
-                    "name"     => $abandonTemplate,
-                    "language" => ["code" => trim($this->settings['meta_template_lang'] ?? 'en')],
-                    "components" => []
-                ]
-            ];
-            
-            if (!empty($params)) {
-                $payload["template"]["components"][] = [
-                    "type" => "body",
-                    "parameters" => $params
-                ];
-            }
-
-            $ch = curl_init($url);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'Authorization: Bearer ' . $token,
-                'Content-Type: application/json'
-            ]);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 15);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-
-            $result = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $curlError = curl_error($ch);
-            curl_close($ch);
-
-            // Log the API call
+            // Log API call to file
             $logDir = dirname(__DIR__) . '/logs';
             if (!is_dir($logDir)) @mkdir($logDir, 0755, true);
             $logEntry = '[' . date('Y-m-d H:i:s') . "] Cart-Abandon Cart#{$cartId} L{$level} HTTP:{$httpCode} To:{$cleanNumber}" . PHP_EOL;
@@ -371,31 +502,66 @@ class AbandonedCartService {
             if ($curlError) {
                 error_log("[AbandonedCart] cURL error cart #{$cartId}: {$curlError}");
                 $this->logWhatsApp($cartId, $cleanNumber, $message, 'api', "Failed: cURL - " . substr($curlError, 0, 80));
-                return ['success' => false, 'error' => "cURL Error: " . $curlError];
+                return [
+                    'success' => false,
+                    'mode'    => 'api',
+                    'error'   => "Network / cURL Error: " . $curlError,
+                    'link'    => $waLink
+                ];
             }
 
-            $metaResponse = json_decode($result, true);
-            $isMetaSuccess = ($httpCode == 200) && isset($metaResponse['messages'][0]['id']) && empty($metaResponse['error']);
-
-            $statusMsg = $isMetaSuccess
-                ? 'Sent via Meta API (Cart Recovery) ID:' . substr($metaResponse['messages'][0]['id'], 0, 20)
-                : 'Failed API (HTTP ' . $httpCode . '): ' . substr($metaResponse['error']['message'] ?? 'Unknown Meta API error', 0, 120);
-
-            $this->logWhatsApp($cartId, $cleanNumber, $message, 'api', $statusMsg);
-
-            return ['success' => $isMetaSuccess, 'error' => $isMetaSuccess ? null : $statusMsg];
+            if ($isMetaSuccess) {
+                $msgId = $metaResponse['messages'][0]['id'] ?? 'unknown';
+                $statusMsg = 'Sent via Meta API (ID: ' . substr($msgId, 0, 30) . ')';
+                $this->logWhatsApp($cartId, $cleanNumber, $message, 'api', $statusMsg);
+                return [
+                    'success'    => true,
+                    'mode'       => 'api',
+                    'is_sent'    => true,
+                    'message_id' => $msgId,
+                    'message'    => "Reminder Level {$level} sent successfully via Meta Cloud API!"
+                ];
+            } else {
+                $errMsg = $metaResponse['error']['message'] ?? 'Meta API error occurred';
+                $errCode = $metaResponse['error']['code'] ?? $httpCode;
+                $statusMsg = "Failed API (Code {$errCode}): " . substr($errMsg, 0, 120);
+                $this->logWhatsApp($cartId, $cleanNumber, $message, 'api', $statusMsg);
+                return [
+                    'success' => false,
+                    'mode'    => 'api',
+                    'is_sent' => false,
+                    'error'   => "Meta API Error (#{$errCode}): {$errMsg}",
+                    'link'    => $waLink
+                ];
+            }
         }
 
-        // Web mode fallback — generate wa.me link
-        $waLink = 'https://wa.me/' . $cleanNumber . '?text=' . urlencode($message);
-        $this->logWhatsApp($cartId, $cleanNumber, $message, 'web', 'Generated wa.me link');
+        // ── 2. Web Mode (Manual wa.me Link Generation) ─────────────────
+        $this->logWhatsApp($cartId, $cleanNumber, $message, 'web', 'Generated wa.me link for Stage ' . $level);
         error_log("[AbandonedCart] Web mode link generated for cart #{$cartId}: {$waLink}");
 
         if ($isManual) {
-            return ['success' => true, 'link' => $waLink, 'message' => 'WhatsApp Web link generated successfully.'];
+            // Web mode link prepared for admin to send via WhatsApp Web
+            return [
+                'success' => true,
+                'mode'    => 'web',
+                'is_sent' => false,
+                'link'    => $waLink,
+                'phone'   => $cleanNumber,
+                'message' => $message,
+                'level'   => $level,
+                'info'    => 'WhatsApp Web link generated. Click Send in WhatsApp to deliver the message to the customer.'
+            ];
         }
 
-        return ['success' => false, 'error' => 'Auto reminders require Meta API mode in WhatsApp Notifs Settings. Web Mode only creates manual wa.me links.', 'link' => $waLink];
+        // Auto reminders require API mode
+        return [
+            'success' => false,
+            'mode'    => 'web',
+            'is_sent' => false,
+            'error'   => 'Automated background reminders require Meta API mode in WhatsApp Notifs Settings. Web Mode only creates manual wa.me links.',
+            'link'    => $waLink
+        ];
     }
 
     /**
@@ -441,6 +607,41 @@ class AbandonedCartService {
     }
 
     /**
+     * Get WhatsApp configuration summary for UI banners and mode detection.
+     */
+    public function getWhatsAppModeInfo() {
+        $mode = 'web';
+        $isEnabled = false;
+        $hasApiCreds = false;
+        $phoneNumberId = '';
+        $senderNumber = '';
+        try {
+            $res = $this->conn->query("SELECT is_enabled, sending_mode, phone_number_id, sender_number, LENGTH(api_token) as token_len FROM whatsapp_settings WHERE id = 1");
+            if ($res && $row = $res->fetch_assoc()) {
+                $mode = $row['sending_mode'] ?? 'web';
+                $isEnabled = ($row['is_enabled'] == 1);
+                $hasApiCreds = (!empty($row['phone_number_id']) && intval($row['token_len'] ?? 0) > 0);
+                $phoneNumberId = $row['phone_number_id'] ?? '';
+                $senderNumber = $row['sender_number'] ?? '';
+            }
+        } catch (\Throwable $e) {}
+
+        return [
+            'mode'           => $mode,
+            'is_enabled'     => $isEnabled,
+            'has_api_creds'  => $hasApiCreds,
+            'phone_number_id'=> $phoneNumberId,
+            'sender_number'  => $senderNumber,
+            'templates'      => [
+                1 => $this->settings['meta_template_1'] ?? '',
+                2 => $this->settings['meta_template_2'] ?? '',
+                3 => $this->settings['meta_template_3'] ?? '',
+                4 => $this->settings['meta_template_4'] ?? '',
+            ]
+        ];
+    }
+
+    /**
      * Get admin dashboard data.
      */
     public function getAdminDashboardData($status = 'all', $search = '', $page = 1) {
@@ -450,9 +651,10 @@ class AbandonedCartService {
         } catch (\Throwable $e) {}
 
         return [
-            'stats' => $this->repo->getStats(),
-            'carts' => $this->repo->getAdminList($status, $search, $page),
-            'settings' => $this->settings,
+            'stats'         => $this->repo->getStats(),
+            'carts'         => $this->repo->getAdminList($status, $search, $page),
+            'settings'      => $this->settings,
+            'whatsapp_info' => $this->getWhatsAppModeInfo(),
         ];
     }
 

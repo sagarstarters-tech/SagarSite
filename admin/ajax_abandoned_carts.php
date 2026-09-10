@@ -39,6 +39,26 @@ try {
             echo json_encode($result);
             break;
 
+        case 'mark_stage_sent':
+            $cartId = intval($_POST['cart_id'] ?? 0);
+            $level  = intval($_POST['level'] ?? 0);
+            $result = $controller->markStageManual($cartId, $level, 'mark_sent');
+            echo json_encode($result);
+            break;
+
+        case 'unmark_stage_sent':
+            $cartId = intval($_POST['cart_id'] ?? 0);
+            $level  = intval($_POST['level'] ?? 0);
+            $result = $controller->markStageManual($cartId, $level, 'unmark_sent');
+            echo json_encode($result);
+            break;
+
+        case 'get_cart_preview':
+            $cartId = intval($_GET['cart_id'] ?? ($_POST['cart_id'] ?? 0));
+            $result = $controller->getCartPreview($cartId);
+            echo json_encode($result);
+            break;
+
         case 'reset_reminders':
             $cartId = intval($_POST['cart_id'] ?? 0);
             $result = $controller->resetReminders($cartId);

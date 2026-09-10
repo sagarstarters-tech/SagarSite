@@ -354,6 +354,22 @@ class AbandonedCartRepository {
     }
 
     /**
+     * Unmark a specific reminder stage back to NULL.
+     */
+    public function unmarkReminderSent($cartId, $level) {
+        if (!in_array($level, [1, 2, 3, 4])) return false;
+        $col = "reminder_{$level}_sent";
+        $cartId = intval($cartId);
+
+        $stmt = $this->conn->prepare("UPDATE abandoned_carts SET {$col} = NULL WHERE id = ?");
+        if (!$stmt) return false;
+        $stmt->bind_param("i", $cartId);
+        $result = $stmt->execute();
+        $stmt->close();
+        return $result;
+    }
+
+    /**
      * Reset all reminder timestamps for a specific cart back to NULL.
      */
     public function resetReminders($cartId) {
