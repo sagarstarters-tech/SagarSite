@@ -176,7 +176,7 @@ class AbandonedCartService {
             elseif (empty($cart['reminder_2_sent'])) $level = 2;
             elseif (empty($cart['reminder_3_sent'])) $level = 3;
             elseif (empty($cart['reminder_4_sent'])) $level = 4;
-            else return ['success' => false, 'error' => 'All reminders already sent']; // All done
+            else return ['success' => false, 'error' => 'All 4 reminder stages have already been sent for this cart. Click the undo [ ↺ ] button to reset stages if you wish to re-send.'];
         }
 
         // Auto-generate recovery token if missing (for legacy database records)
@@ -414,7 +414,7 @@ class AbandonedCartService {
             // Meta accepts raw text with HTTP 200 and a message ID, but permanently drops it.
             // Therefore, outside the 24h window, an approved WhatsApp Template is MANDATORY.
             if (empty($abandonTemplate)) {
-                $err = "Meta Template is not configured for Stage {$tplLevel}. Meta Cloud API strictly requires an approved WhatsApp Template to deliver messages to customers outside the 24-hour window. Please select an approved Meta Template in Settings & Templates, or click the WhatsApp button to send via WhatsApp Web.";
+                $err = "Meta Template is not configured for Stage {$tplLevel}. Meta Cloud API strictly requires an approved WhatsApp Template to deliver messages to customers outside the 24-hour window. Please configure an approved Meta Template in Cart Templates.";
                 $this->logWhatsApp($cartId, $cleanNumber, $message, 'api', "Skipped: " . $err);
                 return [
                     'success' => false,

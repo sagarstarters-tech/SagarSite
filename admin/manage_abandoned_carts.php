@@ -1125,7 +1125,7 @@ function renderCartsTable(carts) {
                             <i class="fab fa-whatsapp"></i>
                         </button>
                         ${globalWaMode === 'api' ? `
-                            <button type="button" class="ac-btn-icon border text-success" onclick="handleRowWhatsAppWebClick(${cart.id}, this, '${htmlEscape(customerName)}', '${cleanPhone}')" title="Send via WhatsApp Web (Guaranteed Delivery)">
+                            <button type="button" class="ac-btn-icon border text-success" onclick="handleRowWhatsAppWebClick(${cart.id}, this, '${htmlEscape(customerName)}', '${cleanPhone}')" title="Send via WhatsApp Web (Manual Link)">
                                 <i class="fas fa-external-link-alt"></i>
                             </button>
                         ` : ''}
@@ -1319,13 +1319,10 @@ function sendModalApiReminder(cartId, level, btn) {
                 loadModalLogs(cartId);
                 refreshTableAndStats();
             } else {
-                const err = res.error || 'Failed to dispatch via Meta API.';
-                if (res.link && confirm(`❌ Meta API Notice:\n${err}\n\nWould you like to open WhatsApp Web instead?`)) {
-                    window.open(res.link, '_blank');
-                    handleModalWebLinkClick(cartId, level);
-                } else {
-                    alert(`❌ Error: ${err}`);
-                }
+                const err = res.error || 'Failed to dispatch via Meta Cloud API.';
+                alert(`❌ Meta Cloud API Notice:\n\n${err}\n\n💡 Tip: You can click "Send Web" above to send manually via WhatsApp Web.`);
+                loadModalStages(cartId);
+                loadModalLogs(cartId);
             }
         },
         error: function() {
@@ -1392,33 +1389,17 @@ function handleRowWhatsAppClick(cartId, btn, customerName, phone) {
             success: function(res) {
                 $btn.html(origHtml).prop('disabled', false);
                 if (res.success && res.is_sent) {
-                    const notice = `✅ Reminder Level ${res.level || 1} submitted to Meta Cloud API (ID: ${res.message_id || 'OK'}).\n\n` +
-                                   `📌 DELIVERY NOTICE:\n` +
-                                   `If you do NOT receive the message on the phone, Meta may have restricted it because:\n` +
-                                   `1. Recipient is the same as the Business Sender Number.\n` +
-                                   `2. Meta App is in Development mode (sandbox requires adding phone to test list in Meta Developers).\n\n` +
-                                   `Would you like to open WhatsApp Web now to send directly with 100% guarantee?`;
-                    if (confirm(notice)) {
-                        if (res.link) window.open(res.link, '_blank');
-                    }
+                    alert(`✅ Reminder Level ${res.level || 1} sent successfully via Meta Cloud API!\n\nMessage ID: ${res.message_id || 'OK'}`);
                     refreshTableAndStats();
                 } else {
-                    const err = res.error || 'Meta API could not deliver message.';
-                    if (res.link && confirm(`❌ Meta WhatsApp API Notice:\n${err}\n\nWould you like to open WhatsApp Web instead to send manually?`)) {
-                        const waTab = window.open(res.link, '_blank');
-                        setTimeout(function() {
-                            if (confirm(`Did you send the message in WhatsApp Web?\n\nClick [OK] to mark Stage ${res.level || 1} as SENT.`)) {
-                                markStage(cartId, res.level || 1, 'mark_sent');
-                            }
-                        }, 600);
-                    } else {
-                        alert(`❌ Delivery Notice:\n${err}`);
-                    }
+                    const err = res.error || 'Meta Cloud API could not deliver the reminder.';
+                    alert(`❌ Meta Cloud API Notice:\n\n${err}\n\n💡 Tip: To send manually via WhatsApp Web, click the [ ↗ ] button next to this cart.`);
+                    refreshTableAndStats();
                 }
             },
             error: function() {
                 $btn.html(origHtml).prop('disabled', false);
-                alert('Network error occurred.');
+                alert('Network error occurred while contacting the server.');
             }
         });
     }
