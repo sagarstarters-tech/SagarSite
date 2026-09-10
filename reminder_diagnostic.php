@@ -233,20 +233,19 @@ echo PHP_EOL;
 
 
 // Check logs directory
-echo "=== LOG DIRECTORY FILES ===" . PHP_EOL;
-$logDir = __DIR__ . '/logs';
-if (is_dir($logDir)) {
-    $files = scandir($logDir);
-    foreach ($files as $f) {
-        if ($f !== '.' && $f !== '..') {
-            $sz = filesize($logDir . '/' . $f);
-            echo "  $f ({$sz} bytes, modified: " . date('Y-m-d H:i:s', filemtime($logDir . '/' . $f)) . ")" . PHP_EOL;
-        }
-    }
+echo "=== RECENT CART_ABANDONMENT_WHATSAPP.LOG ===" . PHP_EOL;
+$cLog = __DIR__ . '/logs/cart_abandonment_whatsapp.log';
+if (file_exists($cLog)) {
+    $fp = fopen($cLog, 'r');
+    fseek($fp, -2500, SEEK_END);
+    $tail = fread($fp, 2500);
+    fclose($fp);
+    echo $tail . PHP_EOL;
 } else {
-    echo "  Logs directory does not exist." . PHP_EOL;
+    echo "  Log file does not exist." . PHP_EOL;
 }
 echo PHP_EOL;
+
 
 // Check debug_token from Meta
 if (!empty($token)) {
