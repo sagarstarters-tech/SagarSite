@@ -432,6 +432,55 @@ button.ac-btn-refresh:active {
                 </button>
             </div>
         </div>
+
+    <?php
+    // ── Diagnostic Banner: Show prominent warning if setup is incomplete ──
+    $missingTemplates = $waInfo['mode'] === 'api' && (
+        empty($settings['meta_template_1']) &&
+        empty($settings['meta_template_2']) &&
+        empty($settings['meta_template_3']) &&
+        empty($settings['meta_template_4'])
+    );
+    $noApiCreds = $waInfo['mode'] === 'api' && !$waInfo['has_api_creds'];
+    ?>
+
+    <?php if ($noApiCreds): ?>
+    <div class="alert alert-danger border-0 rounded-3 mb-4 d-flex align-items-center gap-3 shadow-sm" style="background: linear-gradient(135deg, #fef2f2, #fee2e2); border-left: 4px solid #ef4444 !important;">
+        <i class="fas fa-exclamation-triangle fs-4 text-danger flex-shrink-0"></i>
+        <div>
+            <div class="fw-bold text-danger mb-1">⚠️ Meta Cloud API Credentials Missing!</div>
+            <div class="small text-dark">WhatsApp is set to <strong>API Mode</strong> but the <strong>API Token</strong> or <strong>Phone Number ID</strong> is not configured. All cart reminders will fail until this is fixed.</div>
+            <a href="manage_whatsapp_settings.php" class="btn btn-sm btn-danger mt-2 rounded-pill px-3">
+                <i class="fas fa-cog me-1"></i> Fix WhatsApp Credentials
+            </a>
+        </div>
+    </div>
+    <?php elseif ($missingTemplates && $waInfo['is_enabled']): ?>
+    <div class="alert alert-warning border-0 rounded-3 mb-4 d-flex align-items-center gap-3 shadow-sm" style="background: linear-gradient(135deg, #fffbeb, #fef3c7); border-left: 4px solid #f59e0b !important;">
+        <i class="fas fa-exclamation-circle fs-4 text-warning flex-shrink-0"></i>
+        <div>
+            <div class="fw-bold text-dark mb-1">⚠️ Meta WhatsApp Templates Not Configured for Cart Reminders!</div>
+            <div class="small text-dark mb-2">
+                WhatsApp is in <strong>Meta Cloud API Mode</strong> but no WhatsApp Template Names are selected for Reminders 1–4. <strong>Meta Cloud API strictly requires approved WhatsApp Templates</strong> to deliver messages outside the 24-hour service window — free-text messages will be silently dropped by Meta.
+            </div>
+            <div class="small text-muted">
+                <strong>Action Required:</strong> Click <strong>"Settings &amp; Templates"</strong> → scroll to the Reminder Templates section → click <strong>"Fetch / Select"</strong> next to each Reminder to pick your approved Meta Template.
+            </div>
+            <button class="btn btn-sm btn-warning mt-2 rounded-pill px-3 fw-bold" type="button" data-mdb-toggle="collapse" data-mdb-target="#settingsCollapse">
+                <i class="fas fa-sliders-h me-1"></i> Open Settings &amp; Configure Templates
+            </button>
+        </div>
+    </div>
+    <?php elseif ($waInfo['mode'] === 'web'): ?>
+    <div class="alert alert-info border-0 rounded-3 mb-4 d-flex align-items-center gap-3 shadow-sm" style="background: linear-gradient(135deg, #eff6ff, #dbeafe); border-left: 4px solid #3b82f6 !important;">
+        <i class="fas fa-info-circle fs-4 text-primary flex-shrink-0"></i>
+        <div>
+            <div class="fw-bold text-primary mb-1">WhatsApp Web Mode — Manual Sending Required</div>
+            <div class="small text-dark">Currently in <strong>WhatsApp Web mode</strong>. Automated background reminders <strong>require Meta Cloud API mode</strong>. In web mode, clicking the WhatsApp button opens a pre-filled WhatsApp Web link for manual sending. <a href="manage_whatsapp_settings.php" class="fw-bold">Switch to API Mode →</a></div>
+        </div>
+    </div>
+    <?php endif; ?>
+
     </div>
 
     <!-- ═══════════════════════════════════════════════════════════ -->

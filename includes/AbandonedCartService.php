@@ -23,10 +23,13 @@ class AbandonedCartService {
      * Called from sync_cart_to_db() — must be fast and fail-safe.
      */
     public function trackCart($userId) {
-        if (!($this->settings['is_enabled'] ?? '1')) return;
+        if (($this->settings['is_enabled'] ?? '0') != '1') return;
 
         $userId = intval($userId);
         if ($userId <= 0) return;
+
+        // Do not track admin users' carts — admins testing site should not appear in abandonment list
+        if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin') return;
 
         // Get current cart from session
         $cart = isset($_SESSION['cart']) && is_array($_SESSION['cart']) ? $_SESSION['cart'] : [];
@@ -568,6 +571,7 @@ class AbandonedCartService {
                     'success'    => true,
                     'mode'       => 'api',
                     'is_sent'    => true,
+                    'level'      => $level,
                     'message_id' => $msgId,
                     'link'       => $waLink,
                     'message'    => "Reminder Level {$level} sent successfully via Meta Template '{$abandonTemplate}'!"
@@ -581,6 +585,7 @@ class AbandonedCartService {
                     'success' => false,
                     'mode'    => 'api',
                     'is_sent' => false,
+                    'level'   => $level,
                     'error'   => "Meta Template '{$abandonTemplate}' Error (#{$errCode}): {$errMsg}",
                     'link'    => $waLink
                 ];

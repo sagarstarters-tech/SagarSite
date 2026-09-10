@@ -210,10 +210,6 @@ class AbandonedCartRepository {
             }
 
             // 2. Cart content changed (user added/removed items) -> Update cart data ONLY.
-            //    IMPORTANT: Do NOT reset already-sent reminders — preserve reminder timestamps
-            //    so that R2/R3/R4 can still be sent based on previously sent R1/R2/R3 times.
-            //    Only reset reminders that haven't been sent yet (they are already NULL).
-            //    We do NOT update updated_at here so Level-1 delay window is not restarted.
             $stmt = $this->conn->prepare("UPDATE abandoned_carts SET cart_data = ?, cart_total = ?, product_names = ?, product_image = ?, recovery_token = ? WHERE id = ?");
             if (!$stmt) return false;
             $stmt->bind_param("sdsssi", $cartJson, $cartTotal, $productNames, $productImage, $token, $existing['id']);
@@ -221,10 +217,26 @@ class AbandonedCartRepository {
             $stmt->close();
             return $result ? $existing['id'] : false;
         } else {
-            // Create new active abandoned cart
-            $stmt = $this->conn->prepare("INSERT INTO abandoned_carts (user_id, cart_data, cart_total, product_names, product_image, status, recovery_token) VALUES (?, ?, ?, ?, ?, 'active', ?)");
+            // Fetch customer name and phone from users table to store directly in cart record.
+            // This avoids relying on a JOIN at send time where the user may no longer be active.
+            $customerName = '';
+            $customerPhone = '';
+            $uStmt = $this->conn->prepare("SELECT name, phone FROM users WHERE id = ? LIMIT 1");
+            if ($uStmt) {
+                $uStmt->bind_param("i", $userId);
+                $uStmt->execute();
+                $uRes = $uStmt->get_result();
+                if ($uRow = $uRes->fetch_assoc()) {
+                    $customerName  = $uRow['name']  ?? '';
+                    $customerPhone = $uRow['phone'] ?? '';
+                }
+                $uStmt->close();
+            }
+
+            // Create new active abandoned cart with customer details stored directly
+            $stmt = $this->conn->prepare("INSERT INTO abandoned_carts (user_id, customer_name, customer_phone, cart_data, cart_total, product_names, product_image, status, recovery_token) VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?)");
             if (!$stmt) return false;
-            $stmt->bind_param("idssss", $userId, $cartJson, $cartTotal, $productNames, $productImage, $token);
+            $stmt->bind_param("issdssss", $userId, $customerName, $customerPhone, $cartJson, $cartTotal, $productNames, $productImage, $token);
             $result = $stmt->execute();
             $id = $this->conn->insert_id;
             $stmt->close();
@@ -295,7 +307,12 @@ class AbandonedCartRepository {
         $delayMinutes = max(1, intval($delayMinutes));
 
         if ($level === 1) {
-            $sql = "SELECT ac.*, u.name AS customer_name, u.phone AS customer_phone, u.email AS customer_email
+            // Use COALESCE to prefer stored customer info over JOIN result.
+            // The abandoned_carts table has customer_name/customer_phone columns; JOIN is a fallback.
+            $sql = "SELECT ac.*,
+                           COALESCE(NULLIF(ac.customer_name, ''), u.name)  AS customer_name,
+                           COALESCE(NULLIF(ac.customer_phone, ''), u.phone) AS customer_phone,
+                           u.email AS customer_email
                     FROM abandoned_carts ac
                     LEFT JOIN users u ON ac.user_id = u.id
                     WHERE ac.status = 'active'
@@ -309,7 +326,10 @@ class AbandonedCartRepository {
             $stmt->bind_param("i", $delayMinutes);
         } else {
             $prevCol = "reminder_" . ($level - 1) . "_sent";
-            $sql = "SELECT ac.*, u.name AS customer_name, u.phone AS customer_phone, u.email AS customer_email
+            $sql = "SELECT ac.*,
+                           COALESCE(NULLIF(ac.customer_name, ''), u.name)  AS customer_name,
+                           COALESCE(NULLIF(ac.customer_phone, ''), u.phone) AS customer_phone,
+                           u.email AS customer_email
                     FROM abandoned_carts ac
                     LEFT JOIN users u ON ac.user_id = u.id
                     WHERE ac.status = 'active'
@@ -423,7 +443,11 @@ class AbandonedCartRepository {
      */
     public function getById($cartId) {
         $cartId = intval($cartId);
-        $stmt = $this->conn->prepare("SELECT ac.*, u.name AS customer_name, u.phone AS customer_phone, u.email AS customer_email
+        // Use COALESCE to prefer stored customer info columns over the JOIN result.
+        $stmt = $this->conn->prepare("SELECT ac.*,
+                       COALESCE(NULLIF(ac.customer_name, ''), u.name)  AS customer_name,
+                       COALESCE(NULLIF(ac.customer_phone, ''), u.phone) AS customer_phone,
+                       u.email AS customer_email
                 FROM abandoned_carts ac
                 LEFT JOIN users u ON ac.user_id = u.id
                 WHERE ac.id = ?
@@ -469,8 +493,11 @@ class AbandonedCartRepository {
         $total = $countStmt->get_result()->fetch_assoc()['total'];
         $countStmt->close();
 
-        // Fetch records
-        $sql = "SELECT ac.*, u.name AS customer_name, u.phone AS customer_phone, u.email AS customer_email
+        // Fetch records — use COALESCE to prefer stored customer info over the JOIN result.
+        $sql = "SELECT ac.*,
+                       COALESCE(NULLIF(ac.customer_name, ''), u.name)  AS customer_name,
+                       COALESCE(NULLIF(ac.customer_phone, ''), u.phone) AS customer_phone,
+                       u.email AS customer_email
                 FROM abandoned_carts ac
                 LEFT JOIN users u ON ac.user_id = u.id
                 WHERE {$where}
