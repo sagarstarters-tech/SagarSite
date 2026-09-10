@@ -615,17 +615,17 @@ button.ac-btn-refresh:active {
                             </div>
                         </div>
                         <div class="d-flex align-items-center gap-2 flex-wrap">
-                            <button type="button" class="btn btn-sm btn-success fw-bold rounded-pill px-3 shadow-sm" onclick="applyPresetToAll('order_confirmation', 'en')" title="100% Delivery Verified Utility Template">
-                                <i class="fas fa-check-circle me-1"></i> Use 'order_confirmation' (Recommended - 100% Working)
+                            <button type="button" class="btn btn-sm btn-primary fw-bold rounded-pill px-3 shadow-sm" onclick="applyOfficialCartTemplates()" title="Auto-fill Stage 1, 2, 3, and 4 with official Meta approved reminder templates">
+                                <i class="fas fa-star me-1"></i> Apply 4 Official Cart Templates (Stages 1-4)
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-success fw-bold rounded-pill px-3" onclick="applyPresetToAll('order_confirmation', 'en')" title="100% Delivery Verified Utility Template">
+                                <i class="fas fa-check-circle me-1"></i> Use 'order_confirmation'
                             </button>
                             <button type="button" class="btn btn-sm btn-outline-success fw-bold rounded-pill px-3" onclick="applyPresetToAll('new_order_status', 'en')" title="100% Delivery Verified Utility Template">
                                 <i class="fas fa-check-circle me-1"></i> Use 'new_order_status'
                             </button>
                             <button type="button" class="btn btn-sm btn-outline-success fw-bold rounded-pill px-3" onclick="applyPresetToAll('order_status_update', 'en')" title="100% Delivery Verified Utility Template">
                                 <i class="fas fa-check-circle me-1"></i> Use 'order_status_update'
-                            </button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary fw-bold rounded-pill px-3" onclick="applyPresetToAll('reminder_1_gentle_nudge', 'en')" title="Marketing Template">
-                                reminder_1_gentle_nudge
                             </button>
                         </div>
                     </div>
@@ -645,14 +645,13 @@ button.ac-btn-refresh:active {
                             </div>
                             <div class="input-group input-group-sm mb-2">
                                 <span class="input-group-text bg-light fw-semibold">Meta Template</span>
-                                <input type="text" class="form-control font-monospace" name="meta_template_1" id="metaTpl1" value="<?php echo htmlspecialchars($settings['meta_template_1'] ?? 'order_confirmation'); ?>" placeholder="e.g. order_confirmation">
+                                <input type="text" class="form-control font-monospace" name="meta_template_1" id="metaTpl1" value="<?php echo htmlspecialchars($settings['meta_template_1'] ?? 'reminder_1_gentle_nudge'); ?>" placeholder="reminder_1_gentle_nudge">
                                 <button class="btn btn-outline-primary" type="button" onclick="openMetaTemplatePicker('metaTpl1')"><i class="fas fa-list me-1"></i> Fetch / Select</button>
                             </div>
                             <div class="d-flex align-items-center gap-1 flex-wrap">
                                 <span class="text-muted small fw-semibold"><i class="fas fa-magic text-primary me-1"></i> Quick:</span>
+                                <button type="button" class="btn btn-xs btn-primary py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl1', 'reminder_1_gentle_nudge')">reminder_1_gentle_nudge</button>
                                 <button type="button" class="btn btn-xs btn-outline-success py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl1', 'order_confirmation')">order_confirmation</button>
-                                <button type="button" class="btn btn-xs btn-outline-success py-0 px-2 rounded-pill" onclick="setTplInput('metaTpl1', 'new_order_status')">new_order_status</button>
-                                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 rounded-pill" onclick="setTplInput('metaTpl1', 'reminder_1_gentle_nudge')">reminder_1_gentle_nudge</button>
                             </div>
                         </div>
                     </div>
@@ -669,14 +668,13 @@ button.ac-btn-refresh:active {
                             </div>
                             <div class="input-group input-group-sm mb-2">
                                 <span class="input-group-text bg-light fw-semibold">Meta Template</span>
-                                <input type="text" class="form-control font-monospace" name="meta_template_2" id="metaTpl2" value="<?php echo htmlspecialchars($settings['meta_template_2'] ?? 'order_confirmation'); ?>" placeholder="e.g. order_confirmation">
+                                <input type="text" class="form-control font-monospace" name="meta_template_2" id="metaTpl2" value="<?php echo htmlspecialchars($settings['meta_template_2'] ?? 'reminder_2_follow_up'); ?>" placeholder="reminder_2_follow_up">
                                 <button class="btn btn-outline-primary" type="button" onclick="openMetaTemplatePicker('metaTpl2')"><i class="fas fa-list me-1"></i> Fetch / Select</button>
                             </div>
                             <div class="d-flex align-items-center gap-1 flex-wrap">
                                 <span class="text-muted small fw-semibold"><i class="fas fa-magic text-primary me-1"></i> Quick:</span>
+                                <button type="button" class="btn btn-xs btn-primary py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl2', 'reminder_2_follow_up')">reminder_2_follow_up</button>
                                 <button type="button" class="btn btn-xs btn-outline-success py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl2', 'order_confirmation')">order_confirmation</button>
-                                <button type="button" class="btn btn-xs btn-outline-success py-0 px-2 rounded-pill" onclick="setTplInput('metaTpl2', 'new_order_status')">new_order_status</button>
-                                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 rounded-pill" onclick="setTplInput('metaTpl2', 'reminder_1_gentle_nudge')">reminder_1_gentle_nudge</button>
                             </div>
                         </div>
                     </div>
@@ -693,14 +691,13 @@ button.ac-btn-refresh:active {
                             </div>
                             <div class="input-group input-group-sm mb-2">
                                 <span class="input-group-text bg-light fw-semibold">Meta Template</span>
-                                <input type="text" class="form-control font-monospace" name="meta_template_3" id="metaTpl3" value="<?php echo htmlspecialchars($settings['meta_template_3'] ?? 'order_confirmation'); ?>" placeholder="e.g. order_confirmation">
+                                <input type="text" class="form-control font-monospace" name="meta_template_3" id="metaTpl3" value="<?php echo htmlspecialchars($settings['meta_template_3'] ?? 'reminder_3_urgency'); ?>" placeholder="reminder_3_urgency">
                                 <button class="btn btn-outline-primary" type="button" onclick="openMetaTemplatePicker('metaTpl3')"><i class="fas fa-list me-1"></i> Fetch / Select</button>
                             </div>
                             <div class="d-flex align-items-center gap-1 flex-wrap">
                                 <span class="text-muted small fw-semibold"><i class="fas fa-magic text-primary me-1"></i> Quick:</span>
+                                <button type="button" class="btn btn-xs btn-primary py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl3', 'reminder_3_urgency')">reminder_3_urgency</button>
                                 <button type="button" class="btn btn-xs btn-outline-success py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl3', 'order_confirmation')">order_confirmation</button>
-                                <button type="button" class="btn btn-xs btn-outline-success py-0 px-2 rounded-pill" onclick="setTplInput('metaTpl3', 'new_order_status')">new_order_status</button>
-                                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 rounded-pill" onclick="setTplInput('metaTpl3', 'reminder_1_gentle_nudge')">reminder_1_gentle_nudge</button>
                             </div>
                         </div>
                     </div>
@@ -717,14 +714,13 @@ button.ac-btn-refresh:active {
                             </div>
                             <div class="input-group input-group-sm mb-2">
                                 <span class="input-group-text bg-light fw-semibold">Meta Template</span>
-                                <input type="text" class="form-control font-monospace" name="meta_template_4" id="metaTpl4" value="<?php echo htmlspecialchars($settings['meta_template_4'] ?? 'order_confirmation'); ?>" placeholder="e.g. order_confirmation">
+                                <input type="text" class="form-control font-monospace" name="meta_template_4" id="metaTpl4" value="<?php echo htmlspecialchars($settings['meta_template_4'] ?? 'reminder_4_coupon_discount'); ?>" placeholder="reminder_4_coupon_discount">
                                 <button class="btn btn-outline-primary" type="button" onclick="openMetaTemplatePicker('metaTpl4')"><i class="fas fa-list me-1"></i> Fetch / Select</button>
                             </div>
                             <div class="d-flex align-items-center gap-1 flex-wrap">
                                 <span class="text-muted small fw-semibold"><i class="fas fa-magic text-primary me-1"></i> Quick:</span>
+                                <button type="button" class="btn btn-xs btn-primary py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl4', 'reminder_4_coupon_discount')">reminder_4_coupon_discount</button>
                                 <button type="button" class="btn btn-xs btn-outline-success py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl4', 'order_confirmation')">order_confirmation</button>
-                                <button type="button" class="btn btn-xs btn-outline-success py-0 px-2 rounded-pill" onclick="setTplInput('metaTpl4', 'new_order_status')">new_order_status</button>
-                                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 rounded-pill" onclick="setTplInput('metaTpl4', 'reminder_1_gentle_nudge')">reminder_1_gentle_nudge</button>
                             </div>
                         </div>
                     </div>
@@ -1017,17 +1013,23 @@ button.ac-btn-refresh:active {
                 <!-- Quick Selection Chips -->
                 <div class="p-2 mb-3 bg-light rounded-3 d-flex align-items-center gap-2 flex-wrap small">
                     <span class="fw-bold text-muted"><i class="fas fa-magic me-1"></i> Quick Select:</span>
-                    <button type="button" class="btn btn-sm btn-success py-0 px-2 rounded-pill fw-bold" onclick="selectTemplate('order_confirmation', 'en')" title="100% Delivery - Utility Category">
-                        <i class="fas fa-check-circle me-1"></i> order_confirmation (Verified Utility)
+                    <button type="button" class="btn btn-sm btn-primary py-0 px-2 rounded-pill fw-bold" onclick="applyOfficialCartTemplates()" title="Auto-fill Stage 1, 2, 3, and 4 with official Meta approved reminder templates">
+                        <i class="fas fa-star me-1"></i> Apply 4 Official Cart Templates (Stages 1-4)
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline-success py-0 px-2 rounded-pill fw-bold" onclick="selectTemplate('new_order_status', 'en')" title="100% Delivery - Utility Category">
-                        <i class="fas fa-check-circle me-1"></i> new_order_status
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline-success py-0 px-2 rounded-pill fw-bold" onclick="selectTemplate('order_status_update', 'en')" title="100% Delivery - Utility Category">
-                        <i class="fas fa-check-circle me-1"></i> order_status_update
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 rounded-pill" onclick="selectTemplate('reminder_1_gentle_nudge', 'en')" title="Abandoned Cart Marketing Template">
+                    <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 rounded-pill fw-bold" onclick="selectTemplate('reminder_1_gentle_nudge', 'en')">
                         reminder_1_gentle_nudge
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 rounded-pill fw-bold" onclick="selectTemplate('reminder_2_follow_up', 'en')">
+                        reminder_2_follow_up
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 rounded-pill fw-bold" onclick="selectTemplate('reminder_3_urgency', 'en')">
+                        reminder_3_urgency
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 rounded-pill fw-bold" onclick="selectTemplate('reminder_4_coupon_discount', 'en')">
+                        reminder_4_coupon_discount
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-success py-0 px-2 rounded-pill" onclick="selectTemplate('order_confirmation', 'en')" title="100% Delivery - Utility Category">
+                        order_confirmation
                     </button>
                 </div>
 
@@ -1934,6 +1936,30 @@ function applyPresetToAll(tplName, lang = 'en') {
     saveSettings(function(res) {
         if (res.success) {
             alert(`✅ Quick Select Applied!\n\nAll 4 Reminder Stages set to '${tplName}'.\nSettings saved successfully.`);
+            location.reload();
+        }
+    });
+}
+
+function applyOfficialCartTemplates() {
+    const t1 = document.getElementById('metaTpl1');
+    const t2 = document.getElementById('metaTpl2');
+    const t3 = document.getElementById('metaTpl3');
+    const t4 = document.getElementById('metaTpl4');
+    const lang = document.getElementById('metaTplLang');
+
+    if (t1) t1.value = 'reminder_1_gentle_nudge';
+    if (t2) t2.value = 'reminder_2_follow_up';
+    if (t3) t3.value = 'reminder_3_urgency';
+    if (t4) t4.value = 'reminder_4_coupon_discount';
+    if (lang) lang.value = 'en';
+
+    saveSettings(function(res) {
+        if (res.success) {
+            alert("✅ All 4 Official Meta Templates Applied Successfully!\n\n• Stage 1: reminder_1_gentle_nudge\n• Stage 2: reminder_2_follow_up\n• Stage 3: reminder_3_urgency\n• Stage 4: reminder_4_coupon_discount\n\nSettings saved successfully.");
+            location.reload();
+        } else {
+            alert("Settings saved. Please refresh the page.");
             location.reload();
         }
     });

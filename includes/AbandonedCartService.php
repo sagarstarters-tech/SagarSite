@@ -662,12 +662,27 @@ class AbandonedCartService {
                     ["type" => "text", "text" => $pStoreName]           // {{6}} Store Name
                 ];
 
-                $set_4_simple = [
-                    ["type" => "text", "text" => $pCustName],
-                    ["type" => "text", "text" => $pProdNames],
-                    ["type" => "text", "text" => $pCartTotal],
-                    ["type" => "text", "text" => $pRecLink]
+                $pDiscountRaw = (string)($variables['{CouponDiscount}'] ?? '10');
+                $pDiscountNum = trim(str_replace(['%', ' '], '', $pDiscountRaw));
+                if (empty($pDiscountNum)) $pDiscountNum = '10';
+
+                $set_reminder_1_to_3 = [
+                    ["type" => "text", "text" => $pCustName],       // {{1}} Customer Name
+                    ["type" => "text", "text" => $pProdNames],      // {{2}} Items
+                    ["type" => "text", "text" => $pCartTotal],      // {{3}} Total
+                    ["type" => "text", "text" => $pRecLink]         // {{4}} Recovery Link
                 ];
+
+                $set_reminder_4 = [
+                    ["type" => "text", "text" => $pCustName],       // {{1}} Customer Name
+                    ["type" => "text", "text" => $pProdNames],      // {{2}} Items
+                    ["type" => "text", "text" => $pCartTotal],      // {{3}} Total
+                    ["type" => "text", "text" => $couponCode],      // {{4}} Coupon Code
+                    ["type" => "text", "text" => $pDiscountNum],    // {{5}} Discount (e.g. 10)
+                    ["type" => "text", "text" => $pRecLink]         // {{6}} Recovery Link
+                ];
+
+                $set_4_simple = $set_reminder_1_to_3;
 
                 $allPoolParams = [
                     ["type" => "text", "text" => $pCustName],                          // 1: Customer Name
@@ -685,23 +700,22 @@ class AbandonedCartService {
                 $tplCandidates = [];
 
                 if (!empty($abandonTemplate)) {
-                    if ($tplMeta && !empty($exactBodyParamCount)) {
-                        $exactParams = array_slice($allPoolParams, 0, min($exactBodyParamCount, count($allPoolParams)));
+                    // Exact match for the 4 official Meta-approved cart reminder templates
+                    if (in_array($abandonTemplate, ['reminder_1_gentle_nudge', 'reminder_2_follow_up', 'reminder_3_urgency'], true)) {
                         $tplCandidates[] = [
                             'name'    => $abandonTemplate,
-                            'lang'    => ($tplMeta['language'] ?? $langCode),
-                            'params'  => $exactParams,
-                            'header'  => $tplRequiresHeaderImage,
-                            'button'  => $tplRequiresButtonUrl
+                            'lang'    => ($tplMeta['language'] ?? 'en'),
+                            'params'  => $set_reminder_1_to_3,
+                            'header'  => false,
+                            'button'  => false
                         ];
-                    } elseif ($tplMeta && empty($exactBodyParamCount)) {
-                        // Static template without body parameters
+                    } elseif ($abandonTemplate === 'reminder_4_coupon_discount') {
                         $tplCandidates[] = [
                             'name'    => $abandonTemplate,
-                            'lang'    => ($tplMeta['language'] ?? $langCode),
-                            'params'  => [],
-                            'header'  => $tplRequiresHeaderImage,
-                            'button'  => $tplRequiresButtonUrl
+                            'lang'    => ($tplMeta['language'] ?? 'en'),
+                            'params'  => $set_reminder_4,
+                            'header'  => false,
+                            'button'  => false
                         ];
                     } elseif ($abandonTemplate === 'order_confirmation') {
                         $tplCandidates[] = [
@@ -719,20 +733,30 @@ class AbandonedCartService {
                             'header'  => false,
                             'button'  => false
                         ];
+                    } elseif ($tplMeta && !empty($exactBodyParamCount)) {
+                        $exactParams = array_slice($allPoolParams, 0, min($exactBodyParamCount, count($allPoolParams)));
+                        $tplCandidates[] = [
+                            'name'    => $abandonTemplate,
+                            'lang'    => ($tplMeta['language'] ?? $langCode),
+                            'params'  => $exactParams,
+                            'header'  => $tplRequiresHeaderImage,
+                            'button'  => $tplRequiresButtonUrl
+                        ];
+                    } elseif ($tplMeta && empty($exactBodyParamCount)) {
+                        // Static template without body parameters
+                        $tplCandidates[] = [
+                            'name'    => $abandonTemplate,
+                            'lang'    => ($tplMeta['language'] ?? $langCode),
+                            'params'  => [],
+                            'header'  => $tplRequiresHeaderImage,
+                            'button'  => $tplRequiresButtonUrl
+                        ];
                     } else {
-                        // Custom template where live metadata couldn't be loaded from Meta WABA
+                        // Generic custom template
                         $tplCandidates[] = [
                             'name'    => $abandonTemplate,
                             'lang'    => $langCode,
                             'params'  => $set_4_simple,
-                            'header'  => false,
-                            'button'  => false
-                        ];
-                        // Also try single-parameter variation if 4 params don't match
-                        $tplCandidates[] = [
-                            'name'    => $abandonTemplate,
-                            'lang'    => $langCode,
-                            'params'  => [["type" => "text", "text" => $pCustName]],
                             'header'  => false,
                             'button'  => false
                         ];
