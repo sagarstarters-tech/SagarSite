@@ -380,9 +380,6 @@ class VersionManager
         // Synchronize config/version.json
         self::syncVersionJsonFile($newVersion, $currentHash);
 
-        // Auto-update export_ready_to_sell package locally if folder exists
-        self::syncExportPackage(true);
-
         return [
             'bumped'      => true,
             'old_version' => $oldVersion,
@@ -431,9 +428,6 @@ class VersionManager
         }
 
         self::syncVersionJsonFile($newVersion, $currentHash);
-
-        // Auto-update export_ready_to_sell package locally if folder exists
-        self::syncExportPackage(true);
 
         return true;
     }
@@ -528,13 +522,33 @@ class VersionManager
      */
     public static function syncExportPackage($silent = true)
     {
+        // Never build 96MB ZIP package on live production / Hostinger during web requests
+        if (php_sapi_name() !== 'cli') {
+            $host = $_SERVER['HTTP_HOST'] ?? '';
+            $isLocal = ($host === 'localhost' || strpos($host, '127.0.0.1') !== false);
+            if (!$isLocal) {
+                return [
+                    'success' => false, 
+                    'error'   => 'Export package build is disabled on live production server.'
+                ];
+            }
+        }
+
         $base = self::getBasePath();
         $builderScript = $base . '/export_ready_to_sell/build_zip.php';
         if (file_exists($builderScript)) {
-            require_once $builderScript;
-            if (class_exists('PackageBuilder')) {
-                return PackageBuilder::build($silent);
+            ob_start();
+            try {
+                require_once $builderScript;
+                if (class_exists('PackageBuilder')) {
+                    $res = PackageBuilder::build($silent);
+                    ob_end_clean();
+                    return $res;
+                }
+            } catch (\Throwable $e) {
+                // Suppress any error output
             }
+            ob_end_clean();
         }
         return [
             'success' => false, 
