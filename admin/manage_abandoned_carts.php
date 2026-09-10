@@ -634,8 +634,15 @@ button.ac-btn-refresh:active {
                 <div class="row g-4 mb-4">
                     <div class="col-md-6">
                         <div class="p-3 border rounded-3 bg-white h-100">
-                            <label class="form-label fw-bold text-dark">Reminder 1 Template (First Nudge)</label>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label fw-bold text-dark mb-0">Reminder 1 (First Nudge)</label>
+                                <span class="badge bg-warning text-dark border small" title="Used when sending manually via WhatsApp Web"><i class="fab fa-whatsapp me-1"></i> WhatsApp Web Text</span>
+                            </div>
                             <textarea class="form-control mb-2" name="reminder_1_message" rows="3"><?php echo htmlspecialchars($settings['reminder_1_message'] ?? ''); ?></textarea>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="small fw-bold text-primary"><i class="fas fa-robot me-1"></i> Meta Cloud API Template:</span>
+                                <span class="badge bg-light text-muted border small" style="font-size: 0.72rem;">Meta Approved Name</span>
+                            </div>
                             <div class="input-group input-group-sm mb-2">
                                 <span class="input-group-text bg-light fw-semibold">Meta Template</span>
                                 <input type="text" class="form-control font-monospace" name="meta_template_1" id="metaTpl1" value="<?php echo htmlspecialchars($settings['meta_template_1'] ?? 'order_confirmation'); ?>" placeholder="e.g. order_confirmation">
@@ -651,8 +658,15 @@ button.ac-btn-refresh:active {
                     </div>
                     <div class="col-md-6">
                         <div class="p-3 border rounded-3 bg-white h-100">
-                            <label class="form-label fw-bold text-dark">Reminder 2 Template (Stock Warning)</label>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label fw-bold text-dark mb-0">Reminder 2 (Stock Warning)</label>
+                                <span class="badge bg-warning text-dark border small" title="Used when sending manually via WhatsApp Web"><i class="fab fa-whatsapp me-1"></i> WhatsApp Web Text</span>
+                            </div>
                             <textarea class="form-control mb-2" name="reminder_2_message" rows="3"><?php echo htmlspecialchars($settings['reminder_2_message'] ?? ''); ?></textarea>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="small fw-bold text-primary"><i class="fas fa-robot me-1"></i> Meta Cloud API Template:</span>
+                                <span class="badge bg-light text-muted border small" style="font-size: 0.72rem;">Meta Approved Name</span>
+                            </div>
                             <div class="input-group input-group-sm mb-2">
                                 <span class="input-group-text bg-light fw-semibold">Meta Template</span>
                                 <input type="text" class="form-control font-monospace" name="meta_template_2" id="metaTpl2" value="<?php echo htmlspecialchars($settings['meta_template_2'] ?? 'order_confirmation'); ?>" placeholder="e.g. order_confirmation">
@@ -668,8 +682,15 @@ button.ac-btn-refresh:active {
                     </div>
                     <div class="col-md-6">
                         <div class="p-3 border rounded-3 bg-white h-100">
-                            <label class="form-label fw-bold text-dark">Reminder 3 Template (Urgency)</label>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label fw-bold text-dark mb-0">Reminder 3 (Urgency)</label>
+                                <span class="badge bg-warning text-dark border small" title="Used when sending manually via WhatsApp Web"><i class="fab fa-whatsapp me-1"></i> WhatsApp Web Text</span>
+                            </div>
                             <textarea class="form-control mb-2" name="reminder_3_message" rows="3"><?php echo htmlspecialchars($settings['reminder_3_message'] ?? ''); ?></textarea>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="small fw-bold text-primary"><i class="fas fa-robot me-1"></i> Meta Cloud API Template:</span>
+                                <span class="badge bg-light text-muted border small" style="font-size: 0.72rem;">Meta Approved Name</span>
+                            </div>
                             <div class="input-group input-group-sm mb-2">
                                 <span class="input-group-text bg-light fw-semibold">Meta Template</span>
                                 <input type="text" class="form-control font-monospace" name="meta_template_3" id="metaTpl3" value="<?php echo htmlspecialchars($settings['meta_template_3'] ?? 'order_confirmation'); ?>" placeholder="e.g. order_confirmation">
@@ -685,8 +706,15 @@ button.ac-btn-refresh:active {
                     </div>
                     <div class="col-md-6">
                         <div class="p-3 border rounded-3 bg-white h-100">
-                            <label class="form-label fw-bold text-dark">Reminder 4 Template (Discount Coupon)</label>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label fw-bold text-dark mb-0">Reminder 4 (Discount Coupon)</label>
+                                <span class="badge bg-warning text-dark border small" title="Used when sending manually via WhatsApp Web"><i class="fab fa-whatsapp me-1"></i> WhatsApp Web Text</span>
+                            </div>
                             <textarea class="form-control mb-2" name="reminder_4_message" rows="3"><?php echo htmlspecialchars($settings['reminder_4_message'] ?? ''); ?></textarea>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="small fw-bold text-primary"><i class="fas fa-robot me-1"></i> Meta Cloud API Template:</span>
+                                <span class="badge bg-light text-muted border small" style="font-size: 0.72rem;">Meta Approved Name</span>
+                            </div>
                             <div class="input-group input-group-sm mb-2">
                                 <span class="input-group-text bg-light fw-semibold">Meta Template</span>
                                 <input type="text" class="form-control font-monospace" name="meta_template_4" id="metaTpl4" value="<?php echo htmlspecialchars($settings['meta_template_4'] ?? 'order_confirmation'); ?>" placeholder="e.g. order_confirmation">
@@ -989,17 +1017,17 @@ button.ac-btn-refresh:active {
                 <!-- Quick Selection Chips -->
                 <div class="p-2 mb-3 bg-light rounded-3 d-flex align-items-center gap-2 flex-wrap small">
                     <span class="fw-bold text-muted"><i class="fas fa-magic me-1"></i> Quick Select:</span>
-                    <button type="button" class="btn btn-sm btn-success py-0 px-2 rounded-pill fw-bold" onclick="selectTemplate('order_status_updates', 'en')" title="100% Delivery - Utility Category">
-                        <i class="fas fa-check-circle me-1"></i> order_status_updates (Verified Utility)
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline-success py-0 px-2 rounded-pill fw-bold" onclick="selectTemplate('order_confirmation', 'en')" title="100% Delivery - Utility Category">
+                    <button type="button" class="btn btn-sm btn-success py-0 px-2 rounded-pill fw-bold" onclick="selectTemplate('order_confirmation', 'en')" title="100% Delivery - Utility Category">
                         <i class="fas fa-check-circle me-1"></i> order_confirmation (Verified Utility)
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-success py-0 px-2 rounded-pill fw-bold" onclick="selectTemplate('new_order_status', 'en')" title="100% Delivery - Utility Category">
+                        <i class="fas fa-check-circle me-1"></i> new_order_status
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-success py-0 px-2 rounded-pill fw-bold" onclick="selectTemplate('order_status_update', 'en')" title="100% Delivery - Utility Category">
+                        <i class="fas fa-check-circle me-1"></i> order_status_update
                     </button>
                     <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 rounded-pill" onclick="selectTemplate('reminder_1_gentle_nudge', 'en')" title="Abandoned Cart Marketing Template">
                         reminder_1_gentle_nudge
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 rounded-pill" onclick="selectTemplate('hello_world', 'en_US')">
-                        hello_world (Test)
                     </button>
                 </div>
 

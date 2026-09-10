@@ -528,12 +528,34 @@ class AbandonedCartService {
                 }
             }
 
-            // If template was found in Meta, verify approval status
+            // If template was found in Meta, verify approval status & extract structure
+            $exactBodyParamCount = 0;
+            $tplRequiresHeaderImage = false;
+            $tplRequiresButtonUrl = false;
+
             if ($tplMeta) {
                 $tplStatus = strtoupper($tplMeta['status'] ?? 'UNKNOWN');
                 if ($tplStatus !== 'APPROVED') {
                     // Do not abort; clear abandonTemplate so cascade seamlessly falls back to 100% verified utility template 'order_confirmation'
                     $abandonTemplate = '';
+                } else {
+                    if (!empty($tplMeta['components']) && is_array($tplMeta['components'])) {
+                        foreach ($tplMeta['components'] as $c) {
+                            $cType = strtoupper($c['type'] ?? '');
+                            if ($cType === 'BODY') {
+                                preg_match_all('/\{\{(\d+)\}\}/', $c['text'] ?? '', $pm);
+                                if (!empty($pm[1])) {
+                                    $exactBodyParamCount = max(array_map('intval', $pm[1]));
+                                }
+                            }
+                            if ($cType === 'HEADER' && strtoupper($c['format'] ?? '') === 'IMAGE') {
+                                $tplRequiresHeaderImage = true;
+                            }
+                            if ($cType === 'BUTTONS' || $cType === 'BUTTON') {
+                                $tplRequiresButtonUrl = true;
+                            }
+                        }
+                    }
                 }
             }
 
@@ -659,13 +681,45 @@ class AbandonedCartService {
                         $tryConfigs[] = ['params' => $set_6_status, 'header' => true, 'button' => false];
                         $tryConfigs[] = ['params' => $set_6_status, 'header' => false, 'button' => false];
                     } else {
-                        // Custom template (e.g. reminder_1_gentle_nudge)
+                        // Custom template (e.g. reminder_1_gentle_nudge or any custom cart reminder)
+                        $allPoolParams = [
+                            ["type" => "text", "text" => $pCustName],                          // 1: Customer Name
+                            ["type" => "text", "text" => $pProdNames],                         // 2: Items
+                            ["type" => "text", "text" => $pCartTotal],                         // 3: Amount
+                            ["type" => "text", "text" => $pRecLink],                           // 4: Recovery Link
+                            ["type" => "text", "text" => ($couponCode ?: 'SAVE10')],           // 5: Coupon Code
+                            ["type" => "text", "text" => $pStoreName],                         // 6: Store Name
+                            ["type" => "text", "text" => $pDate],                              // 7: Date
+                            ["type" => "text", "text" => "Cart #" . $cartId],                  // 8: Cart ID
+                            ["type" => "text", "text" => $pRecLink]                            // 9: Link
+                        ];
+
+                        // 1. If exact body param count was discovered from Meta live inspection, use exact count first!
+                        if (!empty($exactBodyParamCount) && $exactBodyParamCount <= count($allPoolParams)) {
+                            $exactParams = array_slice($allPoolParams, 0, $exactBodyParamCount);
+                            $tryConfigs[] = [
+                                'params' => $exactParams,
+                                'header' => $tplRequiresHeaderImage,
+                                'button' => $tplRequiresButtonUrl
+                            ];
+                            if ($tplRequiresButtonUrl) {
+                                $tryConfigs[] = [
+                                    'params' => $exactParams,
+                                    'header' => $tplRequiresHeaderImage,
+                                    'button' => false
+                                ];
+                            }
+                        }
+
+                        // 2. Standard common configurations
                         $tryConfigs[] = ['params' => $set_4_simple, 'header' => false, 'button' => false];
                         if (!empty($pTokenOnly)) {
                             $tryConfigs[] = ['params' => $set_4_simple, 'header' => false, 'button' => true];
                         }
+                        $tryConfigs[] = ['params' => [["type" => "text", "text" => $pCustName]], 'header' => false, 'button' => false];
+                        $tryConfigs[] = ['params' => [["type" => "text", "text" => $pCustName], ["type" => "text", "text" => $pRecLink]], 'header' => false, 'button' => false];
+                        $tryConfigs[] = ['params' => [["type" => "text", "text" => $pCustName], ["type" => "text", "text" => $pProdNames], ["type" => "text", "text" => $pRecLink]], 'header' => false, 'button' => false];
                         $tryConfigs[] = ['params' => $set_5_status, 'header' => false, 'button' => false];
-                        $tryConfigs[] = ['params' => $set_9_confirmation, 'header' => false, 'button' => false];
                     }
 
                     foreach ($candidateLangs as $cL) {
