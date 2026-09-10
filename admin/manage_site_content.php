@@ -1,12 +1,16 @@
 <?php
 include_once __DIR__ . '/../includes/session_setup.php';
-require_once '../includes/db_connect.php';
+require_once __DIR__ . '/../includes/db_connect.php';
 
 // Check admin auth since we put this before admin_header
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     header("Location: ../user/login.php");
     exit;
 }
+
+// Canonical consolidation: Footer settings, contact details, social links, and branding are unified in manage_admin_site.php
+header("Location: manage_admin_site.php?tab=site_details", true, 302);
+exit;
 
 // Default keys we support for site content
 $site_keys = [

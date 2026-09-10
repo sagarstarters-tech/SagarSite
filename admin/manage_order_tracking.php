@@ -19,6 +19,10 @@ if (!$order_id) {
                     <p class="adm-hero-subtitle">Look up any customer order to inspect courier progress, update status, and manage AWB numbers.</p>
                 </div>
                 <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <a href="manage_tracking.php" class="btn btn-primary px-3 py-2 rounded-3 shadow-sm d-flex align-items-center gap-2 fw-semibold text-white">
+                        <i class="fas fa-truck-fast"></i>
+                        <span>Tracking Dashboard</span>
+                    </a>
                     <a href="manage_orders.php" class="btn adm-btn-white">
                         <i class="fas fa-list text-primary"></i>
                         <span>All Orders</span>
@@ -49,7 +53,7 @@ if (!$order_id) {
                 </form>
                 
                 <div class="mt-4 pt-2">
-                    <p class="small text-muted mb-0">Alternatively, you can select any order directly from the <a href="manage_orders.php" class="text-decoration-underline text-primary fw-bold">Manage Orders</a> dashboard.</p>
+                    <p class="small text-muted mb-0">Alternatively, you can view all orders on the <a href="manage_tracking.php" class="text-decoration-underline text-primary fw-bold">Order Tracking Dashboard</a> or select an order directly from <a href="manage_orders.php" class="text-decoration-underline text-primary fw-bold">Manage Orders</a>.</p>
                 </div>
             </div>
         </div>

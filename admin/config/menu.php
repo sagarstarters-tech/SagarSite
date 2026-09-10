@@ -67,7 +67,7 @@ return [
     [
         'label'    => 'Orders',
         'icon'     => 'fa-shopping-cart',
-        'pages'    => ['manage_orders.php', 'manage_order_tracking.php', 'manage_cod_blacklist.php', 'manage_couriers.php', 'courier_logs.php'],
+        'pages'    => ['manage_orders.php', 'manage_tracking.php', 'manage_order_tracking.php', 'manage_cod_blacklist.php', 'manage_couriers.php', 'courier_logs.php'],
         'children' => [
             [
                 'label'  => 'All Orders',
@@ -128,8 +128,8 @@ return [
             [
                 'label' => 'Order Tracking',
                 'icon'  => 'fa-shipping-fast',
-                'url'   => 'manage_order_tracking.php',
-                'pages' => ['manage_order_tracking.php'],
+                'url'   => 'manage_tracking.php',
+                'pages' => ['manage_tracking.php', 'manage_order_tracking.php'],
             ],
             [
                 'label' => 'Courier Integrations',
@@ -162,17 +162,10 @@ return [
 
     // ── Customers ─────────────────────────────────────────────
     [
-        'label'    => 'Customers',
-        'icon'     => 'fa-users',
-        'pages'    => ['manage_users.php'],
-        'children' => [
-            [
-                'label' => 'All Customers',
-                'icon'  => 'fa-user-friends',
-                'url'   => 'manage_users.php',
-                'pages' => ['manage_users.php'],
-            ],
-        ],
+        'label' => 'Customers',
+        'icon'  => 'fa-users',
+        'url'   => 'manage_users.php',
+        'pages' => ['manage_users.php'],
     ],
 
     // ── Media / Gallery ──────────────────────────────────────
@@ -231,10 +224,23 @@ return [
                 'params' => ['tab' => ['selector']],
             ],
             [
-                'label' => 'Hero Slider',
-                'icon'  => 'fa-layer-group',
-                'url'   => 'hero-slider-settings.php',
-                'pages' => ['hero-slider-settings.php', 'manage-slides.php'],
+                'label'    => 'Hero Slider',
+                'icon'     => 'fa-layer-group',
+                'pages'    => ['hero-slider-settings.php', 'manage-slides.php'],
+                'children' => [
+                    [
+                        'label' => 'Hero Slides',
+                        'icon'  => 'fa-images',
+                        'url'   => 'manage-slides.php',
+                        'pages' => ['manage-slides.php'],
+                    ],
+                    [
+                        'label' => 'Slider Settings',
+                        'icon'  => 'fa-sliders-h',
+                        'url'   => 'hero-slider-settings.php',
+                        'pages' => ['hero-slider-settings.php'],
+                    ],
+                ],
             ],
             [
                 'label' => 'Feature Icons',
@@ -267,10 +273,10 @@ return [
                 'pages' => ['manage_contact.php'],
             ],
             [
-                'label' => 'Footer Settings',
+                'label' => 'Footer & Site Details',
                 'icon'  => 'fa-level-down-alt',
-                'url'   => 'manage_site_content.php',
-                'pages' => ['manage_site_content.php'],
+                'url'   => 'manage_admin_site.php?tab=site_details',
+                'pages' => ['manage_site_content.php', 'manage_admin_site.php'],
             ],
             [
                 'label' => 'Product Share',
@@ -401,19 +407,12 @@ return [
         ],
     ],
 
-    // ── Appearance ────────────────────────────────────────────
+    // ── Appearance ────────────────────────────────────
     [
-        'label'    => 'Appearance',
-        'icon'     => 'fa-paint-brush',
-        'pages'    => ['manage_theme.php'],
-        'children' => [
-            [
-                'label' => 'Theme Customizer',
-                'icon'  => 'fa-palette',
-                'url'   => 'manage_theme.php',
-                'pages' => ['manage_theme.php'],
-            ],
-        ],
+        'label' => 'Appearance',
+        'icon'  => 'fa-paint-brush',
+        'url'   => 'manage_theme.php',
+        'pages' => ['manage_theme.php'],
     ],
 
     // ── Admin & Site Details ──────────────────────────────────
@@ -450,7 +449,7 @@ return [
     [
         'label'    => 'Settings &amp; Configs',
         'icon'     => 'fa-cogs',
-        'pages'    => ['manage_settings.php', 'system_optimize.php', 'manage_seo.php', 'manage_tracking.php', 'manage_scripts.php', 'manage_backups.php'],
+        'pages'    => ['manage_settings.php', 'system_optimize.php', 'manage_seo.php', 'manage_scripts.php', 'manage_backups.php'],
         'children' => [
             [
                 'label'  => 'Global Properties',
@@ -499,12 +498,7 @@ return [
                 'url'   => 'manage_seo.php',
                 'pages' => ['manage_seo.php'],
             ],
-            [
-                'label' => 'Order Tracking Config',
-                'icon'  => 'fa-map-marker-alt',
-                'url'   => 'manage_tracking.php',
-                'pages' => ['manage_tracking.php'],
-            ],
+
             [
                 'label' => 'Headers &amp; Footers',
                 'icon'  => 'fa-code',

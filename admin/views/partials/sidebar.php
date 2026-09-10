@@ -284,9 +284,13 @@ if (isset($conn)) {
     <?php else: ?>
         <!-- Direct Link -->
         <a href="<?php echo htmlspecialchars(admin_url($item['url'])); ?>"
-           class="list-group-item list-group-item-action <?php echo $group_active ? 'active' : ''; ?>">
+           class="list-group-item list-group-item-action <?php echo $group_active ? 'active' : ''; ?>"
+           <?php if ($item['label'] === 'Customers'): ?>data-customer-nav="true"<?php endif; ?>>
             <i class="<?php echo $icon_full; ?>"></i>
             <span><?php echo $item['label']; ?></span>
+            <?php if ($item['label'] === 'Customers' && $new_customers_count > 0): ?>
+                <span class="badge rounded-pill bg-info text-white ms-2 customer-notif-badge" style="font-size: 0.65rem; padding: 0.35em 0.65em; color: #ffffff !important; font-weight: 600;"><?php echo $new_customers_count; ?></span>
+            <?php endif; ?>
         </a>
     <?php endif; ?>
 

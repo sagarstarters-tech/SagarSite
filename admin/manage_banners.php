@@ -199,89 +199,30 @@ $slider_settings = $slider_settings_q ? $slider_settings_q->fetch_assoc() : [];
         </div>
     <?php endif; ?>
 
-    <!-- Banner & Slider Dimensions Control Box -->
-    <div class="card border-0 shadow-sm rounded-4 mb-4">
-        <div class="card-header bg-white border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <div>
-                <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
-                    <i class="fas fa-ruler-combined text-primary"></i> Banner & Slider Dimension Settings (Lambai & Chaudai)
-                </h5>
-                <p class="text-muted small mb-0 mt-1">Homepage hero banner aur slider ki height (lambai) aur width (chaudai) adjust karein.</p>
-            </div>
-            <a href="hero-slider-settings.php" class="btn btn-sm btn-outline-primary rounded-pill px-3">
-                <i class="fas fa-cog me-1"></i> Full Slider Settings
-            </a>
-        </div>
-        <div class="card-body p-4">
-            <form method="POST" action="manage_banners.php">
-                <?php echo csrf_input(); ?>
-                <input type="hidden" name="action" value="update_dimensions">
-
-                <div class="row g-3 align-items-end">
-                    <!-- Layout Style (Width Mode) -->
-                    <div class="col-md-6 col-lg-3">
-                        <label class="form-label fw-bold small text-muted">Layout Width (Chaudai Mode)</label>
-                        <select name="layout" id="mbLayoutSelect" class="form-select rounded-3" onchange="toggleMbContainerWidth()">
-                            <option value="full" <?php echo (($slider_settings['layout'] ?? '') == 'full') ? 'selected' : ''; ?>>Full Width (100% Screen)</option>
-                            <option value="boxed" <?php echo (($slider_settings['layout'] ?? '') == 'boxed') ? 'selected' : ''; ?>>Boxed (Container Width)</option>
-                        </select>
-                    </div>
-
-                    <!-- Custom Width (If Boxed) -->
-                    <div class="col-md-6 col-lg-3" id="mbContainerWidthGroup" style="<?php echo (($slider_settings['layout'] ?? '') == 'boxed') ? '' : 'display:none;'; ?>">
-                        <label class="form-label fw-bold small text-muted">Max Width (Chaudai)</label>
-                        <input type="text" name="container_width" id="mbContainerWidthInput" class="form-control rounded-3" value="<?php echo htmlspecialchars($slider_settings['container_width'] ?? '100%'); ?>" placeholder="e.g. 1320px, 1200px">
-                        <div class="d-flex gap-1 mt-1 flex-wrap">
-                            <button type="button" class="btn btn-sm btn-light border preset-btn" onclick="setMbVal('mbContainerWidthInput', '100%')">100%</button>
-                            <button type="button" class="btn btn-sm btn-light border preset-btn" onclick="setMbVal('mbContainerWidthInput', '1320px')">1320px</button>
-                            <button type="button" class="btn btn-sm btn-light border preset-btn" onclick="setMbVal('mbContainerWidthInput', '1200px')">1200px</button>
-                        </div>
-                    </div>
-
-                    <!-- Desktop Height -->
-                    <div class="col-md-6 col-lg-3">
-                        <label class="form-label fw-bold small text-muted">Desktop Height (Desktop Lambai)</label>
-                        <input type="text" name="desktop_height" id="mbDesktopHeightInput" class="form-control rounded-3" value="<?php echo htmlspecialchars($slider_settings['desktop_height'] ?? '560px'); ?>" placeholder="e.g. 560px">
-                        <div class="d-flex gap-1 mt-1 flex-wrap">
-                            <button type="button" class="btn btn-sm btn-light border preset-btn" onclick="setMbVal('mbDesktopHeightInput', '450px')">450px</button>
-                            <button type="button" class="btn btn-sm btn-light border preset-btn" onclick="setMbVal('mbDesktopHeightInput', '500px')">500px</button>
-                            <button type="button" class="btn btn-sm btn-light border preset-btn" onclick="setMbVal('mbDesktopHeightInput', '560px')">560px</button>
-                            <button type="button" class="btn btn-sm btn-light border preset-btn" onclick="setMbVal('mbDesktopHeightInput', '600px')">600px</button>
-                        </div>
-                    </div>
-
-                    <!-- Mobile Height -->
-                    <div class="col-md-6 col-lg-3">
-                        <label class="form-label fw-bold small text-muted">Mobile Height (Mobile Lambai)</label>
-                        <input type="text" name="mobile_height" id="mbMobileHeightInput" class="form-control rounded-3" value="<?php echo htmlspecialchars($slider_settings['mobile_height'] ?? '380px'); ?>" placeholder="e.g. 380px">
-                        <div class="d-flex gap-1 mt-1 flex-wrap">
-                            <button type="button" class="btn btn-sm btn-light border preset-btn" onclick="setMbVal('mbMobileHeightInput', '280px')">280px</button>
-                            <button type="button" class="btn btn-sm btn-light border preset-btn" onclick="setMbVal('mbMobileHeightInput', '320px')">320px</button>
-                            <button type="button" class="btn btn-sm btn-light border preset-btn" onclick="setMbVal('mbMobileHeightInput', '380px')">380px</button>
-                        </div>
-                    </div>
-
-                    <!-- Image Fit Mode -->
-                    <div class="col-md-6 col-lg-3">
-                        <label class="form-label fw-bold small text-muted">Image Fit Mode</label>
-                        <select name="image_fit" class="form-select rounded-3">
-                            <option value="cover" <?php echo (($slider_settings['image_fit'] ?? 'cover') == 'cover') ? 'selected' : ''; ?>>Cover (Fill Frame)</option>
-                            <option value="contain" <?php echo (($slider_settings['image_fit'] ?? '') == 'contain') ? 'selected' : ''; ?>>Contain (Show Full Image)</option>
-                            <option value="fill" <?php echo (($slider_settings['image_fit'] ?? '') == 'fill') ? 'selected' : ''; ?>>Fill (Stretch Exact)</option>
-                        </select>
-                    </div>
-
-                    <!-- Tablet Height -->
-                    <input type="hidden" name="tablet_height" value="<?php echo htmlspecialchars($slider_settings['tablet_height'] ?? '460px'); ?>">
-
-                    <!-- Save Button -->
-                    <div class="col-md-6 col-lg-3">
-                        <button type="submit" class="btn btn-primary rounded-3 w-100 fw-bold py-2 shadow-sm">
-                            <i class="fas fa-save me-1"></i> Save Dimensions
-                        </button>
+    <!-- Slider Dimensions Hub Card (Consolidated) -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-white">
+        <div class="card-body p-4 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width: 48px; height: 48px; font-size: 1.25rem;">
+                    <i class="fas fa-ruler-combined"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold text-dark mb-1">Hero Slider &amp; Banner Dimensions</h6>
+                    <div class="small text-muted">
+                        Desktop: <strong><?php echo htmlspecialchars($slider_settings['desktop_height'] ?? '560px'); ?></strong> &bull; 
+                        Tablet: <strong><?php echo htmlspecialchars($slider_settings['tablet_height'] ?? '460px'); ?></strong> &bull; 
+                        Mobile: <strong><?php echo htmlspecialchars($slider_settings['mobile_height'] ?? '380px'); ?></strong> &bull; 
+                        Layout: <strong><?php echo ucfirst(htmlspecialchars($slider_settings['layout'] ?? 'full')); ?></strong> &bull; 
+                        Fit: <strong><?php echo ucfirst(htmlspecialchars($slider_settings['image_fit'] ?? 'cover')); ?></strong>
                     </div>
                 </div>
-            </form>
+            </div>
+            <div>
+                <a href="hero-slider-settings.php" class="btn btn-outline-primary rounded-pill px-4 fw-bold shadow-sm d-inline-flex align-items-center gap-2">
+                    <i class="fas fa-sliders-h"></i>
+                    <span>Full Slider Settings</span>
+                </a>
+            </div>
         </div>
     </div>
 
