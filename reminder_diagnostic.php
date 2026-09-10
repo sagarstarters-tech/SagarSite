@@ -118,8 +118,9 @@ if ($ws && $ws->num_rows > 0) {
     // Check live phone number info from Meta
     $token = trim($ws['api_token'] ?? '');
     $phone_id = trim($ws['phone_number_id'] ?? '');
+    $waba_id = trim($ws['waba_id'] ?? '');
     if (!empty($token) && !empty($phone_id)) {
-        $ch = curl_init("https://graph.facebook.com/v21.0/{$phone_id}?fields=id,display_phone_number,verified_name,code_verification_status,quality_rating,whatsapp_business_account_id");
+        $ch = curl_init("https://graph.facebook.com/v21.0/{$phone_id}?fields=id,display_phone_number,verified_name,code_verification_status,quality_rating,name_status");
         curl_setopt_array($ch, [
             CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . $token, 'Accept: application/json'],
             CURLOPT_RETURNTRANSFER => true,
@@ -131,10 +132,64 @@ if ($ws && $ws->num_rows > 0) {
         curl_close($ch);
         echo "  Meta Phone Lookup (HTTP {$m_code}): " . $m_res . PHP_EOL;
     }
+
+    // Query WABA templates
+    if (!empty($token) && !empty($waba_id)) {
+        $chT = curl_init("https://graph.facebook.com/v21.0/{$waba_id}/message_templates?limit=100");
+        curl_setopt_array($chT, [
+            CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . $token, 'Accept: application/json'],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_TIMEOUT        => 8,
+        ]);
+        $t_res = curl_exec($chT);
+        $t_code = curl_getinfo($chT, CURLINFO_HTTP_CODE);
+        curl_close($chT);
+        $t_json = json_decode($t_res, true);
+        echo PHP_EOL . "=== WABA MESSAGE TEMPLATES (HTTP {$t_code}) ===" . PHP_EOL;
+        if (!empty($t_json['data'])) {
+            foreach ($t_json['data'] as $tpl) {
+                echo "  Template: {$tpl['name']} | Lang: {$tpl['language']} | Status: {$tpl['status']} | Category: {$tpl['category']}" . PHP_EOL;
+                if (!empty($tpl['components'])) {
+                    foreach ($tpl['components'] as $cmp) {
+                        $ctype = $cmp['type'] ?? '';
+                        $cformat = $cmp['format'] ?? '';
+                        $ctext = substr(str_replace(["\r", "\n"], ' ', $cmp['text'] ?? ''), 0, 80);
+                        echo "    [{$ctype}" . ($cformat ? ":$cformat" : "") . "] $ctext" . PHP_EOL;
+                        if (!empty($cmp['buttons'])) {
+                            foreach ($cmp['buttons'] as $b) {
+                                echo "      Button: " . ($b['type'] ?? '') . " | " . ($b['text'] ?? '') . " | " . ($b['url'] ?? '') . PHP_EOL;
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            echo "  Templates Response: " . substr($t_res, 0, 300) . PHP_EOL;
+        }
+    }
 } else {
     echo "  No WhatsApp settings found!" . PHP_EOL;
 }
 echo PHP_EOL;
+
+// Check general whatsapp_logs (orders etc.)
+echo "=== RECENT WHATSAPP_LOGS (ORDERS/GLOBAL) ===" . PHP_EOL;
+try {
+    $resWl = $conn->query("SELECT * FROM whatsapp_logs ORDER BY id DESC LIMIT 5");
+    if ($resWl && $resWl->num_rows > 0) {
+        while ($wl = $resWl->fetch_assoc()) {
+            echo "  [{$wl['sent_at']}] Order#{$wl['order_id']} Phone:{$wl['customer_number']} Mode:{$wl['sending_mode']} Status:{$wl['status']}" . PHP_EOL;
+            echo "    Msg: " . substr($wl['message'], 0, 80) . PHP_EOL;
+        }
+    } else {
+        echo "  (No rows in whatsapp_logs)" . PHP_EOL;
+    }
+} catch (\Throwable $e) {
+    echo "  Error querying whatsapp_logs: " . $e->getMessage() . PHP_EOL;
+}
+echo PHP_EOL;
+
 
 // Check recent wa logs
 echo "=== RECENT ABANDONED CART WA LOGS ===" . PHP_EOL;
@@ -142,7 +197,7 @@ try {
     $resLogs = $conn->query("SELECT * FROM abandoned_cart_wa_logs ORDER BY id DESC LIMIT 5");
     if ($resLogs && $resLogs->num_rows > 0) {
         while ($l = $resLogs->fetch_assoc()) {
-            echo "  [{$l['created_at']}] Cart#{$l['cart_id']} Phone:{$l['customer_phone']} Status: {$l['status']}" . PHP_EOL;
+            echo "  [{$l['created_at']}] Cart#{$l['cart_id']} Phone:{$l['phone']} Status: {$l['status']}" . PHP_EOL;
         }
     } else {
         echo "  (No logs in abandoned_cart_wa_logs)" . PHP_EOL;
@@ -151,6 +206,7 @@ try {
     echo "  Error querying wa logs: " . $e->getMessage() . PHP_EOL;
 }
 echo PHP_EOL;
+
 
 // Check cart_abandonment_whatsapp.log file
 echo "=== RECENT LOG FILE ENTRIES ===" . PHP_EOL;
