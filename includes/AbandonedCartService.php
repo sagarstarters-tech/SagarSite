@@ -552,7 +552,15 @@ class AbandonedCartService {
                                 $tplRequiresHeaderImage = true;
                             }
                             if ($cType === 'BUTTONS' || $cType === 'BUTTON') {
-                                $tplRequiresButtonUrl = true;
+                                $buttons = $c['buttons'] ?? [$c];
+                                foreach ($buttons as $b) {
+                                    $bType = strtoupper($b['type'] ?? '');
+                                    $bUrl  = $b['url'] ?? '';
+                                    if ($bType === 'URL' && strpos($bUrl, '{{') !== false) {
+                                        $tplRequiresButtonUrl = true;
+                                        break;
+                                    }
+                                }
                             }
                         }
                     }
@@ -612,6 +620,7 @@ class AbandonedCartService {
                 $pRecLink    = (string)($variables['{RecoveryLink}'] ?? '');
                 $pStoreName  = "Sagar Starter's";
                 $pDate       = date('d M Y');
+                $couponCode  = (string)($variables['{CouponCode}'] ?? 'SAVE10');
 
                 // Extract recovery token from recovery link
                 $pTokenOnly = '';
@@ -660,23 +669,23 @@ class AbandonedCartService {
                     ["type" => "text", "text" => $pRecLink]
                 ];
 
-                // Build lean candidates list - at most 1 attempt for custom template, then fallbacks
+                $allPoolParams = [
+                    ["type" => "text", "text" => $pCustName],                          // 1: Customer Name
+                    ["type" => "text", "text" => $pProdNames],                         // 2: Items
+                    ["type" => "text", "text" => $pCartTotal],                         // 3: Amount
+                    ["type" => "text", "text" => $pRecLink],                           // 4: Recovery Link
+                    ["type" => "text", "text" => $couponCode],                         // 5: Coupon Code
+                    ["type" => "text", "text" => $pStoreName],                         // 6: Store Name
+                    ["type" => "text", "text" => $pDate],                              // 7: Date
+                    ["type" => "text", "text" => "Cart #" . $cartId],                  // 8: Cart ID
+                    ["type" => "text", "text" => $pRecLink]                            // 9: Link
+                ];
+
+                // Build lean candidates list
                 $tplCandidates = [];
 
-                // 1. Primary candidate (configured template)
-                if (!empty($abandonTemplate) && $abandonTemplate !== 'order_confirmation') {
+                if (!empty($abandonTemplate)) {
                     if ($tplMeta && !empty($exactBodyParamCount)) {
-                        $allPoolParams = [
-                            ["type" => "text", "text" => $pCustName],                          // 1: Customer Name
-                            ["type" => "text", "text" => $pProdNames],                         // 2: Items
-                            ["type" => "text", "text" => $pCartTotal],                         // 3: Amount
-                            ["type" => "text", "text" => $pRecLink],                           // 4: Recovery Link
-                            ["type" => "text", "text" => ($couponCode ?: 'SAVE10')],           // 5: Coupon Code
-                            ["type" => "text", "text" => $pStoreName],                         // 6: Store Name
-                            ["type" => "text", "text" => $pDate],                              // 7: Date
-                            ["type" => "text", "text" => "Cart #" . $cartId],                  // 8: Cart ID
-                            ["type" => "text", "text" => $pRecLink]                            // 9: Link
-                        ];
                         $exactParams = array_slice($allPoolParams, 0, min($exactBodyParamCount, count($allPoolParams)));
                         $tplCandidates[] = [
                             'name'    => $abandonTemplate,
@@ -685,32 +694,59 @@ class AbandonedCartService {
                             'header'  => $tplRequiresHeaderImage,
                             'button'  => $tplRequiresButtonUrl
                         ];
+                    } elseif ($tplMeta && empty($exactBodyParamCount)) {
+                        // Static template without body parameters
+                        $tplCandidates[] = [
+                            'name'    => $abandonTemplate,
+                            'lang'    => ($tplMeta['language'] ?? $langCode),
+                            'params'  => [],
+                            'header'  => $tplRequiresHeaderImage,
+                            'button'  => $tplRequiresButtonUrl
+                        ];
+                    } elseif ($abandonTemplate === 'order_confirmation') {
+                        $tplCandidates[] = [
+                            'name'    => 'order_confirmation',
+                            'lang'    => 'en',
+                            'params'  => $set_9_confirmation,
+                            'header'  => false,
+                            'button'  => false
+                        ];
+                    } elseif (in_array($abandonTemplate, ['new_order_status', 'order_status_updates', 'order_status_update'], true)) {
+                        $tplCandidates[] = [
+                            'name'    => $abandonTemplate,
+                            'lang'    => 'en',
+                            'params'  => $set_5_status,
+                            'header'  => false,
+                            'button'  => false
+                        ];
                     } else {
+                        // Custom template where live metadata couldn't be loaded from Meta WABA
                         $tplCandidates[] = [
                             'name'    => $abandonTemplate,
                             'lang'    => $langCode,
                             'params'  => $set_4_simple,
                             'header'  => false,
-                            'button'  => !empty($pTokenOnly)
+                            'button'  => false
+                        ];
+                        // Also try single-parameter variation if 4 params don't match
+                        $tplCandidates[] = [
+                            'name'    => $abandonTemplate,
+                            'lang'    => $langCode,
+                            'params'  => [["type" => "text", "text" => $pCustName]],
+                            'header'  => false,
+                            'button'  => false
                         ];
                     }
+                } else {
+                    // Fallback to order_confirmation only if merchant did not configure any template
+                    $tplCandidates[] = [
+                        'name'    => 'order_confirmation',
+                        'lang'    => 'en',
+                        'params'  => $set_9_confirmation,
+                        'header'  => false,
+                        'button'  => false
+                    ];
                 }
-
-                // 2. Verified utility fallback templates (guaranteed 100% fast delivery)
-                $tplCandidates[] = [
-                    'name'    => 'order_confirmation',
-                    'lang'    => 'en',
-                    'params'  => $set_9_confirmation,
-                    'header'  => false,
-                    'button'  => false
-                ];
-                $tplCandidates[] = [
-                    'name'    => 'new_order_status',
-                    'lang'    => 'en',
-                    'params'  => $set_5_status,
-                    'header'  => false,
-                    'button'  => false
-                ];
 
                 foreach ($tplCandidates as $cand) {
                     $components = [];

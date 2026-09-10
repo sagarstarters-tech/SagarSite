@@ -1,12 +1,24 @@
 <?php
+@ob_start();
+
 include_once __DIR__ . '/../includes/session_setup.php';
 require_once __DIR__ . '/../includes/db_connect.php';
 
-header('Content-Type: application/json; charset=utf-8');
+function send_sync_json($data) {
+    while (ob_get_level()) {
+        ob_end_clean();
+    }
+    if (!headers_sent()) {
+        header('Content-Type: application/json; charset=utf-8');
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
+    }
+    echo json_encode($data);
+    exit;
+}
 
 if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
-    echo json_encode(['error' => 'Permission denied. Please log in as admin.']);
-    exit;
+    send_sync_json(['error' => 'Permission denied. Please log in as admin.']);
 }
 
 // Fetch stored settings
@@ -23,8 +35,7 @@ $phone_id = !empty($rawPhoneId) ? $rawPhoneId : trim($settings['phone_number_id'
 $waba_id  = !empty($rawWabaId) ? $rawWabaId : trim($settings['waba_id'] ?? '');
 
 if (empty($token) || (empty($phone_id) && empty($waba_id))) {
-    echo json_encode(['error' => 'Please configure your Meta API Token and Phone Number ID in Admin -> WhatsApp Notifs -> Settings first.']);
-    exit;
+    send_sync_json(['error' => 'Please configure your Meta API Token and Phone Number ID in Admin -> WhatsApp Notifs -> Settings first.']);
 }
 
 // Helper cURL function with SSL bypass and timeout protection
@@ -96,10 +107,9 @@ if (empty($waba_id)) {
         $safe_waba = $conn->real_escape_string($waba_id);
         $conn->query("UPDATE whatsapp_settings SET waba_id = '$safe_waba' WHERE id = 1");
     } else {
-        echo json_encode([
+        send_sync_json([
             'error' => 'WhatsApp Business Account ID (WABA ID) could not be auto-detected. Please copy your "WhatsApp Business Account ID" from Meta WhatsApp Manager (under API Setup tab) and enter it in Admin -> WhatsApp Notifs -> Settings.'
         ]);
-        exit;
     }
 }
 
@@ -112,8 +122,7 @@ if (!$tpl_res['success'] || isset($tpl_res['data']['error'])) {
 }
 
 if (!$tpl_res['success']) {
-    echo json_encode(['error' => $tpl_res['error']]);
-    exit;
+    send_sync_json(['error' => $tpl_res['error']]);
 }
 
 $data = $tpl_res['data'];
@@ -121,8 +130,7 @@ $data = $tpl_res['data'];
 if (isset($data['error'])) {
     $errMsg = $data['error']['message'] ?? 'Meta API error';
     $errCode = $data['error']['code'] ?? '';
-    echo json_encode(['error' => "Meta API Error (Code {$errCode}): {$errMsg}"]);
-    exit;
+    send_sync_json(['error' => "Meta API Error (Code {$errCode}): {$errMsg}"]);
 }
 
 $templates = [];
@@ -161,7 +169,7 @@ if (!empty($data['data']) && is_array($data['data'])) {
     }
 }
 
-echo json_encode([
+send_sync_json([
     'success'   => true,
     'waba_id'   => $waba_id,
     'count'     => count($templates),

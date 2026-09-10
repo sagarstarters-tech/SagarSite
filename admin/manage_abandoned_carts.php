@@ -1474,6 +1474,33 @@ function sendModalApiReminder(cartId, level, btn) {
         },
         error: function(xhr, status, errorThrown) {
             $btn.html(origHtml).prop('disabled', false);
+            let parsed = null;
+            if (xhr.responseText) {
+                try {
+                    const s = xhr.responseText.indexOf('{');
+                    const e = xhr.responseText.lastIndexOf('}');
+                    if (s !== -1 && e > s) {
+                        parsed = JSON.parse(xhr.responseText.substring(s, e + 1));
+                    }
+                } catch(err) {}
+            }
+            if (parsed) {
+                if (parsed.success && parsed.is_sent) {
+                    let msg = parsed.message || `Stage ${level} sent successfully via Meta Cloud API!`;
+                    if (parsed.template_used) msg += `\n(Template: ${parsed.template_used})`;
+                    alert('✅ ' + msg);
+                    loadModalStages(cartId);
+                    loadModalLogs(cartId);
+                    refreshTableAndStats();
+                    return;
+                } else {
+                    const err = parsed.error || 'Failed to dispatch via Meta Cloud API.';
+                    alert(`❌ Meta Cloud API Notice:\n\n${err}\n\n💡 Tip: You can click "Open Web" above to send manually via WhatsApp Web.`);
+                    loadModalStages(cartId);
+                    loadModalLogs(cartId);
+                    return;
+                }
+            }
             let errText = 'Network request failed.';
             if (xhr.status) errText += ' (HTTP ' + xhr.status + ')';
             if (xhr.responseJSON && xhr.responseJSON.error) {
@@ -1558,6 +1585,31 @@ function handleRowWhatsAppClick(cartId, btn, customerName, phone) {
             },
             error: function(xhr, status, errorThrown) {
                 $btn.html(origHtml).prop('disabled', false);
+                let parsed = null;
+                if (xhr.responseText) {
+                    try {
+                        const s = xhr.responseText.indexOf('{');
+                        const e = xhr.responseText.lastIndexOf('}');
+                        if (s !== -1 && e > s) {
+                            parsed = JSON.parse(xhr.responseText.substring(s, e + 1));
+                        }
+                    } catch(err) {}
+                }
+                if (parsed) {
+                    if (parsed.success && parsed.is_sent) {
+                        let alertMsg = `✅ Reminder Level ${parsed.level || 1} sent successfully via Meta Cloud API!\n\nMessage ID: ${parsed.message_id || 'OK'}`;
+                        if (parsed.template_used) alertMsg += `\nTemplate Used: ${parsed.template_used}`;
+                        if (parsed.is_self_send) alertMsg += `\n\n⚠️ CAUTION: Target number matches your Meta Business SIM. Meta drops self-messages silently! Test with an alternate mobile number from Cart Details.`;
+                        alert(alertMsg);
+                        refreshTableAndStats();
+                        return;
+                    } else {
+                        const err = parsed.error || 'Meta Cloud API could not deliver the reminder.';
+                        alert(`❌ Meta Cloud API Notice:\n\n${err}\n\n💡 Tip: To send manually via WhatsApp Web, click the [ ↗ ] button next to this cart.`);
+                        refreshTableAndStats();
+                        return;
+                    }
+                }
                 let errText = 'Server error occurred.';
                 if (xhr.status) errText += ' (HTTP ' + xhr.status + ')';
                 if (xhr.responseJSON && xhr.responseJSON.error) {
