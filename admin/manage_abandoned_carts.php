@@ -611,21 +611,12 @@ button.ac-btn-refresh:active {
                                 <i class="fas fa-magic me-2"></i> Quick Select Meta Templates (1-Click Auto-Fill)
                             </div>
                             <div class="small text-dark">
-                                Niche diye gaye button par click karke sabhi stages me approved Meta Template turant set karein. <strong>'order_confirmation'</strong> recommended hai (100% instant WhatsApp delivery guarantee).
+                                Niche diye gaye button par click karke sabhi stages me approved Meta Cart Reminder Templates turant set karein.
                             </div>
                         </div>
                         <div class="d-flex align-items-center gap-2 flex-wrap">
                             <button type="button" class="btn btn-sm btn-primary fw-bold rounded-pill px-3 shadow-sm" onclick="applyOfficialCartTemplates()" title="Auto-fill Stage 1, 2, 3, and 4 with official Meta approved reminder templates">
                                 <i class="fas fa-star me-1"></i> Apply 4 Official Cart Templates (Stages 1-4)
-                            </button>
-                            <button type="button" class="btn btn-sm btn-outline-success fw-bold rounded-pill px-3" onclick="applyPresetToAll('order_confirmation', 'en')" title="100% Delivery Verified Utility Template">
-                                <i class="fas fa-check-circle me-1"></i> Use 'order_confirmation'
-                            </button>
-                            <button type="button" class="btn btn-sm btn-outline-success fw-bold rounded-pill px-3" onclick="applyPresetToAll('new_order_status', 'en')" title="100% Delivery Verified Utility Template">
-                                <i class="fas fa-check-circle me-1"></i> Use 'new_order_status'
-                            </button>
-                            <button type="button" class="btn btn-sm btn-outline-success fw-bold rounded-pill px-3" onclick="applyPresetToAll('order_status_update', 'en')" title="100% Delivery Verified Utility Template">
-                                <i class="fas fa-check-circle me-1"></i> Use 'order_status_update'
                             </button>
                         </div>
                     </div>
@@ -651,7 +642,6 @@ button.ac-btn-refresh:active {
                             <div class="d-flex align-items-center gap-1 flex-wrap">
                                 <span class="text-muted small fw-semibold"><i class="fas fa-magic text-primary me-1"></i> Quick:</span>
                                 <button type="button" class="btn btn-xs btn-primary py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl1', 'reminder_1_gentle_nudge')">reminder_1_gentle_nudge</button>
-                                <button type="button" class="btn btn-xs btn-outline-success py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl1', 'order_confirmation')">order_confirmation</button>
                             </div>
                         </div>
                     </div>
@@ -674,7 +664,6 @@ button.ac-btn-refresh:active {
                             <div class="d-flex align-items-center gap-1 flex-wrap">
                                 <span class="text-muted small fw-semibold"><i class="fas fa-magic text-primary me-1"></i> Quick:</span>
                                 <button type="button" class="btn btn-xs btn-primary py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl2', 'reminder_2_follow_up')">reminder_2_follow_up</button>
-                                <button type="button" class="btn btn-xs btn-outline-success py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl2', 'order_confirmation')">order_confirmation</button>
                             </div>
                         </div>
                     </div>
@@ -697,7 +686,6 @@ button.ac-btn-refresh:active {
                             <div class="d-flex align-items-center gap-1 flex-wrap">
                                 <span class="text-muted small fw-semibold"><i class="fas fa-magic text-primary me-1"></i> Quick:</span>
                                 <button type="button" class="btn btn-xs btn-primary py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl3', 'reminder_3_urgency')">reminder_3_urgency</button>
-                                <button type="button" class="btn btn-xs btn-outline-success py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl3', 'order_confirmation')">order_confirmation</button>
                             </div>
                         </div>
                     </div>
@@ -721,7 +709,6 @@ button.ac-btn-refresh:active {
                                 <span class="text-muted small fw-semibold"><i class="fas fa-magic text-primary me-1"></i> Quick:</span>
                                 <button type="button" class="btn btn-xs btn-primary py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl4', 'reminder_4_coupon_discou')">reminder_4_coupon_discou</button>
                                 <button type="button" class="btn btn-xs btn-outline-primary py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl4', 'reminder_4_coupon_discount')">reminder_4_coupon_discount</button>
-                                <button type="button" class="btn btn-xs btn-outline-success py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl4', 'order_confirmation')">order_confirmation</button>
                             </div>
                         </div>
                     </div>
@@ -826,8 +813,8 @@ button.ac-btn-refresh:active {
                     </div>
                 </div>
                 <div class="d-flex align-items-center gap-2 flex-wrap">
-                    <button class="btn btn-sm btn-success fw-bold rounded-pill shadow-sm text-nowrap" type="button" onclick="applyPresetToAll('order_confirmation', 'en')" title="1-Click Set All Stages to order_confirmation (Verified Utility Template)">
-                        <i class="fas fa-magic me-1"></i> Quick Select: 'order_confirmation'
+                    <button class="btn btn-sm btn-primary fw-bold rounded-pill shadow-sm text-nowrap" type="button" onclick="applyOfficialCartTemplates()" title="1-Click Set All Stages to Official Cart Reminder Templates">
+                        <i class="fas fa-magic me-1"></i> Set Cart Templates (1-4)
                     </button>
                     <button class="btn btn-sm btn-outline-primary rounded-3 text-nowrap" type="button" data-mdb-toggle="collapse" data-mdb-target="#settingsCollapse"><i class="fas fa-sliders-h me-1"></i> Cart Templates</button>
                     <a href="manage_whatsapp_settings.php" class="btn btn-sm btn-outline-secondary rounded-3 text-nowrap"><i class="fas fa-cog me-1"></i> API Settings</a>
@@ -1031,11 +1018,8 @@ button.ac-btn-refresh:active {
                     <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 rounded-pill fw-bold" onclick="selectTemplate('reminder_3_urgency', 'en')">
                         reminder_3_urgency
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 rounded-pill fw-bold" onclick="selectTemplate('reminder_4_coupon_discount', 'en')">
-                        reminder_4_coupon_discount
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline-success py-0 px-2 rounded-pill" onclick="selectTemplate('order_confirmation', 'en')" title="100% Delivery - Utility Category">
-                        order_confirmation
+                    <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 rounded-pill fw-bold" onclick="selectTemplate('reminder_4_coupon_discou', 'en')">
+                        reminder_4_coupon_discou
                     </button>
                 </div>
 
@@ -1366,9 +1350,9 @@ function loadModalStages(cartId) {
                                 </div>
                             </div>
                             <div class="col-md-5 text-md-end">
-                                <span class="badge bg-success text-white p-2 small text-wrap text-start shadow-xs">
-                                    <i class="fas fa-check-double me-1"></i> <strong>Meta Fallback Active:</strong>
-                                    <div class="small fw-normal text-white-50 mt-0.5">100% Guaranteed Delivery via <code>order_confirmation</code></div>
+                                <span class="badge bg-primary text-white p-2 small text-wrap text-start shadow-xs">
+                                    <i class="fas fa-robot me-1"></i> <strong>Cart Recovery Active:</strong>
+                                    <div class="small fw-normal text-white-50 mt-0.5">Automated Multi-Stage WhatsApp Follow-ups</div>
                                 </span>
                             </div>
                         </div>
@@ -1394,7 +1378,7 @@ function loadModalStages(cartId) {
                                 </div>
                                 <div class="mb-2">
                                     <span class="badge bg-light text-dark border small">
-                                        <i class="fas fa-file-code text-primary me-1"></i> Template: <strong>${htmlEscape(st.meta_tpl || 'order_confirmation')}</strong>
+                                        <i class="fas fa-file-code text-primary me-1"></i> Template: <strong>${htmlEscape(st.meta_tpl || ('reminder_' + lvl))}</strong>
                                     </span>
                                 </div>
                                 <div class="small text-muted mb-2 font-monospace p-2 bg-light rounded" style="white-space: pre-wrap; max-height: 110px; overflow-y: auto; font-size: 0.78rem;">${htmlEscape(st.message)}</div>
@@ -1957,12 +1941,12 @@ function applyOfficialCartTemplates() {
     if (t1) t1.value = 'reminder_1_gentle_nudge';
     if (t2) t2.value = 'reminder_2_follow_up';
     if (t3) t3.value = 'reminder_3_urgency';
-    if (t4) t4.value = 'reminder_4_coupon_discount';
-    if (lang) lang.value = 'en_US';
+    if (t4) t4.value = 'reminder_4_coupon_discou';
+    if (lang) lang.value = 'en';
 
     saveSettings(function(res) {
         if (res.success) {
-            alert("✅ All 4 Official Meta Templates Applied Successfully!\n\n• Stage 1: reminder_1_gentle_nudge\n• Stage 2: reminder_2_follow_up\n• Stage 3: reminder_3_urgency\n• Stage 4: reminder_4_coupon_discount\n• Language: en_US\n\nSettings saved successfully.");
+            alert("✅ All 4 Official Meta Cart Templates Applied Successfully!\n\n• Stage 1: reminder_1_gentle_nudge\n• Stage 2: reminder_2_follow_up\n• Stage 3: reminder_3_urgency\n• Stage 4: reminder_4_coupon_discou\n• Language: en\n\nSettings saved successfully.");
             location.reload();
         } else {
             alert("Settings saved. Please refresh the page.");

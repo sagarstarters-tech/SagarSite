@@ -429,99 +429,45 @@ class AbandonedCartService {
                 $abandonTemplate = trim($this->settings['meta_template_1']);
             }
 
-            // Fallback: check global WhatsApp settings templates
+            // Default stage template names
             if (empty($abandonTemplate)) {
-                if (!empty($waSettings['meta_template_name'])) {
-                    $abandonTemplate = trim($waSettings['meta_template_name']);
-                } elseif (!empty($waSettings['order_confirmation_template_name'])) {
-                    $abandonTemplate = trim($waSettings['order_confirmation_template_name']);
-                }
-            }
-
-            if (empty($abandonTemplate)) {
-                $err = "Meta Template is not configured for Stage {$tplLevel}. Please configure an approved Meta Template in Cart Templates.";
-                $this->logWhatsApp($cartId, $cleanNumber, $message, 'api', "Skipped: " . $err);
-                return [
-                    'success' => false,
-                    'mode'    => 'api',
-                    'is_sent' => false,
-                    'error'   => $err,
-                    'link'    => $waLink
+                $defaultCartTemplates = [
+                    1 => 'reminder_1_gentle_nudge',
+                    2 => 'reminder_2_follow_up',
+                    3 => 'reminder_3_urgency',
+                    4 => 'reminder_4_coupon_discou'
                 ];
+                $abandonTemplate = $defaultCartTemplates[$tplLevel] ?? 'reminder_1_gentle_nudge';
             }
 
-            // Auto-discover WABA ID if missing using debug_token, /me businesses, and /me/accounts
-            if (empty($wabaId)) {
-                // Method 1: debug_token inspection (returns exact target WABA ID from token scopes)
-                $chD = curl_init("https://graph.facebook.com/debug_token?input_token=" . urlencode($token) . "&access_token=" . urlencode($token));
-                curl_setopt_array($chD, [
-                    CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . $token, 'Accept: application/json'],
-                    CURLOPT_RETURNTRANSFER => true,
-                    CURLOPT_SSL_VERIFYPEER => false,
-                    CURLOPT_TIMEOUT        => 5,
-                ]);
-                $dRes = curl_exec($chD);
-                curl_close($chD);
-                $dJson = json_decode($dRes, true);
-                if (!empty($dJson['data']['granular_scopes'])) {
-                    foreach ($dJson['data']['granular_scopes'] as $scopeItem) {
-                        $scopeName = $scopeItem['scope'] ?? '';
-                        if (in_array($scopeName, ['whatsapp_business_management', 'whatsapp_business_messaging']) && !empty($scopeItem['target_ids'])) {
-                            $wabaId = $scopeItem['target_ids'][0];
-                            break;
-                        }
-                    }
-                }
-
-                // Method 2: check /me businesses
-                if (empty($wabaId)) {
-                    $chMe = curl_init("https://graph.facebook.com/v21.0/me?fields=id,name,businesses{owned_whatsapp_business_accounts,client_whatsapp_business_accounts}");
-                    curl_setopt_array($chMe, [
-                        CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . $token, 'Accept: application/json'],
-                        CURLOPT_RETURNTRANSFER => true,
-                        CURLOPT_SSL_VERIFYPEER => false,
-                        CURLOPT_TIMEOUT        => 5,
-                    ]);
-                    $meRes = curl_exec($chMe);
-                    curl_close($chMe);
-                    $meJson = json_decode($meRes, true);
-                    if (!empty($meJson['businesses']['data'])) {
-                        foreach ($meJson['businesses']['data'] as $biz) {
-                            if (!empty($biz['owned_whatsapp_business_accounts']['data'][0]['id'])) {
-                                $wabaId = $biz['owned_whatsapp_business_accounts']['data'][0]['id'];
-                                break;
-                            }
-                            if (!empty($biz['client_whatsapp_business_accounts']['data'][0]['id'])) {
-                                $wabaId = $biz['client_whatsapp_business_accounts']['data'][0]['id'];
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                if (!empty($wabaId)) {
-                    $safeWaba = $this->conn->real_escape_string($wabaId);
-                    $this->conn->query("UPDATE whatsapp_settings SET waba_id = '{$safeWaba}' WHERE id = 1");
-                }
-            }
-
-            // Check registered phone number directly from Meta Phone ID to prevent self-messaging silent drops
+            $wabaName = '';
+            // Query Phone Number ID directly from Meta Graph API
+            // This verifies token validity, checks self-sending, and discovers the parent WABA ID
             if (!empty($phoneId) && !empty($token)) {
-                $chPhone = curl_init("https://graph.facebook.com/v21.0/{$phoneId}?fields=display_phone_number");
+                $chPhone = curl_init("https://graph.facebook.com/v21.0/{$phoneId}?fields=id,display_phone_number,whatsapp_business_account{id,name}");
                 curl_setopt_array($chPhone, [
                     CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . $token, 'Accept: application/json'],
                     CURLOPT_RETURNTRANSFER => true,
                     CURLOPT_SSL_VERIFYPEER => false,
-                    CURLOPT_TIMEOUT        => 3,
+                    CURLOPT_SSL_VERIFYHOST => 0,
+                    CURLOPT_TIMEOUT        => 5,
                 ]);
                 $pRes = curl_exec($chPhone);
                 curl_close($chPhone);
                 $pJson = json_decode($pRes, true);
+
+                if (!empty($pJson['whatsapp_business_account']['id'])) {
+                    $wabaId = $pJson['whatsapp_business_account']['id'];
+                    $wabaName = $pJson['whatsapp_business_account']['name'] ?? '';
+                    $safeWaba = $this->conn->real_escape_string($wabaId);
+                    $this->conn->query("UPDATE whatsapp_settings SET waba_id = '{$safeWaba}' WHERE id = 1");
+                }
+
                 if (!empty($pJson['display_phone_number'])) {
                     $metaSenderDigits = preg_replace('/[^0-9]/', '', $pJson['display_phone_number']);
                     if (strlen($metaSenderDigits) == 10) $metaSenderDigits = '91' . $metaSenderDigits;
                     if (!empty($metaSenderDigits) && $cleanNumber === $metaSenderDigits) {
-                        $err = "Self-Sending Blocked: The recipient phone (+{$cleanNumber}) is the EXACT same number as your WhatsApp Business sender SIM (+{$metaSenderDigits}). Meta Cloud API will NOT deliver messages from a business number to itself. Please test with a different customer mobile number (e.g. alternate or family phone).";
+                        $err = "Self-Sending Blocked: The recipient phone (+{$cleanNumber}) is the EXACT same number as your WhatsApp Business sender SIM (+{$metaSenderDigits}). Meta Cloud API will NOT deliver messages from a business number to itself. Please test with a different customer mobile number.";
                         $this->logWhatsApp($cartId, $cleanNumber, $message, 'api', "Warning: " . $err);
                         return [
                             'success' => false,
@@ -535,26 +481,30 @@ class AbandonedCartService {
             }
 
             // Inspect template metadata live from Meta WABA
+            $allWabaTemplates = [];
             $tplMeta = null;
-            if (!empty($wabaId) && !empty($abandonTemplate)) {
-                $chTpl = curl_init("https://graph.facebook.com/v21.0/{$wabaId}/message_templates?limit=100");
+            if (!empty($wabaId)) {
+                $chTpl = curl_init("https://graph.facebook.com/v21.0/{$wabaId}/message_templates?fields=name,status,category,language,components&limit=100");
                 curl_setopt_array($chTpl, [
                     CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . $token, 'Accept: application/json'],
                     CURLOPT_RETURNTRANSFER => true,
                     CURLOPT_SSL_VERIFYPEER => false,
-                    CURLOPT_TIMEOUT        => 5,
+                    CURLOPT_SSL_VERIFYHOST => 0,
+                    CURLOPT_TIMEOUT        => 6,
                 ]);
                 $tRes = curl_exec($chTpl);
                 curl_close($chTpl);
                 $tJson = json_decode($tRes, true);
                 if (!empty($tJson['data']) && is_array($tJson['data'])) {
+                    $allWabaTemplates = $tJson['data'];
                     $cleanTarget = strtolower(trim($abandonTemplate));
-                    $cleanAltTarget = str_replace('_discount', '_discou', $cleanTarget);
+                    $cleanAlt1 = str_replace('_discount', '_discou', $cleanTarget);
+                    $cleanAlt2 = str_replace('_discou', '_discount', $cleanTarget);
 
-                    foreach ($tJson['data'] as $tItem) {
-                        $tName = strtolower($tItem['name'] ?? '');
-                        if ($tName === $cleanTarget || $tName === $cleanAltTarget) {
-                            if (($tItem['status'] ?? '') === 'APPROVED') {
+                    foreach ($allWabaTemplates as $tItem) {
+                        $tName = strtolower(trim($tItem['name'] ?? ''));
+                        if (in_array($tName, [$cleanTarget, $cleanAlt1, $cleanAlt2], true)) {
+                            if (strtoupper($tItem['status'] ?? '') === 'APPROVED') {
                                 $tplMeta = $tItem;
                                 $abandonTemplate = $tItem['name']; // Use exact Meta approved name
                                 break;
@@ -567,39 +517,39 @@ class AbandonedCartService {
                 }
             }
 
-            // If template was found in Meta, verify approval status & extract structure
+            // Extract live template component requirements
             $exactBodyParamCount = 0;
-            $tplRequiresHeaderImage = false;
-            $tplRequiresButtonUrl = false;
+            $headerImageParam = false;
+            $headerTextParam = false;
+            $buttonUrlIndex = null;
 
-            if ($tplMeta) {
-                $tplStatus = strtoupper($tplMeta['status'] ?? 'UNKNOWN');
-                if ($tplStatus !== 'APPROVED') {
-                    // Do not abort; clear abandonTemplate so cascade seamlessly falls back to 100% verified utility template 'order_confirmation'
-                    $abandonTemplate = '';
-                } else {
-                    if (!empty($tplMeta['components']) && is_array($tplMeta['components'])) {
-                        foreach ($tplMeta['components'] as $c) {
-                            $cType = strtoupper($c['type'] ?? '');
-                            if ($cType === 'BODY') {
-                                preg_match_all('/\{\{(\d+)\}\}/', $c['text'] ?? '', $pm);
-                                if (!empty($pm[1])) {
-                                    $exactBodyParamCount = max(array_map('intval', $pm[1]));
-                                }
+            if ($tplMeta && !empty($tplMeta['components']) && is_array($tplMeta['components'])) {
+                foreach ($tplMeta['components'] as $c) {
+                    $cType = strtoupper($c['type'] ?? '');
+                    if ($cType === 'BODY') {
+                        $bText = $c['text'] ?? '';
+                        preg_match_all('/\{\{(\d+)\}\}/', $bText, $pm);
+                        if (!empty($pm[1])) {
+                            $exactBodyParamCount = max(array_map('intval', $pm[1]));
+                        }
+                    } elseif ($cType === 'HEADER') {
+                        $hFormat = strtoupper($c['format'] ?? 'TEXT');
+                        if ($hFormat === 'IMAGE') {
+                            $headerImageParam = true;
+                        } elseif ($hFormat === 'TEXT') {
+                            $hText = $c['text'] ?? '';
+                            if (preg_match('/\{\{(\d+)\}\}/', $hText)) {
+                                $headerTextParam = true;
                             }
-                            if ($cType === 'HEADER' && strtoupper($c['format'] ?? '') === 'IMAGE') {
-                                $tplRequiresHeaderImage = true;
-                            }
-                            if ($cType === 'BUTTONS' || $cType === 'BUTTON') {
-                                $buttons = $c['buttons'] ?? [$c];
-                                foreach ($buttons as $b) {
-                                    $bType = strtoupper($b['type'] ?? '');
-                                    $bUrl  = $b['url'] ?? '';
-                                    if ($bType === 'URL' && strpos($bUrl, '{{') !== false) {
-                                        $tplRequiresButtonUrl = true;
-                                        break;
-                                    }
-                                }
+                        }
+                    } elseif ($cType === 'BUTTONS' || $cType === 'BUTTON') {
+                        $buttons = $c['buttons'] ?? [$c];
+                        foreach ($buttons as $bIdx => $b) {
+                            $bType = strtoupper($b['type'] ?? '');
+                            $bUrl  = $b['url'] ?? '';
+                            if ($bType === 'URL' && strpos($bUrl, '{{') !== false) {
+                                $buttonUrlIndex = (string)$bIdx;
+                                break;
                             }
                         }
                     }
@@ -635,332 +585,239 @@ class AbandonedCartService {
             $payload       = [];
             $result        = '';
 
-            $langCode = trim($this->settings['meta_template_lang'] ?? 'en_US');
-            if (empty($langCode)) $langCode = 'en_US';
-            if ($tplMeta && !empty($tplMeta['language'])) {
-                $langCode = $tplMeta['language'];
+            // Prepare template parameter values
+            $pCustName   = (string)($variables['{CustomerName}'] ?? 'Customer');
+            $pProdNames  = (string)($variables['{ProductNames}'] ?? 'Cart Items');
+            $pCartTotal  = (string)($variables['{CartTotal}'] ?? '0.00');
+            $pRecLink    = (string)($variables['{RecoveryLink}'] ?? '');
+            $pStoreName  = "Sagar Starter's";
+            $pDate       = date('d M Y');
+            $couponCode  = (string)($variables['{CouponCode}'] ?? 'SAVE10');
+            $pDiscountRaw = (string)($variables['{CouponDiscount}'] ?? '10');
+            $pDiscountNum = trim(str_replace(['%', ' '], '', $pDiscountRaw));
+            if (empty($pDiscountNum)) $pDiscountNum = '10';
+
+            // Extract recovery token from link
+            $pTokenOnly = '';
+            if (preg_match('/token=([^&]+)/', $pRecLink, $tm)) {
+                $pTokenOnly = urldecode($tm[1]);
+            }
+            if (empty($pTokenOnly) && !empty($cart['recovery_token'])) {
+                $pTokenOnly = $cart['recovery_token'];
             }
 
-            if ($abandonTemplate === 'hello_world') {
-                $payload = [
+            $headerImgUrl = !empty($waSettings['wa_header_image_url']) 
+                ? $waSettings['wa_header_image_url'] 
+                : 'https://sagarstarters.com/assets/images/auth_banner.jpg';
+
+            // Language candidates
+            $detectedLang = !empty($tplMeta['language']) ? trim($tplMeta['language']) : null;
+            $configuredLang = trim($this->settings['meta_template_lang'] ?? '');
+
+            $langCandidates = [];
+            if (!empty($detectedLang)) $langCandidates[] = $detectedLang;
+            if (!empty($configuredLang)) $langCandidates[] = $configuredLang;
+            $langCandidates[] = 'en';
+            $langCandidates[] = 'en_US';
+            $langCandidates[] = 'en_GB';
+            $langCandidates = array_values(array_unique(array_filter($langCandidates)));
+
+            $tplCandidates = [];
+
+            if ($tplMeta && $exactBodyParamCount > 0) {
+                if ($exactBodyParamCount == 6) {
+                    $liveParams = [
+                        ["type" => "text", "text" => $pCustName],
+                        ["type" => "text", "text" => $pProdNames],
+                        ["type" => "text", "text" => $pCartTotal],
+                        ["type" => "text", "text" => $couponCode],
+                        ["type" => "text", "text" => $pDiscountNum],
+                        ["type" => "text", "text" => $pRecLink]
+                    ];
+                } elseif ($exactBodyParamCount == 5) {
+                    $liveParams = [
+                        ["type" => "text", "text" => $pCustName],
+                        ["type" => "text", "text" => $pProdNames],
+                        ["type" => "text", "text" => $pCartTotal],
+                        ["type" => "text", "text" => $couponCode],
+                        ["type" => "text", "text" => $pRecLink]
+                    ];
+                } elseif ($exactBodyParamCount == 4) {
+                    $liveParams = [
+                        ["type" => "text", "text" => $pCustName],
+                        ["type" => "text", "text" => $pProdNames],
+                        ["type" => "text", "text" => $pCartTotal],
+                        ["type" => "text", "text" => $pRecLink]
+                    ];
+                } elseif ($exactBodyParamCount == 3) {
+                    $liveParams = [
+                        ["type" => "text", "text" => $pCustName],
+                        ["type" => "text", "text" => $pProdNames],
+                        ["type" => "text", "text" => $pCartTotal]
+                    ];
+                } else {
+                    $liveParams = [
+                        ["type" => "text", "text" => $pCustName],
+                        ["type" => "text", "text" => $pProdNames],
+                        ["type" => "text", "text" => $pCartTotal],
+                        ["type" => "text", "text" => $pRecLink]
+                    ];
+                }
+
+                foreach ($langCandidates as $lCode) {
+                    $tplCandidates[] = [
+                        'name'         => $abandonTemplate,
+                        'lang'         => $lCode,
+                        'params'       => $liveParams,
+                        'header_img'   => $headerImageParam,
+                        'header_text'  => $headerTextParam,
+                        'button_index' => $buttonUrlIndex
+                    ];
+                }
+
+                if ($buttonUrlIndex !== null) {
+                    foreach ($langCandidates as $lCode) {
+                        $tplCandidates[] = [
+                            'name'         => $abandonTemplate,
+                            'lang'         => $lCode,
+                            'params'       => $liveParams,
+                            'header_img'   => $headerImageParam,
+                            'header_text'  => $headerTextParam,
+                            'button_index' => null
+                        ];
+                    }
+                }
+            } else {
+                $isStage4 = ($tplLevel == 4 || strpos($abandonTemplate, 'coupon') !== false);
+                $paramsStage = $isStage4
+                    ? [
+                        ["type" => "text", "text" => $pCustName],
+                        ["type" => "text", "text" => $pProdNames],
+                        ["type" => "text", "text" => $pCartTotal],
+                        ["type" => "text", "text" => $couponCode],
+                        ["type" => "text", "text" => $pDiscountNum],
+                        ["type" => "text", "text" => $pRecLink]
+                    ]
+                    : [
+                        ["type" => "text", "text" => $pCustName],
+                        ["type" => "text", "text" => $pProdNames],
+                        ["type" => "text", "text" => $pCartTotal],
+                        ["type" => "text", "text" => $pRecLink]
+                    ];
+
+                $possibleNames = array_unique([
+                    $abandonTemplate,
+                    str_replace('_discount', '_discou', $abandonTemplate),
+                    str_replace('_discou', '_discount', $abandonTemplate)
+                ]);
+
+                foreach ($possibleNames as $pName) {
+                    foreach ($langCandidates as $lCode) {
+                        $tplCandidates[] = [
+                            'name'         => $pName,
+                            'lang'         => $lCode,
+                            'params'       => $paramsStage,
+                            'header_img'   => false,
+                            'header_text'  => false,
+                            'button_index' => null
+                        ];
+                    }
+                }
+            }
+
+            $attemptLogs = [];
+            $logDir = dirname(__DIR__) . '/logs';
+            if (!is_dir($logDir)) @mkdir($logDir, 0755, true);
+
+            foreach ($tplCandidates as $cand) {
+                $components = [];
+
+                if (!empty($cand['header_img'])) {
+                    $components[] = [
+                        "type" => "header",
+                        "parameters" => [
+                            [
+                                "type" => "image",
+                                "image" => ["link" => $headerImgUrl]
+                            ]
+                        ]
+                    ];
+                } elseif (!empty($cand['header_text'])) {
+                    $components[] = [
+                        "type" => "header",
+                        "parameters" => [
+                            [
+                                "type" => "text",
+                                "text" => $pCustName
+                            ]
+                        ]
+                    ];
+                }
+
+                if (!empty($cand['params'])) {
+                    $components[] = [
+                        "type"       => "body",
+                        "parameters" => $cand['params']
+                    ];
+                }
+
+                if ($cand['button_index'] !== null && !empty($pTokenOnly)) {
+                    $components[] = [
+                        "type"       => "button",
+                        "sub_type"   => "url",
+                        "index"      => (string)$cand['button_index'],
+                        "parameters" => [
+                            [
+                                "type" => "text",
+                                "text" => $pTokenOnly
+                            ]
+                        ]
+                    ];
+                }
+
+                $tplPayload = [
                     "messaging_product" => "whatsapp",
                     "recipient_type"    => "individual",
                     "to"                => $cleanNumber,
                     "type"              => "template",
                     "template"          => [
-                        "name"     => "hello_world",
-                        "language" => ["code" => "en_US"]
+                        "name"       => $cand['name'],
+                        "language"   => ["code" => $cand['lang']],
+                        "components" => $components
                     ]
                 ];
-                list($result, $httpCode, $curlError) = $ch_exec($payload);
-                $metaResponse = json_decode($result, true);
-                $isMetaSuccess = ($httpCode == 200) && !empty($metaResponse['messages'][0]['id']) && empty($metaResponse['error']);
-                $successfulTpl = 'hello_world';
-                $workingLang   = 'en_US';
-            } else {
-                // Prepare variable strings
-                $pCustName   = (string)($variables['{CustomerName}'] ?? 'Customer');
-                $pProdNames  = (string)($variables['{ProductNames}'] ?? 'Cart Items');
-                $pCartTotal  = (string)($variables['{CartTotal}'] ?? '0.00');
-                $pRecLink    = (string)($variables['{RecoveryLink}'] ?? '');
-                $pStoreName  = "Sagar Starter's";
-                $pDate       = date('d M Y');
-                $couponCode  = (string)($variables['{CouponCode}'] ?? 'SAVE10');
 
-                // Extract recovery token from recovery link
-                $pTokenOnly = '';
-                if (preg_match('/token=([^&]+)/', $pRecLink, $tm)) {
-                    $pTokenOnly = urldecode($tm[1]);
-                }
+                list($resTry, $codeTry, $errTry) = $ch_exec($tplPayload);
+                $respTry = json_decode($resTry, true);
 
-                $headerImgUrl = !empty($waSettings['wa_header_image_url']) 
-                    ? $waSettings['wa_header_image_url'] 
-                    : 'https://sagarstarters.com/assets/images/auth_banner.jpg';
+                // Log this specific attempt in real time
+                $pCount  = count($cand['params']);
+                $btnFlag = ($cand['button_index'] !== null) ? '+btn' : '';
+                $hdrFlag = !empty($cand['header_img']) ? '+img' : (!empty($cand['header_text']) ? '+hdr' : '');
+                $logLine = '[' . date('Y-m-d H:i:s') . "] Cart#{$cartId} Try: [{$cand['name']}:{$cand['lang']}|{$pCount}p{$hdrFlag}{$btnFlag}] HTTP:{$codeTry} Res: " . substr($resTry, 0, 160) . PHP_EOL;
+                @file_put_contents($logDir . '/cart_abandonment_whatsapp.log', $logLine, FILE_APPEND);
 
-                // Standard parameter representations
-                $set_9_confirmation = [
-                    ["type" => "text", "text" => $pCustName],           // {{1}} Customer Name
-                    ["type" => "text", "text" => "Cart #" . $cartId],   // {{2}} Order/Cart ID
-                    ["type" => "text", "text" => $pDate],               // {{3}} Date
-                    ["type" => "text", "text" => $pCartTotal],          // {{4}} Amount
-                    ["type" => "text", "text" => "Store Checkout"],     // {{5}} Payment Method
-                    ["type" => "text", "text" => "Pending in Cart"],    // {{6}} Order Status
-                    ["type" => "text", "text" => $pProdNames],          // {{7}} Items
-                    ["type" => "text", "text" => "Online Checkout"],    // {{8}} Address
-                    ["type" => "text", "text" => $pRecLink]             // {{9}} Order/Recovery Link
-                ];
-
-                $set_5_status = [
-                    ["type" => "text", "text" => $pCustName],           // {{1}} Customer Name
-                    ["type" => "text", "text" => "Cart #" . $cartId],   // {{2}} Cart ID
-                    ["type" => "text", "text" => "Items in Cart"],      // {{3}} Order Status
-                    ["type" => "text", "text" => ($pTokenOnly ?: 'RECOVER')], // {{4}} Tracking / Recovery Token
-                    ["type" => "text", "text" => $pCartTotal]           // {{5}} Amount
-                ];
-
-                $set_6_status = [
-                    ["type" => "text", "text" => $pCustName],           // {{1}} Customer Name
-                    ["type" => "text", "text" => "Cart #" . $cartId],   // {{2}} Cart ID
-                    ["type" => "text", "text" => "Items in Cart"],      // {{3}} Order Status
-                    ["type" => "text", "text" => ($pTokenOnly ?: 'RECOVER')], // {{4}} Tracking / Recovery Token
-                    ["type" => "text", "text" => $pCartTotal],          // {{5}} Amount
-                    ["type" => "text", "text" => $pStoreName]           // {{6}} Store Name
-                ];
-
-                $pDiscountRaw = (string)($variables['{CouponDiscount}'] ?? '10');
-                $pDiscountNum = trim(str_replace(['%', ' '], '', $pDiscountRaw));
-                if (empty($pDiscountNum)) $pDiscountNum = '10';
-
-                $set_reminder_1_to_3 = [
-                    ["type" => "text", "text" => $pCustName],       // {{1}} Customer Name
-                    ["type" => "text", "text" => $pProdNames],      // {{2}} Items
-                    ["type" => "text", "text" => $pCartTotal],      // {{3}} Total
-                    ["type" => "text", "text" => $pRecLink]         // {{4}} Recovery Link
-                ];
-
-                $set_reminder_4 = [
-                    ["type" => "text", "text" => $pCustName],       // {{1}} Customer Name
-                    ["type" => "text", "text" => $pProdNames],      // {{2}} Items
-                    ["type" => "text", "text" => $pCartTotal],      // {{3}} Total
-                    ["type" => "text", "text" => $couponCode],      // {{4}} Coupon Code
-                    ["type" => "text", "text" => $pDiscountNum],    // {{5}} Discount (e.g. 10)
-                    ["type" => "text", "text" => $pRecLink]         // {{6}} Recovery Link
-                ];
-
-                $set_4_simple = $set_reminder_1_to_3;
-
-                $allPoolParams = [
-                    ["type" => "text", "text" => $pCustName],                          // 1: Customer Name
-                    ["type" => "text", "text" => $pProdNames],                         // 2: Items
-                    ["type" => "text", "text" => $pCartTotal],                         // 3: Amount
-                    ["type" => "text", "text" => $pRecLink],                           // 4: Recovery Link
-                    ["type" => "text", "text" => $couponCode],                         // 5: Coupon Code
-                    ["type" => "text", "text" => $pStoreName],                         // 6: Store Name
-                    ["type" => "text", "text" => $pDate],                              // 7: Date
-                    ["type" => "text", "text" => "Cart #" . $cartId],                  // 8: Cart ID
-                    ["type" => "text", "text" => $pRecLink]                            // 9: Link
-                ];
-
-                // Priority:
-                // 1. Detected language from Meta WABA (if template found, e.g. 'en')
-                // 2. 'en' (Since Meta screenshot proves language is 'English' -> 'en')
-                // 3. 'en_US'
-                // 4. 'en_GB'
-                // 5. 'hi'
-                $configuredLang = trim($this->settings['meta_template_lang'] ?? '');
-                $detectedLang   = !empty($tplMeta['language']) ? trim($tplMeta['language']) : null;
-
-                $langCandidates = [];
-                if (!empty($detectedLang)) {
-                    $langCandidates[] = $detectedLang;
-                }
-                if (!empty($configuredLang) && !in_array($configuredLang, ['en', 'en_US', 'en_GB'], true)) {
-                    $langCandidates[] = $configuredLang;
-                }
-                $langCandidates[] = 'en';
-                $langCandidates[] = 'en_US';
-                $langCandidates[] = 'en_GB';
-                if (!empty($configuredLang) && $configuredLang === 'hi') {
-                    array_unshift($langCandidates, 'hi');
-                }
-                $langCandidates = array_values(array_unique(array_filter($langCandidates)));
-
-                // Build candidates list with automatic multi-language fallback
-                $tplCandidates = [];
-
-                if (!empty($abandonTemplate)) {
-                    if ($tplMeta && !empty($exactBodyParamCount)) {
-                        $exactParams = array_slice($allPoolParams, 0, min($exactBodyParamCount, count($allPoolParams)));
-                        foreach ($langCandidates as $lCode) {
-                            $tplCandidates[] = [
-                                'name'    => $abandonTemplate,
-                                'lang'    => $lCode,
-                                'params'  => $exactParams,
-                                'header'  => $tplRequiresHeaderImage,
-                                'button'  => $tplRequiresButtonUrl
-                            ];
-                        }
-                    } elseif ($tplMeta && empty($exactBodyParamCount)) {
-                        // Static template without body parameters
-                        foreach ($langCandidates as $lCode) {
-                            $tplCandidates[] = [
-                                'name'    => $abandonTemplate,
-                                'lang'    => $lCode,
-                                'params'  => [],
-                                'header'  => $tplRequiresHeaderImage,
-                                'button'  => $tplRequiresButtonUrl
-                            ];
-                        }
-                    } elseif (in_array($abandonTemplate, ['reminder_1_gentle_nudge', 'reminder_2_follow_up', 'reminder_3_urgency'], true)) {
-                        // Candidate set 1: 4 parameters (CustomerName, ProductNames, CartTotal, RecoveryLink)
-                        foreach ($langCandidates as $lCode) {
-                            $tplCandidates[] = [
-                                'name'    => $abandonTemplate,
-                                'lang'    => $lCode,
-                                'params'  => $set_reminder_1_to_3,
-                                'header'  => false,
-                                'button'  => false
-                            ];
-                        }
-                        // Candidate set 2: 3 parameters (CustomerName, ProductNames, CartTotal)
-                        foreach (['en', 'en_US'] as $lCode) {
-                            $tplCandidates[] = [
-                                'name'    => $abandonTemplate,
-                                'lang'    => $lCode,
-                                'params'  => array_slice($allPoolParams, 0, 3),
-                                'header'  => false,
-                                'button'  => false
-                            ];
-                        }
-                        // Candidate set 3: 3 parameters + dynamic button URL
-                        foreach (['en', 'en_US'] as $lCode) {
-                            $tplCandidates[] = [
-                                'name'    => $abandonTemplate,
-                                'lang'    => $lCode,
-                                'params'  => array_slice($allPoolParams, 0, 3),
-                                'header'  => false,
-                                'button'  => true
-                            ];
-                        }
-                    } elseif (in_array($abandonTemplate, ['reminder_4_coupon_discount', 'reminder_4_coupon_discou'], true)) {
-                        $stage4Names = array_unique([$abandonTemplate, 'reminder_4_coupon_discou', 'reminder_4_coupon_discount']);
-                        foreach ($stage4Names as $tName) {
-                            foreach ($langCandidates as $lCode) {
-                                $tplCandidates[] = [
-                                    'name'    => $tName,
-                                    'lang'    => $lCode,
-                                    'params'  => $set_reminder_4,
-                                    'header'  => false,
-                                    'button'  => false
-                                ];
-                            }
-                        }
-                    } elseif ($abandonTemplate === 'order_confirmation') {
-                        foreach (['en', 'en_US'] as $lCode) {
-                            $tplCandidates[] = [
-                                'name'    => 'order_confirmation',
-                                'lang'    => $lCode,
-                                'params'  => $set_9_confirmation,
-                                'header'  => false,
-                                'button'  => false
-                            ];
-                        }
-                    } elseif (in_array($abandonTemplate, ['new_order_status', 'order_status_updates', 'order_status_update'], true)) {
-                        foreach (['en', 'en_US'] as $lCode) {
-                            $tplCandidates[] = [
-                                'name'    => $abandonTemplate,
-                                'lang'    => $lCode,
-                                'params'  => $set_5_status,
-                                'header'  => false,
-                                'button'  => false
-                            ];
-                        }
-                    } else {
-                        // Generic custom template
-                        foreach ($langCandidates as $lCode) {
-                            $tplCandidates[] = [
-                                'name'    => $abandonTemplate,
-                                'lang'    => $lCode,
-                                'params'  => $set_4_simple,
-                                'header'  => false,
-                                'button'  => false
-                            ];
-                        }
-                    }
+                if ($codeTry == 200 && !empty($respTry['messages'][0]['id']) && empty($respTry['error'])) {
+                    $isMetaSuccess = true;
+                    $successfulTpl = $cand['name'];
+                    $workingLang   = $cand['lang'];
+                    $payload       = $tplPayload;
+                    $result        = $resTry;
+                    $httpCode      = $codeTry;
+                    $metaResponse  = $respTry;
+                    break;
                 } else {
-                    // Fallback to order_confirmation only if merchant did not configure any template
-                    foreach (['en', 'en_US'] as $lCode) {
-                        $tplCandidates[] = [
-                            'name'    => 'order_confirmation',
-                            'lang'    => $lCode,
-                            'params'  => $set_9_confirmation,
-                            'header'  => false,
-                            'button'  => false
-                        ];
-                    }
-                }
+                    $errCodeNum = $respTry['error']['code'] ?? $codeTry;
+                    $errTxtMsg  = $respTry['error']['message'] ?? ($errTry ?: "HTTP {$codeTry}");
+                    $errDetails = $respTry['error']['error_data']['details'] ?? '';
+                    $attemptLogs[] = "[{$cand['name']}:{$cand['lang']}|{$pCount}p{$hdrFlag}{$btnFlag}] (#{$errCodeNum}): {$errTxtMsg}" . ($errDetails ? " ({$errDetails})" : "");
 
-                $attemptLogs = [];
-                $logDir = dirname(__DIR__) . '/logs';
-                if (!is_dir($logDir)) @mkdir($logDir, 0755, true);
-
-                foreach ($tplCandidates as $cand) {
-                    $components = [];
-
-                    if (!empty($cand['header'])) {
-                        $components[] = [
-                            "type" => "header",
-                            "parameters" => [
-                                [
-                                    "type" => "image",
-                                    "image" => ["link" => $headerImgUrl]
-                                ]
-                            ]
-                        ];
-                    }
-
-                    $components[] = [
-                        "type"       => "body",
-                        "parameters" => $cand['params']
-                    ];
-
-                    if (!empty($cand['button']) && !empty($pTokenOnly)) {
-                        $components[] = [
-                            "type"       => "button",
-                            "sub_type"   => "url",
-                            "index"      => "0",
-                            "parameters" => [
-                                [
-                                    "type" => "text",
-                                    "text" => $pTokenOnly
-                                ]
-                            ]
-                        ];
-                    }
-
-                    $tplPayload = [
-                        "messaging_product" => "whatsapp",
-                        "recipient_type"    => "individual",
-                        "to"                => $cleanNumber,
-                        "type"              => "template",
-                        "template"          => [
-                            "name"       => $cand['name'],
-                            "language"   => ["code" => $cand['lang']],
-                            "components" => $components
-                        ]
-                    ];
-
-                    list($resTry, $codeTry, $errTry) = $ch_exec($tplPayload);
-                    $respTry = json_decode($resTry, true);
-
-                    // Log this specific attempt in real time
-                    $pCount  = count($cand['params']);
-                    $btnFlag = !empty($cand['button']) ? '+btn' : '';
-                    $logLine = '[' . date('Y-m-d H:i:s') . "] Cart#{$cartId} Try: [{$cand['name']}:{$cand['lang']}|{$pCount}p{$btnFlag}] HTTP:{$codeTry} Res: " . substr($resTry, 0, 160) . PHP_EOL;
-                    @file_put_contents($logDir . '/cart_abandonment_whatsapp.log', $logLine, FILE_APPEND);
-
-                    if ($codeTry == 200 && !empty($respTry['messages'][0]['id']) && empty($respTry['error'])) {
-                        $isMetaSuccess = true;
-                        $successfulTpl = $cand['name'];
-                        $workingLang   = $cand['lang'];
-                        $payload       = $tplPayload;
-                        $result        = $resTry;
-                        $httpCode      = $codeTry;
-                        $metaResponse  = $respTry;
-                        break;
-                    } else {
-                        $errCodeNum = $respTry['error']['code'] ?? $codeTry;
-                        $errTxtMsg  = $respTry['error']['message'] ?? ($errTry ?: "HTTP {$codeTry}");
-                        $errDetails = $respTry['error']['error_data']['details'] ?? '';
-                        $attemptLogs[] = "[{$cand['name']}:{$cand['lang']}|{$pCount}p{$btnFlag}] (#{$errCodeNum}): {$errTxtMsg}" . ($errDetails ? " ({$errDetails})" : "");
-
-                        if (empty($metaResponse) || ($errCodeNum != 132001 && ($metaResponse['error']['code'] ?? 0) == 132001)) {
-                            $payload      = $tplPayload;
-                            $result       = $resTry;
-                            $httpCode     = $codeTry;
-                            $curlError    = $errTry;
-                            $metaResponse = $respTry;
-                        }
+                    if (empty($metaResponse) || ($errCodeNum != 132001 && ($metaResponse['error']['code'] ?? 0) == 132001)) {
+                        $payload      = $tplPayload;
+                        $result       = $resTry;
+                        $httpCode     = $codeTry;
+                        $curlError    = $errTry;
+                        $metaResponse = $respTry;
                     }
                 }
             }
