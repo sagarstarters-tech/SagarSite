@@ -569,6 +569,7 @@ class AbandonedCartService {
                     'mode'       => 'api',
                     'is_sent'    => true,
                     'message_id' => $msgId,
+                    'link'       => $waLink,
                     'message'    => "Reminder Level {$level} sent successfully via Meta Template '{$abandonTemplate}'!"
                 ];
             } else {

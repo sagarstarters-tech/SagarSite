@@ -954,7 +954,8 @@ function loadCarts(page = 1) {
     $.ajax({
         url: 'ajax_abandoned_carts.php',
         type: 'GET',
-        data: { action: 'get_carts', status: currentStatusFilter, search: search, page: page },
+        cache: false,
+        data: { action: 'get_carts', status: currentStatusFilter, search: search, page: page, _ts: Date.now() },
         dataType: 'json',
         success: function(response) {
             if (response.success && response.data && response.data.carts) {
@@ -1044,7 +1045,7 @@ function renderCartsTable(carts) {
         if (cleanPhone.length === 10) cleanPhone = '91' + cleanPhone;
 
         html += `
-            <tr>
+            <tr id="cart-row-${cartId}" data-cart-id="${cartId}">
                 <td class="ps-4">
                     <div class="d-flex align-items-center gap-3">
                         <div class="ac-avatar-circle">${initials}</div>
@@ -1071,9 +1072,14 @@ function renderCartsTable(carts) {
                 <td>${statusHtml}</td>
                 <td class="pe-4 text-end">
                     <div class="d-flex align-items-center justify-content-end gap-1">
-                        <button type="button" class="ac-btn-icon ac-btn-wa" onclick="handleRowWhatsAppClick(${cart.id}, this, '${htmlEscape(customerName)}', '${cleanPhone}')" title="${globalWaMode === 'web' ? 'Open in WhatsApp Web' : 'Send via Meta API'}">
+                        <button type="button" class="ac-btn-icon ac-btn-wa" onclick="handleRowWhatsAppClick(${cart.id}, this, '${htmlEscape(customerName)}', '${cleanPhone}')" title="${globalWaMode === 'web' ? 'Send via WhatsApp Web' : 'Send via Meta Cloud API'}">
                             <i class="fab fa-whatsapp"></i>
                         </button>
+                        ${globalWaMode === 'api' ? `
+                            <button type="button" class="ac-btn-icon border text-success" onclick="handleRowWhatsAppWebClick(${cart.id}, this, '${htmlEscape(customerName)}', '${cleanPhone}')" title="Send via WhatsApp Web (Guaranteed Delivery)">
+                                <i class="fas fa-external-link-alt"></i>
+                            </button>
+                        ` : ''}
                         <button type="button" class="ac-btn-icon ac-btn-info" onclick="openCartModalById(${cart.id})" title="Inspect Cart & Stages">
                             <i class="fas fa-eye"></i>
                         </button>
@@ -1291,7 +1297,8 @@ function handleRowWhatsAppClick(cartId, btn, customerName, phone) {
         $.ajax({
             url: 'ajax_abandoned_carts.php',
             type: 'POST',
-            data: { action: 'send_reminder', cart_id: cartId, level: 0 },
+            cache: false,
+            data: { action: 'send_reminder', cart_id: cartId, level: 0, _ts: Date.now() },
             dataType: 'json',
             success: function(res) {
                 $btn.html(origHtml).prop('disabled', false);
@@ -1330,12 +1337,21 @@ function handleRowWhatsAppClick(cartId, btn, customerName, phone) {
         $.ajax({
             url: 'ajax_abandoned_carts.php',
             type: 'POST',
-            data: { action: 'send_reminder', cart_id: cartId, level: 0 },
+            cache: false,
+            data: { action: 'send_reminder', cart_id: cartId, level: 0, _ts: Date.now() },
             dataType: 'json',
             success: function(res) {
                 $btn.html(origHtml).prop('disabled', false);
                 if (res.success && res.is_sent) {
-                    alert('✅ ' + (res.message || `Reminder Stage ${res.level || 1} sent directly via Meta Cloud API!`));
+                    const notice = `✅ Reminder Level ${res.level || 1} submitted to Meta Cloud API (ID: ${res.message_id || 'OK'}).\n\n` +
+                                   `📌 DELIVERY NOTICE:\n` +
+                                   `If you do NOT receive the message on the phone, Meta may have restricted it because:\n` +
+                                   `1. Recipient is the same as the Business Sender Number.\n` +
+                                   `2. Meta App is in Development mode (sandbox requires adding phone to test list in Meta Developers).\n\n` +
+                                   `Would you like to open WhatsApp Web now to send directly with 100% guarantee?`;
+                    if (confirm(notice)) {
+                        if (res.link) window.open(res.link, '_blank');
+                    }
                     refreshTableAndStats();
                 } else {
                     const err = res.error || 'Meta API could not deliver message.';
@@ -1359,12 +1375,64 @@ function handleRowWhatsAppClick(cartId, btn, customerName, phone) {
     }
 }
 
+function handleRowWhatsAppWebClick(cartId, btn, customerName, phone) {
+    const waTab = window.open('about:blank', '_blank');
+    const $btn = $(btn);
+    const origHtml = $btn.html();
+    $btn.html('<i class="fas fa-spinner fa-spin"></i>').prop('disabled', true);
+
+    $.ajax({
+        url: 'ajax_abandoned_carts.php',
+        type: 'GET',
+        cache: false,
+        data: { action: 'get_cart_preview', cart_id: cartId, _ts: Date.now() },
+        dataType: 'json',
+        success: function(res) {
+            $btn.html(origHtml).prop('disabled', false);
+            if (res.success && res.data && res.data.stages) {
+                // Find next unsent stage or stage 1
+                let targetLvl = 1;
+                for (let l = 1; l <= 4; l++) {
+                    if (!res.data.stages[l].is_sent) {
+                        targetLvl = l;
+                        break;
+                    }
+                }
+                const link = res.data.stages[targetLvl].wa_link;
+                if (link) {
+                    waTab.location.href = link;
+                    setTimeout(function() {
+                        const promptMsg = `WhatsApp Web opened for ${customerName} (+${phone})\n\nReminder Stage: Level ${targetLvl}\n\nDid you click 'Send' in WhatsApp?\n\n• Click [OK] to mark Stage ${targetLvl} as SENT.\n• Click [Cancel] if not sent.`;
+                        if (confirm(promptMsg)) {
+                            markStage(cartId, targetLvl, 'mark_sent', function() {
+                                refreshTableAndStats();
+                            });
+                        }
+                    }, 600);
+                } else {
+                    waTab.close();
+                    alert('Could not generate WhatsApp Web link for this cart.');
+                }
+            } else {
+                waTab.close();
+                alert('Could not load cart reminder preview.');
+            }
+        },
+        error: function() {
+            waTab.close();
+            $btn.html(origHtml).prop('disabled', false);
+            alert('Request failed. Please check network.');
+        }
+    });
+}
+
 function markStage(cartId, level, action = 'mark_sent', callback = null) {
     const postAction = (action === 'unmark_sent') ? 'unmark_stage_sent' : 'mark_stage_sent';
     $.ajax({
         url: 'ajax_abandoned_carts.php',
         type: 'POST',
-        data: { action: postAction, cart_id: cartId, level: level },
+        cache: false,
+        data: { action: postAction, cart_id: cartId, level: level, _ts: Date.now() },
         dataType: 'json',
         success: function(res) {
             if (res.success) {
@@ -1386,7 +1454,8 @@ function loadModalLogs(cartId) {
     $.ajax({
         url: 'ajax_abandoned_carts.php',
         type: 'GET',
-        data: { action: 'get_cart_logs', cart_id: cartId },
+        cache: false,
+        data: { action: 'get_cart_logs', cart_id: cartId, _ts: Date.now() },
         dataType: 'json',
         success: function(res) {
             if (res.success && res.data && res.data.length > 0) {
@@ -1436,24 +1505,47 @@ function resetReminders(cartId, btn, callback = null) {
     const originalHtml = $btn ? $btn.html() : '';
     if ($btn) $btn.html('<i class="fas fa-spinner fa-spin"></i>').prop('disabled', true);
 
+    // 1. Optimistically update local data and DOM immediately
+    const rowEl = document.getElementById(`cart-row-${cartId}`) || (btn ? btn.closest('tr') : null);
+    if (rowEl) {
+        const tl = rowEl.querySelector('.ac-reminder-timeline');
+        if (tl) {
+            tl.innerHTML = `
+                <div class="ac-reminder-step pending" title="Reminder 1: Not Sent" style="cursor:pointer;" onclick="openCartModalById(${cartId})">1</div>
+                <div class="ac-reminder-step pending" title="Reminder 2: Not Sent" style="cursor:pointer;" onclick="openCartModalById(${cartId})">2</div>
+                <div class="ac-reminder-step pending" title="Reminder 3: Not Sent" style="cursor:pointer;" onclick="openCartModalById(${cartId})">3</div>
+                <div class="ac-reminder-step pending" title="Reminder 4: Not Sent" style="cursor:pointer;" onclick="openCartModalById(${cartId})">4</div>
+                <span class="small text-muted fw-bold ms-1">0/4</span>
+            `;
+        }
+    }
+    if (currentLoadedCarts[cartId]) {
+        currentLoadedCarts[cartId].reminder_step = 0;
+        for (let i = 1; i <= 4; i++) {
+            currentLoadedCarts[cartId]['reminder_' + i + '_sent'] = null;
+        }
+    }
+
     $.ajax({
         url: 'ajax_abandoned_carts.php',
         type: 'POST',
-        data: { action: 'reset_reminders', cart_id: cartId },
+        cache: false,
+        data: { action: 'reset_reminders', cart_id: cartId, _ts: Date.now() },
         dataType: 'json',
         success: function(res) {
             if ($btn) $btn.html(originalHtml).prop('disabled', false);
             if (res.success) {
-                alert(res.message || 'Reminder stages reset to 0!');
                 refreshTableAndStats();
                 if (callback) callback();
             } else {
                 alert(res.error || res.message || 'Error resetting reminders');
+                refreshTableAndStats();
             }
         },
-        error: function() {
+        error: function(xhr) {
             if ($btn) $btn.html(originalHtml).prop('disabled', false);
-            alert('Request failed');
+            alert('Request failed: ' + (xhr.statusText || 'Network error'));
+            refreshTableAndStats();
         }
     });
 }
@@ -1543,7 +1635,8 @@ function refreshStats() {
     $.ajax({
         url: 'ajax_abandoned_carts.php',
         type: 'GET',
-        data: { action: 'get_stats' },
+        cache: false,
+        data: { action: 'get_stats', _ts: Date.now() },
         dataType: 'json',
         success: function(res) {
             if (res.success && res.data) {

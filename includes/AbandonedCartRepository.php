@@ -361,8 +361,10 @@ class AbandonedCartRepository {
         $col = "reminder_{$level}_sent";
         $cartId = intval($cartId);
 
-        $stmt = $this->conn->prepare("UPDATE abandoned_carts SET {$col} = NULL WHERE id = ?");
-        if (!$stmt) return false;
+        $stmt = $this->conn->prepare("UPDATE abandoned_carts SET {$col} = NULL, last_reminder_at = NULL WHERE id = ?");
+        if (!$stmt) {
+            return (bool)$this->conn->query("UPDATE abandoned_carts SET {$col} = NULL, last_reminder_at = NULL WHERE id = $cartId");
+        }
         $stmt->bind_param("i", $cartId);
         $result = $stmt->execute();
         $stmt->close();
@@ -374,8 +376,10 @@ class AbandonedCartRepository {
      */
     public function resetReminders($cartId) {
         $cartId = intval($cartId);
-        $stmt = $this->conn->prepare("UPDATE abandoned_carts SET status = 'active', reminder_1_sent = NULL, reminder_2_sent = NULL, reminder_3_sent = NULL, reminder_4_sent = NULL WHERE id = ?");
-        if (!$stmt) return false;
+        $stmt = $this->conn->prepare("UPDATE abandoned_carts SET status = 'active', reminder_1_sent = NULL, reminder_2_sent = NULL, reminder_3_sent = NULL, reminder_4_sent = NULL, last_reminder_at = NULL, retry_count = 0 WHERE id = ?");
+        if (!$stmt) {
+            return (bool)$this->conn->query("UPDATE abandoned_carts SET status = 'active', reminder_1_sent = NULL, reminder_2_sent = NULL, reminder_3_sent = NULL, reminder_4_sent = NULL, last_reminder_at = NULL, retry_count = 0 WHERE id = $cartId");
+        }
         $stmt->bind_param("i", $cartId);
         $result = $stmt->execute();
         $stmt->close();
