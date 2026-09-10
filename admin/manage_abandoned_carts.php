@@ -603,15 +603,46 @@ button.ac-btn-refresh:active {
                     </div>
                 </div>
 
+                <!-- PROMINENT QUICK SELECT PRESET BAR -->
+                <div class="card border-0 p-3 rounded-4 mb-4 shadow-sm" style="background: linear-gradient(135deg, #f0fdf4, #dcfce7); border-left: 5px solid #10b981 !important;">
+                    <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
+                        <div>
+                            <div class="fw-bold text-success fs-6 mb-1">
+                                <i class="fas fa-magic me-2"></i> Quick Select Meta Templates (1-Click Auto-Fill)
+                            </div>
+                            <div class="small text-dark">
+                                Niche diye gaye button par click karke sabhi stages me approved Meta Template turant set karein. <strong>'order_status_updates'</strong> recommended hai (100% instant WhatsApp delivery guarantee).
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <button type="button" class="btn btn-sm btn-success fw-bold rounded-pill px-3 shadow-sm" onclick="applyPresetToAll('order_status_updates', 'en')" title="100% Delivery Verified Utility Template">
+                                <i class="fas fa-check-circle me-1"></i> Use 'order_status_updates' (Recommended)
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-success fw-bold rounded-pill px-3" onclick="applyPresetToAll('order_confirmation', 'en')" title="100% Delivery Verified Utility Template">
+                                <i class="fas fa-check-circle me-1"></i> Use 'order_confirmation'
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary fw-bold rounded-pill px-3" onclick="applyPresetToAll('reminder_1_gentle_nudge', 'en')" title="Marketing Template">
+                                Use 'reminder_1_gentle_nudge'
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="row g-4 mb-4">
                     <div class="col-md-6">
                         <div class="p-3 border rounded-3 bg-white h-100">
                             <label class="form-label fw-bold text-dark">Reminder 1 Template (First Nudge)</label>
                             <textarea class="form-control mb-2" name="reminder_1_message" rows="3"><?php echo htmlspecialchars($settings['reminder_1_message'] ?? ''); ?></textarea>
-                            <div class="input-group input-group-sm">
+                            <div class="input-group input-group-sm mb-2">
                                 <span class="input-group-text bg-light fw-semibold">Meta Template</span>
                                 <input type="text" class="form-control font-monospace" name="meta_template_1" id="metaTpl1" value="<?php echo htmlspecialchars($settings['meta_template_1'] ?? ''); ?>" placeholder="e.g. order_status_updates">
                                 <button class="btn btn-outline-primary" type="button" onclick="openMetaTemplatePicker('metaTpl1')"><i class="fas fa-list me-1"></i> Fetch / Select</button>
+                            </div>
+                            <div class="d-flex align-items-center gap-1 flex-wrap">
+                                <span class="text-muted small fw-semibold"><i class="fas fa-magic text-primary me-1"></i> Quick:</span>
+                                <button type="button" class="btn btn-xs btn-outline-success py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl1', 'order_status_updates')">order_status_updates</button>
+                                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 rounded-pill" onclick="setTplInput('metaTpl1', 'order_confirmation')">order_confirmation</button>
+                                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 rounded-pill" onclick="setTplInput('metaTpl1', 'reminder_1_gentle_nudge')">reminder_1_gentle_nudge</button>
                             </div>
                         </div>
                     </div>
@@ -619,10 +650,16 @@ button.ac-btn-refresh:active {
                         <div class="p-3 border rounded-3 bg-white h-100">
                             <label class="form-label fw-bold text-dark">Reminder 2 Template (Stock Warning)</label>
                             <textarea class="form-control mb-2" name="reminder_2_message" rows="3"><?php echo htmlspecialchars($settings['reminder_2_message'] ?? ''); ?></textarea>
-                            <div class="input-group input-group-sm">
+                            <div class="input-group input-group-sm mb-2">
                                 <span class="input-group-text bg-light fw-semibold">Meta Template</span>
                                 <input type="text" class="form-control font-monospace" name="meta_template_2" id="metaTpl2" value="<?php echo htmlspecialchars($settings['meta_template_2'] ?? ''); ?>" placeholder="e.g. order_status_updates">
                                 <button class="btn btn-outline-primary" type="button" onclick="openMetaTemplatePicker('metaTpl2')"><i class="fas fa-list me-1"></i> Fetch / Select</button>
+                            </div>
+                            <div class="d-flex align-items-center gap-1 flex-wrap">
+                                <span class="text-muted small fw-semibold"><i class="fas fa-magic text-primary me-1"></i> Quick:</span>
+                                <button type="button" class="btn btn-xs btn-outline-success py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl2', 'order_status_updates')">order_status_updates</button>
+                                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 rounded-pill" onclick="setTplInput('metaTpl2', 'order_confirmation')">order_confirmation</button>
+                                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 rounded-pill" onclick="setTplInput('metaTpl2', 'reminder_1_gentle_nudge')">reminder_1_gentle_nudge</button>
                             </div>
                         </div>
                     </div>
@@ -630,10 +667,16 @@ button.ac-btn-refresh:active {
                         <div class="p-3 border rounded-3 bg-white h-100">
                             <label class="form-label fw-bold text-dark">Reminder 3 Template (Urgency)</label>
                             <textarea class="form-control mb-2" name="reminder_3_message" rows="3"><?php echo htmlspecialchars($settings['reminder_3_message'] ?? ''); ?></textarea>
-                            <div class="input-group input-group-sm">
+                            <div class="input-group input-group-sm mb-2">
                                 <span class="input-group-text bg-light fw-semibold">Meta Template</span>
                                 <input type="text" class="form-control font-monospace" name="meta_template_3" id="metaTpl3" value="<?php echo htmlspecialchars($settings['meta_template_3'] ?? ''); ?>" placeholder="e.g. order_status_updates">
                                 <button class="btn btn-outline-primary" type="button" onclick="openMetaTemplatePicker('metaTpl3')"><i class="fas fa-list me-1"></i> Fetch / Select</button>
+                            </div>
+                            <div class="d-flex align-items-center gap-1 flex-wrap">
+                                <span class="text-muted small fw-semibold"><i class="fas fa-magic text-primary me-1"></i> Quick:</span>
+                                <button type="button" class="btn btn-xs btn-outline-success py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl3', 'order_status_updates')">order_status_updates</button>
+                                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 rounded-pill" onclick="setTplInput('metaTpl3', 'order_confirmation')">order_confirmation</button>
+                                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 rounded-pill" onclick="setTplInput('metaTpl3', 'reminder_1_gentle_nudge')">reminder_1_gentle_nudge</button>
                             </div>
                         </div>
                     </div>
@@ -641,10 +684,16 @@ button.ac-btn-refresh:active {
                         <div class="p-3 border rounded-3 bg-white h-100">
                             <label class="form-label fw-bold text-dark">Reminder 4 Template (Discount Coupon)</label>
                             <textarea class="form-control mb-2" name="reminder_4_message" rows="3"><?php echo htmlspecialchars($settings['reminder_4_message'] ?? ''); ?></textarea>
-                            <div class="input-group input-group-sm">
+                            <div class="input-group input-group-sm mb-2">
                                 <span class="input-group-text bg-light fw-semibold">Meta Template</span>
                                 <input type="text" class="form-control font-monospace" name="meta_template_4" id="metaTpl4" value="<?php echo htmlspecialchars($settings['meta_template_4'] ?? ''); ?>" placeholder="e.g. order_status_updates">
                                 <button class="btn btn-outline-primary" type="button" onclick="openMetaTemplatePicker('metaTpl4')"><i class="fas fa-list me-1"></i> Fetch / Select</button>
+                            </div>
+                            <div class="d-flex align-items-center gap-1 flex-wrap">
+                                <span class="text-muted small fw-semibold"><i class="fas fa-magic text-primary me-1"></i> Quick:</span>
+                                <button type="button" class="btn btn-xs btn-outline-success py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl4', 'order_status_updates')">order_status_updates</button>
+                                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 rounded-pill" onclick="setTplInput('metaTpl4', 'order_confirmation')">order_confirmation</button>
+                                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 rounded-pill" onclick="setTplInput('metaTpl4', 'reminder_1_gentle_nudge')">reminder_1_gentle_nudge</button>
                             </div>
                         </div>
                     </div>
@@ -744,6 +793,9 @@ button.ac-btn-refresh:active {
                     </div>
                 </div>
                 <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <button class="btn btn-sm btn-success fw-bold rounded-pill shadow-sm text-nowrap" type="button" onclick="applyPresetToAll('order_status_updates', 'en')" title="1-Click Set All Stages to order_status_updates">
+                        <i class="fas fa-magic me-1"></i> Quick Select: 'order_status_updates'
+                    </button>
                     <button class="btn btn-sm btn-outline-primary rounded-3 text-nowrap" type="button" data-mdb-toggle="collapse" data-mdb-target="#settingsCollapse"><i class="fas fa-sliders-h me-1"></i> Cart Templates</button>
                     <a href="manage_whatsapp_settings.php" class="btn btn-sm btn-outline-secondary rounded-3 text-nowrap"><i class="fas fa-cog me-1"></i> API Settings</a>
                 </div>
@@ -1270,9 +1322,14 @@ function loadModalStages(cartId) {
                     html += `
                         <div class="col-md-6">
                             <div class="p-3 border rounded-3 h-100 ${isSent ? 'border-success bg-light bg-opacity-25' : 'bg-white'}">
-                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                <div class="d-flex align-items-center justify-content-between mb-1">
                                     <div class="fw-bold text-dark">Stage ${lvl} Reminder</div>
                                     ${sentBadge}
+                                </div>
+                                <div class="mb-2">
+                                    <span class="badge bg-light text-dark border small">
+                                        <i class="fas fa-file-code text-primary me-1"></i> Template: <strong>${htmlEscape(st.meta_tpl || 'order_status_updates')}</strong>
+                                    </span>
                                 </div>
                                 <div class="small text-muted mb-2 font-monospace p-2 bg-light rounded" style="white-space: pre-wrap; max-height: 110px; overflow-y: auto; font-size: 0.78rem;">${htmlEscape(st.message)}</div>
                                 <div class="d-flex flex-wrap gap-1 mt-2">
@@ -1283,7 +1340,7 @@ function loadModalStages(cartId) {
                                     ` : ''}
                                     ${globalWaMode === 'api' ? `
                                         <button type="button" class="btn btn-sm btn-outline-primary py-1 px-2 rounded-pill" onclick="sendModalApiReminder(${cartId}, ${lvl}, this)">
-                                            <i class="fas fa-robot me-1"></i> Send API
+                                            <i class="fas fa-robot me-1"></i> Send via Meta API
                                         </button>
                                     ` : ''}
                                     ${isSent ? `
@@ -1691,8 +1748,10 @@ function deleteCart(cartId, btn) {
     });
 }
 
-function saveSettings() {
-    const formData = new FormData(document.getElementById('settingsForm'));
+function saveSettings(callback = null) {
+    const formEl = document.getElementById('settingsForm');
+    if (!formEl) return;
+    const formData = new FormData(formEl);
     if (!document.getElementById('is_enabled').checked) {
         formData.append('is_enabled', '0');
     }
@@ -1707,7 +1766,11 @@ function saveSettings() {
         dataType: 'json',
         success: function(res) {
             if (res.success) {
-                alert('Settings saved successfully!');
+                if (typeof callback === 'function') {
+                    callback(res);
+                } else {
+                    alert('Settings saved successfully!');
+                }
             } else {
                 alert(res.message || 'Error saving settings');
             }
@@ -1716,6 +1779,37 @@ function saveSettings() {
             alert('Request failed');
         }
     });
+}
+
+function applyPresetToAll(tplName, lang = 'en') {
+    for (let i = 1; i <= 4; i++) {
+        const input = document.getElementById('metaTpl' + i);
+        if (input) {
+            input.value = tplName;
+            input.classList.add('is-valid');
+            setTimeout(() => input.classList.remove('is-valid'), 3500);
+        }
+    }
+    const langInput = document.getElementById('metaTplLang');
+    if (langInput) {
+        langInput.value = lang;
+    }
+
+    saveSettings(function(res) {
+        if (res.success) {
+            alert(`✅ Quick Select Applied!\n\nAll 4 Reminder Stages set to '${tplName}'.\nSettings saved successfully.`);
+            location.reload();
+        }
+    });
+}
+
+function setTplInput(inputId, tplName) {
+    const input = document.getElementById(inputId);
+    if (input) {
+        input.value = tplName;
+        input.classList.add('is-valid');
+        setTimeout(() => input.classList.remove('is-valid'), 2500);
+    }
 }
 
 function refreshStats() {
