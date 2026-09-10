@@ -109,7 +109,7 @@ if (strtolower($order['status']) === 'shipped') {
 }
 
 $siteUrl = defined('SITE_URL') ? rtrim(SITE_URL, '/') : 'https://sagarstarters.com';
-$orderLink = $siteUrl . '/my-orders.php';
+$orderLink = $siteUrl . '/my-orders.php?order_id=' . (int)$order_id;
 
 $orderData = [
     'customer_name'          => $customerName,

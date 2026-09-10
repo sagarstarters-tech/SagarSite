@@ -206,8 +206,12 @@ RewriteRule ^category/([^/]+)/?$ shop.php?category_slug=$1 [L,QSA]
 # Page SEF URL
 RewriteRule ^page/([^/]+)/?$ page.php?slug=$1 [L,QSA]
 
-# Order tracking SEF URL (optional)
-# RewriteRule ^track/([^/]+)/([^/]+)/?$ track_order.php?order_id=$1&email=$2 [L,QSA]
+# Order tracking & My Orders rewrite rules
+RewriteRule ^my-orders/?$ my-orders.php [L,QSA]
+RewriteRule ^my_orders(\.php)?/?$ my-orders.php [L,QSA]
+RewriteRule ^track/?$ track_order.php [L,QSA]
+RewriteRule ^track/([0-9]+)/?$ track_order.php?order_id=$1 [L,QSA]
+RewriteRule ^track/([0-9]+)/([^/]+)/?$ track_order.php?order_id=$1&email=$2 [L,QSA]
 
 # ══════════════════════════════════════════════════════════════
 # 10. BLOCK BAD BOTS & SCANNERS (whitelist social crawlers first)

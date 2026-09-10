@@ -44,18 +44,48 @@ class TrackingController {
     }
 
     private function getCustomerTracking() {
-        $order_id = isset($_GET['order_id']) ? intval($_GET['order_id']) : 0;
-        $email = $_GET['email'] ?? '';
+        $order_id   = isset($_GET['order_id']) ? intval($_GET['order_id']) : 0;
+        $identifier = trim($_GET['email'] ?? ($_GET['phone'] ?? ($_GET['identifier'] ?? '')));
 
-        if (!$order_id || !$email) {
-            $this->sendJson(['error' => 'Order ID and Email are required'], 400);
+        if (empty($identifier) && empty($order_id)) {
+            $this->sendJson(['status' => 'error', 'message' => 'Please enter your Mobile Number or Email to track your order.'], 400);
         }
 
         try {
-            $data = $this->service->getCustomerTracking($order_id, $email);
-            $this->sendJson(['status' => 'success', 'data' => $data]);
+            // Case 1: Both Order ID and Identifier provided
+            if ($order_id > 0 && !empty($identifier)) {
+                $data = $this->service->getCustomerTracking($order_id, $identifier);
+                $this->sendJson(['status' => 'success', 'data' => $data]);
+            }
+
+            // Case 2: Only Identifier provided (No Order ID)
+            if (!empty($identifier) && empty($order_id)) {
+                $orders = $this->service->findCustomerOrders($identifier);
+                if (empty($orders)) {
+                    $this->sendJson(['status' => 'error', 'message' => 'No orders found matching this Mobile Number or Email. Please check and try again.'], 404);
+                }
+
+                if (count($orders) === 1) {
+                    // Exactly one order found, return full tracking details for this order
+                    $data = $this->service->getCustomerTracking((int)$orders[0]['id'], $identifier);
+                    $this->sendJson(['status' => 'success', 'data' => $data]);
+                } else {
+                    // Multiple orders found, return list for user selection
+                    $this->sendJson([
+                        'status' => 'multiple_orders',
+                        'message' => 'Multiple orders found for this account. Please select an order to track:',
+                        'orders' => $orders
+                    ]);
+                }
+            }
+
+            // Case 3: Only Order ID provided (No Identifier)
+            if ($order_id > 0 && empty($identifier)) {
+                $this->sendJson(['status' => 'error', 'message' => 'Please also enter your registered Mobile Number or Email for Order #' . $order_id], 400);
+            }
         } catch (Exception $e) {
             $code = $e->getCode() ?: 500;
+            if ($code < 100 || $code > 599) $code = 400;
             $this->sendJson(['status' => 'error', 'message' => $e->getMessage()], $code);
         }
     }

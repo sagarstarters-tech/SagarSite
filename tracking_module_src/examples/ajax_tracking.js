@@ -12,19 +12,26 @@ document.addEventListener('DOMContentLoaded', function () {
         trackingForm.addEventListener('submit', function (e) {
             e.preventDefault();
 
-            const orderId = document.getElementById('track_order_id').value;
-            const email = document.getElementById('track_email').value;
+            const orderId = document.getElementById('track_order_id') ? document.getElementById('track_order_id').value.trim() : '';
+            const identifier = document.getElementById('track_email') ? document.getElementById('track_email').value.trim() : '';
             const submitBtn = trackingForm.querySelector('button[type="submit"]');
+
+            if (!identifier && !orderId) {
+                showTrackingError('Please enter your Mobile Number or Email to track your order.');
+                return;
+            }
 
             submitBtn.disabled = true;
             submitBtn.style.whiteSpace = 'nowrap';
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Tracking...</span>';
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i><span>Tracking...</span>';
 
             // Build query params
             const params = new URLSearchParams({
                 action: 'get_customer_tracking',
                 order_id: orderId,
-                email: email
+                email: identifier,
+                phone: identifier,
+                identifier: identifier
             });
 
             // Use injected API URL (set by PHP in track_order.php to handle subdirectory deployments)
@@ -42,9 +49,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     submitBtn.innerHTML = '<i class="fas fa-search me-2"></i>Track Order';
 
                     if (data.status === 'success') {
-                        renderTrackingUI(data.data, email);
+                        renderTrackingUI(data.data, identifier);
+                    } else if (data.status === 'multiple_orders' && data.orders) {
+                        renderMultipleOrdersUI(data.orders, identifier);
                     } else {
-                        showTrackingError(data.message || 'Error tracking your order. Please check the ID and Email.');
+                        showTrackingError(data.message || 'Error tracking your order. Please check your details.');
                     }
                 })
                 .catch(error => {
@@ -54,6 +63,15 @@ document.addEventListener('DOMContentLoaded', function () {
                     console.error('Tracking Error:', error);
                 });
         });
+
+        // Auto-track if both Order ID and Identifier (or a complete mobile/email) are already filled from URL
+        const initialOrderId = document.getElementById('track_order_id') ? document.getElementById('track_order_id').value.trim() : '';
+        const initialIdentifier = document.getElementById('track_email') ? document.getElementById('track_email').value.trim() : '';
+        if (initialIdentifier !== '' && (initialOrderId !== '' || initialIdentifier.length >= 10)) {
+            setTimeout(() => {
+                trackingForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+            }, 150);
+        }
     }
 
     function renderTrackingUI(data, email) {
@@ -201,6 +219,49 @@ document.addEventListener('DOMContentLoaded', function () {
         trackingResultContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
+    function renderMultipleOrdersUI(orders, identifier) {
+        let rowsHtml = '';
+        orders.forEach(order => {
+            const dateObj = new Date(order.created_at);
+            const dateFormatted = !isNaN(dateObj) ? dateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : order.created_at;
+            const statusLabel = (order.status || 'Pending').replace('_', ' ').toUpperCase();
+            
+            rowsHtml += `
+                <div class="col-md-6 mb-3">
+                    <div class="card h-100 border shadow-sm rounded-3">
+                        <div class="card-body p-3 d-flex flex-column justify-content-between">
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="fw-bold mb-0 text-primary">Order #${order.id}</h6>
+                                    <span class="badge bg-primary">${statusLabel}</span>
+                                </div>
+                                <p class="text-muted small mb-1"><i class="far fa-calendar-alt me-1"></i> Date: ${dateFormatted}</p>
+                                <p class="fw-bold mb-3">Total: ₹${parseFloat(order.total_amount).toFixed(2)}</p>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm rounded-pill w-100" onclick="trackSpecificOrder(${order.id}, '${identifier.replace(/'/g, "\\'")}')">
+                                <i class="fas fa-search-location me-1"></i> Track This Order
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        trackingResultContainer.innerHTML = `
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-body p-4 p-md-5">
+                    <h5 class="fw-bold mb-2"><i class="fas fa-boxes text-primary me-2"></i>Select an Order to Track</h5>
+                    <p class="text-muted small mb-4">We found multiple orders associated with <strong>${identifier}</strong>. Click below to view live shipment tracking.</p>
+                    <div class="row">
+                        ${rowsHtml}
+                    </div>
+                </div>
+            </div>
+        `;
+        trackingResultContainer.classList.remove('d-none');
+        trackingResultContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
     function showTrackingError(msg) {
         trackingResultContainer.innerHTML = `
             <div class="alert alert-danger py-3">
@@ -209,6 +270,16 @@ document.addEventListener('DOMContentLoaded', function () {
         `;
         trackingResultContainer.classList.remove('d-none');
     }
+
+    window.trackSpecificOrder = function(orderId, identifier) {
+        const orderInput = document.getElementById('track_order_id');
+        const identInput = document.getElementById('track_email');
+        if (orderInput) orderInput.value = orderId;
+        if (identInput) identInput.value = identifier;
+        if (trackingForm) {
+            trackingForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+        }
+    };
 });
 
 /**

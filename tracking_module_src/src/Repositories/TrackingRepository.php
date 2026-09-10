@@ -36,15 +36,92 @@ class TrackingRepository {
         return $stmt->fetchAll();
     }
 
-    public function verifyOrderBelongsToEmail($order_id, $email) {
+    public function verifyOrderBelongsToCustomer($order_id, $identifier) {
+        $identifier = trim($identifier);
+        if (empty($identifier)) {
+            return false;
+        }
+
+        // Email check
+        if (strpos($identifier, '@') !== false) {
+            $stmt = $this->db->prepare("
+                SELECT o.id 
+                FROM orders o 
+                JOIN users u ON o.user_id = u.id 
+                WHERE o.id = :order_id AND LOWER(u.email) = LOWER(:email)
+            ");
+            $stmt->execute([':order_id' => $order_id, ':email' => $identifier]);
+            return $stmt->fetchColumn() !== false;
+        }
+
+        // Phone number check (match last 10 digits to handle country code prefix variations)
+        $cleanPhone = preg_replace('/[^0-9]/', '', $identifier);
+        $last10 = (strlen($cleanPhone) >= 10) ? substr($cleanPhone, -10) : $cleanPhone;
+
         $stmt = $this->db->prepare("
             SELECT o.id 
             FROM orders o 
             JOIN users u ON o.user_id = u.id 
-            WHERE o.id = :order_id AND u.email = :email
+            WHERE o.id = :order_id 
+              AND (
+                  u.phone = :raw_phone 
+                  OR u.phone LIKE :phone_like
+                  OR RIGHT(REGEXP_REPLACE(u.phone, '[^0-9]', ''), 10) = :last10
+              )
         ");
-        $stmt->execute([':order_id' => $order_id, ':email' => $email]);
+        $stmt->execute([
+            ':order_id'   => $order_id,
+            ':raw_phone'  => $identifier,
+            ':phone_like' => '%' . $last10,
+            ':last10'     => $last10
+        ]);
         return $stmt->fetchColumn() !== false;
+    }
+
+    public function verifyOrderBelongsToEmail($order_id, $email) {
+        return $this->verifyOrderBelongsToCustomer($order_id, $email);
+    }
+
+    public function findOrdersByCustomer($identifier, $limit = 5) {
+        $identifier = trim($identifier);
+        if (empty($identifier)) {
+            return [];
+        }
+
+        if (strpos($identifier, '@') !== false) {
+            $stmt = $this->db->prepare("
+                SELECT o.id, o.status, o.total_amount, o.created_at, u.name as customer_name
+                FROM orders o 
+                JOIN users u ON o.user_id = u.id 
+                WHERE LOWER(u.email) = LOWER(:email)
+                ORDER BY o.created_at DESC
+                LIMIT " . (int)$limit . "
+            ");
+            $stmt->execute([':email' => $identifier]);
+            return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        }
+
+        $cleanPhone = preg_replace('/[^0-9]/', '', $identifier);
+        $last10 = (strlen($cleanPhone) >= 10) ? substr($cleanPhone, -10) : $cleanPhone;
+
+        $stmt = $this->db->prepare("
+            SELECT o.id, o.status, o.total_amount, o.created_at, u.name as customer_name
+            FROM orders o 
+            JOIN users u ON o.user_id = u.id 
+            WHERE (
+                u.phone = :raw_phone 
+                OR u.phone LIKE :phone_like
+                OR RIGHT(REGEXP_REPLACE(u.phone, '[^0-9]', ''), 10) = :last10
+            )
+            ORDER BY o.created_at DESC
+            LIMIT " . (int)$limit . "
+        ");
+        $stmt->execute([
+            ':raw_phone'  => $identifier,
+            ':phone_like' => '%' . $last10,
+            ':last10'     => $last10
+        ]);
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 
     // --- Admin Facing ---

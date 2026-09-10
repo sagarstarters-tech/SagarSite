@@ -14,12 +14,19 @@ class TrackingService {
     /**
      * Get complete tracking details for a customer
      */
-    public function getCustomerTracking($order_id, $email) {
-        if (!$this->repository->verifyOrderBelongsToEmail($order_id, $email)) {
-            throw new Exception("Unauthorized: Order ID and Email do not match.", 403);
+    public function getCustomerTracking($order_id, $identifier) {
+        if (!$this->repository->verifyOrderBelongsToCustomer($order_id, $identifier)) {
+            throw new Exception("Order ID and Mobile Number / Email do not match. Please verify your details.", 403);
         }
 
         return $this->buildTrackingPayload($order_id);
+    }
+
+    /**
+     * Look up orders for a customer by email or phone
+     */
+    public function findCustomerOrders($identifier) {
+        return $this->repository->findOrdersByCustomer($identifier);
     }
 
     /**

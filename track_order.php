@@ -164,12 +164,16 @@ include 'includes/header.php'; // Include existing store header
 }
 </style>
 
+<?php
+$prefill_order_id = isset($_GET['order_id']) && is_numeric($_GET['order_id']) ? (int)$_GET['order_id'] : '';
+$prefill_identifier = htmlspecialchars(trim($_GET['email'] ?? ($_GET['phone'] ?? ($_GET['identifier'] ?? ''))));
+?>
 <div class="container my-5 py-4" style="min-height: 60vh;">
     
     <div class="row justify-content-center mb-5">
         <div class="col-md-8 col-lg-6 text-center">
             <h2 class="fw-bold mb-3"><i class="fas fa-search-location text-primary me-2"></i>Track Your Order</h2>
-            <p class="text-muted">Enter your Order ID and Account Email below to see live shipping updates securely.</p>
+            <p class="text-muted">Enter your Order ID and registered Mobile Number or Email below to view real-time shipping updates.</p>
         </div>
     </div>
 
@@ -180,12 +184,12 @@ include 'includes/header.php'; // Include existing store header
                 <div class="card-body p-4 p-md-5">
                     <form id="trackingForm" class="row gx-3 gy-3 align-items-end">
                         <div class="col-md-4">
-                            <label class="form-label fw-bold">Order Number (#)</label>
-                            <input type="number" id="track_order_id" class="form-control form-control-lg" placeholder="e.g. 1024" required>
+                            <label class="form-label fw-bold">Order Number (#) <span class="text-muted fw-normal small">(Optional)</span></label>
+                            <input type="number" id="track_order_id" class="form-control form-control-lg" placeholder="e.g. 1024" value="<?php echo $prefill_order_id ?: ''; ?>">
                         </div>
                         <div class="col-md-5">
-                            <label class="form-label fw-bold">Registered Email ID</label>
-                            <input type="email" id="track_email" class="form-control form-control-lg" placeholder="user@example.com" required>
+                            <label class="form-label fw-bold">Mobile Number or Email <span class="text-danger">*</span></label>
+                            <input type="text" id="track_email" class="form-control form-control-lg" placeholder="e.g. 9876543210 or user@email.com" value="<?php echo $prefill_identifier; ?>" required>
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">&nbsp;</label>

@@ -335,7 +335,7 @@ function sendCustomerOrderConfirmationWhatsApp($conn, $order_id) {
         $itemsOrdered = !empty($itemsList) ? implode("\n", $itemsList) : "Order #$order_id";
 
         $siteUrl = defined('SITE_URL') ? rtrim(SITE_URL, '/') : 'https://sagarstarters.com';
-        $orderLink = $siteUrl . '/my-orders.php';
+        $orderLink = $siteUrl . '/my-orders.php?order_id=' . (int)$order_id;
 
         // Bridge & Text Message Template
         $bridge_template = !empty($settings['order_confirmation_message_template']) 
@@ -717,7 +717,7 @@ function sendCustomerOrderStatusWhatsApp($conn, $order_id) {
         }
 
         $siteUrl = defined('SITE_URL') ? rtrim(SITE_URL, '/') : 'https://sagarstarters.com';
-        $orderLink = $siteUrl . '/my-orders.php';
+        $orderLink = $siteUrl . '/my-orders.php?order_id=' . (int)$order_id;
 
         $paymentMode = formatWhatsAppPaymentMethod($order['payment_method'] ?? '', $order['payment_mode'] ?? '');
 

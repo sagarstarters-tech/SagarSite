@@ -150,7 +150,7 @@ if ($run_test):
             ["type" => "text", "text" => "Confirmed"],
             ["type" => "text", "text" => "• 1-Phase Submersible Starter Panel (1x)"],
             ["type" => "text", "text" => "Varanasi, UP - 221001"],
-            ["type" => "text", "text" => "https://sagarstarters.com/my-orders.php"],
+            ["type" => "text", "text" => "https://sagarstarters.com/my-orders.php?order_id=" . (int)$order['id']],
         ];
         $payload = [
             "messaging_product" => "whatsapp",

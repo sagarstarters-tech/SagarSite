@@ -152,7 +152,7 @@ if (isset($_GET['test_admin']) && $_GET['test_admin'] == '1') {
     if (empty($deliveryAddress)) $deliveryAddress = 'Varanasi, UP - 221001';
     $itemsOrdered    = "• 1-Phase Submersible Panel (1x)";
     $siteUrl         = defined('SITE_URL') ? rtrim(SITE_URL, '/') : 'https://sagarstarters.com';
-    $orderLink       = $siteUrl . '/my-orders.php';
+    $orderLink       = $siteUrl . '/my-orders.php?order_id=' . (int)$order_id;
 
     $default_order_confirm_tpl = "Hello Dear {CustomerName},\n\nThank you for your order! Your Order #{OrderID} has been successfully placed.\n\nOrder Date: {OrderDate}\nTotal Amount: ₹{OrderAmount}\nPayment Method: {PaymentMethod}\n\nDelivery Address:\n{DeliveryAddress}\n\nThank you for shopping with Sagar Starter's!";
     $confirm_bridge_tpl = !empty($settings['order_confirmation_message_template']) ? $settings['order_confirmation_message_template'] : $default_order_confirm_tpl;
@@ -211,7 +211,7 @@ if (isset($_GET['test_admin']) && $_GET['test_admin'] == '1') {
     $paymentMode   = strtoupper($order['payment_mode'] ?? 'COD');
     $deliveryAddress = '123 Civil Lines, Varanasi, UP - 221001';
     $siteUrl       = defined('SITE_URL') ? rtrim(SITE_URL, '/') : 'https://sagarstarters.com';
-    $orderLink     = $siteUrl . '/my-orders.php';
+    $orderLink     = $siteUrl . '/my-orders.php?order_id=' . (int)$order_id;
     $statusMessage = "Your order #$order_id status has been updated to $orderStatus.";
     $itemsOrdered  = "• 1-Phase Submersible Panel (1x)";
     $expectedDelivery = date('d M Y', strtotime('+4 days'));
@@ -271,7 +271,7 @@ if (isset($_GET['test_admin']) && $_GET['test_admin'] == '1') {
             $addr = trim(($ord['customer_address'] ?? '') . ', ' . ($ord['customer_city'] ?? ''));
             if (empty($addr)) $addr = 'N/A';
             $sUrl = defined('SITE_URL') ? rtrim(SITE_URL, '/') : 'https://sagarstarters.com';
-            $oLink = $sUrl . '/my-orders.php';
+            $oLink = $sUrl . '/my-orders.php?order_id=' . (int)$order_id;
             $expDel = date('d M Y', strtotime($ord['created_at'] . ' + 4 days'));
             $sMsg = "Your order #$order_id is currently $oStatus.";
 
