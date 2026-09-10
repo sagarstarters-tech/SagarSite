@@ -48,28 +48,60 @@ $token = trim($waSettings['api_token']);
 $phoneId = trim($waSettings['phone_number_id']);
 $url = "https://graph.facebook.com/v19.0/{$phoneId}/messages";
 
-// Test payload using reminder_1__gentle_nudge
-$payload = [
-    "messaging_product" => "whatsapp",
-    "recipient_type"    => "individual",
-    "to"                => $cleanPhone,
-    "type"              => "template",
-    "template"          => [
-        "name"     => "reminder_1__gentle_nudge",
-        "language" => ["code" => "en"],
-        "components" => [
-            [
-                "type" => "body",
-                "parameters" => [
-                    ["type" => "text", "text" => "Test Customer"],
-                    ["type" => "text", "text" => "Sample Motor Starter x1"],
-                    ["type" => "text", "text" => "1,500.00"],
-                    ["type" => "text", "text" => "https://www.sagarstarters.com/recover_cart.php?token=test"]
+$tplName = trim($_GET['template'] ?? 'reminder_1__gentle_nudge');
+
+if ($tplName === 'order_confirmation') {
+    $payload = [
+        "messaging_product" => "whatsapp",
+        "recipient_type"    => "individual",
+        "to"                => $cleanPhone,
+        "type"              => "template",
+        "template"          => [
+            "name"     => "order_confirmation",
+            "language" => ["code" => "en"],
+            "components" => [
+                [
+                    "type" => "body",
+                    "parameters" => [
+                        ["type" => "text", "text" => "Deep Mala"],
+                        ["type" => "text", "text" => "93"],
+                        ["type" => "text", "text" => date('d M Y')],
+                        ["type" => "text", "text" => "5,600.00"],
+                        ["type" => "text", "text" => "COD"],
+                        ["type" => "text", "text" => "Confirmed (Test)"],
+                        ["type" => "text", "text" => "5 Hp Single Phase Starter Panel (1x)"],
+                        ["type" => "text", "text" => "Customer Delivery Address"],
+                        ["type" => "text", "text" => "https://www.sagarstarters.com/my-orders.php"]
+                    ]
                 ]
             ]
         ]
-    ]
-];
+    ];
+} else {
+    // Test payload using reminder_1__gentle_nudge
+    $payload = [
+        "messaging_product" => "whatsapp",
+        "recipient_type"    => "individual",
+        "to"                => $cleanPhone,
+        "type"              => "template",
+        "template"          => [
+            "name"     => $tplName,
+            "language" => ["code" => "en"],
+            "components" => [
+                [
+                    "type" => "body",
+                    "parameters" => [
+                        ["type" => "text", "text" => "Deep Mala"],
+                        ["type" => "text", "text" => "5 Hp Single Please Submersible Pump Starter x1"],
+                        ["type" => "text", "text" => "5,600.00"],
+                        ["type" => "text", "text" => "https://www.sagarstarters.com/recover_cart.php?token=test"]
+                    ]
+                ]
+            ]
+        ]
+    ];
+}
+
 
 $ch = curl_init($url);
 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
