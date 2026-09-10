@@ -209,19 +209,39 @@ try {
 echo PHP_EOL;
 
 
-// Check cart_abandonment_whatsapp.log file
-echo "=== RECENT LOG FILE ENTRIES ===" . PHP_EOL;
-$logFile = __DIR__ . '/logs/cart_abandonment_whatsapp.log';
-if (file_exists($logFile)) {
-    $lines = file($logFile);
-    $lastLines = array_slice($lines, -10);
-    foreach ($lastLines as $ll) {
-        echo "  " . trim($ll) . PHP_EOL;
+// Check logs directory
+echo "=== LOG DIRECTORY FILES ===" . PHP_EOL;
+$logDir = __DIR__ . '/logs';
+if (is_dir($logDir)) {
+    $files = scandir($logDir);
+    foreach ($files as $f) {
+        if ($f !== '.' && $f !== '..') {
+            $sz = filesize($logDir . '/' . $f);
+            echo "  $f ({$sz} bytes, modified: " . date('Y-m-d H:i:s', filemtime($logDir . '/' . $f)) . ")" . PHP_EOL;
+        }
     }
 } else {
-    echo "  (Log file does not exist yet at {$logFile})" . PHP_EOL;
+    echo "  Logs directory does not exist." . PHP_EOL;
 }
 echo PHP_EOL;
+
+// Check debug_token from Meta
+if (!empty($token)) {
+    $chD = curl_init("https://graph.facebook.com/debug_token?input_token=" . urlencode($token) . "&access_token=" . urlencode($token));
+    curl_setopt_array($chD, [
+        CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . $token, 'Accept: application/json'],
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_TIMEOUT        => 8,
+    ]);
+    $d_res = curl_exec($chD);
+    $d_code = curl_getinfo($chD, CURLINFO_HTTP_CODE);
+    curl_close($chD);
+    echo "=== META DEBUG_TOKEN (HTTP {$d_code}) ===" . PHP_EOL;
+    echo "  " . $d_res . PHP_EOL;
+}
+echo PHP_EOL;
+
 
 // Force run if requested
 if (isset($_GET['run']) && $_GET['run'] === '1') {
