@@ -641,7 +641,8 @@ button.ac-btn-refresh:active {
                             </div>
                             <div class="d-flex align-items-center gap-1 flex-wrap">
                                 <span class="text-muted small fw-semibold"><i class="fas fa-magic text-primary me-1"></i> Quick:</span>
-                                <button type="button" class="btn btn-xs btn-primary py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl1', 'reminder_1_gentle_nudge')">reminder_1_gentle_nudge</button>
+                                <button type="button" class="btn btn-xs btn-primary py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl1', 'cart_reminder_01')">cart_reminder_01</button>
+                                <button type="button" class="btn btn-xs btn-outline-primary py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl1', 'reminder_1_gentle_nudge')">reminder_1_gentle_nudge</button>
                             </div>
                         </div>
                     </div>
@@ -663,7 +664,8 @@ button.ac-btn-refresh:active {
                             </div>
                             <div class="d-flex align-items-center gap-1 flex-wrap">
                                 <span class="text-muted small fw-semibold"><i class="fas fa-magic text-primary me-1"></i> Quick:</span>
-                                <button type="button" class="btn btn-xs btn-primary py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl2', 'reminder_2_follow_up')">reminder_2_follow_up</button>
+                                <button type="button" class="btn btn-xs btn-primary py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl2', 'cart_reminder_02')">cart_reminder_02</button>
+                                <button type="button" class="btn btn-xs btn-outline-primary py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl2', 'reminder_2_follow_up')">reminder_2_follow_up</button>
                             </div>
                         </div>
                     </div>
@@ -685,7 +687,8 @@ button.ac-btn-refresh:active {
                             </div>
                             <div class="d-flex align-items-center gap-1 flex-wrap">
                                 <span class="text-muted small fw-semibold"><i class="fas fa-magic text-primary me-1"></i> Quick:</span>
-                                <button type="button" class="btn btn-xs btn-primary py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl3', 'reminder_3_urgency')">reminder_3_urgency</button>
+                                <button type="button" class="btn btn-xs btn-primary py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl3', 'cart_reminder_03')">cart_reminder_03</button>
+                                <button type="button" class="btn btn-xs btn-outline-primary py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl3', 'reminder_3_urgency')">reminder_3_urgency</button>
                             </div>
                         </div>
                     </div>
@@ -707,8 +710,9 @@ button.ac-btn-refresh:active {
                             </div>
                             <div class="d-flex align-items-center gap-1 flex-wrap">
                                 <span class="text-muted small fw-semibold"><i class="fas fa-magic text-primary me-1"></i> Quick:</span>
-                                <button type="button" class="btn btn-xs btn-primary py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl4', 'reminder_4_coupon_discou')">reminder_4_coupon_discou</button>
-                                <button type="button" class="btn btn-xs btn-outline-primary py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl4', 'reminder_4_coupon_discount')">reminder_4_coupon_discount</button>
+                                <button type="button" class="btn btn-xs btn-primary py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl4', 'cart_reminder_04')">cart_reminder_04</button>
+                                <button type="button" class="btn btn-xs btn-outline-primary py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl4', 'reminder_4_coupon_discou')">reminder_4_coupon_discou</button>
+                                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 rounded-pill fw-bold" onclick="setTplInput('metaTpl4', 'reminder_4_coupon_discount')">reminder_4_coupon_discount</button>
                             </div>
                         </div>
                     </div>
@@ -1003,23 +1007,22 @@ button.ac-btn-refresh:active {
 
                 <div id="modalTplStatus" class="alert alert-info py-2 small d-none"></div>
 
-                <!-- Quick Selection Chips -->
                 <div class="p-2 mb-3 bg-light rounded-3 d-flex align-items-center gap-2 flex-wrap small">
                     <span class="fw-bold text-muted"><i class="fas fa-magic me-1"></i> Quick Select:</span>
                     <button type="button" class="btn btn-sm btn-primary py-0 px-2 rounded-pill fw-bold" onclick="applyOfficialCartTemplates()" title="Auto-fill Stage 1, 2, 3, and 4 with official Meta approved reminder templates">
                         <i class="fas fa-star me-1"></i> Apply 4 Official Cart Templates (Stages 1-4)
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 rounded-pill fw-bold" onclick="selectTemplate('reminder_1_gentle_nudge', 'en')">
-                        reminder_1_gentle_nudge
+                    <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 rounded-pill fw-bold" onclick="selectTemplate('cart_reminder_01', 'en')">
+                        cart_reminder_01
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 rounded-pill fw-bold" onclick="selectTemplate('reminder_2_follow_up', 'en')">
-                        reminder_2_follow_up
+                    <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 rounded-pill fw-bold" onclick="selectTemplate('cart_reminder_02', 'en')">
+                        cart_reminder_02
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 rounded-pill fw-bold" onclick="selectTemplate('reminder_3_urgency', 'en')">
-                        reminder_3_urgency
+                    <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 rounded-pill fw-bold" onclick="selectTemplate('cart_reminder_03', 'en')">
+                        cart_reminder_03
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 rounded-pill fw-bold" onclick="selectTemplate('reminder_4_coupon_discou', 'en')">
-                        reminder_4_coupon_discou
+                    <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 rounded-pill fw-bold" onclick="selectTemplate('cart_reminder_04', 'en')">
+                        cart_reminder_04
                     </button>
                 </div>
 
@@ -1938,15 +1941,15 @@ function applyOfficialCartTemplates() {
     const t4 = document.getElementById('metaTpl4');
     const lang = document.getElementById('metaTplLang');
 
-    if (t1) t1.value = 'reminder_1_gentle_nudge';
-    if (t2) t2.value = 'reminder_2_follow_up';
-    if (t3) t3.value = 'reminder_3_urgency';
-    if (t4) t4.value = 'reminder_4_coupon_discou';
+    if (t1) t1.value = 'cart_reminder_01';
+    if (t2) t2.value = 'cart_reminder_02';
+    if (t3) t3.value = 'cart_reminder_03';
+    if (t4) t4.value = 'cart_reminder_04';
     if (lang) lang.value = 'en';
 
     saveSettings(function(res) {
         if (res.success) {
-            alert("✅ All 4 Official Meta Cart Templates Applied Successfully!\n\n• Stage 1: reminder_1_gentle_nudge\n• Stage 2: reminder_2_follow_up\n• Stage 3: reminder_3_urgency\n• Stage 4: reminder_4_coupon_discou\n• Language: en\n\nSettings saved successfully.");
+            alert("✅ All 4 Official Meta Cart Templates Applied Successfully!\n\n• Stage 1: cart_reminder_01\n• Stage 2: cart_reminder_02\n• Stage 3: cart_reminder_03\n• Stage 4: cart_reminder_04\n• Language: en\n\nSettings saved successfully.");
             location.reload();
         } else {
             alert("Settings saved. Please refresh the page.");

@@ -629,8 +629,59 @@ class AbandonedCartService {
                             }
                         }
                     }
+
+                    // ── Fallback: Level-aware alternative name patterns ─────────────────
+                    // If the configured name (e.g. "reminder_1_gentle_nudge") has no match,
+                    // try common alternative naming formats like "cart_reminder_01", etc.
+                    if (!$tplMeta) {
+                        $levelNum = $tplLevel;
+                        $levelPad = str_pad($levelNum, 2, '0', STR_PAD_LEFT); // "01", "02", etc.
+                        $levelAltPatterns = [
+                            "cart_reminder_{$levelPad}",
+                            "cart_reminder_{$levelNum}",
+                            "reminder_{$levelPad}",
+                            "reminder_{$levelNum}",
+                            "cart_recovery_{$levelPad}",
+                            "cart_recovery_{$levelNum}",
+                            "abandoned_cart_{$levelPad}",
+                            "abandoned_cart_{$levelNum}",
+                        ];
+
+                        // First pass: APPROVED templates matching level patterns
+                        foreach ($allWabaTemplates as $tItem) {
+                            $tName = strtolower(trim($tItem['name'] ?? ''));
+                            foreach ($levelAltPatterns as $pat) {
+                                if ($tName === $pat || $tName === str_replace('_', '', $pat)) {
+                                    if (strtoupper($tItem['status'] ?? '') === 'APPROVED') {
+                                        $tplMeta = $tItem;
+                                        $abandonTemplate = $tItem['name'];
+                                        error_log("[AbandonedCart] Level-{$levelNum} template fallback matched: '{$tItem['name']}' (configured: '{$cleanTarget}')");
+                                        break 2;
+                                    } elseif (!$tplMeta) {
+                                        $tplMeta = $tItem;
+                                        $abandonTemplate = $tItem['name'];
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // ── Last Resort: Any APPROVED template containing 'reminder' or 'cart' ──
+                    if (!$tplMeta) {
+                        foreach ($allWabaTemplates as $tItem) {
+                            $tName = strtolower(trim($tItem['name'] ?? ''));
+                            if (strtoupper($tItem['status'] ?? '') === 'APPROVED' &&
+                                (strpos($tName, 'reminder') !== false || strpos($tName, 'cart') !== false)) {
+                                $tplMeta = $tItem;
+                                $abandonTemplate = $tItem['name'];
+                                error_log("[AbandonedCart] Level-{$tplLevel} using last-resort template: '{$tItem['name']}' (no exact match for '{$cleanTarget}')");
+                                break;
+                            }
+                        }
+                    }
                 }
             }
+
 
             // Extract live template component requirements
             $exactBodyParamCount = 0;
@@ -1171,11 +1222,6 @@ class AbandonedCartService {
      * Get admin dashboard data.
      */
     public function getAdminDashboardData($status = 'all', $search = '', $page = 1) {
-        // Auto-process any due reminders when admin loads/refreshes dashboard
-        try {
-            $this->processAutoReminders();
-        } catch (\Throwable $e) {}
-
         return [
             'stats'         => $this->repo->getStats(),
             'carts'         => $this->repo->getAdminList($status, $search, $page),

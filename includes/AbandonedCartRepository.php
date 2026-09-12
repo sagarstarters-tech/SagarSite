@@ -80,11 +80,11 @@ class AbandonedCartRepository {
                 'coupon_discount_percent' => '10',
                 'coupon_validity_hours'   => '48',
                 'auto_expire_days'        => '7',
-                'meta_template_1'         => 'reminder_1_gentle_nudge',
-                'meta_template_2'         => 'reminder_2_follow_up',
-                'meta_template_3'         => 'reminder_3_urgency',
-                'meta_template_4'         => 'reminder_4_coupon_discount',
-                'meta_template_lang'      => 'en_US',
+                'meta_template_1'         => 'cart_reminder_01',
+                'meta_template_2'         => 'cart_reminder_02',
+                'meta_template_3'         => 'cart_reminder_03',
+                'meta_template_4'         => 'cart_reminder_04',
+                'meta_template_lang'      => 'en',
                 'cron_secret_key'         => 'sagar_cart_recovery_cron_secret',
             ];
 
@@ -136,6 +136,28 @@ class AbandonedCartRepository {
             try {
                 $this->conn->query("ALTER TABLE abandoned_carts MODIFY COLUMN status VARCHAR(20) NOT NULL DEFAULT 'active'");
             } catch (\Throwable $e) {}
+
+            // ── One-time migration: update old default template names to actual Meta names ──
+            // Only updates rows that still have the original incorrect default values.
+            // Custom template names configured by the admin are NOT affected.
+            $templateMigrations = [
+                'meta_template_1' => ['reminder_1_gentle_nudge' => 'cart_reminder_01'],
+                'meta_template_2' => ['reminder_2_follow_up'    => 'cart_reminder_02'],
+                'meta_template_3' => ['reminder_3_urgency'      => 'cart_reminder_03'],
+                'meta_template_4' => ['reminder_4_coupon_discount' => 'cart_reminder_04',
+                                      'reminder_4_coupon_discou'   => 'cart_reminder_04'],
+                'meta_template_lang' => ['en_US' => 'en'],
+            ];
+            $migStmt = $this->conn->prepare("UPDATE abandoned_cart_settings SET setting_value = ? WHERE setting_key = ? AND setting_value = ?");
+            if ($migStmt) {
+                foreach ($templateMigrations as $key => $oldToNew) {
+                    foreach ($oldToNew as $oldVal => $newVal) {
+                        $migStmt->bind_param("sss", $newVal, $key, $oldVal);
+                        $migStmt->execute();
+                    }
+                }
+                $migStmt->close();
+            }
 
         } catch (\Throwable $e) {
             error_log('[AbandonedCartRepository] Table setup warning: ' . $e->getMessage());
@@ -338,6 +360,8 @@ class AbandonedCartRepository {
             $stmt->bind_param("i", $delayMinutes);
         } else {
             $prevCol = "reminder_" . ($level - 1) . "_sent";
+            // Correct logic: wait delayMinutes SINCE the previous reminder was sent.
+            // This prevents R2/R3/R4 from firing immediately for old carts right after R1 is sent.
             $sql = "SELECT ac.*,
                            COALESCE(NULLIF(ac.customer_name, ''), u.name)  AS customer_name,
                            COALESCE(NULLIF(ac.customer_phone, ''), u.phone) AS customer_phone,
@@ -347,14 +371,13 @@ class AbandonedCartRepository {
                     WHERE ac.status = 'active'
                       AND ac.{$col} IS NULL
                       AND ac.{$prevCol} IS NOT NULL
-                      AND ac.{$prevCol} <= DATE_SUB(NOW(), INTERVAL 1 MINUTE)
-                      AND (ac.created_at <= DATE_SUB(NOW(), INTERVAL ? MINUTE) OR ac.{$prevCol} <= DATE_SUB(NOW(), INTERVAL ? MINUTE))
+                      AND ac.{$prevCol} <= DATE_SUB(NOW(), INTERVAL ? MINUTE)
                     ORDER BY ac.created_at ASC
                     LIMIT 50";
 
             $stmt = $this->conn->prepare($sql);
             if (!$stmt) return [];
-            $stmt->bind_param("ii", $delayMinutes, $delayMinutes);
+            $stmt->bind_param("i", $delayMinutes);
         }
 
         $stmt->execute();
