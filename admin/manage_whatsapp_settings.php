@@ -876,8 +876,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const adminTestResult   = document.getElementById('adminTestResult');
 
     btnQuickTestAdmin?.addEventListener('click', function() {
-        const adminPhoneInput = document.querySelector('input[name="admin_whatsapp_number"]') || document.querySelector('.phone-hidden-final');
-        let rawNumber = adminPhoneInput ? adminPhoneInput.value : '';
+        const adminGroup = document.querySelector('input[name="admin_whatsapp_number"]')?.closest('.phone-group');
+        const mainInput = adminGroup?.querySelector('.phone-main-input');
+        const codeSelect = adminGroup?.querySelector('.country-code-select');
+        let rawNumber = mainInput ? ((codeSelect ? codeSelect.value : '+91') + ' ' + mainInput.value.trim()) : (document.querySelector('input[name="admin_whatsapp_number"]')?.value || '');
         
         if (!rawNumber || rawNumber.replace(/\D/g, '').length < 10) {
             alert('Please enter a valid Admin WhatsApp Number (at least 10 digits) before testing.');

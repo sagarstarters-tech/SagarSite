@@ -16,13 +16,20 @@ function normalize_whatsapp_phone_number($phone) {
     if (strlen($digits) == 14 && substr($digits, 0, 4) === '9191') {
         $digits = substr($digits, 2);
     }
+    // If standard 10 digits Indian mobile, prepend 91
+    if (strlen($digits) == 10) {
+        return '91' . $digits;
+    }
     // If 12 digits starting with 91, return it
     if (strlen($digits) == 12 && substr($digits, 0, 2) === '91') {
         return $digits;
     }
-    // If standard 10 digits Indian mobile, prepend 91
-    if (strlen($digits) == 10) {
-        return '91' . $digits;
+    // For any Indian mobile number of 10+ digits, safely extract the 10-digit number
+    if (strlen($digits) >= 10) {
+        $last10 = substr($digits, -10);
+        if (in_array($last10[0], ['6', '7', '8', '9'])) {
+            return '91' . $last10;
+        }
     }
     return $digits;
 }
@@ -1150,7 +1157,7 @@ function sendAdminOrderNotification($conn, $order_id) {
                    u.name AS customer_name, u.phone AS customer_phone, u.email AS customer_email,
                    u.address AS customer_address, u.city AS customer_city, u.state AS customer_state, u.zip_code AS customer_zip
             FROM orders o 
-            JOIN users u ON o.user_id = u.id 
+            LEFT JOIN users u ON o.user_id = u.id 
             WHERE o.id = $order_id
         ");
 
@@ -1384,14 +1391,18 @@ function sendAdminOrderNotification($conn, $order_id) {
             };
 
             // List of candidate template names to try in order of relevance:
-            // Candidate template names: only try the configured admin template
-            $tpl_names_to_try = array_unique(array_filter([$admin_tpl_name]));
+            $tpl_names_to_try = array_unique(array_filter([
+                $admin_tpl_name,
+                'order_confirmation',
+                'new_order_status',
+                'admin_new_order_alert'
+            ]));
 
             // Build smart candidate payload variations
             foreach ($tpl_names_to_try as $current_tpl_name) {
                 // Determine best parameter priority for current template
-                if (stripos($current_tpl_name, 'confirm') !== false) {
-                    $try_param_sets = [$params_9, $params_11, $params_4, $params_5];
+                if (stripos($current_tpl_name, 'confirm') !== false || stripos($current_tpl_name, 'alert') !== false || stripos($current_tpl_name, 'sagar') !== false) {
+                    $try_param_sets = [$params_9, $params_11, $params_5, $params_4];
                 } elseif ($current_tpl_name === 'new_order_status') {
                     $try_param_sets = [$params_5, $params_6, $params_4];
                 } elseif ($current_tpl_name === 'order_status_update') {
@@ -1399,7 +1410,7 @@ function sendAdminOrderNotification($conn, $order_id) {
                 } elseif (stripos($current_tpl_name, 'status') !== false || stripos($current_tpl_name, 'update') !== false) {
                     $try_param_sets = [$params_10, $params_5, $params_6];
                 } else {
-                    $try_param_sets = [$params_11, $params_9, $params_5, $params_4];
+                    $try_param_sets = [$params_9, $params_11, $params_5, $params_4];
                 }
 
                 $languages_to_try = array_unique([$lang_code, ($lang_code === 'en' ? 'en_US' : 'en')]);
