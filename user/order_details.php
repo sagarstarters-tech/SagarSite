@@ -65,6 +65,98 @@ $timeline = $trackingData['timeline'];
 
 $stages = ['Pending', 'Processing', 'Shipped', 'Out for Delivery', 'Delivered'];
 $stageIndex = $info['progress_stage_index'];
+
+// Handle Customer Order Cancellation
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'cancel_order') {
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+        $_SESSION['error'] = "Security validation failed. Please try again.";
+        header("Location: order_details.php?id=" . $order_id);
+        exit;
+    }
+
+    // Strict state check: Order can ONLY be cancelled while status is Pending
+    if (strtolower((string)($order['status'] ?? '')) !== 'pending') {
+        $_SESSION['error'] = "This order cannot be cancelled because its current status is '" . ucfirst((string)$order['status']) . "'. Only pending orders can be cancelled.";
+        header("Location: order_details.php?id=" . $order_id);
+        exit;
+    }
+
+    $reason_choice = trim($_POST['cancel_reason'] ?? '');
+    $reason_notes  = trim($_POST['cancel_notes'] ?? '');
+    $final_reason  = $reason_choice;
+    if (!empty($reason_notes)) {
+        $final_reason .= ($final_reason ? " - " : "") . $reason_notes;
+    }
+    if (empty($final_reason)) {
+        $final_reason = "Order cancelled by customer.";
+    } else {
+        $final_reason = "Order cancelled by customer: " . $final_reason;
+    }
+
+    // Atomic update status to cancelled only if still pending
+    $cancel_stmt = $conn->prepare("UPDATE orders SET status = 'cancelled' WHERE id = ? AND user_id = ? AND status = 'pending'");
+    $cancel_stmt->bind_param("ii", $order_id, $user_id);
+
+    if ($cancel_stmt->execute() && $cancel_stmt->affected_rows > 0) {
+        $cancel_stmt->close();
+
+        // 1. Log in tracking status history
+        try {
+            $trackingRepo->logStatusChange($order_id, 'cancelled', $final_reason, 'customer');
+        } catch (\Throwable $e) {}
+
+        // 2. Safely restore product stock
+        try {
+            $items_stmt = $conn->prepare("SELECT product_id, quantity FROM order_items WHERE order_id = ?");
+            $items_stmt->bind_param("i", $order_id);
+            $items_stmt->execute();
+            $items_res = $items_stmt->get_result();
+            $restore_stmt = $conn->prepare("UPDATE products SET stock = stock + ? WHERE id = ?");
+            while ($row = $items_res->fetch_assoc()) {
+                $p_id = (int)$row['product_id'];
+                $p_qty = (int)$row['quantity'];
+                if ($p_id > 0 && $p_qty > 0) {
+                    $restore_stmt->bind_param("ii", $p_qty, $p_id);
+                    $restore_stmt->execute();
+                }
+            }
+            $restore_stmt->close();
+            $items_stmt->close();
+        } catch (\Throwable $e) {}
+
+        // 3. Email notification
+        try {
+            require_once __DIR__ . '/../includes/mail_functions.php';
+            $u_stmt = $conn->prepare("SELECT email, name FROM users WHERE id = ?");
+            $u_stmt->bind_param("i", $user_id);
+            $u_stmt->execute();
+            $u_res = $u_stmt->get_result();
+            if ($u_res && $u_res->num_rows > 0) {
+                $user_info = $u_res->fetch_assoc();
+                if (function_exists('sendOrderStatusEmail')) {
+                    sendOrderStatusEmail($conn, $order_id, $user_info['email'], $user_info['name'], 'cancelled');
+                }
+            }
+            $u_stmt->close();
+        } catch (\Throwable $e) {}
+
+        // 4. WhatsApp notification
+        try {
+            require_once __DIR__ . '/../includes/whatsapp_functions.php';
+            if (function_exists('sendCustomerOrderStatusWhatsApp')) {
+                sendCustomerOrderStatusWhatsApp($conn, $order_id);
+            }
+        } catch (\Throwable $e) {}
+
+        $_SESSION['success'] = "Order #{$order_id} has been cancelled successfully.";
+    } else {
+        if (isset($cancel_stmt)) $cancel_stmt->close();
+        $_SESSION['error'] = "Unable to cancel order. It may have already been updated or processed.";
+    }
+
+    header("Location: order_details.php?id=" . $order_id);
+    exit;
+}
 ?>
 
 <style>
@@ -87,14 +179,38 @@ $stageIndex = $info['progress_stage_index'];
 </style>
 
 <div class="container my-5 pt-3">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <?php if(isset($_SESSION['error'])): ?>
+        <div class="alert alert-danger alert-dismissible fade show rounded-4 mb-4 shadow-sm" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i><?php echo htmlspecialchars($_SESSION['error']); unset($_SESSION['error']); ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <?php endif; ?>
+    <?php if(isset($_SESSION['success'])): ?>
+        <div class="alert alert-success alert-dismissible fade show rounded-4 mb-4 shadow-sm" role="alert">
+            <i class="fas fa-check-circle me-2"></i><?php echo htmlspecialchars($_SESSION['success']); unset($_SESSION['success']); ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <?php endif; ?>
+
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
             <h2 class="montserrat fw-bold primary-blue mb-0">Order Details</h2>
-            <p class="text-muted">Order #<?php echo $order_id; ?> &bull; Placed on <?php echo date('M d, Y', strtotime($order['created_at'])); ?></p>
+            <p class="text-muted mb-0">Order #<?php echo $order_id; ?> &bull; Placed on <?php echo date('M d, Y', strtotime($order['created_at'])); ?></p>
         </div>
-        <a href="orders.php" class="btn btn-outline-primary btn-custom rounded-pill px-4">
-            <i class="fas fa-arrow-left me-2"></i>Back to Orders
-        </a>
+        <div class="d-flex align-items-center gap-2">
+            <?php if (strtolower((string)($order['status'] ?? '')) === 'pending'): ?>
+                <button type="button" class="btn btn-outline-danger btn-custom rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#cancelOrderModal">
+                    <i class="fas fa-times-circle me-2"></i>Cancel Order
+                </button>
+            <?php elseif (strtolower((string)($order['status'] ?? '')) === 'cancelled'): ?>
+                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger rounded-pill px-3 py-2 fw-semibold">
+                    <i class="fas fa-times-circle me-1"></i> Order Cancelled
+                </span>
+            <?php endif; ?>
+            <a href="orders.php" class="btn btn-outline-primary btn-custom rounded-pill px-4">
+                <i class="fas fa-arrow-left me-2"></i>Back to Orders
+            </a>
+        </div>
     </div>
 
     <div class="row">
@@ -324,7 +440,53 @@ $stageIndex = $info['progress_stage_index'];
                 <a href="../contact.php" class="btn btn-light btn-custom rounded-pill w-100 fw-bold">Contact Support</a>
             </div>
         </div>
+    </div>
 </div>
+
+<?php if (strtolower((string)($order['status'] ?? '')) === 'pending'): ?>
+<!-- Cancel Order Modal -->
+<div class="modal fade" id="cancelOrderModal" tabindex="-1" aria-labelledby="cancelOrderModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-danger" id="cancelOrderModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Cancel Order #<?php echo $order_id; ?>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="order_details.php?id=<?php echo $order_id; ?>">
+                <?php echo csrf_field(); ?>
+                <input type="hidden" name="action" value="cancel_order">
+                <div class="modal-body py-3">
+                    <p class="text-muted mb-3">Are you sure you want to cancel this order? This action cannot be undone and reserved items will be released.</p>
+                    <div class="mb-3">
+                        <label for="cancel_reason_select" class="form-label fw-semibold small text-muted">Reason for cancellation (Optional):</label>
+                        <select class="form-select rounded-3 mb-2" name="cancel_reason" id="cancel_reason_select">
+                            <option value="">-- Select a reason --</option>
+                            <option value="Ordered by mistake">Ordered by mistake</option>
+                            <option value="Found a better price elsewhere">Found a better price elsewhere</option>
+                            <option value="Need to change shipping address or phone">Need to change shipping address or phone</option>
+                            <option value="Delivery time is too long">Delivery time is too long</option>
+                            <option value="Change of mind">Change of mind</option>
+                            <option value="Other reason">Other reason</option>
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label for="cancel_notes_input" class="form-label fw-semibold small text-muted">Additional Comments (Optional):</label>
+                        <textarea class="form-control rounded-3" name="cancel_notes" id="cancel_notes_input" rows="2" placeholder="Tell us why you are cancelling..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Keep Order</button>
+                    <button type="submit" class="btn btn-danger rounded-pill px-4">
+                        <i class="fas fa-times-circle me-1"></i> Yes, Cancel Order
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {

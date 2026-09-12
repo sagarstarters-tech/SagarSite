@@ -62,6 +62,8 @@ $orders = $stmt->get_result();
                                                 <span class="badge bg-info px-2 py-1">Shipped</span>
                                             <?php elseif($o['status'] == 'delivered'): ?>
                                                 <span class="badge bg-success px-2 py-1">Delivered</span>
+                                            <?php elseif($o['status'] == 'cancelled'): ?>
+                                                <span class="badge bg-danger px-2 py-1">Cancelled</span>
                                             <?php else: ?>
                                                 <span class="badge bg-secondary px-2 py-1"><?php echo ucfirst($o['status']); ?></span>
                                             <?php endif; ?>

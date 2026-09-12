@@ -24,13 +24,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    // Fetch current user phone to check if phone actually changed
+    $curr_phone_stmt = $conn->prepare("SELECT phone FROM users WHERE id = ?");
+    $curr_phone_stmt->bind_param("i", $user_id);
+    $curr_phone_stmt->execute();
+    $curr_phone_row = $curr_phone_stmt->get_result()->fetch_assoc();
+    $curr_phone_stmt->close();
+    $current_phone = trim($curr_phone_row['phone'] ?? '');
+
     $phone_raw = trim($_POST['phone'] ?? '');
     $phone = $phone_raw;
-    $phone_clean = str_replace([' ', '-', '(', ')', '+'], '', $phone_raw);
 
-    if (strlen($phone_clean) > 5) {
-        $stmt_check = $conn->prepare("SELECT id FROM users WHERE REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '(', ''), ')', ''), '+', '')=? AND id != ?");
-        $stmt_check->bind_param("si", $phone_clean, $user_id);
+    // Digits-only representation
+    $digits_submitted = preg_replace('/\D+/', '', $phone_raw);
+    $digits_current   = preg_replace('/\D+/', '', $current_phone);
+
+    // Core 10-digit check (to match with or without +91 / 0)
+    $core_submitted = strlen($digits_submitted) >= 10 ? substr($digits_submitted, -10) : $digits_submitted;
+    $core_current   = strlen($digits_current) >= 10 ? substr($digits_current, -10) : $digits_current;
+
+    // Check if phone number was actually changed by the user
+    $is_same_phone = false;
+    if (!empty($core_submitted) && !empty($core_current)) {
+        if ($core_submitted === $core_current || $digits_submitted === $digits_current) {
+            $is_same_phone = true;
+        }
+    } elseif (empty($digits_submitted) && empty($digits_current)) {
+        $is_same_phone = true;
+    }
+
+    // Only check duplicates if user actually entered a NEW/DIFFERENT phone number
+    if (!$is_same_phone && strlen($digits_submitted) > 5) {
+        $stmt_check = $conn->prepare("SELECT id FROM users WHERE (RIGHT(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '(', ''), ')', ''), '+', ''), 10) = ? OR REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '(', ''), ')', ''), '+', '') = ?) AND id != ?");
+        $stmt_check->bind_param("ssi", $core_submitted, $digits_submitted, $user_id);
         $stmt_check->execute();
         $check_res = $stmt_check->get_result();
         if ($check_res->num_rows > 0) {
