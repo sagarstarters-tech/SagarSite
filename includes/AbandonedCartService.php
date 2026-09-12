@@ -773,9 +773,14 @@ class AbandonedCartService {
                 $pTokenOnly = $cart['recovery_token'];
             }
 
-            $headerImgUrl = !empty($waSettings['wa_header_image_url']) 
-                ? $waSettings['wa_header_image_url'] 
-                : 'https://sagarstarters.com/assets/images/auth_banner.jpg';
+            $headerImgUrl = !empty($waSettings['wa_header_image_url'])
+                ? $waSettings['wa_header_image_url']
+                : 'https://www.sagarstarters.com/assets/images/auth_banner.jpg';
+
+            // Also prepare a "no header" variant — some templates have optional headers.
+            // If the image URL is unreachable by Meta's CDN, the message silently fails even though
+            // a wamid is returned. Trying without header component avoids this issue.
+            $hasCustomHeaderImg = !empty($waSettings['wa_header_image_url']);
 
             // Language candidates
             $detectedLang = !empty($tplMeta['language']) ? trim($tplMeta['language']) : null;
@@ -846,6 +851,21 @@ class AbandonedCartService {
                         'button_index' => $buttonUrlIndex,
                         'button_val'   => $pTokenOnly
                     ];
+
+                    // If template has an image header, also try WITHOUT the header component.
+                    // Reason: if Meta's CDN can't fetch the image URL, it silently returns a wamid
+                    // but never delivers the message. Trying without header bypasses this issue.
+                    if ($headerImageParam) {
+                        $tplCandidates[] = [
+                            'name'         => $abandonTemplate,
+                            'lang'         => $lCode,
+                            'params'       => $liveParams,
+                            'header_img'   => false,
+                            'header_text'  => false,
+                            'button_index' => $buttonUrlIndex,
+                            'button_val'   => $pTokenOnly
+                        ];
+                    }
 
                     if ($buttonUrlIndex !== null) {
                         // Candidate with full recovery link in button
@@ -1024,6 +1044,7 @@ class AbandonedCartService {
                 $btnFlag = ($cand['button_index'] !== null) ? '+btn' : '';
                 $hdrFlag = !empty($cand['header_img']) ? '+img' : (!empty($cand['header_text']) ? '+hdr' : '');
                 $logLine = '[' . date('Y-m-d H:i:s') . "] Cart#{$cartId} Try: [{$cand['name']}:{$cand['lang']}|{$pCount}p{$hdrFlag}{$btnFlag}] HTTP:{$codeTry} Res: " . substr($resTry, 0, 160) . PHP_EOL;
+                $logLine .= '  PAYLOAD: ' . json_encode($tplPayload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . PHP_EOL;
                 @file_put_contents($logDir . '/cart_abandonment_whatsapp.log', $logLine, FILE_APPEND);
 
                 if ($codeTry == 200 && !empty($respTry['messages'][0]['id']) && empty($respTry['error'])) {

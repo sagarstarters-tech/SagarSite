@@ -160,10 +160,10 @@ if ($ws && $ws->num_rows > 0) {
         $t_code = curl_getinfo($chT, CURLINFO_HTTP_CODE);
         curl_close($chT);
         $t_json = json_decode($t_res, true);
-        echo PHP_EOL . "=== EXACT JSON FOR REMINDER TEMPLATES ===" . PHP_EOL;
+        echo PHP_EOL . "=== EXACT JSON FOR CART/REMINDER TEMPLATES ===" . PHP_EOL;
         if (!empty($t_json['data'])) {
             foreach ($t_json['data'] as $tpl) {
-                if (strpos($tpl['name'], 'reminder') !== false) {
+                if (strpos($tpl['name'], 'reminder') !== false || strpos($tpl['name'], 'cart') !== false) {
                     echo json_encode($tpl, JSON_PRETTY_PRINT) . PHP_EOL;
                 }
             }
@@ -218,10 +218,10 @@ echo PHP_EOL;
 // Check recent wa logs
 echo "=== RECENT ABANDONED CART WA LOGS ===" . PHP_EOL;
 try {
-    $resLogs = $conn->query("SELECT * FROM abandoned_cart_wa_logs ORDER BY id DESC LIMIT 5");
+    $resLogs = $conn->query("SELECT * FROM abandoned_cart_wa_logs ORDER BY id DESC LIMIT 10");
     if ($resLogs && $resLogs->num_rows > 0) {
         while ($l = $resLogs->fetch_assoc()) {
-            echo "  [{$l['created_at']}] Cart#{$l['cart_id']} Phone:{$l['phone']} Status: {$l['status']}" . PHP_EOL;
+            echo "  [{$l['created_at']}] Cart#{$l['cart_id']} Phone:{$l['customer_number']} Status: {$l['status']}" . PHP_EOL;
         }
     } else {
         echo "  (No logs in abandoned_cart_wa_logs)" . PHP_EOL;
