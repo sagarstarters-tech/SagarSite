@@ -143,13 +143,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } catch (\Throwable $e) {}
         }
         $_SESSION['success'] = "Profile updated successfully.";
+        $stmt->close();
+        header("Location: ../index.php");
+        exit;
     } else {
         $_SESSION['error'] = "Failed to update profile: " . $conn->error;
+        $stmt->close();
+        header("Location: profile.php");
+        exit;
     }
-    $stmt->close();
-
-    header("Location: profile.php");
-    exit;
 }
 
 // ── Fetch fresh user record for display ──
