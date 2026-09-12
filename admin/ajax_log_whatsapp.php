@@ -339,6 +339,12 @@ if ($sending_mode === 'api') {
     $post_tpl_type = trim($_POST['template_type'] ?? '');
     if ($is_admin_test) {
         $meta_template_name = isset($_GET['admin_template_name']) ? trim($_GET['admin_template_name']) : trim($settings['admin_template_name'] ?? '');
+        if (empty($meta_template_name)) {
+            $meta_template_name = trim($settings['order_confirmation_template_name'] ?? '');
+            if (empty($meta_template_name)) {
+                $meta_template_name = 'order_confirmation';
+            }
+        }
     } elseif ($is_order_confirm_test || $post_tpl_type === 'confirmation') {
         $meta_template_name = isset($_POST['template_name']) ? trim($_POST['template_name']) : (isset($_GET['template_name']) ? trim($_GET['template_name']) : trim($settings['order_confirmation_template_name'] ?? ''));
     } else {

@@ -1263,6 +1263,12 @@ function sendAdminOrderNotification($conn, $order_id) {
         };
 
         $admin_tpl_name = trim($settings['admin_template_name'] ?? '');
+        if (empty($admin_tpl_name)) {
+            $admin_tpl_name = trim($settings['order_confirmation_template_name'] ?? '');
+            if (empty($admin_tpl_name)) {
+                $admin_tpl_name = 'order_confirmation';
+            }
+        }
 
         $header_image_url = trim($settings['wa_header_image_url'] ?? '');
         $lang_code = trim($settings['meta_template_lang'] ?? 'en');

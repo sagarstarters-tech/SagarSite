@@ -430,7 +430,7 @@ $logs = $conn->query($logs_query);
                                 <i class="fas fa-times me-1"></i> Clear / Empty (Use Fallback Template)
                             </button>
                         </div>
-                        <div class="form-text small mt-1">Meta WhatsApp Manager me approved template ka exact name. Agar is field ko <strong>khali (empty)</strong> chhod diya jaye, to niche diya gaya <strong>Bridge & Fallback Message Template</strong> work karega.</div>
+                        <div class="form-text small mt-1"><i class="fas fa-info-circle text-primary me-1"></i><strong>24/7 Delivery Logic:</strong> WhatsApp API me bina "HI" likhe 24/7 alert receive hone ke liye Meta Approved Template zaroori hota hai. Agar aap yahan khali chhodte hain, to system automatically <strong>order_confirmation</strong> template use karke 24/7 alert deliver karega bina kisi "HI" ke.</div>
                     </div>
 
                     <!-- ADMIN BRIDGE & FALLBACK MESSAGE TEMPLATE -->
