@@ -219,9 +219,6 @@ $statusBadges = [
                 <span class="small text-dark">Freshly scheduled & on-time posts publish automatically in the background. 🛡️ <em>Anti-Backlog Guard</em> blocks old expired posts (>30m) from mass auto-firing.</span>
             </div>
             <div class="d-flex align-items-center gap-2">
-                <button class="btn btn-sm btn-primary rounded-pill px-3 fw-bold" id="btnManualProcessQueue" type="button">
-                    <i class="fas fa-paper-plane me-1"></i> Process Due Posts Now
-                </button>
                 <button class="btn btn-sm btn-outline-success rounded-pill px-3" type="button" data-mdb-toggle="collapse" data-bs-toggle="collapse" data-mdb-target="#hostingerCronInfo" data-bs-target="#hostingerCronInfo" aria-expanded="false">
                     <i class="fas fa-clock me-1"></i> Hostinger Cron Guide
                 </button>

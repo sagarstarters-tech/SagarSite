@@ -563,7 +563,6 @@ button.ac-btn-refresh:active {
 
             <form id="settingsForm">
                 <?php if (function_exists('csrf_input')) echo csrf_input(); ?>
-                <input type="hidden" name="meta_template_lang" id="metaTplLang" value="<?php echo htmlspecialchars($settings['meta_template_lang'] ?? 'en'); ?>">
 
                 <div class="form-check form-switch p-3 bg-light rounded-3 mb-4 d-flex align-items-center justify-content-between">
                     <div>
