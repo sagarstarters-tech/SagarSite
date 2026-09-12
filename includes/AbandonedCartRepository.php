@@ -139,13 +139,27 @@ class AbandonedCartRepository {
 
             // ── One-time migration: update old default template names to actual Meta names ──
             // Only updates rows that still have the original incorrect default values.
-            // Custom template names configured by the admin are NOT affected.
+            // Handles both single-underscore (reminder_1_gentle_nudge) and
+            // double-underscore (reminder_1__gentle_nudge) variants found in the DB.
             $templateMigrations = [
-                'meta_template_1' => ['reminder_1_gentle_nudge' => 'cart_reminder_01'],
-                'meta_template_2' => ['reminder_2_follow_up'    => 'cart_reminder_02'],
-                'meta_template_3' => ['reminder_3_urgency'      => 'cart_reminder_03'],
-                'meta_template_4' => ['reminder_4_coupon_discount' => 'cart_reminder_04',
-                                      'reminder_4_coupon_discou'   => 'cart_reminder_04'],
+                'meta_template_1' => [
+                    'reminder_1_gentle_nudge'  => 'cart_reminder_01',
+                    'reminder_1__gentle_nudge' => 'cart_reminder_01',  // double underscore variant
+                ],
+                'meta_template_2' => [
+                    'reminder_2_follow_up'     => 'cart_reminder_02',
+                    'reminder_2__follow_up'    => 'cart_reminder_02',
+                ],
+                'meta_template_3' => [
+                    'reminder_3_urgency'       => 'cart_reminder_03',
+                    'reminder_3__urgency'      => 'cart_reminder_03',
+                ],
+                'meta_template_4' => [
+                    'reminder_4_coupon_discount' => 'cart_reminder_04',
+                    'reminder_4_coupon_discou'   => 'cart_reminder_04',
+                    'reminder_4__coupon_discount' => 'cart_reminder_04',
+                    'reminder_4__coupon_discou'   => 'cart_reminder_04',
+                ],
                 'meta_template_lang' => ['en_US' => 'en'],
             ];
             $migStmt = $this->conn->prepare("UPDATE abandoned_cart_settings SET setting_value = ? WHERE setting_key = ? AND setting_value = ?");
@@ -157,6 +171,23 @@ class AbandonedCartRepository {
                     }
                 }
                 $migStmt->close();
+            }
+
+            // ── Catch-all: any meta_template_X still using old 'reminder_*' naming ──
+            // Covers any custom typos or unknown variants not listed above.
+            $catchAllMap = [
+                'meta_template_1' => 'cart_reminder_01',
+                'meta_template_2' => 'cart_reminder_02',
+                'meta_template_3' => 'cart_reminder_03',
+                'meta_template_4' => 'cart_reminder_04',
+            ];
+            $catchStmt = $this->conn->prepare("UPDATE abandoned_cart_settings SET setting_value = ? WHERE setting_key = ? AND setting_value LIKE 'reminder_%' AND setting_value NOT LIKE 'cart_%'");
+            if ($catchStmt) {
+                foreach ($catchAllMap as $key => $newVal) {
+                    $catchStmt->bind_param("ss", $newVal, $key);
+                    $catchStmt->execute();
+                }
+                $catchStmt->close();
             }
 
         } catch (\Throwable $e) {
