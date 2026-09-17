@@ -769,18 +769,41 @@ class AbandonedCartService {
             if (preg_match('/token=([^&]+)/', $pRecLink, $tm)) {
                 $pTokenOnly = urldecode($tm[1]);
             }
-            if (empty($pTokenOnly) && !empty($cart['recovery_token'])) {
-                $pTokenOnly = $cart['recovery_token'];
-            }
+            // Note: $cart is not in scope here (this is a private helper method).
+            // $pTokenOnly is reliably extracted from $pRecLink above.
 
             $headerImgUrl = !empty($waSettings['wa_header_image_url'])
                 ? $waSettings['wa_header_image_url']
                 : 'https://www.sagarstarters.com/assets/images/auth_banner.jpg';
 
-            // Also prepare a "no header" variant — some templates have optional headers.
-            // If the image URL is unreachable by Meta's CDN, the message silently fails even though
-            // a wamid is returned. Trying without header component avoids this issue.
-            $hasCustomHeaderImg = !empty($waSettings['wa_header_image_url']);
+            // ── Pre-flight image reachability check ─────────────────────────────────
+            // CRITICAL: Meta silently returns a wamid even when the header image URL is
+            // unreachable by their CDN servers, causing messages to be accepted but NEVER
+            // delivered to the customer. We verify the URL is publicly accessible first.
+            $headerImgReachable = false;
+            if ($headerImageParam && !empty($headerImgUrl)) {
+                $chImg = curl_init($headerImgUrl);
+                curl_setopt_array($chImg, [
+                    CURLOPT_NOBODY         => true,
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_TIMEOUT        => 5,
+                    CURLOPT_SSL_VERIFYPEER => false,
+                    CURLOPT_SSL_VERIFYHOST => 0,
+                    CURLOPT_FOLLOWLOCATION => true,
+                    CURLOPT_MAXREDIRS      => 3,
+                    CURLOPT_USERAGENT      => 'facebookexternalhit/1.1',
+                ]);
+                curl_exec($chImg);
+                $imgHttpCode = curl_getinfo($chImg, CURLINFO_HTTP_CODE);
+                curl_close($chImg);
+                $headerImgReachable = ($imgHttpCode >= 200 && $imgHttpCode < 400);
+                if (!$headerImgReachable) {
+                    error_log("[AbandonedCart] Header image URL not publicly reachable (HTTP {$imgHttpCode}): {$headerImgUrl} — skipping image header to prevent silent delivery failure.");
+                }
+            }
+
+            // $hasCustomHeaderImg is true only if the image is actually reachable
+            $hasCustomHeaderImg = $headerImageParam && $headerImgReachable;
 
             // Language candidates
             $detectedLang = !empty($tplMeta['language']) ? trim($tplMeta['language']) : null;
@@ -841,40 +864,63 @@ class AbandonedCartService {
                 }
 
                 foreach ($langCandidates as $lCode) {
-                    // Standard live candidate (with button if dynamic)
-                    $tplCandidates[] = [
+                    // ── IMPORTANT: "No image header" candidates are added FIRST ──────────────
+                    // Meta silently accepts messages with unreachable image URLs (returns wamid)
+                    // but never delivers them. By trying WITHOUT the image header first, we
+                    // ensure delivery even when the image host is slow or inaccessible.
+                    // If the image IS confirmed reachable ($hasCustomHeaderImg), the with-image
+                    // candidate is prepended so it goes first instead.
+
+                    // Candidate WITHOUT image header (always included; tried first unless image is verified reachable)
+                    $candidateNoImg = [
                         'name'         => $abandonTemplate,
                         'lang'         => $lCode,
                         'params'       => $liveParams,
-                        'header_img'   => $headerImageParam,
+                        'header_img'   => false,
                         'header_text'  => $headerTextParam,
                         'button_index' => $buttonUrlIndex,
                         'button_val'   => $pTokenOnly
                     ];
 
-                    // If template has an image header, also try WITHOUT the header component.
-                    // Reason: if Meta's CDN can't fetch the image URL, it silently returns a wamid
-                    // but never delivers the message. Trying without header bypasses this issue.
                     if ($headerImageParam) {
+                        if ($hasCustomHeaderImg) {
+                            // Image is verified reachable — try WITH image first, then without as fallback
+                            $tplCandidates[] = [
+                                'name'         => $abandonTemplate,
+                                'lang'         => $lCode,
+                                'params'       => $liveParams,
+                                'header_img'   => true,
+                                'header_text'  => $headerTextParam,
+                                'button_index' => $buttonUrlIndex,
+                                'button_val'   => $pTokenOnly
+                            ];
+                            $tplCandidates[] = $candidateNoImg;
+                        } else {
+                            // Image is NOT reachable or not custom — skip image header entirely
+                            // to avoid silent delivery failure from Meta CDN image fetch
+                            $tplCandidates[] = $candidateNoImg;
+                        }
+                    } else {
+                        // Template has no image header — use standard candidate
                         $tplCandidates[] = [
                             'name'         => $abandonTemplate,
                             'lang'         => $lCode,
                             'params'       => $liveParams,
                             'header_img'   => false,
-                            'header_text'  => false,
+                            'header_text'  => $headerTextParam,
                             'button_index' => $buttonUrlIndex,
                             'button_val'   => $pTokenOnly
                         ];
                     }
 
                     if ($buttonUrlIndex !== null) {
-                        // Candidate with full recovery link in button
+                        // Additional: candidate with full recovery link in button (instead of token-only)
                         if (!empty($pRecLink)) {
                             $tplCandidates[] = [
                                 'name'         => $abandonTemplate,
                                 'lang'         => $lCode,
                                 'params'       => $liveParams,
-                                'header_img'   => $headerImageParam,
+                                'header_img'   => $hasCustomHeaderImg,
                                 'header_text'  => $headerTextParam,
                                 'button_index' => $buttonUrlIndex,
                                 'button_val'   => $pRecLink
@@ -885,7 +931,7 @@ class AbandonedCartService {
                             'name'         => $abandonTemplate,
                             'lang'         => $lCode,
                             'params'       => $liveParams,
-                            'header_img'   => $headerImageParam,
+                            'header_img'   => $hasCustomHeaderImg,
                             'header_text'  => $headerTextParam,
                             'button_index' => null
                         ];
