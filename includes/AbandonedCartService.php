@@ -772,17 +772,22 @@ class AbandonedCartService {
             // Note: $cart is not in scope here (this is a private helper method).
             // $pTokenOnly is reliably extracted from $pRecLink above.
 
-            $headerImgUrl = !empty($waSettings['wa_header_image_url'])
-                ? $waSettings['wa_header_image_url']
-                : 'https://www.sagarstarters.com/assets/images/auth_banner.jpg';
+            // ── Image header logic ────────────────────────────────────────────────────
+            // CRITICAL: Only use a header image if the admin has EXPLICITLY configured one
+            // in WhatsApp Settings (wa_header_image_url field). The fallback auth_banner.jpg
+            // passes our local PHP HEAD check (200 from same server) but Meta's external CDN
+            // servers cannot reliably fetch it, causing SILENT delivery failure — Meta returns
+            // a valid wamid but the message is NEVER delivered to the customer.
+            //
+            // When no image is set: skip image header entirely.
+            // → If template requires it, Meta returns a clear API error (not silent failure).
+            // → If template works without it, message IS delivered.
+            $adminSetHeaderImgUrl = trim($waSettings['wa_header_image_url'] ?? '');
+            $headerImgReachable   = false;
 
-            // ── Pre-flight image reachability check ─────────────────────────────────
-            // CRITICAL: Meta silently returns a wamid even when the header image URL is
-            // unreachable by their CDN servers, causing messages to be accepted but NEVER
-            // delivered to the customer. We verify the URL is publicly accessible first.
-            $headerImgReachable = false;
-            if ($headerImageParam && !empty($headerImgUrl)) {
-                $chImg = curl_init($headerImgUrl);
+            if ($headerImageParam && !empty($adminSetHeaderImgUrl)) {
+                // Admin has configured a custom image URL — verify it's publicly reachable
+                $chImg = curl_init($adminSetHeaderImgUrl);
                 curl_setopt_array($chImg, [
                     CURLOPT_NOBODY         => true,
                     CURLOPT_RETURNTRANSFER => true,
@@ -797,12 +802,20 @@ class AbandonedCartService {
                 $imgHttpCode = curl_getinfo($chImg, CURLINFO_HTTP_CODE);
                 curl_close($chImg);
                 $headerImgReachable = ($imgHttpCode >= 200 && $imgHttpCode < 400);
+                $headerImgUrl = $adminSetHeaderImgUrl; // Use the admin-set URL
                 if (!$headerImgReachable) {
-                    error_log("[AbandonedCart] Header image URL not publicly reachable (HTTP {$imgHttpCode}): {$headerImgUrl} — skipping image header to prevent silent delivery failure.");
+                    error_log("[AbandonedCart] Custom header image URL not reachable (HTTP {$imgHttpCode}): {$adminSetHeaderImgUrl} — skipping image header.");
                 }
+            } else {
+                // No custom image URL configured — do NOT use any fallback image.
+                // Using a hardcoded fallback risks silent delivery failure from Meta CDN.
+                if ($headerImageParam) {
+                    error_log("[AbandonedCart] Template '{$abandonTemplate}' has IMAGE header but no 'Template Header Image' URL is set in WhatsApp Settings. Trying without image header (Meta will return explicit error if image is required).");
+                }
+                $headerImgUrl = ''; // Explicitly clear any fallback
             }
 
-            // $hasCustomHeaderImg is true only if the image is actually reachable
+            // $hasCustomHeaderImg: true only when we have a verified reachable image URL
             $hasCustomHeaderImg = $headerImageParam && $headerImgReachable;
 
             // Language candidates
@@ -1085,13 +1098,17 @@ class AbandonedCartService {
                 list($resTry, $codeTry, $errTry) = $ch_exec($tplPayload);
                 $respTry = json_decode($resTry, true);
 
-                // Log this specific attempt in real time
-                $pCount  = count($cand['params']);
+                // Log this specific attempt via error_log (guaranteed) + file (best-effort)
+                $pCount  = count($cand['params'] ?? []);
                 $btnFlag = ($cand['button_index'] !== null) ? '+btn' : '';
                 $hdrFlag = !empty($cand['header_img']) ? '+img' : (!empty($cand['header_text']) ? '+hdr' : '');
-                $logLine = '[' . date('Y-m-d H:i:s') . "] Cart#{$cartId} Try: [{$cand['name']}:{$cand['lang']}|{$pCount}p{$hdrFlag}{$btnFlag}] HTTP:{$codeTry} Res: " . substr($resTry, 0, 160) . PHP_EOL;
+                $logLine = '[' . date('Y-m-d H:i:s') . "] Cart#{$cartId} Try: [{$cand['name']}:{$cand['lang']}|{$pCount}p{$hdrFlag}{$btnFlag}] HTTP:{$codeTry} Res: " . substr((string)$resTry, 0, 160) . PHP_EOL;
                 $logLine .= '  PAYLOAD: ' . json_encode($tplPayload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . PHP_EOL;
-                @file_put_contents($logDir . '/cart_abandonment_whatsapp.log', $logLine, FILE_APPEND);
+                // Guaranteed log (error_log always works even with strict file permissions)
+                error_log("[AbandonedCart] Cart#{$cartId} Try [{$cand['name']}:{$cand['lang']}|{$pCount}p{$hdrFlag}{$btnFlag}] HTTP:{$codeTry} -> " . substr((string)$resTry, 0, 200));
+                // Best-effort file log
+                if (!is_dir($logDir)) @mkdir($logDir, 0755, true);
+                @file_put_contents($logDir . '/cart_abandonment_whatsapp.log', $logLine, FILE_APPEND | LOCK_EX);
 
                 if ($codeTry == 200 && !empty($respTry['messages'][0]['id']) && empty($respTry['error'])) {
                     $isMetaSuccess = true;
