@@ -28,13 +28,27 @@ if (!defined('DB_HOST')) {
 }
 
 // ── MySQLi Connection ────────────────────────────────────────
-$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
+// Wrapped in try-catch: Hostinger shared hosting intermittently throws
+// "Operation not permitted" as an exception (not just connect_error).
+// Without try-catch this causes a fatal error visible in error logs.
+try {
+    $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
+} catch (\Throwable $e) {
+    error_log('[DB] MySQLi connection exception: ' . $e->getMessage());
+    if (php_sapi_name() !== 'cli') {
+        http_response_code(503);
+        header('Retry-After: 30');
+        die('Service temporarily unavailable. Please try again in a moment.');
+    }
+    exit(1);
+}
 
 if ($conn->connect_error) {
     if (APP_ENV === 'production') {
         error_log('[DB] MySQLi connection failed: ' . $conn->connect_error);
-        http_response_code(500);
-        die('A database error occurred. Please try again later.');
+        http_response_code(503);
+        header('Retry-After: 30');
+        die('Service temporarily unavailable. Please try again in a moment.');
     }
     die('Database connection failed: ' . $conn->connect_error);
 }
