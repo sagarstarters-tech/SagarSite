@@ -22,11 +22,11 @@ echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
 $today = date('Y-m-d');
 
 // ── Static pages ─────────────────────────────────────────────
+// Note: /about.php and /contact.php excluded here to avoid duplicate content
+// with /page/about and /page/contact which are the canonical SEF URLs.
 $static_pages = [
     ['url' => '/', 'priority' => '1.0', 'changefreq' => 'daily'],
     ['url' => '/shop.php', 'priority' => '0.9', 'changefreq' => 'daily'],
-    ['url' => '/about.php', 'priority' => '0.7', 'changefreq' => 'monthly'],
-    ['url' => '/contact.php', 'priority' => '0.7', 'changefreq' => 'monthly'],
 ];
 
 foreach ($static_pages as $p) {
