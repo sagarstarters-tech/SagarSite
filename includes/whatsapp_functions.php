@@ -915,8 +915,11 @@ function sendCustomerOrderStatusWhatsApp($conn, $order_id) {
             };
 
             // Order candidates intelligently
+            // NOTE: 'customer_order_status' is the primary Utility template.
+            // 'new_order_status' kept as legacy fallback but may no longer exist on Meta.
             $tpl_names_to_try = array_unique(array_filter([
                 $meta_template_name,
+                'customer_order_status',
                 'new_order_status',
                 'order_status_update',
                 trim($settings['order_confirmation_template_name'] ?? ''),
@@ -926,7 +929,10 @@ function sendCustomerOrderStatusWhatsApp($conn, $order_id) {
 
             foreach ($tpl_names_to_try as $current_tpl_name) {
                 // Determine parameter sets to try for this template
-                if ($current_tpl_name === 'new_order_status') {
+                if ($current_tpl_name === 'customer_order_status') {
+                    // Utility template created Sep 2026 — try all status param sets
+                    $try_param_sets = [$params_5, $params_6, $params_10, $params_9, $params_4];
+                } elseif ($current_tpl_name === 'new_order_status') {
                     $try_param_sets = [$params_5, $params_6, $params_4];
                 } elseif ($current_tpl_name === 'order_status_update') {
                     $try_param_sets = [$params_6, $params_5, $params_10];
