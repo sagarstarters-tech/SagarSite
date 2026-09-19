@@ -222,7 +222,7 @@ RewriteRule ^track/([0-9]+)/([^/]+)/?$ track_order.php?order_id=$1&email=$2 [L,Q
     RewriteRule .* - [L]
 
     # Allow curl requests to /cron/ path (Hostinger cron jobs use curl)
-    RewriteCond %{REQUEST_URI} ^/cron/ [NC]
+    RewriteCond %{REQUEST_URI} (?:^|/)cron/ [NC]
     RewriteRule .* - [L]
 
     RewriteCond %{HTTP_USER_AGENT} (libwww-perl|wget|python|nikto|curl|scan|java|winhttp|clshttp|loader) [NC,OR]

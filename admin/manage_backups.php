@@ -43,7 +43,8 @@ if (isset($conn) && $conn instanceof mysqli) {
             ('auto_backup_frequency', 'weekly'),
             ('auto_backup_type', 'full'),
             ('max_backups_keep', '5'),
-            ('last_auto_backup', '0');");
+            ('last_auto_backup', '0'),
+            ('cron_secret_key', 'auto_backup_secure_key_2024');");
     } catch (\Throwable $e) {
         error_log('[Backup] Auto migration notice: ' . $e->getMessage());
     }
@@ -625,16 +626,74 @@ if (isset($conn) && $conn instanceof mysqli) {
                             <div class="form-text">Older backups will be auto-deleted to save storage.</div>
                         </div>
 
-                        <button class="btn btn-primary w-100 rounded-pill btn-custom" onclick="saveAutoSettings()" id="btnSaveSettings">
-                            <i class="fas fa-save me-2"></i>Save Auto Settings
-                        </button>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small text-uppercase text-muted">Cron Secret Key</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control font-monospace small" id="cronSecretKey" value="auto_backup_secure_key_2024">
+                                <button class="btn btn-outline-secondary" type="button" onclick="generateCronKey()" title="Generate Random Key"><i class="fas fa-random"></i></button>
+                            </div>
+                            <div class="form-text">Used to authenticate URL / cURL cron jobs.</div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary rounded-pill btn-custom" onclick="saveAutoSettings()" id="btnSaveSettings">
+                                <i class="fas fa-save me-2"></i>Save Auto Settings
+                            </button>
+
+                            <button class="btn btn-warning text-dark rounded-pill btn-custom fw-bold" onclick="triggerAutoBackupNow()" id="btnTriggerAutoBackup">
+                                <i class="fas fa-play me-2"></i>Run Auto Backup Now
+                            </button>
+                        </div>
                     </div>
 
-                    <!-- Last auto backup info -->
-                    <div class="mt-3 p-3 rounded-3" style="background: #f8f9fa;" id="lastAutoInfo">
+                    <!-- Auto backup execution status details -->
+                    <div class="mt-3 p-3 rounded-3" style="background: #f8f9fa; border: 1px solid #e9ecef;" id="lastAutoInfo">
+                        <div id="lastAutoDetails" class="small">
+                            <i class="fas fa-spinner fa-spin me-2 text-muted"></i>Loading auto backup status...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hostinger & Server Cron Setup Guide Card -->
+            <div class="card settings-card mt-3">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
                         <div class="d-flex align-items-center gap-2">
-                            <i class="fas fa-info-circle text-muted"></i>
-                            <span class="small text-muted" id="lastAutoText">Loading...</span>
+                            <i class="fas fa-server text-primary"></i>
+                            <h6 class="fw-bold mb-0">Hostinger & cPanel Cron Guide</h6>
+                        </div>
+                        <span class="badge bg-success" style="font-size:0.65rem;">24/7 Automation</span>
+                    </div>
+                    <p class="text-muted small mb-3">Add either command into Hostinger / cPanel Cron Jobs for standalone 24/7 execution:</p>
+                    
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted mb-1">Option 1: PHP CLI Command (Recommended)</label>
+                        <div class="input-group input-group-sm">
+                            <input type="text" class="form-control font-monospace bg-light small" readonly id="cronCmdCli" value="<?php 
+                                $serverPath = str_replace('\\', '/', BASE_PATH);
+                                echo '/usr/bin/php ' . $serverPath . '/cron/cron_backup.php'; 
+                            ?>">
+                            <button class="btn btn-outline-secondary" type="button" onclick="copyInput('cronCmdCli', 'CLI Command Copied!')"><i class="fas fa-copy"></i></button>
+                        </div>
+                        <div class="form-text" style="font-size:0.75rem;">Schedule: Once a day (e.g. 02:00 AM)</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted mb-1">Option 2: cURL / URL Command</label>
+                        <div class="input-group input-group-sm">
+                            <input type="text" class="form-control font-monospace bg-light small" readonly id="cronCmdCurl" value="">
+                            <button class="btn btn-outline-secondary" type="button" onclick="copyInput('cronCmdCurl', 'cURL Command Copied!')"><i class="fas fa-copy"></i></button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="form-label small fw-bold text-muted mb-1">Option 3: Direct Webhook URL</label>
+                        <div class="d-flex align-items-center justify-content-between gap-2 p-2 bg-light rounded border">
+                            <span class="small font-monospace text-truncate text-muted" id="cronBrowserUrl" style="max-width: 220px;"></span>
+                            <a href="#" target="_blank" id="cronBrowserLink" class="btn btn-sm btn-outline-primary flex-shrink-0" title="Test in Browser">
+                                <i class="fas fa-external-link-alt me-1"></i>Test
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -894,6 +953,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initDropzone();
     loadBackups();
     loadAutoSettings();
+    checkAutoCron();
 });
 
 
@@ -1538,15 +1598,37 @@ function loadAutoSettings() {
             if (data.success) {
                 const s = data.settings;
                 document.getElementById('autoBackupEnabled').checked = s.auto_backup_enabled === '1';
-                document.getElementById('autoBackupFrequency').value = s.auto_backup_frequency;
-                document.getElementById('autoBackupType').value = s.auto_backup_type;
-                document.getElementById('maxBackupsKeep').value = s.max_backups_keep;
+                document.getElementById('autoBackupFrequency').value = s.auto_backup_frequency || 'weekly';
+                document.getElementById('autoBackupType').value = s.auto_backup_type || 'full';
+                document.getElementById('maxBackupsKeep').value = s.max_backups_keep || '5';
+                
+                const cronKey = s.cron_secret_key || 'auto_backup_secure_key_2024';
+                if (document.getElementById('cronSecretKey')) {
+                    document.getElementById('cronSecretKey').value = cronKey;
+                }
+                updateCronUrlDisplay(cronKey);
 
+                // Render rich details in lastAutoDetails
+                let infoHtml = '';
                 if (s.last_auto_backup && s.last_auto_backup !== '0') {
                     const d = new Date(parseInt(s.last_auto_backup) * 1000);
-                    document.getElementById('lastAutoText').textContent = 'Last auto backup: ' + d.toLocaleString('en-IN');
+                    infoHtml += `<div class="mb-1"><i class="fas fa-history text-muted me-2"></i><strong>Last Run:</strong> ${d.toLocaleString('en-IN')}</div>`;
                 } else {
-                    document.getElementById('lastAutoText').textContent = 'No auto backups have been run yet.';
+                    infoHtml += `<div class="mb-1"><i class="fas fa-history text-muted me-2"></i><strong>Last Run:</strong> <span class="text-muted">No auto backups run yet</span></div>`;
+                }
+
+                if (s.auto_backup_enabled === '1') {
+                    const nextText = s.next_auto_backup_formatted || 'Scheduled';
+                    const isDue = s.is_due;
+                    infoHtml += `<div class="mb-1"><i class="fas fa-clock ${isDue ? 'text-danger' : 'text-primary'} me-2"></i><strong>Next Run:</strong> <span class="badge ${isDue ? 'bg-danger' : 'bg-info'} text-white">${escHtml(nextText)}</span></div>`;
+                    infoHtml += `<div class="small text-success mt-2 d-flex align-items-center gap-1"><i class="fas fa-shield-alt"></i><span>Web-Trigger: Active (Runs in background when admin visits)</span></div>`;
+                } else {
+                    infoHtml += `<div class="mb-1"><i class="fas fa-pause-circle text-muted me-2"></i><strong>Status:</strong> <span class="badge bg-secondary">Disabled</span></div>`;
+                }
+
+                const detailsContainer = document.getElementById('lastAutoDetails');
+                if (detailsContainer) {
+                    detailsContainer.innerHTML = infoHtml;
                 }
             }
         })
@@ -1564,6 +1646,9 @@ function saveAutoSettings() {
     formData.append('auto_backup_frequency', document.getElementById('autoBackupFrequency').value);
     formData.append('auto_backup_type', document.getElementById('autoBackupType').value);
     formData.append('max_backups_keep', document.getElementById('maxBackupsKeep').value);
+    if (document.getElementById('cronSecretKey')) {
+        formData.append('cron_secret_key', document.getElementById('cronSecretKey').value.trim());
+    }
     formData.append('_csrf_token', CSRF_TOKEN);
 
     fetch('ajax_backup.php', { method: 'POST', body: formData })
@@ -1571,6 +1656,7 @@ function saveAutoSettings() {
         .then(data => {
             if (data.success) {
                 showToast('success', 'Auto-backup settings saved!');
+                loadAutoSettings();
             } else {
                 showToast('danger', data.error || 'Failed to save settings.');
             }
@@ -1580,6 +1666,102 @@ function saveAutoSettings() {
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-save me-2"></i>Save Auto Settings';
         });
+}
+
+function triggerAutoBackupNow() {
+    if (!confirm('Execute Auto Backup right now? This will create a fresh automated backup and auto-clean older archives according to your retention settings.')) return;
+
+    const btn = document.getElementById('btnTriggerAutoBackup');
+    const origHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Executing Backup...';
+
+    const formData = new FormData();
+    formData.append('action', 'trigger_auto_backup');
+    formData.append('_csrf_token', CSRF_TOKEN);
+
+    fetch('ajax_backup.php', { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                showToast('success', data.message || 'Auto backup completed successfully!');
+                loadBackups();
+                loadAutoSettings();
+            } else {
+                showToast('danger', data.error || data.message || 'Auto backup failed.');
+            }
+        })
+        .catch(err => {
+            showToast('danger', 'Request error: ' + err.message);
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        });
+}
+
+function checkAutoCron() {
+    const formData = new FormData();
+    formData.append('action', 'check_auto_cron');
+    formData.append('_csrf_token', CSRF_TOKEN);
+
+    fetch('ajax_backup.php', { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.status === 'completed') {
+                showToast('success', 'Scheduled auto backup was due and has been executed: ' + (data.backup_name || ''));
+                loadBackups();
+                loadAutoSettings();
+            }
+        })
+        .catch(() => {});
+}
+
+function copyInput(id, successMsg) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.select();
+    el.setSelectionRange(0, 99999);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(el.value).then(() => {
+            showToast('success', successMsg || 'Copied to clipboard!');
+        }).catch(() => {
+            document.execCommand('copy');
+            showToast('success', successMsg || 'Copied to clipboard!');
+        });
+    } else {
+        document.execCommand('copy');
+        showToast('success', successMsg || 'Copied to clipboard!');
+    }
+}
+
+function generateCronKey() {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    let key = 'bk_';
+    for (let i = 0; i < 24; i++) {
+        key += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    const input = document.getElementById('cronSecretKey');
+    if (input) {
+        input.value = key;
+        updateCronUrlDisplay(key);
+    }
+}
+
+function updateCronUrlDisplay(key) {
+    const siteUrl = window.location.origin + window.location.pathname.replace(/\/admin\/manage_backups\.php.*$/i, '');
+    const cronUrl = siteUrl + '/cron/cron_backup.php?key=' + encodeURIComponent(key);
+    const curlCmd = `curl -s -L -A "Mozilla/5.0" "${cronUrl}"`;
+
+    if (document.getElementById('cronCmdCurl')) {
+        document.getElementById('cronCmdCurl').value = curlCmd;
+    }
+    if (document.getElementById('cronBrowserUrl')) {
+        document.getElementById('cronBrowserUrl').textContent = cronUrl;
+    }
+    if (document.getElementById('cronBrowserLink')) {
+        document.getElementById('cronBrowserLink').href = cronUrl + '&force=1';
+    }
 }
 
 

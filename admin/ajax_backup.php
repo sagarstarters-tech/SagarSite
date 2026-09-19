@@ -93,6 +93,12 @@ try {
         case 'get_settings':
             handleGetSettings($conn);
             break;
+        case 'trigger_auto_backup':
+            handleTriggerAutoBackup($conn);
+            break;
+        case 'check_auto_cron':
+            handleCheckAutoCron($conn);
+            break;
         default:
             echo json_encode(['success' => false, 'error' => 'Invalid action.']);
     }
@@ -872,6 +878,13 @@ function handleSaveSettings($conn) {
         'max_backups_keep' => max(1, min(50, intval($_POST['max_backups_keep'] ?? 5))),
     ];
 
+    if (isset($_POST['cron_secret_key']) && trim($_POST['cron_secret_key']) !== '') {
+        $cleanKey = preg_replace('/[^a-zA-Z0-9_\-]/', '', trim($_POST['cron_secret_key']));
+        if (!empty($cleanKey)) {
+            $settings['cron_secret_key'] = $cleanKey;
+        }
+    }
+
     $stmt = $conn->prepare("INSERT INTO backup_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)");
 
     foreach ($settings as $key => $val) {
@@ -904,13 +917,212 @@ function handleGetSettings($conn) {
         'auto_backup_type' => 'full',
         'max_backups_keep' => '5',
         'last_auto_backup' => '0',
+        'cron_secret_key' => 'auto_backup_secure_key_2024',
     ];
 
     foreach ($defaults as $k => $v) {
-        if (!isset($settings[$k])) $settings[$k] = $v;
+        if (!isset($settings[$k]) || $settings[$k] === '') $settings[$k] = $v;
     }
 
+    // Calculate next run
+    $now = time();
+    $lastRun = intval($settings['last_auto_backup'] ?? 0);
+    $freq = $settings['auto_backup_frequency'] ?? 'weekly';
+    $intervalSeconds = [
+        'daily'   => 86400,
+        'weekly'  => 604800,
+        'monthly' => 2592000,
+    ];
+    $interval = $intervalSeconds[$freq] ?? 86400;
+    $nextRunTime = $lastRun > 0 ? ($lastRun + $interval) : $now;
+    $isDue = ($settings['auto_backup_enabled'] === '1') && (($now - $lastRun) >= $interval);
+
+    $settings['next_auto_backup'] = $nextRunTime;
+    $settings['next_auto_backup_formatted'] = ($settings['auto_backup_enabled'] === '1') 
+        ? ($isDue ? 'Due Now' : date('d M Y, h:i A', $nextRunTime)) 
+        : 'Disabled';
+    $settings['is_due'] = $isDue;
+    $settings['interval_seconds'] = $interval;
+
     echo json_encode(['success' => true, 'settings' => $settings]);
+}
+
+
+// ═══════════════════════════════════════════════════════════
+//  TRIGGER AUTO-BACKUP MANUALLY (FROM UI)
+// ═══════════════════════════════════════════════════════════
+function handleTriggerAutoBackup($conn) {
+    try {
+        $result = executeAutoBackup($conn, true);
+        echo json_encode($result);
+    } catch (Throwable $e) {
+        echo json_encode(['success' => false, 'error' => 'Auto backup execution failed: ' . $e->getMessage()]);
+    }
+}
+
+
+// ═══════════════════════════════════════════════════════════
+//  WEB-CRON / PSEUDO-CRON BACKGROUND CHECK
+// ═══════════════════════════════════════════════════════════
+function handleCheckAutoCron($conn) {
+    try {
+        $result = executeAutoBackup($conn, false);
+        echo json_encode($result);
+    } catch (Throwable $e) {
+        echo json_encode(['success' => false, 'error' => 'Auto cron check error: ' . $e->getMessage()]);
+    }
+}
+
+
+// ═══════════════════════════════════════════════════════════
+//  CORE AUTO BACKUP EXECUTION ENGINE
+// ═══════════════════════════════════════════════════════════
+function executeAutoBackup($conn, $isForced = false) {
+    $settings = [];
+    $res = $conn->query("SELECT setting_key, setting_value FROM backup_settings");
+    if ($res) {
+        while ($row = $res->fetch_assoc()) {
+            $settings[$row['setting_key']] = $row['setting_value'];
+        }
+        $res->free();
+    }
+
+    $enabled = ($settings['auto_backup_enabled'] ?? '0') === '1';
+    if (!$enabled && !$isForced) {
+        return ['success' => true, 'status' => 'disabled', 'message' => 'Auto backup is disabled in settings.'];
+    }
+
+    $frequency = $settings['auto_backup_frequency'] ?? 'weekly';
+    $backupType = $settings['auto_backup_type'] ?? 'full';
+    $maxKeep = max(1, intval($settings['max_backups_keep'] ?? 5));
+    $lastRun = intval($settings['last_auto_backup'] ?? 0);
+    $now = time();
+
+    $intervalSeconds = [
+        'daily'   => 86400,    // 24 hours
+        'weekly'  => 604800,   // 7 days
+        'monthly' => 2592000,  // 30 days
+    ];
+    $interval = $intervalSeconds[$frequency] ?? 86400;
+
+    if (!$isForced && ($now - $lastRun) < $interval) {
+        $nextRun = date('Y-m-d H:i:s', $lastRun + $interval);
+        return [
+            'success' => true,
+            'status' => 'skipped',
+            'reason' => 'not_due',
+            'message' => "Next backup scheduled for {$nextRun}",
+            'next_run' => $nextRun,
+            'last_run' => $lastRun > 0 ? date('Y-m-d H:i:s', $lastRun) : 'never'
+        ];
+    }
+
+    // Rate limit: check if a backup is already in progress
+    $check = $conn->query("SELECT id FROM site_backups WHERE status = 'in_progress' AND created_at > DATE_SUB(NOW(), INTERVAL 10 MINUTE) LIMIT 1");
+    if ($check && $check->num_rows > 0) {
+        return ['success' => false, 'status' => 'in_progress', 'error' => 'A backup is already in progress. Please wait.'];
+    }
+
+    $timestamp = date('Y-m-d_H-i-s');
+    $backupName = "auto_{$backupType}_{$timestamp}";
+    $zipFileName = "{$backupName}.zip";
+    $zipFilePath = BACKUP_DIR . '/' . $zipFileName;
+
+    // Insert record
+    $stmt = $conn->prepare("INSERT INTO site_backups (backup_name, backup_type, trigger_type, file_path, status, created_by, created_at) VALUES (?, ?, 'auto', ?, 'in_progress', NULL, NOW())");
+    $stmt->bind_param('sss', $backupName, $backupType, $zipFilePath);
+    $stmt->execute();
+    $backupId = $stmt->insert_id;
+    $stmt->close();
+
+    $zip = new ZipArchive();
+    if ($zip->open($zipFilePath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+        throw new Exception('Failed to create ZIP file.');
+    }
+
+    $dbTablesCount = 0;
+    $filesCount = 0;
+
+    // Database backup
+    if ($backupType === 'full' || $backupType === 'db_only') {
+        $sqlContent = generateDatabaseDump($conn);
+        $zip->addFromString('database_backup.sql', $sqlContent);
+        $tablesResult = $conn->query("SHOW TABLES");
+        $dbTablesCount = $tablesResult ? $tablesResult->num_rows : 0;
+    }
+
+    // Files backup
+    if ($backupType === 'full' || $backupType === 'files_only') {
+        $dirsToBackup = [
+            'uploads' => BASE_PATH . '/uploads',
+            'assets/images' => BASE_PATH . '/assets/images',
+            'assets/css' => BASE_PATH . '/assets/css',
+            'assets/js' => BASE_PATH . '/assets/js',
+            'config' => BASE_PATH . '/config',
+        ];
+        foreach ($dirsToBackup as $prefix => $dirPath) {
+            if (is_dir($dirPath)) {
+                $filesCount += addDirectoryToZip($zip, $dirPath, "files/{$prefix}");
+            }
+        }
+        $rootFiles = ['.env', '.htaccess', 'manifest.json', 'robots.txt'];
+        foreach ($rootFiles as $rf) {
+            $rfPath = BASE_PATH . '/' . $rf;
+            if (file_exists($rfPath)) {
+                $zip->addFile($rfPath, "files/root/{$rf}");
+                $filesCount++;
+            }
+        }
+    }
+
+    // Metadata
+    $metadata = json_encode([
+        'backup_name' => $backupName,
+        'backup_type' => $backupType,
+        'trigger' => 'auto',
+        'created_at' => date('Y-m-d H:i:s'),
+        'db_name' => DB_NAME,
+        'db_tables_count' => $dbTablesCount,
+        'files_count' => $filesCount,
+        'php_version' => PHP_VERSION,
+        'site_url' => defined('SITE_URL') ? SITE_URL : '',
+        'notes' => 'Automated backup executed successfully.',
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    $zip->addFromString('backup_metadata.json', $metadata);
+    $zip->close();
+
+    $fileSize = file_exists($zipFilePath) ? filesize($zipFilePath) : 0;
+
+    // Update record
+    $stmt = $conn->prepare("UPDATE site_backups SET status = 'completed', file_size = ?, db_tables_count = ?, files_count = ?, notes = 'Auto backup completed successfully.' WHERE id = ?");
+    $stmt->bind_param('iiii', $fileSize, $dbTablesCount, $filesCount, $backupId);
+    $stmt->execute();
+    $stmt->close();
+
+    // Update last run timestamp
+    $conn->query("INSERT INTO backup_settings (setting_key, setting_value) VALUES ('last_auto_backup', '{$now}') ON DUPLICATE KEY UPDATE setting_value = '{$now}'");
+
+    // Auto-cleanup old backups
+    autoCleanupBackups($conn);
+
+    // Write log
+    $logFile = BASE_PATH . '/logs/cron_backup.log';
+    if (!is_dir(dirname($logFile))) @mkdir(dirname($logFile), 0755, true);
+    @file_put_contents($logFile, '[' . date('Y-m-d H:i:s') . '] Auto backup completed: ' . $backupName . ' (' . $fileSize . ' bytes)' . "\n", FILE_APPEND);
+
+    return [
+        'success' => true,
+        'status' => 'completed',
+        'backup_id' => $backupId,
+        'backup_name' => $backupName,
+        'file_size' => $fileSize,
+        'file_size_formatted' => round($fileSize / (1024 * 1024), 2) . ' MB',
+        'db_tables_count' => $dbTablesCount,
+        'files_count' => $filesCount,
+        'created_at' => date('Y-m-d H:i:s', $now),
+        'next_run' => date('Y-m-d H:i:s', $now + $interval),
+        'message' => "Auto backup completed successfully: {$backupName}"
+    ];
 }
 
 
@@ -1007,7 +1219,8 @@ function ensureBackupTablesExist($conn) {
             ('auto_backup_frequency', 'weekly'),
             ('auto_backup_type', 'full'),
             ('max_backups_keep', '5'),
-            ('last_auto_backup', '0');");
+            ('last_auto_backup', '0'),
+            ('cron_secret_key', 'auto_backup_secure_key_2024');");
     } catch (\Throwable $e) {
         error_log('[Backup Migration] Auto-setup failed: ' . $e->getMessage());
     }

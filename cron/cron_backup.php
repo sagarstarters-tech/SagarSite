@@ -5,10 +5,10 @@
  *  Location: /cron/cron_backup.php
  * ============================================================
  *  Run via cron job or task scheduler:
- *    php /path/to/cron_backup.php
+ *    php /path/to/cron_backup.php [--force]
  *
- *  Or via browser (admin-only):
- *    https://yoursite.com/cron/cron_backup.php?key=YOUR_CRON_KEY
+ *  Or via browser / cURL (admin session or valid cron key):
+ *    https://yoursite.com/cron/cron_backup.php?key=YOUR_CRON_KEY[&force=1]
  *
  *  Checks backup_settings for auto_backup_enabled, frequency,
  *  and creates backups accordingly. Also handles auto-cleanup.
@@ -31,27 +31,19 @@ if (!defined('DB_HOST')) {
     require CONFIG_PATH . 'config.php';
 }
 
-// Prevent direct access via browser unless admin or valid cron key
 $isCli = (php_sapi_name() === 'cli');
-if (!$isCli) {
-    // Check for cron key or admin session
-    $cronKey = $_GET['key'] ?? '';
-    $validKey = _env('CRON_SECRET_KEY', 'auto_backup_secure_key_2024');
-    
-    if ($cronKey !== $validKey) {
-        // Check admin session
-        include_once BASE_PATH . '/includes/session_setup.php';
-        if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
-            http_response_code(403);
-            die('Access denied.');
-        }
-    }
-}
 
 // ── Database connection ─────────────────────────────────────
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
 if ($conn->connect_error) {
     logCron('FATAL: DB connection failed: ' . $conn->connect_error);
+    if ($isCli) {
+        echo 'FATAL: DB connection failed: ' . $conn->connect_error . "\n";
+    } else {
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code(500);
+        echo json_encode(['success' => false, 'error' => 'DB connection failed: ' . $conn->connect_error]);
+    }
     exit(1);
 }
 $conn->set_charset('utf8mb4');
@@ -80,9 +72,17 @@ try {
         `setting_key` VARCHAR(100) PRIMARY KEY,
         `setting_value` TEXT DEFAULT NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+
+    $conn->query("INSERT IGNORE INTO `backup_settings` (`setting_key`, `setting_value`) VALUES
+        ('auto_backup_enabled', '0'),
+        ('auto_backup_frequency', 'weekly'),
+        ('auto_backup_type', 'full'),
+        ('max_backups_keep', '5'),
+        ('last_auto_backup', '0'),
+        ('cron_secret_key', 'auto_backup_secure_key_2024');");
 } catch (\Throwable $e) {}
 
-// ── Check if auto backup is enabled ─────────────────────────
+// ── Load settings ───────────────────────────────────────────
 $settings = [];
 $res = $conn->query("SELECT setting_key, setting_value FROM backup_settings");
 if ($res) {
@@ -92,10 +92,47 @@ if ($res) {
     $res->free();
 }
 
+// ── Authentication Check ────────────────────────────────────
+$validKey = $settings['cron_secret_key'] ?? '';
+if (empty($validKey)) {
+    $validKey = function_exists('_env') ? _env('CRON_SECRET_KEY', 'auto_backup_secure_key_2024') : 'auto_backup_secure_key_2024';
+}
+
+$cliArgs = $argv ?? [];
+$force = in_array('--force', $cliArgs, true);
+
+if (!$isCli) {
+    header('Content-Type: application/json; charset=utf-8');
+    $cronKey = $_GET['key'] ?? $_GET['secret'] ?? '';
+    $isAdminSession = false;
+
+    if (file_exists(BASE_PATH . '/includes/session_setup.php')) {
+        include_once BASE_PATH . '/includes/session_setup.php';
+        if (isset($_SESSION['user_id']) && (($_SESSION['role'] ?? '') === 'admin' || !empty($_SESSION['admin_logged_in']))) {
+            $isAdminSession = true;
+        }
+    }
+
+    if (!$isAdminSession && (empty($cronKey) || !hash_equals((string)$validKey, (string)$cronKey))) {
+        http_response_code(403);
+        echo json_encode([
+            'success' => false,
+            'status' => 'access_denied',
+            'error' => 'Access denied: invalid or missing cron secret key.'
+        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+
+    if (isset($_GET['force']) && in_array(strtolower((string)$_GET['force']), ['1', 'true', 'yes'], true)) {
+        $force = true;
+    }
+}
+
+// ── Check if auto backup is enabled ─────────────────────────
 $enabled = ($settings['auto_backup_enabled'] ?? '0') === '1';
-if (!$enabled) {
+if (!$enabled && !$force) {
     logCron('Auto backup is disabled. Exiting.');
-    output('Auto backup is disabled.');
+    sendOutput(false, 'Auto backup is disabled in settings.', ['status' => 'disabled'], $isCli);
     exit(0);
 }
 
@@ -112,23 +149,36 @@ $intervalSeconds = [
     'monthly' => 2592000,  // 30 days
 ];
 
-$interval = $intervalSeconds[$frequency] ?? 604800;
+$interval = $intervalSeconds[$frequency] ?? 86400;
 
-if (($now - $lastRun) < $interval) {
+if (!$force && ($now - $lastRun) < $interval) {
     $nextRun = date('Y-m-d H:i:s', $lastRun + $interval);
     logCron("Not yet time for backup. Next run: {$nextRun}");
-    output("Next auto backup scheduled for: {$nextRun}");
+    sendOutput(true, "Next auto backup scheduled for: {$nextRun}", [
+        'status' => 'skipped',
+        'reason' => 'not_due',
+        'last_run' => $lastRun > 0 ? date('Y-m-d H:i:s', $lastRun) : 'never',
+        'next_run' => $nextRun,
+        'remaining_seconds' => ($lastRun + $interval) - $now
+    ], $isCli);
+    exit(0);
+}
+
+// Rate limit: prevent concurrent backups within 10 minutes
+$check = $conn->query("SELECT id FROM site_backups WHERE status = 'in_progress' AND created_at > DATE_SUB(NOW(), INTERVAL 10 MINUTE) LIMIT 1");
+if ($check && $check->num_rows > 0) {
+    logCron('A backup is already in progress. Exiting.');
+    sendOutput(false, 'A backup is already in progress. Please wait.', ['status' => 'in_progress'], $isCli);
     exit(0);
 }
 
 // ── Include backup functions ────────────────────────────────
-// We reuse the core functions from ajax_backup.php
 define('BACKUP_DIR', BASE_PATH . '/backups');
 define('BACKUP_TEMP_DIR', BACKUP_DIR . '/temp');
 if (!is_dir(BACKUP_DIR)) @mkdir(BACKUP_DIR, 0755, true);
 if (!is_dir(BACKUP_TEMP_DIR)) @mkdir(BACKUP_TEMP_DIR, 0755, true);
 
-logCron("Starting auto backup: type={$backupType}");
+logCron("Starting auto backup: type={$backupType}" . ($force ? " (forced)" : ""));
 
 try {
     $timestamp = date('Y-m-d_H-i-s');
@@ -192,11 +242,13 @@ try {
         'db_name' => DB_NAME,
         'db_tables_count' => $dbTablesCount,
         'files_count' => $filesCount,
-    ], JSON_PRETTY_PRINT);
+        'php_version' => PHP_VERSION,
+        'site_url' => defined('SITE_URL') ? SITE_URL : '',
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
     $zip->addFromString('backup_metadata.json', $metadata);
     $zip->close();
 
-    $fileSize = filesize($zipFilePath);
+    $fileSize = file_exists($zipFilePath) ? filesize($zipFilePath) : 0;
 
     // Update record
     $stmt = $conn->prepare("UPDATE site_backups SET status = 'completed', file_size = ?, db_tables_count = ?, files_count = ?, notes = 'Auto backup completed successfully.' WHERE id = ?");
@@ -210,8 +262,20 @@ try {
     // Auto-cleanup old backups
     cronAutoCleanup($conn, $maxKeep);
 
+    $formattedSize = round($fileSize / (1024 * 1024), 2) . ' MB';
     logCron("Auto backup completed: {$backupName} ({$fileSize} bytes, {$dbTablesCount} tables, {$filesCount} files)");
-    output("Auto backup completed successfully: {$backupName}");
+
+    sendOutput(true, "Auto backup completed successfully: {$backupName}", [
+        'status' => 'completed',
+        'backup_id' => $backupId,
+        'backup_name' => $backupName,
+        'file_size' => $fileSize,
+        'file_size_formatted' => $formattedSize,
+        'db_tables_count' => $dbTablesCount,
+        'files_count' => $filesCount,
+        'created_at' => date('Y-m-d H:i:s', $now),
+        'next_run' => date('Y-m-d H:i:s', $now + $interval)
+    ], $isCli);
 
 } catch (Throwable $e) {
     if (isset($backupId) && $backupId > 0) {
@@ -221,7 +285,16 @@ try {
     if (isset($zipFilePath) && file_exists($zipFilePath)) @unlink($zipFilePath);
 
     logCron('Auto backup FAILED: ' . $e->getMessage());
-    output('Auto backup failed: ' . $e->getMessage());
+    if ($isCli) {
+        echo "Auto backup failed: " . $e->getMessage() . "\n";
+    } else {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'status' => 'failed',
+            'error' => $e->getMessage()
+        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    }
     exit(1);
 }
 
@@ -230,7 +303,7 @@ exit(0);
 
 
 // ═══════════════════════════════════════════════════════════
-//  HELPER FUNCTIONS (self-contained for cron independence)
+//  HELPER FUNCTIONS
 // ═══════════════════════════════════════════════════════════
 
 function generateCronDatabaseDump($conn) {
@@ -327,8 +400,11 @@ function logCron($msg) {
     @file_put_contents($logFile, '[' . date('Y-m-d H:i:s') . '] ' . $msg . "\n", FILE_APPEND);
 }
 
-function output($msg) {
-    if (php_sapi_name() === 'cli') {
-        echo $msg . "\n";
+function sendOutput($success, $message, $data = [], $isCli = false) {
+    if ($isCli) {
+        echo ($success ? '[SUCCESS] ' : '[NOTICE] ') . $message . "\n";
+    } else {
+        $response = array_merge(['success' => $success, 'message' => $message], $data);
+        echo json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
     }
 }
