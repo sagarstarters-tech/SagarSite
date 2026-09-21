@@ -221,10 +221,11 @@ $doc_title    = $global_settings['catalogue_title'] ?? "Sagar Starter's — Offi
 $doc_subtitle = $global_settings['catalogue_subtitle'] ?? "Agricultural & Industrial Motor Starters, Panels & Spares";
 $doc_about    = $global_settings['catalogue_about'] ?? "Sagar Starter's is a trusted Indian manufacturer specializing in heavy-duty single phase and three phase motor starters, submersible pump control panels, and industrial switchgear. Engineered with 100% electrolytic grade copper contacts, precision thermal overload relays, and weather-resistant powder-coated sheet metal enclosures, our products ensure unmatched motor protection and longevity across agricultural and industrial applications.";
 
-$show_price    = ($global_settings['catalogue_show_price'] ?? '1') === '1';
-$show_sku      = ($global_settings['catalogue_show_sku'] ?? '1') === '1';
-$show_features = ($global_settings['catalogue_show_features'] ?? '1') === '1';
-$show_specs    = ($global_settings['catalogue_show_specs'] ?? '1') === '1';
+$show_price      = ($global_settings['catalogue_show_price'] ?? '1') === '1';
+$show_sale_price = ($global_settings['catalogue_show_sale_price'] ?? '1') === '1';
+$show_sku        = ($global_settings['catalogue_show_sku'] ?? '1') === '1';
+$show_features   = ($global_settings['catalogue_show_features'] ?? '1') === '1';
+$show_specs      = ($global_settings['catalogue_show_specs'] ?? '1') === '1';
 
 $auto_download = isset($_GET['download']) && $_GET['download'] == '1';
 $wa_phone_clean = preg_replace('/[^0-9]/', '', $store_phone);
@@ -560,6 +561,10 @@ $wa_phone_clean = preg_replace('/[^0-9]/', '', $store_phone);
             color: #94a3b8;
             margin-right: 4px;
         }
+        .cat-price-sale {
+            color: #1d4ed8;
+            font-weight: 800;
+        }
 
         /* ── Back Cover / Dealership Section ───────────────────── */
         .cat-back-cover {
@@ -892,12 +897,19 @@ $wa_phone_clean = preg_replace('/[^0-9]/', '', $store_phone);
                                         <p class="cat-prod-desc"><?php echo htmlspecialchars($summary); ?></p>
                                     <?php endif; ?>
 
-                                    <?php if ($show_price && $reg_price > 0): ?>
+                                    <?php if ($show_price || $show_sale_price): ?>
                                         <div class="cat-prod-price">
-                                            <?php if ($sale_price > 0 && $sale_price < $reg_price): ?>
-                                                <span class="cat-price-cut"><?php echo $currency . number_format($reg_price, 2); ?></span>
-                                                <span class="text-primary"><?php echo $currency . number_format($sale_price, 2); ?></span>
-                                            <?php else: ?>
+                                            <?php if ($show_price && $reg_price > 0 && $show_sale_price && $sale_price > 0): ?>
+                                                <?php if ($sale_price < $reg_price): ?>
+                                                    <span class="cat-price-cut"><?php echo $currency . number_format($reg_price, 2); ?></span>
+                                                    <span class="cat-price-sale"><?php echo $currency . number_format($sale_price, 2); ?></span>
+                                                <?php else: ?>
+                                                    <span class="text-muted small me-1">MRP: <?php echo $currency . number_format($reg_price, 2); ?></span>
+                                                    <span class="cat-price-sale">Sale: <?php echo $currency . number_format($sale_price, 2); ?></span>
+                                                <?php endif; ?>
+                                            <?php elseif ($show_sale_price && $sale_price > 0): ?>
+                                                <span class="cat-price-sale"><?php echo $currency . number_format($sale_price, 2); ?></span>
+                                            <?php elseif ($show_price && $reg_price > 0): ?>
                                                 <span class="text-primary"><?php echo $currency . number_format($reg_price, 2); ?></span>
                                             <?php endif; ?>
                                         </div>

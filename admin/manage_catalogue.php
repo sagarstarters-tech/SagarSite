@@ -27,10 +27,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $filter    = $_POST['catalogue_filter'] ?? 'all';
 
         // Display toggles
-        $show_price    = isset($_POST['catalogue_show_price']) ? '1' : '0';
-        $show_sku      = isset($_POST['catalogue_show_sku']) ? '1' : '0';
-        $show_features = isset($_POST['catalogue_show_features']) ? '1' : '0';
-        $show_specs    = isset($_POST['catalogue_show_specs']) ? '1' : '0';
+        $show_price      = isset($_POST['catalogue_show_price']) ? '1' : '0';
+        $show_sale_price = isset($_POST['catalogue_show_sale_price']) ? '1' : '0';
+        $show_sku        = isset($_POST['catalogue_show_sku']) ? '1' : '0';
+        $show_features   = isset($_POST['catalogue_show_features']) ? '1' : '0';
+        $show_specs      = isset($_POST['catalogue_show_specs']) ? '1' : '0';
 
         save_catalogue_setting($conn, 'catalogue_enabled', $enabled);
         save_catalogue_setting($conn, 'catalogue_source', $source);
@@ -49,6 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         save_catalogue_setting($conn, 'catalogue_selected_categories', $cat_str);
 
         save_catalogue_setting($conn, 'catalogue_show_price', $show_price);
+        save_catalogue_setting($conn, 'catalogue_show_sale_price', $show_sale_price);
         save_catalogue_setting($conn, 'catalogue_show_sku', $show_sku);
         save_catalogue_setting($conn, 'catalogue_show_features', $show_features);
         save_catalogue_setting($conn, 'catalogue_show_specs', $show_specs);
@@ -126,10 +128,11 @@ $cat_subtitle   = $cfg['catalogue_subtitle'] ?? "Agricultural & Industrial Motor
 $cat_about      = $cfg['catalogue_about'] ?? "Sagar Starter's is a trusted Indian manufacturer specializing in heavy-duty single phase and three phase motor starters, submersible pump control panels, and industrial switchgear. Engineered with 100% electrolytic grade copper contacts, precision thermal overload relays, and weather-resistant powder-coated sheet metal enclosures, our products ensure unmatched motor protection and longevity across agricultural and industrial applications.";
 $cat_filter     = $cfg['catalogue_filter'] ?? 'all';
 
-$cat_show_price    = ($cfg['catalogue_show_price'] ?? '1') === '1';
-$cat_show_sku      = ($cfg['catalogue_show_sku'] ?? '1') === '1';
-$cat_show_features = ($cfg['catalogue_show_features'] ?? '1') === '1';
-$cat_show_specs    = ($cfg['catalogue_show_specs'] ?? '1') === '1';
+$cat_show_price      = ($cfg['catalogue_show_price'] ?? '1') === '1';
+$cat_show_sale_price = ($cfg['catalogue_show_sale_price'] ?? '1') === '1';
+$cat_show_sku        = ($cfg['catalogue_show_sku'] ?? '1') === '1';
+$cat_show_features   = ($cfg['catalogue_show_features'] ?? '1') === '1';
+$cat_show_specs      = ($cfg['catalogue_show_specs'] ?? '1') === '1';
 
 // Count products
 $prod_count_q = $conn->query("SELECT COUNT(*) as total FROM products");
@@ -446,6 +449,12 @@ $preview_url = SITE_URL . '/catalogue.php';
                                 <div class="form-check p-2 border rounded-2">
                                     <input class="form-check-input" type="checkbox" name="catalogue_show_specs" id="fld_spec" value="1" <?php echo $cat_show_specs ? 'checked' : ''; ?>>
                                     <label class="form-check-label small fw-semibold" for="fld_spec">Show Technical Specs (Phase, HP, Relay)</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check p-2 border rounded-2">
+                                    <input class="form-check-input" type="checkbox" name="catalogue_show_sale_price" id="fld_sale_price" value="1" <?php echo $cat_show_sale_price ? 'checked' : ''; ?>>
+                                    <label class="form-check-label small fw-semibold" for="fld_sale_price">Show Sale Price (₹)</label>
                                 </div>
                             </div>
                         </div>

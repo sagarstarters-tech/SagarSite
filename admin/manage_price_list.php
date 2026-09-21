@@ -32,6 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $show_sku = isset($_POST['price_list_show_sku']) ? '1' : '0';
         $show_category = isset($_POST['price_list_show_category']) ? '1' : '0';
         $show_regular_price = isset($_POST['price_list_show_regular_price']) ? '1' : '0';
+        $show_sale_price = isset($_POST['price_list_show_sale_price']) ? '1' : '0';
         $show_bulk_price = isset($_POST['price_list_show_bulk_price']) ? '1' : '0';
         $show_moq = isset($_POST['price_list_show_moq']) ? '1' : '0';
         $show_stock = isset($_POST['price_list_show_stock']) ? '1' : '0';
@@ -57,6 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         save_setting($conn, 'price_list_show_sku', $show_sku);
         save_setting($conn, 'price_list_show_category', $show_category);
         save_setting($conn, 'price_list_show_regular_price', $show_regular_price);
+        save_setting($conn, 'price_list_show_sale_price', $show_sale_price);
         save_setting($conn, 'price_list_show_bulk_price', $show_bulk_price);
         save_setting($conn, 'price_list_show_moq', $show_moq);
         save_setting($conn, 'price_list_show_stock', $show_stock);
@@ -139,6 +141,7 @@ $pl_show_image = ($cfg['price_list_show_image'] ?? '1') === '1';
 $pl_show_sku = ($cfg['price_list_show_sku'] ?? '1') === '1';
 $pl_show_category = ($cfg['price_list_show_category'] ?? '1') === '1';
 $pl_show_regular = ($cfg['price_list_show_regular_price'] ?? '1') === '1';
+$pl_show_sale_price = ($cfg['price_list_show_sale_price'] ?? '1') === '1';
 $pl_show_bulk = ($cfg['price_list_show_bulk_price'] ?? '1') === '1';
 $pl_show_moq = ($cfg['price_list_show_moq'] ?? '1') === '1';
 $pl_show_stock = ($cfg['price_list_show_stock'] ?? '1') === '1';
@@ -526,6 +529,12 @@ $preview_url = SITE_URL . '/price_list.php';
                                 <div class="form-check p-2 border rounded-2">
                                     <input class="form-check-input" type="checkbox" name="price_list_show_stock" id="col_stock" value="1" <?php echo $pl_show_stock ? 'checked' : ''; ?>>
                                     <label class="form-check-label small fw-semibold" for="col_stock">Stock Status</label>
+                                </div>
+                            </div>
+                            <div class="col-6 col-sm-4">
+                                <div class="form-check p-2 border rounded-2">
+                                    <input class="form-check-input" type="checkbox" name="price_list_show_sale_price" id="col_sale_price" value="1" <?php echo $pl_show_sale_price ? 'checked' : ''; ?>>
+                                    <label class="form-check-label small fw-semibold" for="col_sale_price">Sale Price (₹)</label>
                                 </div>
                             </div>
                         </div>

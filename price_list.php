@@ -289,6 +289,7 @@ $show_img   = ($global_settings['price_list_show_image'] ?? '1') === '1';
 $show_sku   = ($global_settings['price_list_show_sku'] ?? '1') === '1';
 $show_cat   = ($global_settings['price_list_show_category'] ?? '1') === '1';
 $show_reg   = ($global_settings['price_list_show_regular_price'] ?? '1') === '1';
+$show_sale  = ($global_settings['price_list_show_sale_price'] ?? '1') === '1';
 $show_bulk  = ($global_settings['price_list_show_bulk_price'] ?? '1') === '1';
 $show_moq   = ($global_settings['price_list_show_moq'] ?? '1') === '1';
 $show_stock = ($global_settings['price_list_show_stock'] ?? '1') === '1';
@@ -564,6 +565,11 @@ $auto_download = isset($_GET['download']) && $_GET['download'] == '1';
             color: #94a3b8;
             font-size: 0.75rem;
             margin-right: 4px;
+        }
+        .price-sale-bold {
+            color: #2563eb;
+            font-weight: 700;
+            font-size: 0.95rem;
         }
         .price-bulk-bold {
             color: #15803d;
@@ -889,6 +895,7 @@ $auto_download = isset($_GET['download']) && $_GET['download'] == '1';
                             <th>Product Name</th>
                             <?php if ($show_sku): ?><th style="width: 90px;">SKU</th><?php endif; ?>
                             <?php if ($show_reg): ?><th style="width: 100px; text-align: right;">Regular MRP</th><?php endif; ?>
+                            <?php if ($show_sale): ?><th style="width: 100px; text-align: right;">Sale Price</th><?php endif; ?>
                             <?php if ($show_bulk): ?><th style="width: 120px; text-align: right;">Wholesale Rate</th><?php endif; ?>
                             <?php if ($show_moq): ?><th style="width: 85px; text-align: center;">MOQ</th><?php endif; ?>
                             <?php if ($show_stock): ?><th style="width: 90px; text-align: center;">Status</th><?php endif; ?>
@@ -927,11 +934,20 @@ $auto_download = isset($_GET['download']) && $_GET['download'] == '1';
                                 <?php endif; ?>
                                 <?php if ($show_reg): ?>
                                     <td style="text-align: right;">
-                                        <?php if ($sale_price > 0 && $sale_price < $reg_price): ?>
+                                        <?php if (!$show_sale && $sale_price > 0 && $sale_price < $reg_price): ?>
                                             <span class="price-regular"><?php echo $currency . number_format($reg_price, 2); ?></span>
                                             <span class="fw-semibold text-dark"><?php echo $currency . number_format($sale_price, 2); ?></span>
                                         <?php else: ?>
-                                            <span class="fw-semibold text-dark"><?php echo $currency . number_format($reg_price, 2); ?></span>
+                                            <span class="fw-semibold text-dark"><?php echo $reg_price > 0 ? $currency . number_format($reg_price, 2) : '—'; ?></span>
+                                        <?php endif; ?>
+                                    </td>
+                                <?php endif; ?>
+                                <?php if ($show_sale): ?>
+                                    <td style="text-align: right;">
+                                        <?php if ($sale_price > 0): ?>
+                                            <span class="price-sale-bold"><?php echo $currency . number_format($sale_price, 2); ?></span>
+                                        <?php else: ?>
+                                            <span class="text-muted small">—</span>
                                         <?php endif; ?>
                                     </td>
                                 <?php endif; ?>
