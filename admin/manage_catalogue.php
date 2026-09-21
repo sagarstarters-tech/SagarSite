@@ -126,6 +126,21 @@ $cat_show_specs    = ($cfg['catalogue_show_specs'] ?? '1') === '1';
 $prod_count_q = $conn->query("SELECT COUNT(*) as total FROM products");
 $total_products = $prod_count_q ? (int)($prod_count_q->fetch_assoc()['total'] ?? 0) : 0;
 
+// Fetch store categories with product count
+$categories_res = $conn->query("
+    SELECT c.id, c.name, c.slug, COUNT(p.id) as product_count 
+    FROM categories c 
+    LEFT JOIN products p ON p.category_id = c.id
+    GROUP BY c.id, c.name, c.slug 
+    ORDER BY c.name ASC
+");
+$all_categories = [];
+if ($categories_res) {
+    while ($crow = $categories_res->fetch_assoc()) {
+        $all_categories[] = $crow;
+    }
+}
+
 $preview_url = SITE_URL . '/catalogue.php';
 ?>
 
@@ -348,10 +363,21 @@ $preview_url = SITE_URL . '/catalogue.php';
 
                         <div class="mb-3">
                             <label class="form-label fw-bold text-dark">Product Inclusion Filter</label>
-                            <select name="catalogue_filter" class="form-select">
+                            <select name="catalogue_filter" class="form-select" id="catalogueFilterSelect">
                                 <option value="all" <?php echo ($cat_filter === 'all') ? 'selected' : ''; ?>>All Active Products (Complete Product Range)</option>
                                 <option value="trending_only" <?php echo ($cat_filter === 'trending_only') ? 'selected' : ''; ?>>Featured / Trending Products Only</option>
+                                <?php if (!empty($all_categories)): ?>
+                                    <optgroup label="── Filter by Specific Category ──">
+                                        <?php foreach ($all_categories as $citem): ?>
+                                            <?php $cat_val = 'category:' . $citem['id']; ?>
+                                            <option value="<?php echo htmlspecialchars($cat_val); ?>" <?php echo ($cat_filter === $cat_val) ? 'selected' : ''; ?>>
+                                                Category: <?php echo htmlspecialchars($citem['name']); ?> (<?php echo (int)$citem['product_count']; ?> Products)
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </optgroup>
+                                <?php endif; ?>
                             </select>
+                            <div class="form-text">Choose whether the default catalogue includes your entire inventory or defaults to a specific product category. Visitors can also switch categories on the live catalogue.</div>
                         </div>
 
                         <label class="form-label fw-bold text-dark mb-2">Display Options in Product Cards</label>
@@ -429,7 +455,7 @@ $preview_url = SITE_URL . '/catalogue.php';
                     </div>
                     <div class="card-body p-4">
                         <p class="small text-muted mb-3">Test how your catalogue appears to website visitors:</p>
-                        <div class="d-grid gap-2">
+                        <div class="d-grid gap-2 mb-3">
                             <a href="<?php echo htmlspecialchars($preview_url); ?>" target="_blank" class="btn btn-outline-primary rounded-pill py-2 fw-semibold">
                                 <i class="fas fa-eye me-2"></i> Open Public Catalogue View
                             </a>
@@ -437,6 +463,19 @@ $preview_url = SITE_URL . '/catalogue.php';
                                 <i class="fas fa-store me-2"></i> Visit Shop Page
                             </a>
                         </div>
+                        <?php if (!empty($all_categories)): ?>
+                            <label class="small fw-bold text-muted d-block mb-1">Quick Test Category View:</label>
+                            <select class="form-select form-select-sm rounded-pill" onchange="if(this.value) window.open(this.value, '_blank');">
+                                <option value="">Select a category to test...</option>
+                                <?php foreach ($all_categories as $citem): ?>
+                                    <?php if ((int)$citem['product_count'] > 0): ?>
+                                        <option value="<?php echo htmlspecialchars($preview_url); ?>?category=<?php echo $citem['id']; ?>">
+                                            <?php echo htmlspecialchars($citem['name']); ?> (<?php echo (int)$citem['product_count']; ?>)
+                                        </option>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
+                            </select>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>

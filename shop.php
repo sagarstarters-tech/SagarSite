@@ -237,28 +237,36 @@ if (!empty($global_settings[$setting_key])) {
             ?>
 
             <?php if ($_pl_enabled && $is_wholesaler): ?>
+            <?php 
+            $cat_param = ($cat_id !== null && !$is_cat_conflict) ? ('?category=' . urlencode($cat_id)) : '';
+            $cat_btn_label = ($cat_id !== null && !$is_cat_conflict && !empty($cat_name)) ? (' — ' . htmlspecialchars($cat_name)) : '';
+            ?>
             <div class="alert alert-light border shadow-sm rounded-4 mb-4 p-3 d-flex align-items-center justify-content-between flex-wrap gap-2" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-left: 4px solid #ef4444 !important;">
                 <div class="d-flex align-items-center gap-3">
                     <div class="rounded-circle bg-danger bg-opacity-10 text-danger p-2 px-3">
                         <i class="fas fa-file-pdf fs-4"></i>
                     </div>
                     <div>
-                        <h6 class="fw-bold mb-0 text-dark">Wholesale & Retailer Price List Available</h6>
-                        <span class="small text-muted">Download the official product catalog & wholesale rate sheet in high-definition PDF.</span>
+                        <h6 class="fw-bold mb-0 text-dark">Wholesale &amp; Retailer Price List Available</h6>
+                        <span class="small text-muted">Download the official product catalog &amp; wholesale rate sheet in high-definition PDF<?php echo $cat_btn_label ? " for <strong>" . $cat_btn_label . "</strong>" : ""; ?>.</span>
                     </div>
                 </div>
                 <div class="d-flex align-items-center gap-2 flex-wrap">
-                    <a href="<?php echo SITE_URL; ?>/price_list.php" target="_blank" class="btn btn-sm btn-danger rounded-pill px-3 py-2 fw-semibold shadow-sm">
-                        <i class="fas fa-download me-1"></i> Price List (PDF)
+                    <a href="<?php echo SITE_URL; ?>/price_list.php<?php echo $cat_param; ?>" target="_blank" class="btn btn-sm btn-danger rounded-pill px-3 py-2 fw-semibold shadow-sm">
+                        <i class="fas fa-download me-1"></i> Price List (PDF)<?php echo $cat_btn_label; ?>
                     </a>
                     <?php if ($_cat_enabled): ?>
-                    <a href="<?php echo SITE_URL; ?>/catalogue.php" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-2 fw-semibold">
-                        <i class="fas fa-book-open me-1"></i> Product Catalogue
+                    <a href="<?php echo SITE_URL; ?>/catalogue.php<?php echo $cat_param; ?>" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-2 fw-semibold">
+                        <i class="fas fa-book-open me-1"></i> Product Catalogue<?php echo $cat_btn_label; ?>
                     </a>
                     <?php endif; ?>
                 </div>
             </div>
             <?php elseif ($_cat_enabled): ?>
+            <?php 
+            $cat_param = ($cat_id !== null && !$is_cat_conflict) ? ('?category=' . urlencode($cat_id)) : '';
+            $cat_btn_label = ($cat_id !== null && !$is_cat_conflict && !empty($cat_name)) ? (' — ' . htmlspecialchars($cat_name)) : '';
+            ?>
             <div class="alert alert-light border shadow-sm rounded-4 mb-4 p-3 d-flex align-items-center justify-content-between flex-wrap gap-2" style="background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%); border-left: 4px solid #3b82f6 !important;">
                 <div class="d-flex align-items-center gap-3">
                     <div class="rounded-circle bg-primary bg-opacity-10 text-primary p-2 px-3">
@@ -266,12 +274,12 @@ if (!empty($global_settings[$setting_key])) {
                     </div>
                     <div>
                         <h6 class="fw-bold mb-0 text-dark">Official Product Catalogue</h6>
-                        <span class="small text-muted">Explore specifications, motor ratings, and models in our complete PDF catalogue.</span>
+                        <span class="small text-muted">Explore specifications, motor ratings, and models in our complete PDF catalogue<?php echo $cat_btn_label ? " for <strong>" . $cat_btn_label . "</strong>" : ""; ?>.</span>
                     </div>
                 </div>
                 <div class="d-flex align-items-center gap-2">
-                    <a href="<?php echo SITE_URL; ?>/catalogue.php" target="_blank" class="btn btn-sm btn-primary rounded-pill px-3 py-2 fw-semibold shadow-sm">
-                        <i class="fas fa-file-download me-1"></i> Download Catalogue (PDF)
+                    <a href="<?php echo SITE_URL; ?>/catalogue.php<?php echo $cat_param; ?>" target="_blank" class="btn btn-sm btn-primary rounded-pill px-3 py-2 fw-semibold shadow-sm">
+                        <i class="fas fa-file-download me-1"></i> Download Catalogue (PDF)<?php echo $cat_btn_label; ?>
                     </a>
                 </div>
             </div>

@@ -138,6 +138,23 @@ $pl_show_stock = ($cfg['price_list_show_stock'] ?? '1') === '1';
 $prod_count_q = $conn->query("SELECT COUNT(*) as total, SUM(CASE WHEN bulk_price > 0 THEN 1 ELSE 0 END) as bulk_total FROM products");
 $prod_stats = $prod_count_q ? $prod_count_q->fetch_assoc() : ['total' => 0, 'bulk_total' => 0];
 
+// Fetch store categories with product counts
+$categories_res = $conn->query("
+    SELECT c.id, c.name, c.slug, 
+           COUNT(p.id) as product_count,
+           SUM(CASE WHEN p.bulk_price > 0 THEN 1 ELSE 0 END) as bulk_count
+    FROM categories c 
+    LEFT JOIN products p ON p.category_id = c.id
+    GROUP BY c.id, c.name, c.slug 
+    ORDER BY c.name ASC
+");
+$all_categories = [];
+if ($categories_res) {
+    while ($crow = $categories_res->fetch_assoc()) {
+        $all_categories[] = $crow;
+    }
+}
+
 $preview_url = SITE_URL . '/price_list.php';
 ?>
 
@@ -404,7 +421,18 @@ $preview_url = SITE_URL . '/price_list.php';
                             <select name="price_list_filter" class="form-select">
                                 <option value="all" <?php echo ($pl_filter === 'all') ? 'selected' : ''; ?>>All Active Products (Show full catalog with MRP and Bulk rates)</option>
                                 <option value="bulk_only" <?php echo ($pl_filter === 'bulk_only') ? 'selected' : ''; ?>>Wholesale Products Only (Only products that have a Bulk/Retailer price set)</option>
+                                <?php if (!empty($all_categories)): ?>
+                                    <optgroup label="── Filter by Specific Category ──">
+                                        <?php foreach ($all_categories as $citem): ?>
+                                            <?php $cat_val = 'category:' . $citem['id']; ?>
+                                            <option value="<?php echo htmlspecialchars($cat_val); ?>" <?php echo ($pl_filter === $cat_val) ? 'selected' : ''; ?>>
+                                                Category: <?php echo htmlspecialchars($citem['name']); ?> (<?php echo (int)$citem['product_count']; ?> Total / <?php echo (int)$citem['bulk_count']; ?> Wholesale)
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </optgroup>
+                                <?php endif; ?>
                             </select>
+                            <div class="form-text">Choose whether the wholesale price list covers all products or defaults to a specific product category. Wholesalers can also switch categories on the live price list.</div>
                         </div>
 
                         <div class="mb-3">
@@ -507,7 +535,7 @@ $preview_url = SITE_URL . '/price_list.php';
                     </div>
                     <div class="card-body p-4">
                         <p class="small text-muted mb-3">Test how the price list looks right now from the frontend perspective:</p>
-                        <div class="d-grid gap-2">
+                        <div class="d-grid gap-2 mb-3">
                             <a href="<?php echo htmlspecialchars($preview_url); ?>" target="_blank" class="btn btn-outline-primary rounded-pill py-2 fw-semibold">
                                 <i class="fas fa-eye me-2"></i> Open Frontend Price List View
                             </a>
@@ -515,6 +543,19 @@ $preview_url = SITE_URL . '/price_list.php';
                                 <i class="fas fa-store me-2"></i> Visit Shop Page
                             </a>
                         </div>
+                        <?php if (!empty($all_categories)): ?>
+                            <label class="small fw-bold text-muted d-block mb-1">Quick Test Category View:</label>
+                            <select class="form-select form-select-sm rounded-pill" onchange="if(this.value) window.open(this.value, '_blank');">
+                                <option value="">Select a category to test...</option>
+                                <?php foreach ($all_categories as $citem): ?>
+                                    <?php if ((int)$citem['product_count'] > 0): ?>
+                                        <option value="<?php echo htmlspecialchars($preview_url); ?>?category=<?php echo $citem['id']; ?>">
+                                            <?php echo htmlspecialchars($citem['name']); ?> (<?php echo (int)$citem['product_count']; ?>)
+                                        </option>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
+                            </select>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>

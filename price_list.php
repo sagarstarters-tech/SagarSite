@@ -141,8 +141,70 @@ if ($source_mode === 'custom_pdf' && !empty($custom_pdf_abs) && file_exists($cus
     exit;
 }
 
-// ── 4. Dynamic Catalog Mode — Query Products from Database ─────
-$filter_mode = $global_settings['price_list_filter'] ?? 'all';
+// ── 4. Dynamic Catalog Mode — Query Categories & Products from Database
+// Fetch all store categories with product counts (and wholesale counts)
+$categories_res = $conn->query("
+    SELECT c.id, c.name, c.slug, 
+           COUNT(p.id) as product_count,
+           SUM(CASE WHEN p.bulk_price > 0 THEN 1 ELSE 0 END) as bulk_count
+    FROM categories c 
+    INNER JOIN products p ON p.category_id = c.id
+    GROUP BY c.id, c.name, c.slug 
+    HAVING product_count > 0 
+    ORDER BY c.name ASC
+");
+$all_categories = [];
+$total_catalog_products = 0;
+if ($categories_res) {
+    while ($crow = $categories_res->fetch_assoc()) {
+        $all_categories[] = $crow;
+        $total_catalog_products += (int)$crow['product_count'];
+    }
+}
+
+// Determine active category filter (URL override takes precedence over admin setting)
+$configured_filter = $global_settings['price_list_filter'] ?? 'all';
+$url_category = isset($_GET['category']) ? trim($_GET['category']) : (isset($_GET['cat']) ? trim($_GET['cat']) : (isset($_GET['category_id']) ? trim($_GET['category_id']) : ''));
+
+$active_cat_id = null;
+$active_cat_name = null;
+$active_cat_slug = null;
+
+if ($url_category !== '') {
+    if ($url_category !== 'all' && $url_category !== '0') {
+        foreach ($all_categories as $c) {
+            if ((string)$c['id'] === (string)$url_category || $c['slug'] === $url_category) {
+                $active_cat_id = (int)$c['id'];
+                $active_cat_name = $c['name'];
+                $active_cat_slug = $c['slug'];
+                break;
+            }
+        }
+        if (!$active_cat_id && is_numeric($url_category)) {
+            $cstmt = $conn->prepare("SELECT id, name, slug FROM categories WHERE id = ?");
+            $cstmt->bind_param("i", $url_category);
+            $cstmt->execute();
+            $cres = $cstmt->get_result();
+            if ($cinfo = $cres->fetch_assoc()) {
+                $active_cat_id = (int)$cinfo['id'];
+                $active_cat_name = $cinfo['name'];
+                $active_cat_slug = $cinfo['slug'];
+            }
+            $cstmt->close();
+        }
+    }
+} elseif (strpos($configured_filter, 'category:') === 0) {
+    $target_cid = (int)substr($configured_filter, 9);
+    foreach ($all_categories as $c) {
+        if ((int)$c['id'] === $target_cid) {
+            $active_cat_id = (int)$c['id'];
+            $active_cat_name = $c['name'];
+            $active_cat_slug = $c['slug'];
+            break;
+        }
+    }
+}
+
 $sql = "
     SELECT 
         p.id, 
@@ -158,13 +220,17 @@ $sql = "
         p.min_order_qty, 
         p.stock, 
         p.image, 
-        c.name as category_name
+        c.id as category_id,
+        c.name as category_name,
+        c.slug as category_slug
     FROM products p
     LEFT JOIN categories c ON p.category_id = c.id
     WHERE 1=1
 ";
 
-if ($filter_mode === 'bulk_only') {
+if ($active_cat_id) {
+    $sql .= " AND p.category_id = " . (int)$active_cat_id . " ";
+} elseif ($configured_filter === 'bulk_only' && empty($url_category)) {
     $sql .= " AND p.bulk_price > 0 ";
 }
 
@@ -172,11 +238,13 @@ $sql .= " ORDER BY COALESCE(c.name, 'Z_Other') ASC, p.name ASC";
 
 $products_res = $conn->query($sql);
 $catalog = [];
+$total_matched_items = 0;
 
 if ($products_res) {
     while ($row = $products_res->fetch_assoc()) {
         $cat = !empty($row['category_name']) ? trim($row['category_name']) : 'General Products';
         $catalog[$cat][] = $row;
+        $total_matched_items++;
     }
 }
 
@@ -573,6 +641,84 @@ $auto_download = isset($_GET['download']) && $_GET['download'] == '1';
             color: #64748b;
         }
 
+        /* ── Category Filter Select & Pills ───────────────────── */
+        .cat-filter-select {
+            background-color: rgba(255, 255, 255, 0.12);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.28);
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            max-width: 250px;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+        .cat-filter-select:focus {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.25);
+        }
+        .cat-filter-select option {
+            background: #0f172a;
+            color: #ffffff;
+        }
+        .cat-pill-bar {
+            padding: 12px 20px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .cat-pill-link {
+            text-decoration: none;
+            font-size: 0.78rem;
+            font-weight: 600;
+            padding: 5px 12px;
+            border-radius: 20px;
+            background: #ffffff;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.2s ease;
+        }
+        .cat-pill-link:hover {
+            background: #e2e8f0;
+            color: #0f172a;
+            transform: translateY(-1px);
+        }
+        .cat-pill-link.active {
+            background: #2563eb;
+            color: #ffffff;
+            border-color: #2563eb;
+            box-shadow: 0 3px 8px rgba(37, 99, 235, 0.3);
+        }
+        .cat-pill-count {
+            background: rgba(0, 0, 0, 0.08);
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+        }
+        .cat-pill-link.active .cat-pill-count {
+            background: rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+        }
+        .cat-clear-link {
+            font-size: 0.75rem;
+            color: #ef4444;
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+        }
+        .cat-clear-link:hover {
+            text-decoration: underline;
+        }
+
         /* ── Print Media Optimization ──────────────────────────── */
         @page {
             size: A4 portrait;
@@ -581,6 +727,7 @@ $auto_download = isset($_GET['download']) && $_GET['download'] == '1';
         @media print {
             body { background: #ffffff !important; }
             #action-bar { display: none !important; }
+            .no-print, .cat-pill-bar { display: none !important; }
             .doc-wrapper { padding: 0 !important; }
             .doc-page {
                 box-shadow: none !important;
@@ -610,6 +757,23 @@ $auto_download = isset($_GET['download']) && $_GET['download'] == '1';
             </div>
         </div>
         <div class="action-btns">
+            <!-- Category Filter in Action Bar -->
+            <?php if (!empty($all_categories)): ?>
+            <div class="d-flex align-items-center gap-1">
+                <label for="actionCatFilterPl" class="small text-white text-opacity-75 d-none d-lg-inline text-nowrap m-0">
+                    <i class="fas fa-layer-group text-warning me-1"></i> Category:
+                </label>
+                <select id="actionCatFilterPl" class="cat-filter-select" onchange="filterPriceListCategory(this.value)">
+                    <option value="all" <?php echo empty($active_cat_id) ? 'selected' : ''; ?>>All Categories (<?php echo $total_catalog_products; ?>)</option>
+                    <?php foreach ($all_categories as $citem): ?>
+                        <option value="<?php echo $citem['id']; ?>" <?php echo ($active_cat_id == $citem['id']) ? 'selected' : ''; ?>>
+                            <?php echo htmlspecialchars($citem['name']); ?> (<?php echo $citem['product_count']; ?>)
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <?php endif; ?>
+
             <button type="button" class="btn-act btn-act-pdf" id="btnDownloadPdf" onclick="downloadPDF()">
                 <i class="fas fa-file-download"></i> Download PDF
             </button>
@@ -662,9 +826,36 @@ $auto_download = isset($_GET['download']) && $_GET['download'] == '1';
                 <p class="title-banner-sub"><?php echo htmlspecialchars($doc_subtitle); ?></p>
             </div>
             <div class="recipient-pill">
-                <i class="fas fa-check-circle text-success me-1"></i> Authorized B2B / Wholesale Rates
+                <i class="fas fa-check-circle text-success me-1"></i> Authorized B2B Rates
+                <?php if (!empty($active_cat_name)): ?>
+                    &bull; <strong><?php echo htmlspecialchars($active_cat_name); ?></strong> (<?php echo $total_matched_items; ?> Items)
+                <?php endif; ?>
             </div>
         </div>
+
+        <!-- Interactive Category Filter Pills (Screen Only) -->
+        <?php if (!empty($all_categories) && count($all_categories) > 1): ?>
+        <div class="cat-pill-bar no-print">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <span class="small fw-bold text-dark"><i class="fas fa-layer-group text-primary me-1"></i> Category:</span>
+                    <a href="javascript:void(0);" onclick="filterPriceListCategory('all')" class="cat-pill-link <?php echo empty($active_cat_id) ? 'active' : ''; ?>">
+                        All Products (<?php echo $total_catalog_products; ?>)
+                    </a>
+                    <?php foreach ($all_categories as $citem): ?>
+                        <a href="javascript:void(0);" onclick="filterPriceListCategory('<?php echo $citem['id']; ?>')" class="cat-pill-link <?php echo ($active_cat_id == $citem['id']) ? 'active' : ''; ?>">
+                            <?php echo htmlspecialchars($citem['name']); ?> <span class="cat-pill-count"><?php echo $citem['product_count']; ?></span>
+                        </a>
+                    <?php endforeach; ?>
+                </div>
+                <?php if (!empty($active_cat_id)): ?>
+                    <a href="javascript:void(0);" onclick="filterPriceListCategory('all')" class="cat-clear-link">
+                        <i class="fas fa-times-circle me-1"></i> View All Categories
+                    </a>
+                <?php endif; ?>
+            </div>
+        </div>
+        <?php endif; ?>
 
         <!-- Product Catalog Listing by Category -->
         <?php if (empty($catalog)): ?>
@@ -792,6 +983,19 @@ $auto_download = isset($_GET['download']) && $_GET['download'] == '1';
 <!-- html2pdf Client-side High-Resolution PDF Generator -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
+function filterPriceListCategory(catId) {
+    var url = new URL(window.location.href);
+    if (catId === 'all') {
+        url.searchParams.delete('category');
+        url.searchParams.delete('cat');
+        url.searchParams.delete('category_id');
+    } else {
+        url.searchParams.set('category', catId);
+    }
+    url.searchParams.delete('download');
+    window.location.href = url.toString();
+}
+
 function downloadPDF() {
     var btn = document.getElementById('btnDownloadPdf');
     var origText = btn.innerHTML;
@@ -799,9 +1003,12 @@ function downloadPDF() {
     btn.disabled = true;
 
     var element = document.getElementById('priceListDocument');
+    var catSuffix = <?php echo json_encode(!empty($active_cat_slug) ? preg_replace('/[^a-zA-Z0-9_-]/', '_', $active_cat_slug) : (!empty($active_cat_name) ? preg_replace('/[^a-zA-Z0-9_-]/', '_', $active_cat_name) : 'All_Products')); ?>;
+    var filename = '<?php echo preg_replace('/[^a-zA-Z0-9_-]/', '_', $store_name); ?>_Price_List_' + catSuffix + '_<?php echo date('Y'); ?>.pdf';
+
     var opt = {
         margin: [6, 6, 8, 6],
-        filename: '<?php echo preg_replace('/[^a-zA-Z0-9_-]/', '_', $store_name); ?>_Price_List_<?php echo date('Y-m-d'); ?>.pdf',
+        filename: filename,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, logging: false },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
