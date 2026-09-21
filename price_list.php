@@ -184,8 +184,21 @@ if ($products_res) {
 $store_name    = $global_settings['site_name'] ?? "Sagar Starter's";
 $store_phone   = $global_settings['contact_phone'] ?? '';
 $store_email   = $global_settings['contact_email'] ?? '';
-$store_address = $global_settings['store_address'] ?? '';
-$gst_number    = $global_settings['gst_number'] ?? '';
+
+// Address resolution with multi-key fallback
+$raw_address   = !empty($global_settings['contact_address']) 
+    ? $global_settings['contact_address'] 
+    : (!empty($global_settings['store_address']) 
+        ? $global_settings['store_address'] 
+        : ($global_settings['invoice_store_address'] ?? ''));
+$store_address = trim(preg_replace('/\s*[\r\n]+\s*/', ', ', $raw_address));
+
+// GST number resolution with multi-key fallback
+$gst_number    = !empty($global_settings['invoice_gst_number']) 
+    ? $global_settings['invoice_gst_number'] 
+    : (!empty($global_settings['gst_number']) 
+        ? $global_settings['gst_number'] 
+        : ($global_settings['business_gst_number'] ?? ''));
 $currency      = $global_currency ?? '₹';
 
 $logo_val = $global_settings['header_logo_image'] ?? 'logo.jpg';

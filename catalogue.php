@@ -122,8 +122,21 @@ if ($products_res) {
 $store_name    = $global_settings['site_name'] ?? "Sagar Starter's";
 $store_phone   = $global_settings['contact_phone'] ?? '';
 $store_email   = $global_settings['contact_email'] ?? '';
-$store_address = $global_settings['store_address'] ?? '';
-$gst_number    = $global_settings['gst_number'] ?? '';
+
+// Address resolution with multi-key fallback
+$raw_address   = !empty($global_settings['contact_address']) 
+    ? $global_settings['contact_address'] 
+    : (!empty($global_settings['store_address']) 
+        ? $global_settings['store_address'] 
+        : ($global_settings['invoice_store_address'] ?? ''));
+$store_address = trim(preg_replace('/\s*[\r\n]+\s*/', ', ', $raw_address));
+
+// GST number resolution with multi-key fallback
+$gst_number    = !empty($global_settings['invoice_gst_number']) 
+    ? $global_settings['invoice_gst_number'] 
+    : (!empty($global_settings['gst_number']) 
+        ? $global_settings['gst_number'] 
+        : ($global_settings['business_gst_number'] ?? ''));
 $currency      = $global_currency ?? '₹';
 
 $logo_val = $global_settings['header_logo_image'] ?? 'logo.jpg';
@@ -596,10 +609,16 @@ $wa_phone_clean = preg_replace('/[^0-9]/', '', $store_phone);
                 <p><?php echo htmlspecialchars($doc_subtitle); ?></p>
             </div>
             <div class="cover-meta-grid">
-                <div><i class="fas fa-phone-alt"></i> <?php echo htmlspecialchars($store_phone); ?></div>
-                <div><i class="fas fa-envelope"></i> <?php echo htmlspecialchars($store_email); ?></div>
-                <div><i class="fas fa-map-marker-alt"></i> <?php echo htmlspecialchars($store_address); ?></div>
-                <div><i class="fas fa-file-invoice"></i> GSTIN: <?php echo htmlspecialchars($gst_number ?: 'Available on request'); ?></div>
+                <?php if (!empty($store_phone)): ?>
+                    <div><i class="fas fa-phone-alt"></i> <?php echo htmlspecialchars($store_phone); ?></div>
+                <?php endif; ?>
+                <?php if (!empty($store_email)): ?>
+                    <div><i class="fas fa-envelope"></i> <?php echo htmlspecialchars($store_email); ?></div>
+                <?php endif; ?>
+                <?php if (!empty($store_address)): ?>
+                    <div><i class="fas fa-map-marker-alt"></i> <?php echo htmlspecialchars($store_address); ?></div>
+                <?php endif; ?>
+                <div><i class="fas fa-file-invoice"></i> GSTIN: <?php echo htmlspecialchars(!empty($gst_number) ? $gst_number : 'Available on request'); ?></div>
             </div>
         </div>
 
@@ -699,9 +718,17 @@ $wa_phone_clean = preg_replace('/[^0-9]/', '', $store_phone);
                     We welcome distributors, agricultural retailers, electric pump contractors, and dealers nationwide. Attractive wholesale margin structures, guaranteed spare support, and rapid turnaround on custom starter panels available.
                 </p>
                 <div class="inquiry-contacts">
-                    <div><i class="fas fa-phone-alt text-warning me-1"></i> <?php echo htmlspecialchars($store_phone); ?></div>
+                    <?php if (!empty($store_phone)): ?>
+                        <div><i class="fas fa-phone-alt text-warning me-1"></i> <?php echo htmlspecialchars($store_phone); ?></div>
+                    <?php endif; ?>
                     <div><i class="fab fa-whatsapp text-success me-1"></i> <a href="https://wa.me/<?php echo $wa_phone_clean; ?>" target="_blank">Chat on WhatsApp</a></div>
                     <div><i class="fas fa-globe text-info me-1"></i> <a href="<?php echo SITE_URL; ?>" target="_blank"><?php echo parse_url(SITE_URL, PHP_URL_HOST) ?: 'sagarstarters.com'; ?></a></div>
+                    <?php if (!empty($store_address)): ?>
+                        <div><i class="fas fa-map-marker-alt text-danger me-1"></i> <?php echo htmlspecialchars($store_address); ?></div>
+                    <?php endif; ?>
+                    <?php if (!empty($gst_number)): ?>
+                        <div><i class="fas fa-file-invoice text-primary me-1"></i> GSTIN: <?php echo htmlspecialchars($gst_number); ?></div>
+                    <?php endif; ?>
                 </div>
             </div>
             <div class="official-seal-box">
