@@ -302,13 +302,48 @@ $share_text  = "Sagar Starter's Wholesale & Retailer Price List (Official PDF): 
 $gen_date = date('d M Y, h:i A');
 $user_role_label = ($user_role === 'admin') ? 'Store Administrator' : 'Verified Wholesale Retailer';
 $auto_download = isset($_GET['download']) && $_GET['download'] == '1';
+
+// ── Open Graph & Social Share Metadata ───────────────────────
+$page_html_title = (stripos($doc_title, $store_name) !== false) ? $doc_title : ($doc_title . ' — ' . $store_name);
+$og_description  = !empty($doc_subtitle) ? $doc_subtitle : (isset($doc_note) ? substr(strip_tags($doc_note), 0, 160) : "Official wholesale and retailer price list for Sagar Starter's motors, panels & switchgear.");
+
+$og_base_url = (isset($_SERVER['HTTP_HOST']) && $_SERVER['HTTP_HOST'] !== 'localhost' && $_SERVER['HTTP_HOST'] !== '127.0.0.1')
+    ? (((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443)) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST']
+    : (defined('SITE_URL') && strpos(SITE_URL, 'http') === 0 ? rtrim(SITE_URL, '/') : 'https://www.sagarstarters.com');
+
+$og_banner_file  = __DIR__ . '/assets/images/price_list_og_banner.jpg';
+$og_banner_v     = file_exists($og_banner_file) ? filemtime($og_banner_file) : '2026';
+$og_image_url    = $og_base_url . '/assets/images/price_list_og_banner.jpg?v=' . $og_banner_v;
+$og_image_secure = (strpos($og_image_url, 'http://') === 0) ? preg_replace('/^http:/', 'https:', $og_image_url) : $og_image_url;
+$og_canonical_url = $og_base_url . '/price_list.php' . (!empty($active_cat_id) ? '?category=' . urlencode($active_cat_id) : '');
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" prefix="og: https://ogp.me/ns#">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($doc_title); ?> — <?php echo htmlspecialchars($store_name); ?></title>
+    <title><?php echo htmlspecialchars($page_html_title); ?></title>
+    <meta name="description" content="<?php echo htmlspecialchars($og_description); ?>">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="<?php echo htmlspecialchars($store_name); ?>">
+    <meta property="og:url" content="<?php echo htmlspecialchars($og_canonical_url); ?>">
+    <meta property="og:title" content="<?php echo htmlspecialchars($page_html_title); ?>">
+    <meta property="og:description" content="<?php echo htmlspecialchars($og_description); ?>">
+    <meta property="og:image" content="<?php echo htmlspecialchars($og_image_url); ?>">
+    <meta property="og:image:secure_url" content="<?php echo htmlspecialchars($og_image_secure); ?>">
+    <meta property="og:image:type" content="image/jpeg">
+    <meta property="og:image:width" content="1376">
+    <meta property="og:image:height" content="768">
+    <meta property="og:image:alt" content="<?php echo htmlspecialchars($page_html_title); ?>">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="<?php echo htmlspecialchars($og_canonical_url); ?>">
+    <meta name="twitter:title" content="<?php echo htmlspecialchars($page_html_title); ?>">
+    <meta name="twitter:description" content="<?php echo htmlspecialchars($og_description); ?>">
+    <meta name="twitter:image" content="<?php echo htmlspecialchars($og_image_url); ?>">
     <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
