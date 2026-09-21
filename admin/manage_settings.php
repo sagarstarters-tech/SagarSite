@@ -449,6 +449,7 @@ if ($active_tab === 'frontend') {
         <a class="adm-filter-tab <?php echo $active_tab == 'social_login' ? 'active' : ''; ?>" href="?tab=social_login"><i class="fas fa-user-lock me-1"></i>Social Login</a>
         <a class="adm-filter-tab <?php echo $active_tab == 'testimonials' ? 'active' : ''; ?>" href="?tab=testimonials"><i class="fas fa-comment-dots me-1"></i>Testimonials</a>
         <a class="adm-filter-tab" href="manage_price_list.php"><i class="fas fa-file-pdf me-1 text-danger"></i>Price List (PDF)</a>
+        <a class="adm-filter-tab" href="manage_catalogue.php"><i class="fas fa-book-open me-1 text-primary"></i>Catalogue (PDF)</a>
     </div>
 
 <div class="tab-content" id="settingsTabContent">

@@ -591,6 +591,9 @@ if (isset($product['slug'])) {
                        <?php if(isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
                            <li><a class="dropdown-item" href="<?php echo $clean_site_url; ?>/admin/index.php">Admin Panel</a></li>
                        <?php endif; ?>
+                       <?php if (($global_settings['catalogue_enabled'] ?? '1') === '1'): ?>
+                           <li><a class="dropdown-item" href="<?php echo $clean_site_url; ?>/catalogue.php" target="_blank"><i class="fas fa-book-open text-primary me-2"></i>Product Catalogue (PDF)</a></li>
+                       <?php endif; ?>
                        <li><a class="dropdown-item text-danger" href="<?php echo $clean_site_url; ?>/includes/auth.php?action=logout">Logout</a></li>
                    </ul>
               </div>
@@ -679,6 +682,14 @@ if (isset($product['slug'])) {
             }
         }
         ?>
+        <?php if (($global_settings['catalogue_enabled'] ?? '1') === '1'): ?>
+            <li class="nav-item">
+                <a class="nav-link fw-bold d-flex align-items-center gap-1 text-primary" href="<?php echo SITE_URL; ?>/catalogue.php" target="_blank" title="Download Product Catalogue (PDF)">
+                    <i class="fas fa-file-pdf text-danger"></i>
+                    <span>Catalogue</span>
+                </a>
+            </li>
+        <?php endif; ?>
       </ul>
     </div>
 
@@ -780,6 +791,7 @@ function refreshUserState() {
                             <li><a class="dropdown-item" href="${cleanBaseUrl}/user/orders.php">My Orders</a></li>
                             ${data.can_download_price_list ? `<li><a class="dropdown-item" href="${cleanBaseUrl}/price_list.php" target="_blank"><i class="fas fa-file-pdf text-danger me-2"></i>Price List (PDF)</a></li>` : ''}
                             ${data.role === 'admin' ? `<li><a class="dropdown-item" href="${cleanBaseUrl}/admin/index.php">Admin Panel</a></li>` : ''}
+                            <li><a class="dropdown-item" href="${cleanBaseUrl}/catalogue.php" target="_blank"><i class="fas fa-book-open text-primary me-2"></i>Product Catalogue (PDF)</a></li>
                             <li><a class="dropdown-item text-danger" href="${cleanBaseUrl}/includes/auth.php?action=logout">Logout</a></li>
                         </ul>
                     </div>

@@ -38,7 +38,7 @@ return [
     [
         'label'    => 'Products',
         'icon'     => 'fa-box',
-        'pages'    => ['manage_products.php', 'manage_categories.php', 'manage_price_list.php'],
+        'pages'    => ['manage_products.php', 'manage_categories.php', 'manage_price_list.php', 'manage_catalogue.php'],
         'children' => [
             [
                 'label'  => 'All Products',
@@ -65,6 +65,12 @@ return [
                 'icon'  => 'fa-file-pdf',
                 'url'   => 'manage_price_list.php',
                 'pages' => ['manage_price_list.php'],
+            ],
+            [
+                'label' => 'Product Catalogue (PDF)',
+                'icon'  => 'fa-book-open',
+                'url'   => 'manage_catalogue.php',
+                'pages' => ['manage_catalogue.php'],
             ],
         ],
     ],

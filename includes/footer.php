@@ -105,6 +105,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['subscribe_email'])) {
                     echo '<li class="text-muted small">No links added.</li>';
                 }
                 ?>
+                <?php if (($global_settings['catalogue_enabled'] ?? '1') === '1'): ?>
+                    <li class="mb-2">
+                        <a href="<?php echo SITE_URL; ?>/catalogue.php" target="_blank" class="footer-link">
+                            <i class="fas fa-file-pdf text-danger me-1"></i> Product Catalogue (PDF)
+                        </a>
+                    </li>
+                <?php endif; ?>
             </ul>
         </div>
         
