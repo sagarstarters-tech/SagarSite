@@ -80,11 +80,26 @@ if ($cat_source === 'custom_pdf' && !empty($custom_pdf_abs) && file_exists($cust
 }
 
 // ── 3. Dynamic Visual Catalogue — Query Categories & Products from DB ─
-// Fetch all store categories with product counts
+// Admin configured selected categories (multi-select checkboxes)
+$raw_cat_selection = $global_settings['catalogue_selected_categories'] ?? '';
+$admin_selected_cat_ids = [];
+if ($raw_cat_selection === 'none') {
+    $admin_selected_cat_ids = [-1]; // Explicitly none selected
+} elseif (!empty($raw_cat_selection) && $raw_cat_selection !== 'all') {
+    $admin_selected_cat_ids = array_filter(array_map('intval', explode(',', $raw_cat_selection)));
+}
+
+$cat_where_clause = "";
+if (!empty($admin_selected_cat_ids)) {
+    $cat_where_clause = " AND c.id IN (" . implode(',', $admin_selected_cat_ids) . ") ";
+}
+
+// Fetch all store categories with product counts (restricted to admin selected categories)
 $categories_res = $conn->query("
     SELECT c.id, c.name, c.slug, COUNT(p.id) as product_count 
     FROM categories c 
     INNER JOIN products p ON p.category_id = c.id
+    WHERE 1=1 $cat_where_clause
     GROUP BY c.id, c.name, c.slug 
     HAVING product_count > 0 
     ORDER BY c.name ASC
@@ -129,16 +144,6 @@ if ($url_category !== '') {
             $cstmt->close();
         }
     }
-} elseif (strpos($configured_filter, 'category:') === 0) {
-    $target_cid = (int)substr($configured_filter, 9);
-    foreach ($all_categories as $c) {
-        if ((int)$c['id'] === $target_cid) {
-            $active_cat_id = (int)$c['id'];
-            $active_cat_name = $c['name'];
-            $active_cat_slug = $c['slug'];
-            break;
-        }
-    }
 }
 
 $sql = "
@@ -163,6 +168,10 @@ $sql = "
     LEFT JOIN categories c ON p.category_id = c.id
     WHERE 1=1
 ";
+
+if (!empty($admin_selected_cat_ids)) {
+    $sql .= " AND p.category_id IN (" . implode(',', $admin_selected_cat_ids) . ") ";
+}
 
 if ($active_cat_id) {
     $sql .= " AND p.category_id = " . (int)$active_cat_id . " ";

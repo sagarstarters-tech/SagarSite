@@ -39,6 +39,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         save_catalogue_setting($conn, 'catalogue_about', $about);
         save_catalogue_setting($conn, 'catalogue_filter', $filter);
 
+        // Save selected categories (multi-select checkboxes)
+        if (isset($_POST['catalogue_categories']) && is_array($_POST['catalogue_categories'])) {
+            $cat_ids = array_filter(array_map('intval', $_POST['catalogue_categories']));
+            $cat_str = !empty($cat_ids) ? implode(',', $cat_ids) : 'none';
+        } else {
+            $cat_str = 'none';
+        }
+        save_catalogue_setting($conn, 'catalogue_selected_categories', $cat_str);
+
         save_catalogue_setting($conn, 'catalogue_show_price', $show_price);
         save_catalogue_setting($conn, 'catalogue_show_sku', $show_sku);
         save_catalogue_setting($conn, 'catalogue_show_features', $show_features);
@@ -139,6 +148,17 @@ if ($categories_res) {
     while ($crow = $categories_res->fetch_assoc()) {
         $all_categories[] = $crow;
     }
+}
+
+// Selected categories for catalogue
+$raw_cat_selection = $cfg['catalogue_selected_categories'] ?? '';
+if ($raw_cat_selection === 'none') {
+    $selected_cat_ids = [];
+} elseif (!empty($raw_cat_selection) && $raw_cat_selection !== 'all') {
+    $selected_cat_ids = array_filter(array_map('intval', explode(',', $raw_cat_selection)));
+} else {
+    // Default: all categories selected
+    $selected_cat_ids = array_map(function($c) { return (int)$c['id']; }, $all_categories);
 }
 
 $preview_url = SITE_URL . '/catalogue.php';
@@ -362,22 +382,44 @@ $preview_url = SITE_URL . '/catalogue.php';
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold text-dark">Product Inclusion Filter</label>
-                            <select name="catalogue_filter" class="form-select" id="catalogueFilterSelect">
-                                <option value="all" <?php echo ($cat_filter === 'all') ? 'selected' : ''; ?>>All Active Products (Complete Product Range)</option>
+                            <label class="form-label fw-bold text-dark">Product Status Filter</label>
+                            <select name="catalogue_filter" class="form-select">
+                                <option value="all" <?php echo ($cat_filter === 'all' || strpos($cat_filter, 'category:') === 0) ? 'selected' : ''; ?>>All Active Products in Selected Categories</option>
                                 <option value="trending_only" <?php echo ($cat_filter === 'trending_only') ? 'selected' : ''; ?>>Featured / Trending Products Only</option>
-                                <?php if (!empty($all_categories)): ?>
-                                    <optgroup label="── Filter by Specific Category ──">
-                                        <?php foreach ($all_categories as $citem): ?>
-                                            <?php $cat_val = 'category:' . $citem['id']; ?>
-                                            <option value="<?php echo htmlspecialchars($cat_val); ?>" <?php echo ($cat_filter === $cat_val) ? 'selected' : ''; ?>>
-                                                Category: <?php echo htmlspecialchars($citem['name']); ?> (<?php echo (int)$citem['product_count']; ?> Products)
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </optgroup>
-                                <?php endif; ?>
                             </select>
-                            <div class="form-text">Choose whether the default catalogue includes your entire inventory or defaults to a specific product category. Visitors can also switch categories on the live catalogue.</div>
+                        </div>
+
+                        <!-- Select Categories to Include in Catalogue (Checkbox Cards) -->
+                        <div class="mb-4">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <label class="form-label fw-bold text-dark mb-0">
+                                    <i class="fas fa-layer-group text-primary me-1"></i> Select Categories to Include in Catalogue
+                                </label>
+                                <div class="d-flex gap-1">
+                                    <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 rounded-pill" style="font-size: 0.72rem;" onclick="setAllCatCheckboxes(true)">Select All</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 rounded-pill" style="font-size: 0.72rem;" onclick="setAllCatCheckboxes(false)">Clear All</button>
+                                </div>
+                            </div>
+                            <div class="row g-2">
+                                <?php foreach ($all_categories as $citem): ?>
+                                    <?php 
+                                    $cid = (int)$citem['id'];
+                                    $is_checked = in_array($cid, $selected_cat_ids);
+                                    ?>
+                                    <div class="col-6">
+                                        <div class="form-check p-2 border rounded-2 d-flex align-items-center justify-content-between bg-white h-100">
+                                            <div class="d-flex align-items-center">
+                                                <input class="form-check-input cat-item-chk ms-0 me-2" type="checkbox" name="catalogue_categories[]" id="cat_chk_<?php echo $cid; ?>" value="<?php echo $cid; ?>" <?php echo $is_checked ? 'checked' : ''; ?>>
+                                                <label class="form-check-label small fw-semibold text-truncate" for="cat_chk_<?php echo $cid; ?>" style="max-width: 170px;" title="<?php echo htmlspecialchars($citem['name']); ?>">
+                                                    <?php echo htmlspecialchars($citem['name']); ?>
+                                                </label>
+                                            </div>
+                                            <span class="badge bg-light text-muted border ms-1" style="font-size: 0.7rem;"><?php echo (int)$citem['product_count']; ?></span>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <small class="text-muted d-block mt-1">Jis-jis category par tick laga hoga, Catalogue me sirf wahi categories aur unke products show honge.</small>
                         </div>
 
                         <label class="form-label fw-bold text-dark mb-2">Display Options in Product Cards</label>
@@ -455,7 +497,7 @@ $preview_url = SITE_URL . '/catalogue.php';
                     </div>
                     <div class="card-body p-4">
                         <p class="small text-muted mb-3">Test how your catalogue appears to website visitors:</p>
-                        <div class="d-grid gap-2 mb-3">
+                        <div class="d-grid gap-2">
                             <a href="<?php echo htmlspecialchars($preview_url); ?>" target="_blank" class="btn btn-outline-primary rounded-pill py-2 fw-semibold">
                                 <i class="fas fa-eye me-2"></i> Open Public Catalogue View
                             </a>
@@ -463,19 +505,6 @@ $preview_url = SITE_URL . '/catalogue.php';
                                 <i class="fas fa-store me-2"></i> Visit Shop Page
                             </a>
                         </div>
-                        <?php if (!empty($all_categories)): ?>
-                            <label class="small fw-bold text-muted d-block mb-1">Quick Test Category View:</label>
-                            <select class="form-select form-select-sm rounded-pill" onchange="if(this.value) window.open(this.value, '_blank');">
-                                <option value="">Select a category to test...</option>
-                                <?php foreach ($all_categories as $citem): ?>
-                                    <?php if ((int)$citem['product_count'] > 0): ?>
-                                        <option value="<?php echo htmlspecialchars($preview_url); ?>?category=<?php echo $citem['id']; ?>">
-                                            <?php echo htmlspecialchars($citem['name']); ?> (<?php echo (int)$citem['product_count']; ?>)
-                                        </option>
-                                    <?php endif; ?>
-                                <?php endforeach; ?>
-                            </select>
-                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -490,6 +519,12 @@ $preview_url = SITE_URL . '/catalogue.php';
 </form>
 
 <script>
+function setAllCatCheckboxes(val) {
+    document.querySelectorAll('.cat-item-chk').forEach(function(cb) {
+        cb.checked = val;
+    });
+}
+
 function toggleCatSource() {
     var isCustom = document.getElementById('src_custom').checked;
     var customCard = document.getElementById('customCatCard');

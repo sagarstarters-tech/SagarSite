@@ -44,6 +44,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         save_setting($conn, 'price_list_note', $note);
         save_setting($conn, 'price_list_filter', $filter);
 
+        // Save selected categories (multi-select checkboxes)
+        if (isset($_POST['price_list_categories']) && is_array($_POST['price_list_categories'])) {
+            $cat_ids = array_filter(array_map('intval', $_POST['price_list_categories']));
+            $cat_str = !empty($cat_ids) ? implode(',', $cat_ids) : 'none';
+        } else {
+            $cat_str = 'none';
+        }
+        save_setting($conn, 'price_list_selected_categories', $cat_str);
+
         save_setting($conn, 'price_list_show_image', $show_image);
         save_setting($conn, 'price_list_show_sku', $show_sku);
         save_setting($conn, 'price_list_show_category', $show_category);
@@ -153,6 +162,17 @@ if ($categories_res) {
     while ($crow = $categories_res->fetch_assoc()) {
         $all_categories[] = $crow;
     }
+}
+
+// Selected categories for price list
+$raw_pl_cat_selection = $cfg['price_list_selected_categories'] ?? '';
+if ($raw_pl_cat_selection === 'none') {
+    $selected_pl_cat_ids = [];
+} elseif (!empty($raw_pl_cat_selection) && $raw_pl_cat_selection !== 'all') {
+    $selected_pl_cat_ids = array_filter(array_map('intval', explode(',', $raw_pl_cat_selection)));
+} else {
+    // Default: all categories selected
+    $selected_pl_cat_ids = array_map(function($c) { return (int)$c['id']; }, $all_categories);
 }
 
 $preview_url = SITE_URL . '/price_list.php';
@@ -417,22 +437,44 @@ $preview_url = SITE_URL . '/price_list.php';
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold text-dark">Catalog Filter</label>
+                            <label class="form-label fw-bold text-dark">Wholesale Pricing Filter</label>
                             <select name="price_list_filter" class="form-select">
-                                <option value="all" <?php echo ($pl_filter === 'all') ? 'selected' : ''; ?>>All Active Products (Show full catalog with MRP and Bulk rates)</option>
+                                <option value="all" <?php echo ($pl_filter === 'all' || strpos($pl_filter, 'category:') === 0) ? 'selected' : ''; ?>>All Products in Selected Categories (Show MRP & Wholesale rates)</option>
                                 <option value="bulk_only" <?php echo ($pl_filter === 'bulk_only') ? 'selected' : ''; ?>>Wholesale Products Only (Only products that have a Bulk/Retailer price set)</option>
-                                <?php if (!empty($all_categories)): ?>
-                                    <optgroup label="── Filter by Specific Category ──">
-                                        <?php foreach ($all_categories as $citem): ?>
-                                            <?php $cat_val = 'category:' . $citem['id']; ?>
-                                            <option value="<?php echo htmlspecialchars($cat_val); ?>" <?php echo ($pl_filter === $cat_val) ? 'selected' : ''; ?>>
-                                                Category: <?php echo htmlspecialchars($citem['name']); ?> (<?php echo (int)$citem['product_count']; ?> Total / <?php echo (int)$citem['bulk_count']; ?> Wholesale)
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </optgroup>
-                                <?php endif; ?>
                             </select>
-                            <div class="form-text">Choose whether the wholesale price list covers all products or defaults to a specific product category. Wholesalers can also switch categories on the live price list.</div>
+                        </div>
+
+                        <!-- Select Categories to Include in Price List (Checkbox Cards) -->
+                        <div class="mb-4">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <label class="form-label fw-bold text-dark mb-0">
+                                    <i class="fas fa-layer-group text-primary me-1"></i> Select Categories to Include in Price List
+                                </label>
+                                <div class="d-flex gap-1">
+                                    <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 rounded-pill" style="font-size: 0.72rem;" onclick="setAllPlCatCheckboxes(true)">Select All</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 rounded-pill" style="font-size: 0.72rem;" onclick="setAllPlCatCheckboxes(false)">Clear All</button>
+                                </div>
+                            </div>
+                            <div class="row g-2">
+                                <?php foreach ($all_categories as $citem): ?>
+                                    <?php 
+                                    $cid = (int)$citem['id'];
+                                    $is_checked = in_array($cid, $selected_pl_cat_ids);
+                                    ?>
+                                    <div class="col-6">
+                                        <div class="form-check p-2 border rounded-2 d-flex align-items-center justify-content-between bg-white h-100">
+                                            <div class="d-flex align-items-center">
+                                                <input class="form-check-input pl-cat-item-chk ms-0 me-2" type="checkbox" name="price_list_categories[]" id="pl_cat_chk_<?php echo $cid; ?>" value="<?php echo $cid; ?>" <?php echo $is_checked ? 'checked' : ''; ?>>
+                                                <label class="form-check-label small fw-semibold text-truncate" for="pl_cat_chk_<?php echo $cid; ?>" style="max-width: 170px;" title="<?php echo htmlspecialchars($citem['name']); ?>">
+                                                    <?php echo htmlspecialchars($citem['name']); ?>
+                                                </label>
+                                            </div>
+                                            <span class="badge bg-light text-muted border ms-1" style="font-size: 0.7rem;"><?php echo (int)$citem['product_count']; ?></span>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <small class="text-muted d-block mt-1">Jis-jis category par tick laga hoga, Price List me sirf wahi categories aur unke products show honge.</small>
                         </div>
 
                         <div class="mb-3">
@@ -535,7 +577,7 @@ $preview_url = SITE_URL . '/price_list.php';
                     </div>
                     <div class="card-body p-4">
                         <p class="small text-muted mb-3">Test how the price list looks right now from the frontend perspective:</p>
-                        <div class="d-grid gap-2 mb-3">
+                        <div class="d-grid gap-2">
                             <a href="<?php echo htmlspecialchars($preview_url); ?>" target="_blank" class="btn btn-outline-primary rounded-pill py-2 fw-semibold">
                                 <i class="fas fa-eye me-2"></i> Open Frontend Price List View
                             </a>
@@ -543,19 +585,6 @@ $preview_url = SITE_URL . '/price_list.php';
                                 <i class="fas fa-store me-2"></i> Visit Shop Page
                             </a>
                         </div>
-                        <?php if (!empty($all_categories)): ?>
-                            <label class="small fw-bold text-muted d-block mb-1">Quick Test Category View:</label>
-                            <select class="form-select form-select-sm rounded-pill" onchange="if(this.value) window.open(this.value, '_blank');">
-                                <option value="">Select a category to test...</option>
-                                <?php foreach ($all_categories as $citem): ?>
-                                    <?php if ((int)$citem['product_count'] > 0): ?>
-                                        <option value="<?php echo htmlspecialchars($preview_url); ?>?category=<?php echo $citem['id']; ?>">
-                                            <?php echo htmlspecialchars($citem['name']); ?> (<?php echo (int)$citem['product_count']; ?>)
-                                        </option>
-                                    <?php endif; ?>
-                                <?php endforeach; ?>
-                            </select>
-                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -570,13 +599,18 @@ $preview_url = SITE_URL . '/price_list.php';
 </form>
 
 <script>
+function setAllPlCatCheckboxes(val) {
+    document.querySelectorAll('.pl-cat-item-chk').forEach(function(cb) {
+        cb.checked = val;
+    });
+}
+
 function toggleSourceSections() {
     var isCustom = document.getElementById('source_custom').checked;
     var customCard = document.getElementById('customPdfCard');
     var dynamicCard = document.getElementById('dynamicPdfCard');
-    if (customCard) {
-        customCard.style.display = isCustom ? 'block' : 'none';
-    }
+    if (customCard) customCard.style.display = isCustom ? 'block' : 'none';
+    if (dynamicCard) dynamicCard.style.display = isCustom ? 'none' : 'block';
 }
 </script>
 
