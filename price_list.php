@@ -293,6 +293,11 @@ $show_sale  = ($global_settings['price_list_show_sale_price'] ?? '1') === '1';
 $show_bulk  = ($global_settings['price_list_show_bulk_price'] ?? '1') === '1';
 $show_moq   = ($global_settings['price_list_show_moq'] ?? '1') === '1';
 $show_stock = ($global_settings['price_list_show_stock'] ?? '1') === '1';
+$show_share = ($global_settings['price_list_show_share'] ?? '1') === '1';
+
+$share_url   = SITE_URL . '/price_list.php' . (!empty($active_cat_id) ? '?category=' . urlencode($active_cat_id) : '');
+$share_title = $doc_title;
+$share_text  = "Sagar Starter's Wholesale & Retailer Price List (Official PDF): " . $share_url;
 
 $gen_date = date('d M Y, h:i A');
 $user_role_label = ($user_role === 'admin') ? 'Store Administrator' : 'Verified Wholesale Retailer';
@@ -373,6 +378,12 @@ $auto_download = isset($_GET['download']) && $_GET['download'] == '1';
             box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
         }
         .btn-act-print:hover { background: #1d4ed8; color: #fff; transform: translateY(-1px); }
+        .btn-act-share {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+        }
+        .btn-act-share:hover { background: #4338ca; color: #fff; transform: translateY(-1px); }
         .btn-act-store {
             background: rgba(255, 255, 255, 0.12);
             color: #f1f5f9;
@@ -385,6 +396,105 @@ $auto_download = isset($_GET['download']) && $_GET['download'] == '1';
             border: 1px solid rgba(245, 158, 11, 0.4);
         }
         .btn-act-admin:hover { background: rgba(245, 158, 11, 0.35); color: #fef3c7; }
+
+        /* ── Social Share & Copy Link Modal Styles ──────────────── */
+        .share-modal-backdrop {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.72);
+            backdrop-filter: blur(5px);
+            z-index: 999999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            animation: shareFadeIn 0.2s ease-out;
+        }
+        @keyframes shareFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .share-modal-box {
+            background: #ffffff;
+            border-radius: 16px;
+            max-width: 480px;
+            width: 100%;
+            padding: 24px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            position: relative;
+            animation: shareSlideUp 0.25s ease-out;
+        }
+        @keyframes shareSlideUp { from { transform: translateY(18px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .share-modal-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 18px;
+        }
+        .share-modal-title {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin: 0;
+            color: #0f172a;
+        }
+        .share-modal-sub {
+            font-size: 0.78rem;
+            color: #64748b;
+            margin: 3px 0 0 0;
+        }
+        .share-modal-close {
+            background: transparent;
+            border: none;
+            font-size: 1.75rem;
+            line-height: 1;
+            color: #94a3b8;
+            cursor: pointer;
+            padding: 0 4px;
+        }
+        .share-modal-close:hover { color: #0f172a; }
+        .share-copy-box {
+            display: flex;
+            gap: 8px;
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            padding: 6px 8px;
+            margin-bottom: 18px;
+        }
+        .share-copy-box input {
+            background: transparent;
+            border: none;
+            outline: none;
+            font-size: 0.82rem;
+            color: #334155;
+            flex-grow: 1;
+            font-family: monospace;
+        }
+        .share-social-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        .share-social-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            color: #fff !important;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        .share-social-btn:hover { transform: translateY(-2px); color: #fff !important; }
+        .share-wa { background: #25d366; }
+        .share-wa:hover { background: #1ebd59; }
+        .share-tg { background: #229ed9; }
+        .share-tg:hover { background: #1c88bc; }
+        .share-fb { background: #1877f2; }
+        .share-fb:hover { background: #1464cc; }
+        .share-x { background: #0f172a; }
+        .share-x:hover { background: #1e293b; }
 
         /* ── Main A4 Printable Document Container ──────────────── */
         .doc-wrapper {
@@ -795,6 +905,11 @@ $auto_download = isset($_GET['download']) && $_GET['download'] == '1';
             <button type="button" class="btn-act btn-act-print" onclick="window.print()">
                 <i class="fas fa-print"></i> Print / Save as PDF
             </button>
+            <?php if ($show_share): ?>
+            <button type="button" class="btn-act btn-act-share" onclick="openShareModal()">
+                <i class="fas fa-share-alt"></i> Share / Copy Link
+            </button>
+            <?php endif; ?>
             <a href="<?php echo SITE_URL; ?>/shop.php" class="btn-act btn-act-store">
                 <i class="fas fa-store"></i> Shop
             </a>
@@ -982,9 +1097,106 @@ $auto_download = isset($_GET['download']) && $_GET['download'] == '1';
     </div>
 </main>
 
+<!-- Social Share & Copy Link Modal -->
+<div id="shareModal" class="share-modal-backdrop" style="display: none;" onclick="if(event.target===this) closeShareModal();">
+    <div class="share-modal-box">
+        <div class="share-modal-header">
+            <div>
+                <h5 class="share-modal-title"><i class="fas fa-share-alt text-primary me-2"></i>Share / Copy Link</h5>
+                <p class="share-modal-sub">Share this Wholesale Price List with verified retailers and colleagues</p>
+            </div>
+            <button type="button" class="share-modal-close" onclick="closeShareModal()" aria-label="Close">&times;</button>
+        </div>
+
+        <div class="share-copy-box">
+            <input type="text" id="shareUrlInput" readonly value="<?php echo htmlspecialchars($share_url); ?>">
+            <button type="button" class="btn btn-primary btn-sm px-3" id="btnCopyShareLink" onclick="copyShareUrl()">
+                <i class="fas fa-copy me-1"></i> Copy Link
+            </button>
+        </div>
+
+        <div class="share-social-grid">
+            <a href="https://api.whatsapp.com/send?text=<?php echo urlencode($share_text); ?>" target="_blank" class="share-social-btn share-wa">
+                <i class="fab fa-whatsapp"></i> WhatsApp
+            </a>
+            <a href="https://t.me/share/url?url=<?php echo urlencode($share_url); ?>&text=<?php echo urlencode($share_title); ?>" target="_blank" class="share-social-btn share-tg">
+                <i class="fab fa-telegram-plane"></i> Telegram
+            </a>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=<?php echo urlencode($share_url); ?>" target="_blank" class="share-social-btn share-fb">
+                <i class="fab fa-facebook-f"></i> Facebook
+            </a>
+            <a href="https://twitter.com/intent/tweet?url=<?php echo urlencode($share_url); ?>&text=<?php echo urlencode($share_title); ?>" target="_blank" class="share-social-btn share-x">
+                <i class="fab fa-twitter"></i> Twitter / X
+            </a>
+        </div>
+
+        <button type="button" id="btnNativeShare" class="btn btn-outline-secondary w-100 mt-3 rounded-pill py-2 small fw-bold" style="display: none;" onclick="triggerNativeShare()">
+            <i class="fas fa-mobile-screen-button me-2"></i> More Sharing Options (Device)
+        </button>
+    </div>
+</div>
+
 <!-- html2pdf Client-side High-Resolution PDF Generator -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
+function openShareModal() {
+    var modal = document.getElementById('shareModal');
+    if (modal) modal.style.display = 'flex';
+    if (navigator.share) {
+        var nBtn = document.getElementById('btnNativeShare');
+        if (nBtn) nBtn.style.display = 'block';
+    }
+}
+
+function closeShareModal() {
+    var modal = document.getElementById('shareModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function copyShareUrl() {
+    var inp = document.getElementById('shareUrlInput');
+    var btn = document.getElementById('btnCopyShareLink');
+    if (!inp) return;
+    inp.select();
+    inp.setSelectionRange(0, 99999);
+    var orig = btn.innerHTML;
+
+    function done() {
+        btn.innerHTML = '<i class="fas fa-check me-1"></i> Copied!';
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-success');
+        setTimeout(function() {
+            btn.innerHTML = orig;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-primary');
+        }, 2000);
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(inp.value).then(done).catch(function() {
+            document.execCommand('copy');
+            done();
+        });
+    } else {
+        document.execCommand('copy');
+        done();
+    }
+}
+
+function triggerNativeShare() {
+    var inp = document.getElementById('shareUrlInput');
+    var url = inp ? inp.value : window.location.href;
+    if (navigator.share) {
+        navigator.share({
+            title: <?php echo json_encode($share_title); ?>,
+            text: <?php echo json_encode($share_text); ?>,
+            url: url
+        }).catch(function(err) {
+            console.log('Share dismissed:', err);
+        });
+    }
+}
+
 function filterPriceListCategory(catId) {
     var url = new URL(window.location.href);
     if (catId === 'all') {

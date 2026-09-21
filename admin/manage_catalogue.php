@@ -32,6 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $show_sku        = isset($_POST['catalogue_show_sku']) ? '1' : '0';
         $show_features   = isset($_POST['catalogue_show_features']) ? '1' : '0';
         $show_specs      = isset($_POST['catalogue_show_specs']) ? '1' : '0';
+        $show_share      = isset($_POST['catalogue_show_share']) ? '1' : '0';
 
         save_catalogue_setting($conn, 'catalogue_enabled', $enabled);
         save_catalogue_setting($conn, 'catalogue_source', $source);
@@ -54,6 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         save_catalogue_setting($conn, 'catalogue_show_sku', $show_sku);
         save_catalogue_setting($conn, 'catalogue_show_features', $show_features);
         save_catalogue_setting($conn, 'catalogue_show_specs', $show_specs);
+        save_catalogue_setting($conn, 'catalogue_show_share', $show_share);
 
         // Handle Custom PDF upload if provided
         if (isset($_FILES['custom_catalogue_file']) && $_FILES['custom_catalogue_file']['error'] === UPLOAD_ERR_OK) {
@@ -133,6 +135,7 @@ $cat_show_sale_price = ($cfg['catalogue_show_sale_price'] ?? '1') === '1';
 $cat_show_sku        = ($cfg['catalogue_show_sku'] ?? '1') === '1';
 $cat_show_features   = ($cfg['catalogue_show_features'] ?? '1') === '1';
 $cat_show_specs      = ($cfg['catalogue_show_specs'] ?? '1') === '1';
+$cat_show_share      = ($cfg['catalogue_show_share'] ?? '1') === '1';
 
 // Count products
 $prod_count_q = $conn->query("SELECT COUNT(*) as total FROM products");
@@ -457,6 +460,12 @@ $preview_url = SITE_URL . '/catalogue.php';
                                     <label class="form-check-label small fw-semibold" for="fld_sale_price">Show Sale Price (₹)</label>
                                 </div>
                             </div>
+                            <div class="col-6">
+                                <div class="form-check p-2 border rounded-2">
+                                    <input class="form-check-input" type="checkbox" name="catalogue_show_share" id="fld_share" value="1" <?php echo $cat_show_share ? 'checked' : ''; ?>>
+                                    <label class="form-check-label small fw-semibold" for="fld_share">Social Share / Copy Link</label>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -488,11 +497,27 @@ $preview_url = SITE_URL . '/catalogue.php';
                             <li><strong>Inquiry Driven:</strong> Includes dealership inquiry info, official WhatsApp chat links, and contact details on every page.</li>
                         </ul>
 
-                        <div class="p-3 rounded-3" style="background: rgba(255, 255, 255, 0.08); border: 1px dashed rgba(255,255,255,0.2);">
-                            <span class="small fw-bold d-block text-warning mb-1">
-                                <i class="fas fa-link me-1"></i> Public Catalogue URL:
+                        <div class="p-3 rounded-3" style="background: rgba(255, 255, 255, 0.08); border: 1px dashed rgba(255,255,255,0.25);">
+                            <span class="small fw-bold d-block text-warning mb-2">
+                                <i class="fas fa-share-alt me-1"></i> Public Catalogue URL & Share:
                             </span>
-                            <code class="text-white small" style="word-break: break-all;"><?php echo htmlspecialchars($preview_url); ?></code>
+                            <div class="input-group input-group-sm mb-2">
+                                <input type="text" id="adminShareUrlCat" class="form-control form-control-sm bg-dark text-white border-secondary" readonly value="<?php echo htmlspecialchars($preview_url); ?>">
+                                <button class="btn btn-warning fw-bold text-dark btn-sm" type="button" onclick="copyAdminShareUrl('adminShareUrlCat', this)">
+                                    <i class="fas fa-copy me-1"></i> Copy Link
+                                </button>
+                            </div>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <a href="https://api.whatsapp.com/send?text=<?php echo urlencode("Check out Sagar Starter's Official Product Catalogue (PDF): " . $preview_url); ?>" target="_blank" class="btn btn-sm btn-success rounded-pill px-3 py-1">
+                                    <i class="fab fa-whatsapp me-1"></i> WhatsApp
+                                </a>
+                                <a href="https://t.me/share/url?url=<?php echo urlencode($preview_url); ?>&text=<?php echo urlencode("Sagar Starter's Official Product Catalogue"); ?>" target="_blank" class="btn btn-sm btn-info text-white rounded-pill px-3 py-1">
+                                    <i class="fab fa-telegram-plane me-1"></i> Telegram
+                                </a>
+                                <a href="https://www.facebook.com/sharer/sharer.php?u=<?php echo urlencode($preview_url); ?>" target="_blank" class="btn btn-sm btn-primary rounded-pill px-3 py-1">
+                                    <i class="fab fa-facebook-f me-1"></i> Facebook
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -539,6 +564,35 @@ function toggleCatSource() {
     var customCard = document.getElementById('customCatCard');
     if (customCard) {
         customCard.style.display = isCustom ? 'block' : 'none';
+    }
+}
+
+function copyAdminShareUrl(inputId, btn) {
+    var inp = document.getElementById(inputId);
+    if (!inp) return;
+    inp.select();
+    inp.setSelectionRange(0, 99999);
+    var origHtml = btn.innerHTML;
+    
+    function done() {
+        btn.innerHTML = '<i class="fas fa-check me-1"></i> Copied!';
+        btn.classList.remove('btn-warning');
+        btn.classList.add('btn-success', 'text-white');
+        setTimeout(function() {
+            btn.innerHTML = origHtml;
+            btn.classList.remove('btn-success', 'text-white');
+            btn.classList.add('btn-warning');
+        }, 2000);
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(inp.value).then(done).catch(function() {
+            document.execCommand('copy');
+            done();
+        });
+    } else {
+        document.execCommand('copy');
+        done();
     }
 }
 </script>

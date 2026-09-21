@@ -36,6 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $show_bulk_price = isset($_POST['price_list_show_bulk_price']) ? '1' : '0';
         $show_moq = isset($_POST['price_list_show_moq']) ? '1' : '0';
         $show_stock = isset($_POST['price_list_show_stock']) ? '1' : '0';
+        $show_share = isset($_POST['price_list_show_share']) ? '1' : '0';
 
         save_setting($conn, 'price_list_enabled', $enabled);
         save_setting($conn, 'price_list_allowed_roles', $allowed_roles);
@@ -62,6 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         save_setting($conn, 'price_list_show_bulk_price', $show_bulk_price);
         save_setting($conn, 'price_list_show_moq', $show_moq);
         save_setting($conn, 'price_list_show_stock', $show_stock);
+        save_setting($conn, 'price_list_show_share', $show_share);
 
         // Handle Custom PDF upload if provided
         if (isset($_FILES['custom_pdf_file']) && $_FILES['custom_pdf_file']['error'] === UPLOAD_ERR_OK) {
@@ -145,6 +147,7 @@ $pl_show_sale_price = ($cfg['price_list_show_sale_price'] ?? '1') === '1';
 $pl_show_bulk = ($cfg['price_list_show_bulk_price'] ?? '1') === '1';
 $pl_show_moq = ($cfg['price_list_show_moq'] ?? '1') === '1';
 $pl_show_stock = ($cfg['price_list_show_stock'] ?? '1') === '1';
+$pl_show_share = ($cfg['price_list_show_share'] ?? '1') === '1';
 
 // Count available products
 $prod_count_q = $conn->query("SELECT COUNT(*) as total, SUM(CASE WHEN bulk_price > 0 THEN 1 ELSE 0 END) as bulk_total FROM products");
@@ -537,6 +540,12 @@ $preview_url = SITE_URL . '/price_list.php';
                                     <label class="form-check-label small fw-semibold" for="col_sale_price">Sale Price (₹)</label>
                                 </div>
                             </div>
+                            <div class="col-6 col-sm-4">
+                                <div class="form-check p-2 border rounded-2">
+                                    <input class="form-check-input" type="checkbox" name="price_list_show_share" id="col_share" value="1" <?php echo $pl_show_share ? 'checked' : ''; ?>>
+                                    <label class="form-check-label small fw-semibold" for="col_share">Social Share / Copy Link</label>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -568,11 +577,24 @@ $preview_url = SITE_URL . '/price_list.php';
                             <li><strong>Real-time Accuracy:</strong> Whenever you change product bulk prices in <a href="manage_products.php" class="text-warning text-decoration-underline">Manage Products</a>, the dynamic price list updates automatically.</li>
                         </ul>
 
-                        <div class="p-3 rounded-3" style="background: rgba(255, 255, 255, 0.08); border: 1px dashed rgba(255,255,255,0.2);">
-                            <span class="small fw-bold d-block text-warning mb-1">
-                                <i class="fas fa-link me-1"></i> Direct Frontend URL:
+                        <div class="p-3 rounded-3" style="background: rgba(255, 255, 255, 0.08); border: 1px dashed rgba(255,255,255,0.25);">
+                            <span class="small fw-bold d-block text-warning mb-2">
+                                <i class="fas fa-share-alt me-1"></i> Direct Price List URL & Share:
                             </span>
-                            <code class="text-white small" style="word-break: break-all;"><?php echo htmlspecialchars($preview_url); ?></code>
+                            <div class="input-group input-group-sm mb-2">
+                                <input type="text" id="adminShareUrlPl" class="form-control form-control-sm bg-dark text-white border-secondary" readonly value="<?php echo htmlspecialchars($preview_url); ?>">
+                                <button class="btn btn-warning fw-bold text-dark btn-sm" type="button" onclick="copyAdminShareUrl('adminShareUrlPl', this)">
+                                    <i class="fas fa-copy me-1"></i> Copy Link
+                                </button>
+                            </div>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <a href="https://api.whatsapp.com/send?text=<?php echo urlencode("Sagar Starter's Wholesale & Retailer Price List (Official PDF): " . $preview_url); ?>" target="_blank" class="btn btn-sm btn-success rounded-pill px-3 py-1">
+                                    <i class="fab fa-whatsapp me-1"></i> WhatsApp
+                                </a>
+                                <a href="https://t.me/share/url?url=<?php echo urlencode($preview_url); ?>&text=<?php echo urlencode("Sagar Starter's Wholesale Price List"); ?>" target="_blank" class="btn btn-sm btn-info text-white rounded-pill px-3 py-1">
+                                    <i class="fab fa-telegram-plane me-1"></i> Telegram
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -620,6 +642,35 @@ function toggleSourceSections() {
     var dynamicCard = document.getElementById('dynamicPdfCard');
     if (customCard) customCard.style.display = isCustom ? 'block' : 'none';
     if (dynamicCard) dynamicCard.style.display = isCustom ? 'none' : 'block';
+}
+
+function copyAdminShareUrl(inputId, btn) {
+    var inp = document.getElementById(inputId);
+    if (!inp) return;
+    inp.select();
+    inp.setSelectionRange(0, 99999);
+    var origHtml = btn.innerHTML;
+    
+    function done() {
+        btn.innerHTML = '<i class="fas fa-check me-1"></i> Copied!';
+        btn.classList.remove('btn-warning');
+        btn.classList.add('btn-success', 'text-white');
+        setTimeout(function() {
+            btn.innerHTML = origHtml;
+            btn.classList.remove('btn-success', 'text-white');
+            btn.classList.add('btn-warning');
+        }, 2000);
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(inp.value).then(done).catch(function() {
+            document.execCommand('copy');
+            done();
+        });
+    } else {
+        document.execCommand('copy');
+        done();
+    }
 }
 </script>
 
