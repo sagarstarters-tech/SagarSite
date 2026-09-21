@@ -44,12 +44,18 @@ if (isset($_SESSION['user_id'])) {
 // Resolve profile photo URL using global helper
 $profile_photo_url = resolve_profile_photo_url($_SESSION['profile_photo'] ?? '', $_SESSION['role'] ?? '');
 
+$pl_enabled = ($global_settings['price_list_enabled'] ?? '1') === '1';
+$pl_roles   = array_map('trim', explode(',', strtolower($global_settings['price_list_allowed_roles'] ?? 'admin,retailer')));
+$user_role  = strtolower($_SESSION['role'] ?? '');
+$can_download_price_list = isset($_SESSION['user_id']) && $pl_enabled && (in_array($user_role, $pl_roles) || $user_role === 'admin');
+
 $response = [
     'logged_in' => isset($_SESSION['user_id']),
     'name' => $_SESSION['name'] ?? '',
     'role' => $_SESSION['role'] ?? '',
     'profile_photo' => $_SESSION['profile_photo'] ?? '',
     'profile_photo_url' => $profile_photo_url,
+    'can_download_price_list' => $can_download_price_list,
     'cart_count' => 0,
     'cart_total' => 0,
     'global_currency' => $global_currency ?? '₹',

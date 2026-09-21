@@ -38,7 +38,7 @@ return [
     [
         'label'    => 'Products',
         'icon'     => 'fa-box',
-        'pages'    => ['manage_products.php', 'manage_categories.php'],
+        'pages'    => ['manage_products.php', 'manage_categories.php', 'manage_price_list.php'],
         'children' => [
             [
                 'label'  => 'All Products',
@@ -59,6 +59,12 @@ return [
                 'icon'  => 'fa-tags',
                 'url'   => 'manage_categories.php',
                 'pages' => ['manage_categories.php'],
+            ],
+            [
+                'label' => 'Price List (PDF)',
+                'icon'  => 'fa-file-pdf',
+                'url'   => 'manage_price_list.php',
+                'pages' => ['manage_price_list.php'],
             ],
         ],
     ],

@@ -229,6 +229,30 @@ if (!empty($global_settings[$setting_key])) {
         <!-- Products Grid -->
         <div class="col-lg-9">
             <?php 
+            $_pl_enabled = ($global_settings['price_list_enabled'] ?? '1') === '1';
+            $_pl_roles   = array_map('trim', explode(',', strtolower($global_settings['price_list_allowed_roles'] ?? 'admin,retailer')));
+            $_user_role  = strtolower($_SESSION['role'] ?? '');
+            if ($_pl_enabled && (in_array($_user_role, $_pl_roles) || $_user_role === 'admin')): 
+            ?>
+            <div class="alert alert-light border shadow-sm rounded-4 mb-4 p-3 d-flex align-items-center justify-content-between flex-wrap gap-2" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-left: 4px solid #ef4444 !important;">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-danger bg-opacity-10 text-danger p-2 px-3">
+                        <i class="fas fa-file-pdf fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold mb-0 text-dark">Wholesale & Retailer Price List Available</h6>
+                        <span class="small text-muted">Download the official product catalog & wholesale rate sheet in high-definition PDF.</span>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="<?php echo SITE_URL; ?>/price_list.php" target="_blank" class="btn btn-sm btn-danger rounded-pill px-3 py-2 fw-semibold shadow-sm">
+                        <i class="fas fa-download me-1"></i> Download Price List (PDF)
+                    </a>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <?php 
             $has_active_filters = (!empty($_GET['category']) && !$is_cat_conflict) || !empty($_GET['phase']) || !empty($_GET['hp']) || !empty($_GET['app']) || !empty($_GET['search']);
             if ($has_active_filters): 
             ?>

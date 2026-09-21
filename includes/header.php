@@ -580,6 +580,14 @@ if (isset($product['slug'])) {
                        </li>
                        <li><a class="dropdown-item" href="<?php echo $clean_site_url; ?>/user/profile.php">My Profile</a></li>
                        <li><a class="dropdown-item" href="<?php echo $clean_site_url; ?>/user/orders.php">My Orders</a></li>
+                       <?php 
+                       $_pl_enabled = ($global_settings['price_list_enabled'] ?? '1') === '1';
+                       $_pl_roles   = array_map('trim', explode(',', strtolower($global_settings['price_list_allowed_roles'] ?? 'admin,retailer')));
+                       $_user_role  = strtolower($_SESSION['role'] ?? '');
+                       if ($_pl_enabled && (in_array($_user_role, $_pl_roles) || $_user_role === 'admin')): 
+                       ?>
+                           <li><a class="dropdown-item" href="<?php echo $clean_site_url; ?>/price_list.php" target="_blank"><i class="fas fa-file-pdf text-danger me-2"></i>Price List (PDF)</a></li>
+                       <?php endif; ?>
                        <?php if(isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
                            <li><a class="dropdown-item" href="<?php echo $clean_site_url; ?>/admin/index.php">Admin Panel</a></li>
                        <?php endif; ?>
@@ -770,8 +778,9 @@ function refreshUserState() {
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownMenuLink">
                             <li><a class="dropdown-item" href="${cleanBaseUrl}/user/profile.php">My Profile</a></li>
                             <li><a class="dropdown-item" href="${cleanBaseUrl}/user/orders.php">My Orders</a></li>
+                            ${data.can_download_price_list ? `<li><a class="dropdown-item" href="${cleanBaseUrl}/price_list.php" target="_blank"><i class="fas fa-file-pdf text-danger me-2"></i>Price List (PDF)</a></li>` : ''}
                             ${data.role === 'admin' ? `<li><a class="dropdown-item" href="${cleanBaseUrl}/admin/index.php">Admin Panel</a></li>` : ''}
-                            <li><a class="dropdown-item" href="${cleanBaseUrl}/includes/auth.php?action=logout">Logout</a></li>
+                            <li><a class="dropdown-item text-danger" href="${cleanBaseUrl}/includes/auth.php?action=logout">Logout</a></li>
                         </ul>
                     </div>
                 `;

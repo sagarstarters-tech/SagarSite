@@ -238,14 +238,37 @@ include '../includes/header.php';
                     <a href="../includes/auth.php?action=logout" class="btn btn-danger btn-custom w-100">Logout</a>
                 </div>
             </div>
-            <?php if (($user['role'] ?? '') === 'retailer'): ?>
+            <?php if (($user['role'] ?? '') === 'retailer' || ($user['role'] ?? '') === 'admin'): ?>
+            <?php 
+            $_pl_enabled = ($global_settings['price_list_enabled'] ?? '1') === '1';
+            $_pl_roles   = array_map('trim', explode(',', strtolower($global_settings['price_list_allowed_roles'] ?? 'admin,retailer')));
+            $_u_role     = strtolower($user['role'] ?? '');
+            $can_dl_pl   = $_pl_enabled && (in_array($_u_role, $_pl_roles) || $_u_role === 'admin');
+            ?>
             <div class="card product-card mb-4 border-success border-opacity-25 bg-success bg-opacity-10">
                 <div class="card-body p-3 text-start">
-                    <div class="d-flex align-items-center gap-2 mb-1">
-                        <i class="fas fa-badge-check text-success fs-5"></i>
-                        <h6 class="fw-bold mb-0 text-success">Retailer Account Active</h6>
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fas fa-badge-check text-success fs-5"></i>
+                            <h6 class="fw-bold mb-0 text-success">
+                                <?php echo ($_u_role === 'admin') ? 'Administrator Account' : 'Retailer Account Active'; ?>
+                            </h6>
+                        </div>
+                        <?php if ($can_dl_pl): ?>
+                            <span class="badge bg-success small">B2B Rates Active</span>
+                        <?php endif; ?>
                     </div>
-                    <p class="small text-dark mb-0">You are eligible for bulk wholesale prices on purchases of 12+ units per order.</p>
+                    <p class="small text-dark mb-2">You are eligible for bulk wholesale prices on purchases of motor starters and agricultural equipment.</p>
+                    <?php if ($can_dl_pl): ?>
+                        <div class="mt-2 pt-2 border-top border-success border-opacity-25 d-flex gap-2 flex-wrap">
+                            <a href="../price_list.php" target="_blank" class="btn btn-sm btn-success rounded-pill px-3 py-1 fw-bold shadow-sm">
+                                <i class="fas fa-file-pdf me-1"></i> Download Price List (PDF)
+                            </a>
+                            <a href="../price_list.php?download=1" target="_blank" class="btn btn-sm btn-outline-success rounded-pill px-3 py-1 fw-semibold">
+                                <i class="fas fa-download me-1"></i> Quick Download
+                            </a>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
             <?php endif; ?>
