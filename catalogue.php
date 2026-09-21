@@ -833,29 +833,6 @@ $wa_phone_clean = preg_replace('/[^0-9]/', '', $store_phone);
             </p>
         </div>
 
-        <!-- Interactive Category Filter Pills (Screen Only) -->
-        <?php if (!empty($all_categories) && count($all_categories) > 1): ?>
-        <div class="cat-pill-bar no-print">
-            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                <div class="d-flex align-items-center gap-2 flex-wrap">
-                    <span class="small fw-bold text-dark"><i class="fas fa-layer-group text-primary me-1"></i> Category:</span>
-                    <a href="javascript:void(0);" onclick="filterCatalogueCategory('all')" class="cat-pill-link <?php echo empty($active_cat_id) ? 'active' : ''; ?>">
-                        All Products (<?php echo $total_catalog_products; ?>)
-                    </a>
-                    <?php foreach ($all_categories as $citem): ?>
-                        <a href="javascript:void(0);" onclick="filterCatalogueCategory('<?php echo $citem['id']; ?>')" class="cat-pill-link <?php echo ($active_cat_id == $citem['id']) ? 'active' : ''; ?>">
-                            <?php echo htmlspecialchars($citem['name']); ?> <span class="cat-pill-count"><?php echo $citem['product_count']; ?></span>
-                        </a>
-                    <?php endforeach; ?>
-                </div>
-                <?php if (!empty($active_cat_id)): ?>
-                    <a href="javascript:void(0);" onclick="filterCatalogueCategory('all')" class="cat-clear-link">
-                        <i class="fas fa-times-circle me-1"></i> View All Categories
-                    </a>
-                <?php endif; ?>
-            </div>
-        </div>
-        <?php endif; ?>
 
         <!-- Catalog Product Grid by Categories -->
         <div class="cat-content-body">
