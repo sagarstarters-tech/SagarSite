@@ -476,7 +476,7 @@ $og_canonical_url = $og_base_url . '/catalogue.php' . (!empty($active_cat_id) ? 
             border-radius: 14px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
             box-sizing: border-box;
-            overflow: hidden;
+            overflow: visible;
         }
 
         /* ── Cover / Hero Banner ───────────────────────────────── */
@@ -485,6 +485,8 @@ $og_canonical_url = $og_base_url . '/catalogue.php' . (!empty($active_cat_id) ? 
             color: #fff;
             padding: 40px 45px;
             position: relative;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
         }
         .cover-header {
             display: flex;
@@ -494,6 +496,8 @@ $og_canonical_url = $og_base_url . '/catalogue.php' . (!empty($active_cat_id) ? 
             border-bottom: 1px solid rgba(255, 255, 255, 0.15);
             margin-bottom: 25px;
             gap: 20px;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
         }
         .cover-logo {
             max-height: 70px;
@@ -548,11 +552,13 @@ $og_canonical_url = $og_base_url . '/catalogue.php' . (!empty($active_cat_id) ? 
             margin-right: 6px;
         }
 
-        /* ── Company Intro Section ─────────────────────────────── */
+        /* ── Company Intro Section ─────────────────────── */
         .cat-intro-section {
             padding: 26px 45px;
             background: #f8fafc;
             border-bottom: 1px solid #e2e8f0;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
         }
         .intro-title {
             font-family: 'Montserrat', sans-serif;
@@ -579,6 +585,8 @@ $og_canonical_url = $og_base_url . '/catalogue.php' . (!empty($active_cat_id) ? 
             padding: 16px 45px;
             background: #ffffff;
             border-bottom: 2px solid #e2e8f0;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
         }
         .quality-item {
             display: flex;
@@ -609,6 +617,10 @@ $og_canonical_url = $og_base_url . '/catalogue.php' . (!empty($active_cat_id) ? 
             display: flex;
             align-items: center;
             justify-content: space-between;
+            break-after: avoid !important;
+            page-break-after: avoid !important;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
         }
         .cat-group-heading:first-child { margin-top: 0; }
         .cat-group-count {
@@ -628,6 +640,10 @@ $og_canonical_url = $og_base_url . '/catalogue.php' . (!empty($active_cat_id) ? 
             gap: 20px;
             margin-bottom: 30px;
         }
+        .product-grid > div[style*="height"] {
+            grid-column: 1 / -1 !important;
+            width: 100% !important;
+        }
         .cat-prod-card {
             border: 1px solid #e2e8f0;
             border-radius: 10px;
@@ -636,8 +652,11 @@ $og_canonical_url = $og_base_url . '/catalogue.php' . (!empty($active_cat_id) ? 
             display: flex;
             gap: 16px;
             align-items: flex-start;
-            page-break-inside: avoid;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
+            -webkit-column-break-inside: avoid !important;
             box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+            box-sizing: border-box;
         }
         .cat-prod-thumb {
             width: 110px;
@@ -721,6 +740,8 @@ $og_canonical_url = $og_base_url . '/catalogue.php' . (!empty($active_cat_id) ? 
             align-items: center;
             flex-wrap: wrap;
             gap: 25px;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
         }
         .inquiry-block {
             max-width: 580px;
@@ -1206,11 +1227,15 @@ function downloadCataloguePDF() {
     var filename = '<?php echo preg_replace('/[^a-zA-Z0-9_-]/', '_', $store_name); ?>_Catalogue_' + catSuffix + '_<?php echo date('Y'); ?>.pdf';
 
     var opt = {
-        margin: [4, 4, 6, 4],
+        margin: [6, 6, 8, 6],
         filename: filename,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, logging: false },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: {
+            mode: ['css', 'legacy'],
+            avoid: ['.cat-prod-card', '.cat-group-heading', '.cat-cover', '.cat-intro-section', '.quality-strip', '.cat-back-cover']
+        }
     };
 
     html2pdf().set(opt).from(element).save().then(function() {

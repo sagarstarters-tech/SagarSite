@@ -556,6 +556,8 @@ $og_canonical_url = $og_base_url . '/price_list.php' . (!empty($active_cat_id) ?
             border-bottom: 2px solid #0f172a;
             margin-bottom: 20px;
             gap: 20px;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
         }
         .brand-block {
             display: flex;
@@ -610,6 +612,8 @@ $og_canonical_url = $og_base_url . '/price_list.php' . (!empty($active_cat_id) ?
             justify-content: space-between;
             flex-wrap: wrap;
             gap: 10px;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
         }
         .title-banner h1 {
             font-family: 'Montserrat', sans-serif;
@@ -646,6 +650,10 @@ $og_canonical_url = $og_base_url . '/price_list.php' . (!empty($active_cat_id) ?
             display: flex;
             align-items: center;
             justify-content: space-between;
+            break-after: avoid !important;
+            page-break-after: avoid !important;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
         }
         .cat-badge-count {
             font-size: 0.72rem;
@@ -661,6 +669,23 @@ $og_canonical_url = $og_base_url . '/price_list.php' . (!empty($active_cat_id) ?
             border-collapse: collapse;
             font-size: 0.82rem;
             margin-bottom: 20px;
+            page-break-inside: auto;
+            break-inside: auto;
+        }
+        .price-table thead {
+            display: table-header-group;
+            break-after: avoid !important;
+            page-break-after: avoid !important;
+        }
+        .price-table tbody tr {
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
+            -webkit-column-break-inside: avoid !important;
+        }
+        .price-table td,
+        .price-table th {
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
         }
         .price-table th {
             background: #f1f5f9;
@@ -762,6 +787,8 @@ $og_canonical_url = $og_base_url . '/price_list.php' . (!empty($active_cat_id) ?
             align-items: flex-start;
             flex-wrap: wrap;
             gap: 20px;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
         }
         .doc-terms {
             flex: 1;
@@ -1260,7 +1287,11 @@ function downloadPDF() {
         filename: filename,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, logging: false },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: {
+            mode: ['css', 'legacy'],
+            avoid: ['tr', '.category-heading', '.doc-header', '.title-banner', '.doc-footer']
+        }
     };
 
     html2pdf().set(opt).from(element).save().then(function() {
