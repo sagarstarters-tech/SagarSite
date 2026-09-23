@@ -53,74 +53,35 @@
         { regex: /fa-(?:phone|phone-flip)/i, text: 'Call our customer helpline', icon: 'fa-phone' },
         { regex: /fa-envelope/i, text: 'Send an email to support', icon: 'fa-envelope' },
         { regex: /fa-bars/i, text: 'Toggle navigation menu', icon: 'fa-bars' },
-        { regex: /fa-(?:times|xmark|close)/i, text: 'Close window / Dismiss', icon: 'fa-times' }
+        { regex: /fa-(?:times|xmark|close)/i, text: 'Close window / Dismiss', icon: 'fa-times' },
+        { regex: /fa-(?:calendar|calendar-alt|calendar-days)/i, text: 'View calendar / dates', icon: 'fa-calendar-alt' },
+        { regex: /fa-(?:info-circle|circle-info|question-circle|circle-question)/i, text: 'More information & help', icon: 'fa-info-circle' },
+        { regex: /fa-(?:play)/i, text: 'Start / Run process', icon: 'fa-play' },
+        { regex: /fa-(?:pause)/i, text: 'Pause process', icon: 'fa-pause' },
+        { regex: /fa-(?:stop)/i, text: 'Stop process', icon: 'fa-stop' },
+        { regex: /fa-(?:clone)/i, text: 'Duplicate / Clone item', icon: 'fa-clone' },
+        { regex: /fa-(?:file-pdf|file-lines|file-csv|file-excel)/i, text: 'Download or view document', icon: 'fa-file-alt' },
+        { regex: /fa-(?:check|check-circle|circle-check)/i, text: 'Confirm / Completed', icon: 'fa-check' },
+        { regex: /fa-(?:bolt|lightning)/i, text: 'Instant action', icon: 'fa-bolt' },
+        { regex: /fa-(?:chart-line|chart-bar|chart-pie)/i, text: 'View analytics & reports', icon: 'fa-chart-line' },
+        { regex: /fa-(?:camera|image|images)/i, text: 'View or upload images', icon: 'fa-image' },
+        { regex: /fa-(?:qrcode)/i, text: 'Scan QR code', icon: 'fa-qrcode' },
+        { regex: /fa-(?:external-link|arrow-up-right-from-square)/i, text: 'Open in new window', icon: 'fa-external-link-alt' }
     ];
 
-    // ── Direct Text-to-Context Semantic Mapping ────────────────
-    const TEXT_CONTEXT_MAP = [
-        // Main Navigation
-        { match: /^home$/i, text: 'Return to store homepage' },
-        { match: /^(?:shop|all products|catalog|products|store)$/i, text: 'Browse our full catalog of motor starters & spares' },
-        { match: /^(?:about|about us|about sagar starters|who we are)$/i, text: 'Learn about our company story, quality & manufacturing' },
-        { match: /^(?:contact|contact us|get in touch|reach us)$/i, text: 'Get in touch with customer support & view store address' },
-        { match: /^(?:track order|track your order|order tracking)$/i, text: 'Check real-time delivery and shipping status' },
-        { match: /^(?:policies|store policies|our policies)$/i, text: 'View store terms, privacy policy, and return guidelines' },
-        { match: /^(?:privacy policy|privacy)$/i, text: 'Read our Privacy Policy & personal data protection terms' },
-        { match: /^(?:terms & conditions|terms and conditions|terms of service|terms of use|terms)$/i, text: 'Read our customer terms of service & store conditions' },
-        { match: /^(?:shipping policy|shipping & delivery|delivery info|shipping info)$/i, text: 'View delivery options, courier partners & transit times' },
-        { match: /^(?:return & refund policy|refund policy|return policy|returns & refund)$/i, text: 'Read guidelines for product returns, refunds, and replacements' },
-        { match: /^(?:disclaimer)$/i, text: 'Read legal disclaimers regarding products and technical usage' },
-        { match: /^(?:cancellation policy)$/i, text: 'Learn rules and timelines for cancelling placed orders' },
-        { match: /^(?:f&q|faq|faqs|help|help & support|support)$/i, text: 'Find answers to frequently asked questions & get help' },
-        { match: /^(?:testimonials|reviews|customer reviews)$/i, text: 'Read verified customer feedback and experiences' },
-
-        // User Account & Session
-        { match: /^(?:my account|account|profile|my profile)$/i, text: 'Manage profile details, passwords, and addresses' },
-        { match: /^(?:my orders|orders|order history)$/i, text: 'View your order history, delivery status & invoices' },
-        { match: /^(?:my wishlist|wishlist|favorites)$/i, text: 'View products you have saved for later' },
-        { match: /^(?:login|sign in|log in)$/i, text: 'Sign in to access your saved cart, orders & profile' },
-        { match: /^(?:register|sign up|create account)$/i, text: 'Create a new customer account' },
-        { match: /^(?:logout|sign out|log out)$/i, text: 'Securely log out of your account' },
-        { match: /^(?:admin|admin panel|dashboard)$/i, text: 'Open admin management dashboard' },
-
-        // Ecommerce Actions
-        { match: /^(?:add to cart|add to bag)$/i, text: 'Add this product to your shopping cart' },
-        { match: /^(?:buy now|instant buy)$/i, text: 'Proceed immediately to instant checkout' },
-        { match: /^(?:apply|apply coupon|apply code)$/i, text: 'Apply promotional discount coupon to order total' },
-        { match: /^(?:place order|confirm order|pay now)$/i, text: 'Confirm your order & proceed to secure payment' },
-        { match: /^(?:proceed to checkout|checkout)$/i, text: 'Proceed to checkout to enter shipping & payment details' },
-        { match: /^(?:view cart)$/i, text: 'Review and update items in your shopping cart' },
-        { match: /^(?:view details|quick view|see details|explore)$/i, text: 'View complete specifications, diagrams & pricing' },
-        { match: /^(?:read more|learn more)$/i, text: 'Read full information and details' },
-        { match: /^(?:submit review|add review|write review)$/i, text: 'Share your rating & feedback for this product' },
-        { match: /^(?:save|save changes|update)$/i, text: 'Save updated configuration' },
-        { match: /^(?:cancel|back|go back)$/i, text: 'Return to previous view' },
-        { match: /^(?:delete|remove)$/i, text: 'Delete / Remove this item permanently' },
-        { match: /^(?:edit|modify)$/i, text: 'Edit / Update details' },
-        { match: /^(?:filter|apply filters)$/i, text: 'Filter product list by selected options' },
-        { match: /^(?:reset|clear|clear all)$/i, text: 'Reset all selections to default' }
-    ];
-
-    // ── URL / HREF Semantic Mapping ────────────────────────────
+    // ── URL / HREF Semantic Mapping (for icon-only links) ─────
     const HREF_CONTEXT_MAP = [
         { match: /(?:\/index\.php|\/)$/i, text: 'Return to store homepage' },
-        { match: /\/shop\.php/i, text: 'Browse our full catalog of motor starters & spares' },
-        { match: /(?:about\.php|slug=about)/i, text: 'Learn about our company story, quality & manufacturing' },
-        { match: /(?:contact\.php|slug=contact)/i, text: 'Get in touch with customer support & view store address' },
+        { match: /\/shop\.php/i, text: 'Browse catalog of products' },
+        { match: /(?:about\.php|slug=about)/i, text: 'Learn about our company' },
+        { match: /(?:contact\.php|slug=contact)/i, text: 'Get in touch with customer support' },
         { match: /(?:track_order\.php|\/track)/i, text: 'Check real-time delivery and shipping status' },
-        { match: /slug=privacy/i, text: 'Read our Privacy Policy & personal data protection terms' },
-        { match: /slug=shipping/i, text: 'View delivery options, courier partners & shipping terms' },
-        { match: /slug=(?:return|refund)/i, text: 'Read guidelines for product returns, refunds, and replacements' },
-        { match: /slug=terms/i, text: 'Read our customer terms of service & store conditions' },
-        { match: /slug=disclaimer/i, text: 'Read legal disclaimers regarding products and technical usage' },
-        { match: /slug=(?:cancellation)/i, text: 'Learn rules and timelines for cancelling placed orders' },
-        { match: /slug=(?:f-q|faq|help)/i, text: 'Find answers to frequently asked questions & get help' },
         { match: /\/cart\.php/i, text: 'View and manage items in your shopping cart' },
         { match: /\/checkout\.php/i, text: 'Proceed to safe and secure checkout' },
         { match: /\/wishlist\.php/i, text: 'View products you have saved for later' },
         { match: /\/profile\.php/i, text: 'Manage profile details, passwords, and addresses' },
-        { match: /(?:\/my-orders\.php|\/user\/orders\.php|\/orders\.php)/i, text: 'View your order history, delivery status & invoices' },
-        { match: /\/login\.php/i, text: 'Sign in to access your saved cart, orders & profile' },
+        { match: /(?:\/my-orders\.php|\/user\/orders\.php|\/orders\.php)/i, text: 'View your order history & invoices' },
+        { match: /\/login\.php/i, text: 'Sign in to your account' },
         { match: /\/register\.php/i, text: 'Create a new customer account' },
         { match: /action=logout/i, text: 'Securely log out of your account' },
         { match: /\/admin\//i, text: 'Open admin management dashboard' },
@@ -142,7 +103,93 @@
     }
 
     /**
-     * Finds the nearest interactive target element eligible for a tooltip
+     * Helper to detect if an element is an icon or contains an icon
+     */
+    function hasIcon(el) {
+        if (!el || el.nodeType !== 1) return false;
+
+        const tag = el.tagName ? el.tagName.toLowerCase() : '';
+        if (tag === 'i' || tag === 'svg') return true;
+
+        if (el.matches && (
+            el.matches('.fa, .fas, .far, .fab, .fal, .fad, [class*="fa-"], .bi, [class*="bi-"], .material-icons, .material-symbols-outlined, .btn-close, .close, .action-icon, .btn-icon, .nav-icon')
+        )) {
+            return true;
+        }
+
+        if (el.querySelector && el.querySelector('i, svg, .btn-close, [class*="fa-"], [class*="bi-"], .material-icons, .material-symbols-outlined, .action-icon, .btn-icon, img.icon, img[src*="icon"]')) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Helper to determine whether an element has visible textual label / anchor text.
+     * Excludes icons, badge counters/numbers, currency symbols, and visually-hidden accessibility text.
+     */
+    function hasVisibleTextLabel(el) {
+        if (!el || el.nodeType !== 1) return false;
+
+        const rawText = el.textContent || '';
+        if (!rawText.trim()) return false;
+
+        // Clone the element to safely inspect its contents without mutating the live DOM
+        const clone = el.cloneNode(true);
+
+        // Selectors for elements that do not represent button labels or link text
+        const nonLabelSelectors = [
+            'i',
+            'svg',
+            'img.icon',
+            'img[src*="icon"]',
+            '.badge',
+            '.badge-pill',
+            '.rounded-pill',
+            '.cart-count',
+            '.count',
+            '.counter',
+            '.badge-counter',
+            '[class*="badge"]',
+            '.visually-hidden',
+            '.sr-only',
+            '[aria-hidden="true"]',
+            'script',
+            'style'
+        ];
+
+        try {
+            const elementsToRemove = clone.querySelectorAll(nonLabelSelectors.join(','));
+            for (let i = 0; i < elementsToRemove.length; i++) {
+                elementsToRemove[i].remove();
+            }
+        } catch (e) {
+            // Fallback safety
+        }
+
+        // Get text without whitespace, symbols, currency, and numbers
+        let remaining = (clone.textContent || '')
+            .replace(/[\s\u00A0\u200B-\u200D\uFEFF]+/g, '');
+
+        // If the remaining text only consists of numbers, currency symbols, or punctuation (e.g. cart total "₹500", "2", "(0)")
+        // it is data/counter, NOT a textual button/link label
+        const textWithoutData = remaining.replace(/[0-9₹$,.()\/+\-%\s]/g, '');
+
+        return textWithoutData.length > 0;
+    }
+
+    /**
+     * Determines whether an element qualifies for a hover tooltip:
+     * ONLY qualifies if it is an ICON-ONLY element with NO button label, link text, or anchor text.
+     */
+    function isIconOnlyElement(el) {
+        if (!el || el.nodeType !== 1) return false;
+        return hasIcon(el) && !hasVisibleTextLabel(el);
+    }
+
+    /**
+     * Finds the nearest target element eligible for a tooltip.
+     * ONLY returns an element if it has an icon AND has NO Button Label / Link Text / Anchor Text.
      */
     function getInteractiveTarget(target) {
         if (!target || target === document.body || target === document.documentElement) return null;
@@ -150,79 +197,89 @@
         // Skip ignored elements or elements explicitly asking for no tooltip
         if (target.closest('[data-no-tooltip], .no-tooltip, .no-custom-tooltip')) return null;
 
-        // Explicit tooltip marker
-        const explicit = target.closest('[data-tooltip], [data-hint], [data-ss-title]');
-        if (explicit) return explicit;
-
-        // Form control inputs with explicit purpose
-        if (target.matches('input[name="search"], input[name="q"], input[type="search"], input[title], button[title], select[title], textarea[title]')) {
-            return target;
-        }
-
-        // Standard interactive elements: buttons, links, icons, dropdown items/toggles, nav links
-        const interactive = target.closest(
-            'button, a, .btn, [role="button"], input[type="submit"], input[type="button"], input[type="reset"], .theme-toggle, .language-btn, .action-icon, .nav-link, .dropdown-item, .dropdown-toggle, .navbar-brand, .bottom-nav-item, .admin-sidebar .nav-link, #whatsapp-link'
+        // 1. Check if target is inside an interactive container (button, link, action control)
+        const interactiveContainer = target.closest(
+            'button, a, .btn, [role="button"], input[type="submit"], input[type="button"], input[type="reset"], .theme-toggle, .language-btn, .action-icon, .btn-icon, .btn-close, .nav-link, .dropdown-item, .dropdown-toggle, .navbar-brand, .bottom-nav-item, #whatsapp-link'
         );
 
-        return interactive;
+        if (interactiveContainer) {
+            // STRICT RULE: If the interactive container has visible text (e.g. "Refresh Live"), DO NOT show tooltip!
+            // Only allow if it is strictly icon-only
+            if (isIconOnlyElement(interactiveContainer)) {
+                return interactiveContainer;
+            }
+            return null;
+        }
+
+        // 2. Standalone icon (e.g. <i class="fas fa-info-circle" title="..."></i>)
+        const standaloneIcon = target.closest('i, svg, [class*="fa-"], [class*="bi-"], .material-icons, .material-symbols-outlined, .btn-close, .action-icon');
+        if (standaloneIcon) {
+            // If the standalone icon has an explicit tooltip or title, always show
+            if (standaloneIcon.hasAttribute('data-tooltip') || standaloneIcon.hasAttribute('data-hint') || standaloneIcon.hasAttribute('title') || standaloneIcon.hasAttribute('data-ss-title')) {
+                return standaloneIcon;
+            }
+
+            // If it's a decorative icon inside a heading, paragraph, label, or table cell that has text, do NOT show
+            const textParent = standaloneIcon.closest('h1, h2, h3, h4, h5, h6, p, label, th, td');
+            if (textParent && hasVisibleTextLabel(textParent)) {
+                return null;
+            }
+
+            if (isIconOnlyElement(standaloneIcon)) {
+                return standaloneIcon;
+            }
+            return null;
+        }
+
+        return null;
     }
 
     /**
-     * Helper to clean up visible text from element
-     */
-    function getCleanText(el) {
-        let text = (el.innerText || el.textContent || '').trim();
-        // Remove badge text numbers or excessive whitespace
-        text = text.replace(/\s+/g, ' ');
-        return text;
-    }
-
-    /**
-     * Intelligently resolves the tooltip message and optional icon for the given element
+     * Resolves the tooltip message and optional icon for an icon-only element
      */
     function resolveTooltipContent(el) {
+        if (!el || !isIconOnlyElement(el)) return null;
+
         // Priority 1: Explicit data-tooltip / data-hint attribute
         const explicitTooltip = el.getAttribute('data-tooltip') || el.getAttribute('data-hint');
         if (explicitTooltip && explicitTooltip.trim()) {
             return { text: explicitTooltip.trim(), icon: null };
         }
 
-        // Priority 2: Title or cached title attribute (clears browser's native yellow tooltip)
+        // Priority 2: Title attribute on element or on child icon
         let title = el.getAttribute('title');
+        let titleOwner = el;
+        if (!title) {
+            const childWithTitle = el.querySelector('[title]');
+            if (childWithTitle) {
+                title = childWithTitle.getAttribute('title');
+                titleOwner = childWithTitle;
+            }
+        }
         if (title && title.trim()) {
-            el.setAttribute('data-ss-title', title.trim());
-            el.removeAttribute('title'); // Prevent native browser tooltip overlap
+            titleOwner.setAttribute('data-ss-title', title.trim());
+            titleOwner.removeAttribute('title'); // Prevent native browser tooltip overlap
             return { text: title.trim(), icon: null };
         }
-        const cachedTitle = el.getAttribute('data-ss-title');
+
+        const cachedTitle = el.getAttribute('data-ss-title') || (el.querySelector('[data-ss-title]') ? el.querySelector('[data-ss-title]').getAttribute('data-ss-title') : null);
         if (cachedTitle && cachedTitle.trim()) {
             return { text: cachedTitle.trim(), icon: null };
         }
 
-        // Priority 3: Search input special case
-        if (el.matches('input[name="search"], input[name="q"], input[type="search"]')) {
-            return { text: 'Type product name, HP rating, or model to search', icon: 'fa-search' };
-        }
-
-        // Priority 4: Brand logo special case
-        if (el.matches('.navbar-brand') || el.querySelector('img[alt*="logo" i]')) {
-            return { text: 'Return to store homepage', icon: 'fa-home' };
-        }
-
-        // Priority 5: Language selector option
-        if (el.hasAttribute('data-lang') || el.classList.contains('lang-option')) {
-            const langName = getCleanText(el) || el.getAttribute('data-lang');
-            return { text: `Switch website language to ${langName}`, icon: 'fa-globe' };
-        }
-
-        // Priority 6: aria-label if informative and not generic
-        const ariaLabel = el.getAttribute('aria-label');
-        if (ariaLabel && ariaLabel.trim() && ariaLabel.length > 3 && !/^(?:button|toggle|menu)$/i.test(ariaLabel.trim())) {
+        // Priority 3: Informative aria-label attribute
+        const ariaLabel = el.getAttribute('aria-label') || (el.querySelector('[aria-label]') ? el.querySelector('[aria-label]').getAttribute('aria-label') : null);
+        if (ariaLabel && ariaLabel.trim() && ariaLabel.length > 2 && !/^(?:button|toggle|menu|icon)$/i.test(ariaLabel.trim())) {
             return { text: ariaLabel.trim(), icon: null };
         }
 
-        // Priority 7: Icon-based intelligent detection
-        const iconEl = el.querySelector('i, svg') || (el.tagName && el.tagName.toLowerCase() === 'i' ? el : null);
+        // Priority 4: Close button special case
+        if (el.matches('.btn-close, .close') || el.querySelector('.btn-close, .close')) {
+            return { text: 'Close', icon: 'fa-times' };
+        }
+
+        // Priority 5: Icon-based intelligent detection
+        const iconEl = (el.tagName && (el.tagName.toLowerCase() === 'i' || el.tagName.toLowerCase() === 'svg')) ? el : el.querySelector('i, svg, [class*="fa-"], [class*="bi-"], .material-icons');
         if (iconEl) {
             const iconClass = (iconEl.className || '') + ' ' + (iconEl.getAttribute('data-icon') || '');
             for (let i = 0; i < ICON_CONTEXT_MAP.length; i++) {
@@ -232,17 +289,7 @@
             }
         }
 
-        // Priority 8: Text-based semantic matching
-        const directText = getCleanText(el);
-        if (directText && directText.length <= 40) {
-            for (let i = 0; i < TEXT_CONTEXT_MAP.length; i++) {
-                if (TEXT_CONTEXT_MAP[i].match.test(directText)) {
-                    return { text: TEXT_CONTEXT_MAP[i].text, icon: null };
-                }
-            }
-        }
-
-        // Priority 9: Href-based matching
+        // Priority 6: Href-based matching for icon-only links
         const href = el.getAttribute('href') || '';
         if (href && href !== '#' && !href.startsWith('javascript:')) {
             for (let i = 0; i < HREF_CONTEXT_MAP.length; i++) {
@@ -252,57 +299,9 @@
             }
         }
 
-        // Priority 10: Dropdown toggle buttons or links (e.g. Policies, Menus)
-        if (el.matches('.dropdown-toggle, [data-bs-toggle="dropdown"], [data-mdb-toggle="dropdown"]')) {
-            const label = directText ? `"${directText}"` : 'options';
-            return { text: `Click to view ${label} menu`, icon: 'fa-bars' };
-        }
-
-        // Priority 11: Product / Category card contextual links
-        const productCard = el.closest('.product-card, .card, .product-item');
-        if (productCard) {
-            const titleEl = productCard.querySelector('.card-title, .product-title, h4, h5, h6');
-            if (titleEl) {
-                const cardTitle = getCleanText(titleEl);
-                if (cardTitle && cardTitle.length > 2) {
-                    if (el.matches('a, button, img')) {
-                        return { text: `View specifications & price for ${cardTitle}`, icon: 'fa-info-circle' };
-                    }
-                }
-            }
-        }
-
-        // Priority 12: General Navigation / Button / Link Universal Fallback
-        if (directText && directText.length > 0 && directText.length <= 45) {
-            if (el.matches('.nav-link, .navbar-nav a')) {
-                return { text: `Open ${directText} page`, icon: 'fa-compass' };
-            }
-            if (el.matches('.dropdown-item')) {
-                return { text: `Go to ${directText}`, icon: 'fa-chevron-right' };
-            }
-            if (el.matches('.btn, button, input[type="submit"]')) {
-                return { text: `Click to ${directText.toLowerCase()}`, icon: null };
-            }
-            if (el.matches('a')) {
-                return { text: `Open ${directText}`, icon: 'fa-arrow-right' };
-            }
-        }
-
-        // Priority 13: Image link with alt text
-        const img = el.querySelector('img');
-        if (img && img.getAttribute('alt')) {
-            const altText = img.getAttribute('alt').trim();
-            if (altText) {
-                return { text: `View ${altText}`, icon: 'fa-image' };
-            }
-        }
-
-        // Priority 14: Final safety fallback for any interactive button or link
-        if (el.matches('button, .btn')) {
-            return { text: 'Click to perform action', icon: null };
-        }
-        if (el.matches('a[href]')) {
-            return { text: 'Click to navigate', icon: null };
+        // Priority 7: Clean action fallback for icon buttons
+        if (iconEl) {
+            return { text: 'Action', icon: null };
         }
 
         return null;
@@ -398,11 +397,19 @@
      */
     function hide() {
         clearTimeout(showTimeout);
-        if (activeTarget && activeTarget.hasAttribute('data-ss-title')) {
-            // Restore native title if element loses focus or hover
-            const originalTitle = activeTarget.getAttribute('data-ss-title');
-            if (originalTitle) {
-                activeTarget.setAttribute('title', originalTitle);
+        if (activeTarget) {
+            if (activeTarget.hasAttribute('data-ss-title')) {
+                const originalTitle = activeTarget.getAttribute('data-ss-title');
+                if (originalTitle) {
+                    activeTarget.setAttribute('title', originalTitle);
+                }
+            }
+            const childrenWithTitle = activeTarget.querySelectorAll('[data-ss-title]');
+            for (let i = 0; i < childrenWithTitle.length; i++) {
+                const childOrigTitle = childrenWithTitle[i].getAttribute('data-ss-title');
+                if (childOrigTitle) {
+                    childrenWithTitle[i].setAttribute('title', childOrigTitle);
+                }
             }
         }
         activeTarget = null;
