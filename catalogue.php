@@ -1363,6 +1363,7 @@ $og_canonical_url = $og_base_url . '/catalogue.php' . (!empty($active_cat_id) ? 
             background: #ffffff !important;
             margin: 0 !important;
             padding: 0 !important;
+            overflow-x: visible !important;
         }
         body.pdf-export-mode #action-bar {
             display: none !important;
@@ -1370,14 +1371,18 @@ $og_canonical_url = $og_base_url . '/catalogue.php' . (!empty($active_cat_id) ? 
         body.pdf-export-mode .catalogue-wrapper {
             padding: 0 !important;
             margin: 0 !important;
+            display: block !important;
+            width: 1040px !important;
+            max-width: 1040px !important;
         }
         body.pdf-export-mode .catalogue-doc {
             box-shadow: none !important;
             border-radius: 0 !important;
-            max-width: 100% !important;
-            width: 100% !important;
+            max-width: 1040px !important;
+            width: 1040px !important;
             margin: 0 !important;
             border: none !important;
+            display: block !important;
         }
         body.pdf-export-mode .no-print,
         body.pdf-export-mode .btn-card-inquire {
@@ -1941,10 +1946,7 @@ function downloadCataloguePDF() {
                 useCORS: true,
                 logging: false,
                 scrollX: 0,
-                scrollY: 0,
-                x: 0,
-                y: 0,
-                windowWidth: element.offsetWidth || 1040
+                scrollY: 0
             },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
             pagebreak: {
