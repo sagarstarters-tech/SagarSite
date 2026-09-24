@@ -361,6 +361,169 @@ if (isset($product['slug'])) {
         /* System font stack while Montserrat/Poppins loads asynchronously */
         body, p, span, a, li, button { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; }
         .montserrat, h1, h2, h3, h4, h5, h6 { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; }
+
+        /* Universal Header Action Button Alignment System */
+        .header-actions-container {
+            display: flex !important;
+            align-items: center !important;
+            gap: 4px !important;
+            flex-wrap: nowrap !important;
+        }
+        .header-action-btn {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 36px !important;
+            height: 36px !important;
+            min-width: 36px !important;
+            max-width: 36px !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            border: none !important;
+            background: transparent !important;
+            color: #334155 !important;
+            border-radius: 50% !important;
+            font-size: 1.1rem !important;
+            line-height: 1 !important;
+            text-decoration: none !important;
+            box-shadow: none !important;
+            transition: background-color 0.2s ease, transform 0.2s ease, color 0.2s ease !important;
+            position: relative !important;
+            flex-shrink: 0 !important;
+            vertical-align: middle !important;
+            cursor: pointer;
+        }
+        .header-action-btn:hover,
+        .header-action-btn:focus {
+            background-color: rgba(13, 110, 253, 0.08) !important;
+            color: var(--primary, #0d6efd) !important;
+            text-decoration: none !important;
+        }
+        .header-action-btn:active {
+            transform: scale(0.92) !important;
+        }
+        .header-action-btn .fa,
+        .header-action-btn .fas,
+        .header-action-btn .far,
+        .header-action-btn i {
+            font-size: 1.1rem !important;
+            display: inline-block !important;
+            line-height: 1 !important;
+            margin: 0 !important;
+        }
+        #header-cart-container {
+            display: inline-flex;
+            align-items: center;
+        }
+        #header-cart-container .badge {
+            top: 2px !important;
+            right: 0px !important;
+            left: auto !important;
+            transform: none !important;
+            font-size: 0.58rem !important;
+            padding: 2px 4px !important;
+        }
+
+        /* Mobile Navbar Layout & Responsive Alignment */
+        @media (max-width: 991.98px) {
+            .navbar > .container,
+            .navbar > .container-fluid {
+                display: flex !important;
+                flex-wrap: nowrap !important;
+                align-items: center !important;
+                justify-content: space-between !important;
+                padding-left: 8px !important;
+                padding-right: 8px !important;
+                gap: 4px !important;
+            }
+            .navbar-brand {
+                margin-right: 4px !important;
+                padding-top: 2px !important;
+                padding-bottom: 2px !important;
+                flex-shrink: 0 !important;
+            }
+            .navbar-brand img {
+                max-height: 32px !important;
+                width: auto !important;
+                max-width: 95px !important;
+            }
+            .header-actions-container {
+                gap: 2px !important;
+                margin-left: auto !important;
+            }
+            .header-action-btn {
+                width: 33px !important;
+                height: 33px !important;
+                min-width: 33px !important;
+                max-width: 33px !important;
+                font-size: 1rem !important;
+            }
+            .header-action-btn .fa,
+            .header-action-btn .fas,
+            .header-action-btn .far,
+            .header-action-btn i {
+                font-size: 1rem !important;
+            }
+            .lang-dropdown-toggle::after {
+                display: none !important;
+            }
+            #pwaInstallBtn {
+                width: 33px !important;
+                height: 33px !important;
+                min-width: 33px !important;
+                max-width: 33px !important;
+                border: none !important;
+                background: transparent !important;
+                color: #334155 !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+            }
+            #pwaInstallBtn:hover {
+                background-color: rgba(13, 110, 253, 0.08) !important;
+                color: var(--primary, #0d6efd) !important;
+            }
+            #pwaInstallBtn span {
+                display: none !important;
+            }
+        }
+        @media (min-width: 992px) {
+            .header-actions-container {
+                gap: 6px !important;
+            }
+            .lang-dropdown-toggle {
+                width: auto !important;
+                max-width: none !important;
+                border-radius: 20px !important;
+                padding: 6px 12px !important;
+            }
+            .lang-dropdown-toggle::after {
+                display: inline-block !important;
+                margin-left: 6px !important;
+            }
+            #pwaInstallBtn.pwa-btn-desktop {
+                width: auto !important;
+                max-width: none !important;
+                padding: 5px 14px !important;
+                border-radius: 20px !important;
+                border: 1px solid var(--primary, #0d6efd) !important;
+                color: var(--primary, #0d6efd) !important;
+                font-size: 0.82rem !important;
+                font-weight: 600 !important;
+            }
+            #pwaInstallBtn.pwa-btn-desktop:hover {
+                background-color: var(--primary, #0d6efd) !important;
+                color: #ffffff !important;
+            }
+        }
+        body.dark-mode-active .header-action-btn,
+        [data-mdb-theme="dark"] .header-action-btn {
+            color: #e2e8f0 !important;
+        }
+        body.dark-mode-active .header-action-btn:hover,
+        [data-mdb-theme="dark"] .header-action-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1) !important;
+            color: #60a5fa !important;
+        }
     </style>
 
     <!-- Font Awesome — non-render-blocking -->
@@ -482,10 +645,10 @@ if (isset($product['slug'])) {
         <?php endif; ?>
     </a>
     
-    <div class="d-flex align-items-center order-lg-3">
+    <div class="d-flex align-items-center order-lg-3 header-actions-container">
       <?php if(isset($global_settings['enable_header_search']) && $global_settings['enable_header_search'] == '1'): ?>
           <!-- Desktop Search Bar -->
-          <form action="<?php echo SITE_URL; ?>/shop.php" method="GET" class="me-3 d-none d-lg-flex">
+          <form action="<?php echo SITE_URL; ?>/shop.php" method="GET" class="me-2 d-none d-lg-flex">
               <div class="input-group input-group-sm" style="width: 200px;">
                   <input type="text" name="search" class="form-control border-0 bg-light rounded-pill-start ps-3" placeholder="Search..." style="border-radius: 20px 0 0 20px;">
                   <button class="btn btn-light border-0 bg-light text-muted px-3" type="submit" style="border-radius: 0 20px 20px 0;" aria-label="Search">
@@ -494,15 +657,15 @@ if (isset($product['slug'])) {
               </div>
           </form>
           <!-- Mobile Search Toggle Icon -->
-          <a class="text-reset me-3 d-lg-none" href="#" data-mdb-toggle="collapse" data-mdb-target="#mobileSearchForm" aria-expanded="false" aria-label="Toggle search"><i class="fas fa-search fs-5"></i></a>
+          <a class="header-action-btn d-lg-none" href="#" data-mdb-toggle="collapse" data-mdb-target="#mobileSearchForm" aria-expanded="false" aria-label="Toggle search" title="Search"><i class="fas fa-search"></i></a>
       <?php endif; ?>
 
       <!-- Language Switcher Dropdown (Desktop & Mobile) -->
-      <div class="dropdown me-2" id="header-lang-container">
-          <button class="btn btn-link text-reset p-2 d-flex align-items-center border-0 shadow-none dropdown-toggle lang-dropdown-toggle" 
+      <div class="dropdown" id="header-lang-container">
+          <button class="header-action-btn dropdown-toggle lang-dropdown-toggle border-0" 
                   type="button" id="headerLangDropdown" data-mdb-toggle="dropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Change Language / भाषा बदलें">
-              <i class="fas fa-globe fs-5 text-primary me-1"></i>
-              <span class="d-none d-sm-inline-block small fw-bold text-dark current-lang-name notranslate">English</span>
+              <i class="fas fa-globe text-primary"></i>
+              <span class="d-none d-lg-inline-block small fw-bold text-dark current-lang-name notranslate ms-1">English</span>
           </button>
           <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 py-2 lang-dropdown-menu" aria-labelledby="headerLangDropdown">
               <li class="dropdown-header px-3 py-2 text-uppercase text-muted extra-small fw-bold border-bottom notranslate">
@@ -524,22 +687,20 @@ if (isset($product['slug'])) {
       </div>
 
       <div id="header-cart-container">
-          <a class="text-reset me-3 position-relative d-flex align-items-center" href="<?php echo SITE_URL; ?>/cart.php" aria-label="Shopping cart<?php echo $cart_count > 0 ? ' (' . $cart_count . ' items)' : ''; ?>">
-            <div class="position-relative">
-                <i class="fas fa-shopping-cart fs-5"></i>
-                <?php if($cart_count > 0): ?>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;"><?php echo $cart_count; ?></span>
-                <?php endif; ?>
-            </div>
+          <a class="header-action-btn position-relative" href="<?php echo SITE_URL; ?>/cart.php" aria-label="Shopping cart<?php echo $cart_count > 0 ? ' (' . $cart_count . ' items)' : ''; ?>" title="Cart">
+            <i class="fas fa-shopping-cart"></i>
             <?php if($cart_count > 0): ?>
-                <span class="ms-2 fw-bold small text-danger d-none d-sm-inline-block"><?php echo $global_currency . number_format($cart_total, 2); ?></span>
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"><?php echo $cart_count; ?></span>
+            <?php endif; ?>
+            <?php if($cart_count > 0): ?>
+                <span class="ms-1 fw-bold small text-danger d-none d-xl-inline-block"><?php echo $global_currency . number_format($cart_total, 2); ?></span>
             <?php endif; ?>
           </a>
       </div>
 
       <!-- Theme Toggle Button -->
-      <button id="themeToggleBtn" class="btn btn-link text-reset p-2 me-1 rounded-circle border-0 shadow-none" aria-label="Toggle theme">
-          <i class="fas fa-moon fs-5" id="themeIcon"></i>
+      <button id="themeToggleBtn" class="header-action-btn border-0" aria-label="Toggle theme" title="Toggle Theme">
+          <i class="fas fa-moon" id="themeIcon"></i>
       </button>
       <script>
           // Immediate icon fix to prevent flicker
@@ -558,22 +719,22 @@ if (isset($product['slug'])) {
           })();
       </script>
 
-      <!-- Desktop PWA Install Button (Revealed dynamically if eligible) -->
-      <button id="pwaInstallBtn" class="btn btn-outline-primary btn-custom btn-sm me-2 d-none pwa-install-btn align-items-center" type="button" title="Install Sagar Starter's App">
-          <i class="fas fa-download me-1"></i><span class="d-none d-md-inline">Install App</span>
+      <!-- PWA Install Button (Revealed dynamically if eligible) -->
+      <button id="pwaInstallBtn" class="header-action-btn pwa-btn-desktop pwa-install-btn d-none border-0" type="button" title="Install Sagar Starter's App">
+          <i class="fas fa-download"></i><span class="d-none d-lg-inline ms-1">Install</span>
       </button>
 
       <div id="header-auth-container">
           <?php if(isset($_SESSION['user_id'])): ?>
-              <div class="dropdown me-2">
-                  <a class="dropdown-toggle d-flex align-items-center hidden-arrow text-reset" href="#" id="navbarDropdownMenuLink" role="button" data-mdb-toggle="dropdown" aria-expanded="false">
+              <div class="dropdown">
+                  <a class="dropdown-toggle d-flex align-items-center hidden-arrow text-reset header-action-btn" href="#" id="navbarDropdownMenuLink" role="button" data-mdb-toggle="dropdown" aria-expanded="false" title="My Account">
                        <?php 
                        $profile_photo_url = resolve_profile_photo_url($_SESSION['profile_photo'] ?? '', $_SESSION['role'] ?? '');
                        ?>
                        <?php if(!empty($profile_photo_url)): ?>
-                           <img src="<?php echo htmlspecialchars($profile_photo_url); ?>" alt="Profile" class="rounded-circle object-fit-cover" style="width: 32px; height: 32px; border: 2px solid #007aff;" onerror="this.outerHTML='<i class=\'fas fa-user-circle fs-4 primary-blue\'></i>';">
+                           <img src="<?php echo htmlspecialchars($profile_photo_url); ?>" alt="Profile" class="rounded-circle object-fit-cover" style="width: 28px; height: 28px; border: 2px solid #007aff;" onerror="this.outerHTML='<i class=\'fas fa-user-circle primary-blue\'></i>';">
                        <?php else: ?>
-                           <i class="fas fa-user-circle fs-4 primary-blue"></i>
+                           <i class="fas fa-user-circle primary-blue"></i>
                        <?php endif; ?>
                   </a>
                    <?php 
@@ -609,14 +770,14 @@ if (isset($product['slug'])) {
                    </ul>
               </div>
           <?php else: ?>
-              <a href="<?php echo SITE_URL; ?>/user/login.php" class="btn btn-outline-primary btn-custom btn-sm me-2 d-none d-sm-inline-block">Login</a>
-              <a href="<?php echo SITE_URL; ?>/user/login.php" class="text-reset me-3 d-sm-none"><i class="fas fa-sign-in-alt fs-5"></i></a>
+              <a href="<?php echo SITE_URL; ?>/user/login.php" class="btn btn-outline-primary btn-custom btn-sm me-1 d-none d-lg-inline-flex">Login</a>
+              <a href="<?php echo SITE_URL; ?>/user/login.php" class="header-action-btn d-lg-none" title="Login" aria-label="Login"><i class="fas fa-sign-in-alt"></i></a>
           <?php endif; ?>
       </div>
 
-      <button class="navbar-toggler p-0 border-0" type="button" data-mdb-toggle="collapse" data-mdb-target="#navbarContent"
-        aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
-        <i class="fas fa-bars fs-4"></i>
+      <button class="navbar-toggler header-action-btn p-0 border-0" type="button" data-mdb-toggle="collapse" data-mdb-target="#navbarContent"
+        aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation" title="Menu">
+        <i class="fas fa-bars"></i>
       </button>
     </div>
     
@@ -782,12 +943,10 @@ function refreshUserState() {
             }).format(data.cart_total);
 
             let cartHtml = `
-                <a class="text-reset me-3 position-relative d-flex align-items-center" href="${data.site_url}/cart.php">
-                    <div class="position-relative">
-                        <i class="fas fa-shopping-cart fs-5"></i>
-                        ${data.cart_count > 0 ? `<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;">${data.cart_count}</span>` : ''}
-                    </div>
-                    ${data.cart_count > 0 ? `<span class="ms-2 fw-bold small text-danger d-none d-sm-inline-block">${data.global_currency}${formattedTotal}</span>` : ''}
+                <a class="header-action-btn position-relative" href="${data.site_url}/cart.php" title="Cart">
+                    <i class="fas fa-shopping-cart"></i>
+                    ${data.cart_count > 0 ? `<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">${data.cart_count}</span>` : ''}
+                    ${data.cart_count > 0 ? `<span class="ms-1 fw-bold small text-danger d-none d-xl-inline-block">${data.global_currency}${formattedTotal}</span>` : ''}
                 </a>
             `;
             cartContainer.innerHTML = cartHtml;
@@ -798,11 +957,11 @@ function refreshUserState() {
             if (data.logged_in) {
                 // User is logged in
                 authHtml = `
-                    <div class="dropdown me-2">
-                        <a class="dropdown-toggle d-flex align-items-center hidden-arrow text-reset" href="#" id="navbarDropdownMenuLink" role="button" data-mdb-toggle="dropdown" aria-expanded="false">
+                    <div class="dropdown">
+                        <a class="dropdown-toggle d-flex align-items-center hidden-arrow text-reset header-action-btn" href="#" id="navbarDropdownMenuLink" role="button" data-mdb-toggle="dropdown" aria-expanded="false" title="My Account">
                             ${data.profile_photo_url ? 
-                                `<img src="${data.profile_photo_url}" alt="Profile" class="rounded-circle object-fit-cover" style="width: 32px; height: 32px; border: 2px solid #007aff;" onerror="this.outerHTML='<i class=\\'fas fa-user-circle fs-4 primary-blue\\'></i>';">` : 
-                                '<i class="fas fa-user-circle fs-4 primary-blue"></i>'}
+                                `<img src="${data.profile_photo_url}" alt="Profile" class="rounded-circle object-fit-cover" style="width: 28px; height: 28px; border: 2px solid #007aff;" onerror="this.outerHTML='<i class=\\'fas fa-user-circle primary-blue\\'></i>';">` : 
+                                '<i class="fas fa-user-circle primary-blue"></i>'}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownMenuLink">
                             <li><a class="dropdown-item" href="${cleanBaseUrl}/user/profile.php">My Profile</a></li>
@@ -817,8 +976,8 @@ function refreshUserState() {
             } else {
                 // User is a guest
                 authHtml = `
-                    <a href="${cleanBaseUrl}/user/login.php" class="btn btn-outline-primary btn-custom btn-sm me-2 d-none d-sm-inline-block">Login</a>
-                    <a href="${cleanBaseUrl}/user/login.php" class="text-reset me-3 d-sm-none"><i class="fas fa-sign-in-alt fs-5"></i></a>
+                    <a href="${cleanBaseUrl}/user/login.php" class="btn btn-outline-primary btn-custom btn-sm me-1 d-none d-lg-inline-flex">Login</a>
+                    <a href="${cleanBaseUrl}/user/login.php" class="header-action-btn d-lg-none" title="Login"><i class="fas fa-sign-in-alt"></i></a>
                 `;
             }
             authContainer.innerHTML = authHtml;
