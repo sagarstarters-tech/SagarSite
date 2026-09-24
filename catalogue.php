@@ -1428,83 +1428,227 @@ $og_canonical_url = $og_base_url . '/catalogue.php' . (!empty($active_cat_id) ? 
 
         .pdf-page-cover {
             justify-content: flex-start !important;
+            background: #ffffff !important;
         }
 
         .pdf-page-cover .cover-page {
             border-bottom: none !important;
             height: 100% !important;
             min-height: 1470px !important;
+            max-height: 1470px !important;
             display: flex !important;
             flex-direction: column !important;
+            box-sizing: border-box !important;
         }
 
         .pdf-page-cover .cover-top-split {
-            min-height: 480px !important;
-            flex: 0 0 480px !important;
+            min-height: 560px !important;
+            height: 560px !important;
+            flex: 0 0 560px !important;
+            position: relative !important;
+            display: flex !important;
         }
 
-        .pdf-page-cover .cover-bottom-area {
-            flex: 1 1 auto !important;
-            padding: 50px 48px 45px 48px !important;
+        .pdf-page-cover .cover-top-dark {
+            flex: 0 0 62% !important;
+            background: #0a2e3d !important;
+            padding: 45px 50px !important;
             display: flex !important;
             flex-direction: column !important;
             justify-content: space-between !important;
         }
 
+        .pdf-page-cover .cover-top-white {
+            flex: 0 0 38% !important;
+            background: #ffffff !important;
+            padding: 45px 50px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: flex-start !important;
+            align-items: flex-end !important;
+        }
+
+        .pdf-page-cover .cover-edition-year {
+            font-size: 3.8rem !important;
+            font-weight: 900 !important;
+            color: #0a2e3d !important;
+            line-height: 1 !important;
+            text-align: right !important;
+        }
+
+        .pdf-page-cover .cover-edition-label {
+            font-size: 0.82rem !important;
+            letter-spacing: 2.5px !important;
+            text-transform: uppercase !important;
+            font-weight: 700 !important;
+            color: #6b9597 !important;
+            margin-top: 4px !important;
+            text-align: right !important;
+        }
+
         .pdf-page-cover .cover-circle-frame {
-            width: 270px !important;
-            height: 270px !important;
-            left: 426px !important;
-            top: 105px !important;
+            position: absolute !important;
+            width: 320px !important;
+            height: 320px !important;
+            left: 410px !important;
+            top: 120px !important;
             transform: none !important;
-            border-width: 10px !important;
+            border-radius: 50% !important;
+            border: 12px solid #ffffff !important;
+            box-shadow: 0 16px 40px rgba(10, 46, 61, 0.28) !important;
+            overflow: hidden !important;
+            background: #eef3f5 !important;
+            z-index: 10 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+
+        .pdf-page-cover .cover-bottom-area {
+            flex: 1 1 auto !important;
+            padding: 45px 50px 35px 50px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: flex-start !important;
+            gap: 14px !important;
+            position: relative !important;
+            background: #ffffff !important;
+        }
+
+        .pdf-page-cover .editorial-pretitle {
+            font-size: 0.85rem !important;
+            letter-spacing: 3.5px !important;
+            text-transform: uppercase !important;
+            color: #6b9597 !important;
+            font-weight: 700 !important;
+            margin-bottom: 2px !important;
+        }
+
+        .pdf-page-cover .editorial-cover-h1 {
+            font-family: 'Montserrat', sans-serif !important;
+            font-size: 3.8rem !important;
+            font-weight: 900 !important;
+            line-height: 0.95 !important;
+            color: #0a2e3d !important;
+            letter-spacing: -1.5px !important;
+            margin: 0 0 4px 0 !important;
+            text-transform: uppercase !important;
+        }
+
+        .pdf-page-cover .editorial-cover-sub {
+            font-size: 1.1rem !important;
+            font-weight: 500 !important;
+            color: #475569 !important;
+            max-width: 660px !important;
+            line-height: 1.5 !important;
+            margin: 0 0 12px 0 !important;
+        }
+
+        .pdf-page-cover .cover-feature-pills {
+            display: flex !important;
+            gap: 10px !important;
+            flex-wrap: wrap !important;
+            margin: 0 0 18px 0 !important;
+        }
+
+        .pdf-page-cover .cover-pill {
+            background: #f1f6f8 !important;
+            border: 1px solid #cbd5e1 !important;
+            color: #0a2e3d !important;
+            font-size: 0.78rem !important;
+            font-weight: 600 !important;
+            padding: 7px 16px !important;
+            border-radius: 30px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 7px !important;
+        }
+
+        .pdf-page-cover .cover-footer-meta {
+            margin-top: auto !important;
+            display: grid !important;
+            grid-template-columns: repeat(4, 1fr) !important;
+            gap: 12px !important;
+            padding-top: 20px !important;
+            border-top: 1px solid #e2e8f0 !important;
+            font-size: 0.76rem !important;
+            color: #64748b !important;
+            max-width: calc(100% - 170px) !important;
+        }
+
+        .pdf-page-cover .cover-sage-block {
+            position: absolute !important;
+            bottom: 0 !important;
+            right: 0 !important;
+            width: 160px !important;
+            height: 70px !important;
+            background: #6b9597 !important;
+            border-top-left-radius: 6px !important;
+            z-index: 3 !important;
         }
 
         /* Ensure product grid inside PDF page is strictly 2 columns */
         .pdf-staging-container .product-grid {
             display: grid !important;
             grid-template-columns: repeat(2, 1fr) !important;
-            gap: 16px !important;
-            margin-bottom: 16px !important;
+            gap: 14px !important;
+            margin-bottom: 14px !important;
         }
 
         .pdf-staging-container .cat-prod-card {
-            padding: 12px !important;
+            padding: 10px 14px !important;
             gap: 12px !important;
+            min-height: 175px !important;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04) !important;
             border: 1px solid #e2e8f0 !important;
+            background: #ffffff !important;
         }
 
         .pdf-staging-container .cat-prod-thumb-box {
-            width: 100px !important;
-            height: 100px !important;
+            width: 95px !important;
+            height: 95px !important;
             flex-shrink: 0 !important;
         }
 
         .pdf-staging-container .cat-prod-title {
-            font-size: 0.92rem !important;
+            font-size: 0.9rem !important;
             line-height: 1.3 !important;
+            margin-bottom: 4px !important;
         }
 
         .pdf-staging-container .cat-prod-desc {
-            font-size: 0.72rem !important;
-            line-height: 1.4 !important;
-            margin-bottom: 6px !important;
+            font-size: 0.7rem !important;
+            line-height: 1.35 !important;
+            margin-bottom: 4px !important;
+            display: -webkit-box !important;
+            -webkit-line-clamp: 2 !important;
+            -webkit-box-orient: vertical !important;
+            overflow: hidden !important;
         }
 
         .pdf-staging-container .cat-price-tag {
+            font-size: 1rem !important;
+        }
+
+        .pdf-staging-container .category-editorial-bar {
+            padding: 10px 18px !important;
+            margin-top: 14px !important;
+            margin-bottom: 12px !important;
+            border-radius: 6px !important;
+        }
+        .pdf-staging-container .category-editorial-bar:first-child {
+            margin-top: 0 !important;
+        }
+
+        .pdf-staging-container .cat-bar-title {
             font-size: 1.05rem !important;
         }
 
-        .pdf-staging-container .no-print,
-        .pdf-staging-container .btn-card-inquire {
-            display: none !important;
-        }
-
         .pdf-staging-container .our-offer-banner {
-            margin: 15px 0 !important;
-            padding: 20px 24px !important;
-            gap: 18px !important;
+            margin: 14px 0 !important;
+            padding: 18px 22px !important;
+            gap: 16px !important;
+            border-radius: 8px !important;
         }
 
         .pdf-staging-container .cat-back-cover {
@@ -2118,56 +2262,84 @@ async function downloadCataloguePDF() {
         }
 
         // ══════════════════════════════════════════════════════════════
-        // PRODUCT PAGES (GROUPED BY CATEGORY, NEVER CUTTING A CARD)
+        // PRODUCT PAGES (DYNAMIC CONTINUOUS FLOW PACKER)
+        // Eliminates giant blank spaces by packing categories & cards naturally
         // ══════════════════════════════════════════════════════════════
         var catBars = document.querySelectorAll('.cat-content-body > .category-editorial-bar');
-        var catPageNum = 2;
+        var catPageNum = 2; // starts after Cover (1) & Welcome/TOC (2)
+        var maxPageHeight = 1260; // safe usable height in px inside each A4 sheet
+        var currentPageHeight = 0;
+        var currentPageContent = null;
+        var currentCatTitle = 'Products';
+
+        function startNewProductPage(title) {
+            catPageNum++;
+            var pLabel = 'Page ' + (catPageNum < 10 ? '0' + catPageNum : catPageNum);
+            currentPageContent = createA4Page(title || currentCatTitle, pLabel);
+            currentPageHeight = 0;
+            return currentPageContent;
+        }
 
         if (catBars.length > 0) {
+            var firstCatTitle = catBars[0].querySelector('.cat-bar-title span') ? catBars[0].querySelector('.cat-bar-title span').innerText.trim() : 'Products';
+            currentCatTitle = firstCatTitle;
+            startNewProductPage(firstCatTitle);
+
             catBars.forEach(function(bar) {
                 var catTitle = bar.querySelector('.cat-bar-title span') ? bar.querySelector('.cat-bar-title span').innerText.trim() : 'Products';
+                currentCatTitle = catTitle;
+
                 var grid = bar.nextElementSibling;
                 while (grid && !grid.classList.contains('product-grid')) {
                     grid = grid.nextElementSibling;
                 }
-                
                 var cards = grid ? Array.from(grid.querySelectorAll('.cat-prod-card')) : [];
                 
-                // Check if there is an offer banner right after this grid
                 var nextEl = grid ? grid.nextElementSibling : null;
                 var bannerEl = (nextEl && nextEl.classList.contains('our-offer-banner')) ? nextEl : null;
 
-                // Chunk cards into sets of up to 4 per page so they fit with spacious luxury
-                var chunkSize = 4;
-                var totalChunks = Math.max(1, Math.ceil(cards.length / chunkSize));
+                // Check if Category Header (55px) + at least 1 row of cards (200px) fits on current page
+                if (currentPageHeight + 255 > maxPageHeight && currentPageHeight > 100) {
+                    startNewProductPage(catTitle);
+                }
 
-                for (var c = 0; c < totalChunks; c++) {
-                    catPageNum++;
-                    var pageLabel = 'Page ' + (catPageNum < 10 ? '0' + catPageNum : catPageNum);
-                    var headerSuffix = catTitle + (totalChunks > 1 ? ' (' + (c + 1) + '/' + totalChunks + ')' : '');
-                    var pageContent = createA4Page(headerSuffix, pageLabel);
+                // Add Category Header
+                var barClone = bar.cloneNode(true);
+                currentPageContent.appendChild(barClone);
+                currentPageHeight += 55;
 
-                    // Add Category Header Bar on every chunk
-                    var barClone = bar.cloneNode(true);
-                    if (c > 0) {
-                        var titleSpan = barClone.querySelector('.cat-bar-title span');
-                        if (titleSpan) titleSpan.innerText += ' (Cont.)';
+                // Process cards in rows of 2
+                var totalRows = Math.ceil(cards.length / 2);
+                for (var r = 0; r < totalRows; r++) {
+                    // Check if this row (200px) fits on current page
+                    if (currentPageHeight + 200 > maxPageHeight && currentPageHeight > 100) {
+                        startNewProductPage(catTitle + ' (Cont.)');
+                        // Add sleek continuation bar
+                        var contBar = bar.cloneNode(true);
+                        var tSpan = contBar.querySelector('.cat-bar-title span');
+                        if (tSpan) tSpan.innerText += ' (Cont.)';
+                        currentPageContent.appendChild(contBar);
+                        currentPageHeight += 55;
                     }
-                    pageContent.appendChild(barClone);
 
-                    // Create product grid with this chunk's cards
-                    var gridDiv = document.createElement('div');
-                    gridDiv.className = 'product-grid';
-                    var slice = cards.slice(c * chunkSize, (c + 1) * chunkSize);
-                    slice.forEach(function(card) {
-                        gridDiv.appendChild(card.cloneNode(true));
-                    });
-                    pageContent.appendChild(gridDiv);
+                    // Create row container with 2-col grid
+                    var rowGrid = document.createElement('div');
+                    rowGrid.className = 'product-grid';
+                    var c1 = cards[r * 2];
+                    var c2 = cards[r * 2 + 1];
+                    if (c1) rowGrid.appendChild(c1.cloneNode(true));
+                    if (c2) rowGrid.appendChild(c2.cloneNode(true));
+                    currentPageContent.appendChild(rowGrid);
+                    currentPageHeight += 200;
+                }
 
-                    // If banner belongs to this category and this is the last chunk of this category
-                    if (bannerEl && c === totalChunks - 1) {
-                        pageContent.appendChild(bannerEl.cloneNode(true));
+                // If this category has the "The Sagar Advantage" banner
+                if (bannerEl) {
+                    if (currentPageHeight + 270 > maxPageHeight && currentPageHeight > 100) {
+                        startNewProductPage('The Sagar Advantage');
                     }
+                    currentPageContent.appendChild(bannerEl.cloneNode(true));
+                    currentPageHeight += 270;
                 }
             });
         }
