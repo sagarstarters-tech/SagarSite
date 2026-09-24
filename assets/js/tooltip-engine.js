@@ -7,10 +7,10 @@
 (function () {
     'use strict';
 
-    // Touchscreen / non-hover check: do not trigger hover tooltips on pure touch devices
-    const isHoverCapable = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-    if (!isHoverCapable) {
-        return; // Preserve native mobile touch behavior
+    // Pure touch device check: only disable tooltips if the device has NO hover support
+    const isPureTouchDevice = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+    if (isPureTouchDevice) {
+        return; // Preserve native mobile touch behavior on pure phones/tablets
     }
 
     // Singleton tooltip DOM element
@@ -179,8 +179,8 @@
     }
 
     /**
-     * Determines whether an element qualifies for a hover tooltip:
-     * ONLY qualifies if it is an ICON-ONLY element with NO button label, link text, or anchor text.
+     * Determines whether an element qualifies as icon-only:
+     * Has an icon AND has NO button label, link text, or visible text.
      */
     function isIconOnlyElement(el) {
         if (!el || el.nodeType !== 1) return false;
@@ -188,8 +188,76 @@
     }
 
     /**
+     * Determines whether an element is genuinely clickable / interactive.
+     * Strictly verifies that the element is an actionable button, link, form trigger,
+     * or interactive widget. Non-clickable items (stat cards, badges, headings, display icons) return false.
+     */
+    function isClickableElement(el) {
+        if (!el || el.nodeType !== 1) return false;
+
+        // Elements with explicit custom tooltip or title attribute are always interactive candidates
+        if (el.hasAttribute('data-tooltip') || el.hasAttribute('data-hint') || 
+            el.hasAttribute('title') || el.hasAttribute('data-ss-title')) {
+            return true;
+        }
+
+        const tag = el.tagName ? el.tagName.toLowerCase() : '';
+
+        // Buttons (unless disabled)
+        if (tag === 'button') {
+            return !el.disabled;
+        }
+
+        // Links
+        if (tag === 'a') {
+            const href = el.getAttribute('href');
+            if (href && href !== '#' && href !== 'javascript:void(0)' && href !== 'javascript:;') {
+                return true;
+            }
+            if (el.hasAttribute('onclick') || el.hasAttribute('data-bs-toggle') || el.hasAttribute('data-mdb-toggle')) {
+                return true;
+            }
+        }
+
+        // Form interactive controls
+        if (tag === 'input') {
+            const type = (el.getAttribute('type') || '').toLowerCase();
+            return ['button', 'submit', 'reset', 'image'].includes(type) && !el.disabled;
+        }
+
+        // ARIA interactive roles
+        const role = (el.getAttribute('role') || '').toLowerCase();
+        if (['button', 'link', 'tab', 'menuitem', 'checkbox', 'switch'].includes(role)) {
+            return true;
+        }
+
+        // Click handlers and framework toggles
+        if (el.hasAttribute('onclick') || 
+            el.hasAttribute('data-bs-toggle') || 
+            el.hasAttribute('data-mdb-toggle') || 
+            el.hasAttribute('data-bs-target') || 
+            el.hasAttribute('data-mdb-target') || 
+            el.hasAttribute('data-action')) {
+            return true;
+        }
+
+        // Recognized interactive classes
+        if (el.matches && el.matches(
+            '.btn, .btn-act, .btn-close, .action-icon, .btn-icon, .theme-toggle, .language-btn, .nav-link, .dropdown-item, .bottom-nav-item, #whatsapp-link, .social-icon-circle, .selector-pill-btn'
+        )) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Finds the nearest target element eligible for a tooltip.
-     * ONLY returns an element if it has an icon AND has NO Button Label / Link Text / Anchor Text.
+     * STRICT RULES:
+     * 1. If an element or icon explicitly has [data-tooltip], [data-hint], or [title], it qualifies.
+     * 2. Otherwise, tooltips ONLY appear on CLICKABLE elements (button, link, onclick, etc.).
+     * 3. Clickable elements with visible text labels do NOT show tooltips (user can already read text).
+     * 4. Non-clickable icons (stat cards, info badges, decorative icons) NEVER show a tooltip!
      */
     function getInteractiveTarget(target) {
         if (!target || target === document.body || target === document.documentElement) return null;
@@ -197,48 +265,45 @@
         // Skip ignored elements or elements explicitly asking for no tooltip
         if (target.closest('[data-no-tooltip], .no-tooltip, .no-custom-tooltip')) return null;
 
-        // 1. Check if target is inside an interactive container (button, link, action control)
-        const interactiveContainer = target.closest(
-            'button, a, .btn, [role="button"], input[type="submit"], input[type="button"], input[type="reset"], .theme-toggle, .language-btn, .action-icon, .btn-icon, .btn-close, .nav-link, .dropdown-item, .dropdown-toggle, .navbar-brand, .bottom-nav-item, #whatsapp-link'
-        );
-
-        if (interactiveContainer) {
-            // STRICT RULE: If the interactive container has visible text (e.g. "Refresh Live"), DO NOT show tooltip!
-            // Only allow if it is strictly icon-only
-            if (isIconOnlyElement(interactiveContainer)) {
-                return interactiveContainer;
-            }
-            return null;
+        // 1. Explicit custom tooltip or title attribute on target or nearby container
+        const explicitTooltipEl = target.closest('[data-tooltip], [data-hint], [title], [data-ss-title]');
+        if (explicitTooltipEl) {
+            // Never trigger tooltips on huge document containers or table rows
+            if (explicitTooltipEl === document.body || explicitTooltipEl === document.documentElement) return null;
+            return explicitTooltipEl;
         }
 
-        // 2. Standalone icon (e.g. <i class="fas fa-info-circle" title="..."></i>)
-        const standaloneIcon = target.closest('i, svg, [class*="fa-"], [class*="bi-"], .material-icons, .material-symbols-outlined, .btn-close, .action-icon');
-        if (standaloneIcon) {
-            // If the standalone icon has an explicit tooltip or title, always show
-            if (standaloneIcon.hasAttribute('data-tooltip') || standaloneIcon.hasAttribute('data-hint') || standaloneIcon.hasAttribute('title') || standaloneIcon.hasAttribute('data-ss-title')) {
-                return standaloneIcon;
-            }
+        // 2. Check if target is inside a CLICKABLE container (button, link, action control)
+        const clickableContainer = target.closest(
+            'button, a, [role="button"], [role="link"], input[type="submit"], input[type="button"], input[type="reset"], .btn, .btn-act, .btn-close, .theme-toggle, .language-btn, .action-icon, .btn-icon, .nav-link, .dropdown-item, .dropdown-toggle, .bottom-nav-item, #whatsapp-link, .social-icon-circle, .selector-pill-btn, [onclick], [data-bs-toggle], [data-mdb-toggle]'
+        );
 
-            // If it's a decorative icon inside a heading, paragraph, label, or table cell that has text, do NOT show
-            const textParent = standaloneIcon.closest('h1, h2, h3, h4, h5, h6, p, label, th, td');
-            if (textParent && hasVisibleTextLabel(textParent)) {
+        if (clickableContainer) {
+            // Must be genuinely clickable (not disabled, not empty)
+            if (!isClickableElement(clickableContainer)) {
                 return null;
             }
 
-            if (isIconOnlyElement(standaloneIcon)) {
-                return standaloneIcon;
+            // STRICT RULE: If the clickable container has visible text (e.g. "Add Product"),
+            // DO NOT show tooltip! Only show tooltip if it is strictly icon-only
+            if (isIconOnlyElement(clickableContainer)) {
+                return clickableContainer;
             }
             return null;
         }
 
+        // 3. Standalone element:
+        // Since it is NOT inside a clickable container and has NO explicit tooltip attribute,
+        // it is strictly NON-CLICKABLE (e.g. stat card icon, heading icon, decorative badge).
+        // NEVER show a tooltip!
         return null;
     }
 
     /**
-     * Resolves the tooltip message and optional icon for an icon-only element
+     * Resolves the tooltip message and optional icon for an eligible element
      */
     function resolveTooltipContent(el) {
-        if (!el || !isIconOnlyElement(el)) return null;
+        if (!el) return null;
 
         // Priority 1: Explicit data-tooltip / data-hint attribute
         const explicitTooltip = el.getAttribute('data-tooltip') || el.getAttribute('data-hint');
@@ -274,11 +339,11 @@
         }
 
         // Priority 4: Close button special case
-        if (el.matches('.btn-close, .close') || el.querySelector('.btn-close, .close')) {
+        if (el.matches && (el.matches('.btn-close, .close') || el.querySelector('.btn-close, .close'))) {
             return { text: 'Close', icon: 'fa-times' };
         }
 
-        // Priority 5: Icon-based intelligent detection
+        // Priority 5: Icon-based intelligent detection (only for verified clickable icon buttons)
         const iconEl = (el.tagName && (el.tagName.toLowerCase() === 'i' || el.tagName.toLowerCase() === 'svg')) ? el : el.querySelector('i, svg, [class*="fa-"], [class*="bi-"], .material-icons');
         if (iconEl) {
             const iconClass = (iconEl.className || '') + ' ' + (iconEl.getAttribute('data-icon') || '');
@@ -299,11 +364,7 @@
             }
         }
 
-        // Priority 7: Clean action fallback for icon buttons
-        if (iconEl) {
-            return { text: 'Action', icon: null };
-        }
-
+        // DO NOT show generic 'Action' fallback. If purpose is unknown, show no tooltip.
         return null;
     }
 

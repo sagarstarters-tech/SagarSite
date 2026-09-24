@@ -4,10 +4,10 @@
  */
 
 :root {
-    --ss-tooltip-bg: rgba(15, 23, 42, 0.95);
-    --ss-tooltip-border: rgba(255, 255, 255, 0.16);
-    --ss-tooltip-color: #f8fafc;
-    --ss-tooltip-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3), 0 0 15px rgba(59, 130, 246, 0.22);
+    --ss-tooltip-bg: #1e3a8a; /* Deep Royal Sapphire Blue (Rich brand color, replaces dull black) */
+    --ss-tooltip-border: rgba(147, 197, 253, 0.38); /* Sleek ice-blue luminous border */
+    --ss-tooltip-color: #ffffff;
+    --ss-tooltip-shadow: 0 10px 25px -3px rgba(15, 23, 42, 0.4), 0 4px 14px rgba(30, 58, 138, 0.45), 0 0 18px rgba(59, 130, 246, 0.32);
     --ss-tooltip-font: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     --ss-tooltip-radius: 8px;
     --ss-tooltip-arrow-size: 6px;
@@ -30,7 +30,7 @@
     box-shadow: var(--ss-tooltip-shadow);
     font-family: var(--ss-tooltip-font);
     font-size: 0.8125rem; /* ~13px */
-    font-weight: 500;
+    font-weight: 600;
     line-height: 1.4;
     letter-spacing: 0.015em;
     text-align: center;
@@ -58,7 +58,7 @@
     display: inline-block;
     margin-right: 6px;
     font-size: 0.875em;
-    color: #60a5fa;
+    color: #93c5fd;
     vertical-align: -0.05em;
 }
 
