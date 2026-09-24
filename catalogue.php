@@ -481,7 +481,7 @@ $og_canonical_url = $og_base_url . '/catalogue.php' . (!empty($active_cat_id) ? 
         .cover-top-split {
             position: relative;
             display: flex;
-            min-height: 380px;
+            min-height: 340px;
             background: #ffffff;
         }
         .cover-top-dark {
@@ -1358,6 +1358,32 @@ $og_canonical_url = $og_base_url . '/catalogue.php' . (!empty($active_cat_id) ? 
             .cat-back-cover { padding: 30px 24px; flex-direction: column; align-items: flex-start; }
         }
 
+        /* ── PDF Export Mode (Active only during html2pdf export) ─── */
+        body.pdf-export-mode {
+            background: #ffffff !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        body.pdf-export-mode #action-bar {
+            display: none !important;
+        }
+        body.pdf-export-mode .catalogue-wrapper {
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        body.pdf-export-mode .catalogue-doc {
+            box-shadow: none !important;
+            border-radius: 0 !important;
+            max-width: 100% !important;
+            width: 100% !important;
+            margin: 0 !important;
+            border: none !important;
+        }
+        body.pdf-export-mode .no-print,
+        body.pdf-export-mode .btn-card-inquire {
+            display: none !important;
+        }
+
         /* ── Print Media Optimization (Standard A4 Portrait) ─── */
         @page {
             size: A4 portrait;
@@ -1892,31 +1918,56 @@ function downloadCataloguePDF() {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating PDF...';
     btn.disabled = true;
 
-    var element = document.getElementById('catalogueDocument');
-    var catSuffix = <?php echo json_encode(!empty($active_cat_slug) ? preg_replace('/[^a-zA-Z0-9_-]/', '_', $active_cat_slug) : (!empty($active_cat_name) ? preg_replace('/[^a-zA-Z0-9_-]/', '_', $active_cat_name) : 'All_Products')); ?>;
-    var filename = '<?php echo preg_replace('/[^a-zA-Z0-9_-]/', '_', $store_name); ?>_Catalogue_' + catSuffix + '_<?php echo date('Y'); ?>.pdf';
+    // 1. Capture current scroll position
+    var origScrollX = window.pageXOffset || document.documentElement.scrollLeft || 0;
+    var origScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
 
-    var opt = {
-        margin: [6, 6, 8, 6],
-        filename: filename,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: {
-            mode: ['css', 'legacy'],
-            avoid: ['.cat-prod-card', '.category-editorial-bar', '.cover-page', '.spread-welcome-toc', '.specs-strip', '.our-offer-banner', '.cat-back-cover']
-        }
-    };
+    // 2. Activate PDF export styling and scroll to (0, 0) so html2canvas doesn't produce blank top offset
+    document.body.classList.add('pdf-export-mode');
+    window.scrollTo(0, 0);
 
-    html2pdf().set(opt).from(element).save().then(function() {
-        btn.innerHTML = origText;
-        btn.disabled = false;
-    }).catch(function(err) {
-        console.warn('PDF generation fallback to print:', err);
-        btn.innerHTML = origText;
-        btn.disabled = false;
-        window.print();
-    });
+    // 3. Short delay to ensure DOM reflow and scroll position are fully applied
+    setTimeout(function() {
+        var element = document.getElementById('catalogueDocument');
+        var catSuffix = <?php echo json_encode(!empty($active_cat_slug) ? preg_replace('/[^a-zA-Z0-9_-]/', '_', $active_cat_slug) : (!empty($active_cat_name) ? preg_replace('/[^a-zA-Z0-9_-]/', '_', $active_cat_name) : 'All_Products')); ?>;
+        var filename = '<?php echo preg_replace('/[^a-zA-Z0-9_-]/', '_', $store_name); ?>_Catalogue_' + catSuffix + '_<?php echo date('Y'); ?>.pdf';
+
+        var opt = {
+            margin: [0, 0, 0, 0],
+            filename: filename,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                scrollX: 0,
+                scrollY: 0,
+                x: 0,
+                y: 0,
+                windowWidth: element.offsetWidth || 1040
+            },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak: {
+                mode: ['css', 'legacy'],
+                after: ['.cover-page', '.spread-welcome-toc'],
+                avoid: ['.cat-prod-card', '.category-editorial-bar', '.spec-strip-card', '.our-offer-banner', '.cat-back-cover']
+            }
+        };
+
+        html2pdf().set(opt).from(element).save().then(function() {
+            document.body.classList.remove('pdf-export-mode');
+            window.scrollTo(origScrollX, origScrollY);
+            btn.innerHTML = origText;
+            btn.disabled = false;
+        }).catch(function(err) {
+            console.warn('PDF generation fallback to print:', err);
+            document.body.classList.remove('pdf-export-mode');
+            window.scrollTo(origScrollX, origScrollY);
+            btn.innerHTML = origText;
+            btn.disabled = false;
+            window.print();
+        });
+    }, 150);
 }
 
 <?php if ($auto_download): ?>
