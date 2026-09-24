@@ -485,10 +485,90 @@ if (isset($product['slug'])) {
             #pwaInstallBtn span {
                 display: none !important;
             }
+            .navbar-toggler,
+            .navbar-toggler.header-action-btn,
+            .header-action-btn.d-lg-none {
+                display: inline-flex !important;
+            }
         }
         @media (min-width: 992px) {
+            /* Strict desktop suppression of hamburger menu and mobile action duplicates */
+            .navbar-toggler,
+            button.navbar-toggler,
+            .navbar-toggler.header-action-btn,
+            .header-action-btn.d-lg-none,
+            a.header-action-btn.d-lg-none,
+            button.header-action-btn.d-lg-none,
+            .d-lg-none {
+                display: none !important;
+            }
+
+            /* Professional Desktop Nav Menu Alignment & Spacing */
+            .navbar-collapse#navbarContent {
+                display: flex !important;
+                align-items: center !important;
+                flex-grow: 1 !important;
+                margin-left: 0.75rem !important;
+            }
+            .navbar-collapse#navbarContent .navbar-nav {
+                display: flex !important;
+                flex-direction: row !important;
+                align-items: center !important;
+                flex-wrap: nowrap !important;
+                gap: 2px !important;
+                margin-bottom: 0 !important;
+            }
+            .navbar-collapse#navbarContent .navbar-nav .nav-item {
+                margin: 0 !important;
+                display: inline-flex !important;
+                align-items: center !important;
+            }
+            .navbar-collapse#navbarContent .navbar-nav .nav-link {
+                white-space: nowrap !important;
+                font-size: 0.9rem !important;
+                font-weight: 600 !important;
+                padding: 0.45rem 0.65rem !important;
+                color: #1e293b !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                gap: 4px !important;
+                line-height: 1.2 !important;
+                border-radius: 6px !important;
+                border-bottom: none !important;
+                text-transform: none !important;
+                letter-spacing: 0 !important;
+                transition: color 0.2s ease, background-color 0.2s ease !important;
+            }
+            .navbar-collapse#navbarContent .navbar-nav .nav-link:hover,
+            .navbar-collapse#navbarContent .navbar-nav .nav-link:focus {
+                color: var(--primary, #0d6efd) !important;
+                background-color: rgba(13, 110, 253, 0.06) !important;
+            }
+            .navbar-collapse#navbarContent .navbar-nav .nav-link::after {
+                display: none !important;
+            }
+            .navbar-collapse#navbarContent .navbar-nav .dropdown-toggle::after {
+                display: inline-block !important;
+                position: static !important;
+                width: auto !important;
+                height: auto !important;
+                bottom: auto !important;
+                left: auto !important;
+                transform: none !important;
+                border-top: 0.35em solid currentColor !important;
+                border-right: 0.3em solid transparent !important;
+                border-bottom: 0 !important;
+                border-left: 0.3em solid transparent !important;
+                background-color: transparent !important;
+                margin-left: 5px !important;
+                vertical-align: 0.12em !important;
+                content: "" !important;
+            }
+
             .header-actions-container {
                 gap: 6px !important;
+                margin-left: auto !important;
+                flex-shrink: 0 !important;
             }
             .lang-dropdown-toggle {
                 width: auto !important;
@@ -514,6 +594,15 @@ if (isset($product['slug'])) {
                 background-color: var(--primary, #0d6efd) !important;
                 color: #ffffff !important;
             }
+        }
+        body.dark-mode-active .navbar-collapse#navbarContent .navbar-nav .nav-link,
+        [data-mdb-theme="dark"] .navbar-collapse#navbarContent .navbar-nav .nav-link {
+            color: #e2e8f0 !important;
+        }
+        body.dark-mode-active .navbar-collapse#navbarContent .navbar-nav .nav-link:hover,
+        [data-mdb-theme="dark"] .navbar-collapse#navbarContent .navbar-nav .nav-link:hover {
+            color: #60a5fa !important;
+            background-color: rgba(255, 255, 255, 0.08) !important;
         }
         body.dark-mode-active .header-action-btn,
         [data-mdb-theme="dark"] .header-action-btn {
@@ -628,7 +717,7 @@ if (isset($product['slug'])) {
 
 <!-- Navbar -->
 <nav class="navbar navbar-expand-lg navbar-light navbar-custom sticky-top">
-  <div class="container">
+  <div class="container-fluid px-xl-4 px-lg-3 px-2" style="max-width: 1440px;">
     <a class="navbar-brand fw-bold montserrat primary-blue fs-3" href="<?php echo (defined('SITE_URL') && !empty(SITE_URL) && strpos(SITE_URL, 'http') !== 0) ? rtrim(SITE_URL, '/') . '/index.php' : (rtrim(SITE_URL, '/') ?: '') . '/index.php'; ?>">
         <?php if (!isset($global_settings['show_header_logo']) || $global_settings['show_header_logo'] == '1'):
             $header_logo_val = $global_settings['header_logo_image'] ?? 'logo.jpg';
@@ -648,8 +737,8 @@ if (isset($product['slug'])) {
     <div class="d-flex align-items-center order-lg-3 header-actions-container">
       <?php if(isset($global_settings['enable_header_search']) && $global_settings['enable_header_search'] == '1'): ?>
           <!-- Desktop Search Bar -->
-          <form action="<?php echo SITE_URL; ?>/shop.php" method="GET" class="me-2 d-none d-lg-flex">
-              <div class="input-group input-group-sm" style="width: 200px;">
+          <form action="<?php echo SITE_URL; ?>/shop.php" method="GET" class="me-2 d-none d-lg-flex header-desktop-search-form">
+              <div class="input-group input-group-sm" style="width: 175px;">
                   <input type="text" name="search" class="form-control border-0 bg-light rounded-pill-start ps-3" placeholder="Search..." style="border-radius: 20px 0 0 20px;">
                   <button class="btn btn-light border-0 bg-light text-muted px-3" type="submit" style="border-radius: 0 20px 20px 0;" aria-label="Search">
                       <i class="fas fa-search"></i>
@@ -775,7 +864,7 @@ if (isset($product['slug'])) {
           <?php endif; ?>
       </div>
 
-      <button class="navbar-toggler header-action-btn p-0 border-0" type="button" data-mdb-toggle="collapse" data-mdb-target="#navbarContent"
+      <button class="navbar-toggler header-action-btn d-lg-none p-0 border-0" type="button" data-mdb-toggle="collapse" data-mdb-target="#navbarContent"
         aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation" title="Menu">
         <i class="fas fa-bars"></i>
       </button>
