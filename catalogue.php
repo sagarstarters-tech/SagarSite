@@ -5,8 +5,8 @@
  *  Location: /catalogue.php
  * ============================================================
  *  Publicly accessible: Anyone (customers, dealers, farmers,
- *  visitors) can view and download the official catalogue.
- *  Controlled completely via Admin Panel.
+ *  contractors) can view, print and download the official catalogue.
+ *  Editorial brochure design inspired by modern industrial catalogs.
  * ============================================================
  */
 
@@ -32,21 +32,21 @@ if (!$cat_enabled && !$is_admin) {
         <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet"/>
         <link href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.css" rel="stylesheet"/>
         <style>
-            body { background: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+            body { background: #f4f8f9; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
             .card-notice { max-width: 520px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
         </style>
     </head>
     <body>
         <div class="card card-notice border-0 p-4 p-md-5 text-center bg-white m-3">
             <div class="mb-3 text-primary">
-                <i class="fas fa-book-reader fa-4x"></i>
+                <i class="fas fa-book-reader fa-4x" style="color: #0b3344;"></i>
             </div>
             <h3 class="fw-bold mb-2 text-dark">Catalogue Under Revision</h3>
             <p class="text-muted mb-4">
                 Our product catalogue is currently being updated with new motor starter models and technical specifications. Please check back soon or browse our online shop.
             </p>
             <div class="d-flex justify-content-center gap-2">
-                <a href="<?php echo SITE_URL; ?>/shop.php" class="btn btn-primary rounded-pill px-4">
+                <a href="<?php echo SITE_URL; ?>/shop.php" class="btn text-white rounded-pill px-4" style="background: #0b3344;">
                     <i class="fas fa-store me-1"></i> Browse Shop
                 </a>
                 <a href="<?php echo SITE_URL; ?>/contact.php" class="btn btn-outline-secondary rounded-pill px-4">
@@ -235,6 +235,30 @@ $share_text      = "Check out " . $store_name . "'s Official Product Catalogue: 
 $auto_download = isset($_GET['download']) && $_GET['download'] == '1';
 $wa_phone_clean = preg_replace('/[^0-9]/', '', $store_phone);
 
+// Determine Cover Spotlight Image (Pick first high-res product or flagship asset)
+$cover_spotlight_img = '';
+if (!empty($catalog)) {
+    foreach ($catalog as $cname => $prods) {
+        foreach ($prods as $p) {
+            if (!empty($p['image'])) {
+                $cover_spotlight_img = function_exists('resolve_image_url') ? resolve_image_url($p['image']) : '';
+                if (!empty($cover_spotlight_img)) break 2;
+            }
+        }
+    }
+}
+if (empty($cover_spotlight_img)) {
+    if (file_exists(__DIR__ . '/assets/images/single hp dgt.webp')) {
+        $cover_spotlight_img = ASSETS_URL . '/images/single hp dgt.webp';
+    } elseif (file_exists(__DIR__ . '/assets/images/star delta gi.webp')) {
+        $cover_spotlight_img = ASSETS_URL . '/images/star delta gi.webp';
+    } elseif (file_exists(__DIR__ . '/assets/images/hero_product_1774248820.webp')) {
+        $cover_spotlight_img = ASSETS_URL . '/images/hero_product_1774248820.webp';
+    } else {
+        $cover_spotlight_img = $logo_url;
+    }
+}
+
 // ── Open Graph & Social Share Metadata ───────────────────────
 $page_html_title = (stripos($doc_title, $store_name) !== false) ? $doc_title : ($doc_title . ' — ' . $store_name);
 $og_description  = !empty($doc_subtitle) ? $doc_subtitle : (isset($doc_about) ? substr(strip_tags($doc_about), 0, 160) : "Explore Sagar Starter's official product catalogue for heavy-duty motor starters, submersible control panels & switchgear.");
@@ -276,21 +300,42 @@ $og_canonical_url = $og_base_url . '/catalogue.php' . (!empty($active_cat_id) ? 
     <meta name="twitter:title" content="<?php echo htmlspecialchars($page_html_title); ?>">
     <meta name="twitter:description" content="<?php echo htmlspecialchars($og_description); ?>">
     <meta name="twitter:image" content="<?php echo htmlspecialchars($og_image_url); ?>">
-    <!-- Fonts & Icons -->
+
+    <!-- Typography & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet"/>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.css" rel="stylesheet"/>
 
     <style>
-        /* ── Base Setup ────────────────────────────────────────── */
+        /* ── Design System & Theme Variables ───────────────────── */
+        :root {
+            --cat-teal-dark: #0a2e3d;
+            --cat-teal-deep: #061f2a;
+            --cat-teal-medium: #114256;
+            --cat-sage: #6b9597;
+            --cat-sage-light: #8faeaf;
+            --cat-slate-light: #f4f8f9;
+            --cat-slate-soft: #eaf1f3;
+            --cat-border: #d5e2e5;
+            --cat-border-light: #e6eff1;
+            --cat-text-main: #08232f;
+            --cat-text-muted: #5c707a;
+            --cat-gold: #e6a117;
+            --cat-white: #ffffff;
+            --cat-shadow-subtle: 0 4px 18px rgba(10, 46, 61, 0.06);
+            --cat-shadow-card: 0 6px 24px rgba(10, 46, 61, 0.08);
+            --cat-radius: 12px;
+        }
+
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
         body {
             font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #e2e8f0;
-            color: #1e293b;
-            line-height: 1.5;
+            background: #dfe8eb;
+            color: var(--cat-text-main);
+            line-height: 1.55;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
@@ -300,13 +345,14 @@ $og_canonical_url = $og_base_url . '/catalogue.php' . (!empty($active_cat_id) ? 
             position: sticky;
             top: 0;
             z-index: 9999;
-            background: linear-gradient(135deg, #091e3a 0%, #1e3a8a 100%);
-            padding: 12px 24px;
-            color: #fff;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+            background: linear-gradient(135deg, #061c26 0%, #0a2e3d 100%);
+            border-bottom: 2px solid rgba(107, 149, 151, 0.35);
+            padding: 10px 22px;
+            color: #ffffff;
+            box-shadow: 0 4px 25px rgba(6, 28, 38, 0.4);
         }
         .action-bar-inner {
-            max-width: 1140px;
+            max-width: 1180px;
             margin: 0 auto;
             display: flex;
             align-items: center;
@@ -314,61 +360,883 @@ $og_canonical_url = $og_base_url . '/catalogue.php' . (!empty($active_cat_id) ? 
             flex-wrap: wrap;
             gap: 12px;
         }
+        .action-branding {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .action-branding i {
+            color: var(--cat-sage-light);
+            font-size: 1.35rem;
+        }
+        .action-btn-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
         .btn-act {
             border: none;
-            padding: 8px 18px;
+            padding: 8px 16px;
             border-radius: 50px;
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             font-weight: 600;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: 7px;
             text-decoration: none;
-            transition: all 0.2s ease;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            white-space: nowrap;
         }
         .btn-act-pdf {
-            background: #ef4444;
-            color: #fff;
-            box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
+            background: #dc2626;
+            color: #ffffff;
+            box-shadow: 0 3px 12px rgba(220, 38, 38, 0.35);
         }
-        .btn-act-pdf:hover { background: #dc2626; color: #fff; transform: translateY(-1px); }
+        .btn-act-pdf:hover { background: #b91c1c; color: #ffffff; transform: translateY(-1px); }
         .btn-act-print {
-            background: #2563eb;
-            color: #fff;
-            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+            background: var(--cat-teal-medium);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
-        .btn-act-print:hover { background: #1d4ed8; color: #fff; transform: translateY(-1px); }
+        .btn-act-print:hover { background: #16536c; color: #ffffff; transform: translateY(-1px); }
+        .btn-act-share {
+            background: var(--cat-sage);
+            color: #ffffff;
+            box-shadow: 0 3px 12px rgba(107, 149, 151, 0.35);
+        }
+        .btn-act-share:hover { background: #567e80; color: #ffffff; transform: translateY(-1px); }
         .btn-act-wa {
             background: #10b981;
-            color: #fff;
-            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+            color: #ffffff;
+            box-shadow: 0 3px 12px rgba(16, 185, 129, 0.35);
         }
-        .btn-act-wa:hover { background: #059669; color: #fff; }
-        .btn-act-share {
-            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-            color: #fff;
-            box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
-        }
-        .btn-act-share:hover { background: #4338ca; color: #fff; transform: translateY(-1px); }
+        .btn-act-wa:hover { background: #059669; color: #ffffff; }
         .btn-act-store {
-            background: rgba(255, 255, 255, 0.15);
-            color: #f1f5f9;
-            border: 1px solid rgba(255, 255, 255, 0.25);
+            background: rgba(255, 255, 255, 0.12);
+            color: #e5eff1;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
-        .btn-act-store:hover { background: rgba(255, 255, 255, 0.25); color: #fff; }
+        .btn-act-store:hover { background: rgba(255, 255, 255, 0.22); color: #ffffff; }
         .btn-act-admin {
-            background: rgba(245, 158, 11, 0.2);
+            background: rgba(230, 161, 23, 0.18);
             color: #fbbf24;
-            border: 1px solid rgba(245, 158, 11, 0.4);
+            border: 1px solid rgba(251, 191, 36, 0.35);
         }
-        .btn-act-admin:hover { background: rgba(245, 158, 11, 0.35); color: #fef3c7; }
+        .btn-act-admin:hover { background: rgba(230, 161, 23, 0.3); color: #fef3c7; }
 
-        /* ── Social Share & Copy Link Modal Styles ──────────────── */
+        .cat-filter-select {
+            background-color: rgba(255, 255, 255, 0.12);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50px;
+            padding: 6px 14px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            max-width: 240px;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+        .cat-filter-select:focus {
+            border-color: var(--cat-sage-light);
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        .cat-filter-select option {
+            background: #061c26;
+            color: #ffffff;
+        }
+
+        /* ── Main Catalogue Page Document Wrapper ─────────────── */
+        .catalogue-wrapper {
+            padding: 30px 15px 60px 15px;
+            display: flex;
+            justify-content: center;
+        }
+        .catalogue-doc {
+            width: 100%;
+            max-width: 1040px;
+            background: var(--cat-white);
+            border-radius: 14px;
+            box-shadow: 0 16px 50px rgba(6, 28, 38, 0.12);
+            box-sizing: border-box;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* ══════════════════════════════════════════════════════════
+           FRONT COVER — BROCHURE STYLE (MATCHING SCREENSHOT 1)
+           ══════════════════════════════════════════════════════════ */
+        .cover-page {
+            position: relative;
+            background: #ffffff;
+            overflow: hidden;
+            border-bottom: 2px solid var(--cat-border);
+            break-after: page;
+            page-break-after: always;
+        }
+
+        /* Top split section (Dark Teal left ~60%, White right ~40%) */
+        .cover-top-split {
+            position: relative;
+            display: flex;
+            min-height: 380px;
+            background: #ffffff;
+        }
+        .cover-top-dark {
+            flex: 0 0 62%;
+            background: var(--cat-teal-dark);
+            color: #ffffff;
+            padding: 40px 45px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            z-index: 1;
+        }
+        .cover-top-white {
+            flex: 0 0 38%;
+            background: #ffffff;
+            padding: 40px 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: flex-end;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Logo box inside dark teal block */
+        .cover-logo-box {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 8px 18px;
+            border-radius: 10px;
+            width: fit-content;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+        }
+        .cover-logo-img {
+            max-height: 52px;
+            max-width: 170px;
+            object-fit: contain;
+        }
+        .cover-brand-tagline {
+            font-size: 0.72rem;
+            color: rgba(255, 255, 255, 0.8);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-top: 15px;
+        }
+
+        /* Year Number on Top Right White Block */
+        .cover-edition-year {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 900;
+            line-height: 1;
+            color: var(--cat-teal-dark);
+            letter-spacing: -1.5px;
+            text-align: right;
+        }
+        .cover-edition-label {
+            font-size: 0.75rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: var(--cat-sage);
+            margin-top: 4px;
+            text-align: right;
+        }
+
+        /* Overlapping Circular Spotlight Photo */
+        .cover-circle-frame {
+            position: absolute;
+            left: 54%;
+            top: 50%;
+            transform: translate(-50%, -46%);
+            width: 270px;
+            height: 270px;
+            border-radius: 50%;
+            border: 10px solid #ffffff;
+            box-shadow: 0 16px 40px rgba(10, 46, 61, 0.28);
+            overflow: hidden;
+            background: var(--cat-slate-soft);
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .cover-circle-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.4s ease;
+        }
+        .cover-circle-frame:hover img {
+            transform: scale(1.05);
+        }
+
+        /* Lower Cover Section (Clean White with Big Bold Editorial Title) */
+        .cover-bottom-area {
+            position: relative;
+            padding: 50px 48px 45px 48px;
+            background: #ffffff;
+            z-index: 2;
+        }
+        .editorial-pretitle {
+            font-size: 0.82rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--cat-sage);
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        .editorial-cover-h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 3.6rem;
+            font-weight: 900;
+            line-height: 0.95;
+            color: var(--cat-teal-dark);
+            letter-spacing: -1.5px;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+        }
+        .editorial-cover-sub {
+            font-size: 1.08rem;
+            font-weight: 500;
+            color: var(--cat-text-muted);
+            max-width: 620px;
+            line-height: 1.5;
+            margin-bottom: 25px;
+        }
+
+        /* Trust Badges on Cover */
+        .cover-feature-pills {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+        .cover-pill {
+            background: var(--cat-slate-light);
+            border: 1px solid var(--cat-border);
+            color: var(--cat-teal-dark);
+            font-size: 0.76rem;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 30px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .cover-pill i {
+            color: var(--cat-sage);
+        }
+
+        /* Sage Teal Accent Block (Bottom Right, exactly as in screenshot 1) */
+        .cover-sage-block {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 150px;
+            height: 65px;
+            background: var(--cat-sage);
+            border-top-left-radius: 6px;
+            z-index: 3;
+        }
+
+        /* Cover Footer Contacts Row */
+        .cover-footer-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            padding-top: 20px;
+            border-top: 1px solid var(--cat-border-light);
+            font-size: 0.78rem;
+            color: var(--cat-text-muted);
+            max-width: calc(100% - 170px);
+        }
+        .cover-footer-meta i {
+            color: var(--cat-teal-medium);
+            margin-right: 6px;
+        }
+
+        /* ══════════════════════════════════════════════════════════
+           PAGE 2 / SPREAD: WELCOME & TABLE OF CONTENTS
+           ══════════════════════════════════════════════════════════ */
+        .spread-welcome-toc {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            background: #ffffff;
+            border-bottom: 2px solid var(--cat-border);
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+
+        /* Left Side: Welcome / About Us */
+        .welcome-pane {
+            padding: 42px 40px;
+            background: #ffffff;
+            border-right: 1px solid var(--cat-border-light);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .welcome-circle-badge {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: var(--cat-slate-light);
+            border: 4px solid var(--cat-sage);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            color: var(--cat-teal-dark);
+            font-size: 2.2rem;
+            box-shadow: 0 6px 16px rgba(107, 149, 151, 0.25);
+        }
+        .welcome-title {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--cat-teal-dark);
+            letter-spacing: -0.5px;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+        }
+        .welcome-text {
+            font-size: 0.84rem;
+            color: var(--cat-text-muted);
+            line-height: 1.7;
+            margin-bottom: 24px;
+        }
+        .welcome-features-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            padding-top: 18px;
+            border-top: 1px solid var(--cat-border-light);
+        }
+        .wf-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--cat-teal-dark);
+        }
+        .wf-item i {
+            color: var(--cat-sage);
+            margin-top: 3px;
+        }
+
+        /* Right Side: Table of Contents (Dark Teal Background) */
+        .toc-pane {
+            padding: 42px 40px;
+            background: var(--cat-teal-dark);
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+        }
+        .toc-header {
+            margin-bottom: 26px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+            padding-bottom: 15px;
+        }
+        .toc-title {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: #ffffff;
+            margin: 0;
+            text-transform: uppercase;
+        }
+        .toc-subtitle {
+            font-size: 0.78rem;
+            color: var(--cat-sage-light);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        /* TOC Items Grid */
+        .toc-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex-grow: 1;
+        }
+        .toc-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            text-decoration: none;
+            color: #ffffff;
+            transition: all 0.2s ease;
+        }
+        .toc-row:hover {
+            background: rgba(255, 255, 255, 0.14);
+            border-color: var(--cat-sage);
+            transform: translateX(4px);
+            color: #ffffff;
+        }
+        .toc-num-box {
+            width: 32px;
+            height: 32px;
+            background: #ffffff;
+            color: var(--cat-teal-dark);
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 800;
+            font-size: 0.85rem;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-right: 12px;
+        }
+        .toc-info {
+            flex-grow: 1;
+        }
+        .toc-name {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.86rem;
+            font-weight: 700;
+            color: #ffffff;
+        }
+        .toc-count {
+            font-size: 0.72rem;
+            color: var(--cat-sage-light);
+        }
+        .toc-arrow {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.85rem;
+        }
+
+        /* ══════════════════════════════════════════════════════════
+           QUALITY SPECIFICATIONS STRIP
+           ══════════════════════════════════════════════════════════ */
+        .specs-strip {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            padding: 24px 45px;
+            background: var(--cat-slate-light);
+            border-bottom: 2px solid var(--cat-border);
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+        .spec-strip-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 10px 14px;
+            background: #ffffff;
+            border: 1px solid var(--cat-border);
+            border-radius: 8px;
+        }
+        .spec-icon-box {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: var(--cat-teal-dark);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+        .spec-strip-title {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--cat-teal-dark);
+            line-height: 1.3;
+        }
+        .spec-strip-desc {
+            font-size: 0.68rem;
+            color: var(--cat-text-muted);
+        }
+
+        /* ══════════════════════════════════════════════════════════
+           CATEGORY HEADER BANDS & PRODUCT CARDS GRID
+           ══════════════════════════════════════════════════════════ */
+        .cat-content-body {
+            padding: 35px 45px;
+            background: #ffffff;
+        }
+
+        /* Category Heading Bar (Deep Teal Band with Sage Accent) */
+        .category-editorial-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--cat-teal-dark);
+            color: #ffffff;
+            padding: 14px 22px;
+            border-radius: 8px;
+            margin-top: 36px;
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+            break-after: avoid;
+            page-break-after: avoid;
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+        .category-editorial-bar:first-child {
+            margin-top: 0;
+        }
+        .category-editorial-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 12px;
+            height: 100%;
+            background: var(--cat-sage);
+        }
+        .cat-bar-title {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.18rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .cat-bar-count-badge {
+            background: var(--cat-sage);
+            color: #ffffff;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 20px;
+            letter-spacing: 0.5px;
+        }
+
+        /* 2-Column Product Grid (Matches Brochure Spreads 4 & 5) */
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 22px;
+            margin-bottom: 30px;
+        }
+        .cat-prod-card {
+            border: 1px solid var(--cat-border);
+            border-radius: 10px;
+            padding: 16px;
+            background: #ffffff;
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+            position: relative;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
+            -webkit-column-break-inside: avoid !important;
+            box-shadow: 0 2px 10px rgba(10, 46, 61, 0.04);
+            box-sizing: border-box;
+            transition: all 0.25s ease;
+        }
+        .cat-prod-card:hover {
+            border-color: var(--cat-sage);
+            box-shadow: 0 8px 24px rgba(10, 46, 61, 0.09);
+            transform: translateY(-2px);
+        }
+
+        /* Product Thumbnail */
+        .cat-prod-thumb-box {
+            width: 125px;
+            height: 125px;
+            flex-shrink: 0;
+            border-radius: 8px;
+            border: 1px solid var(--cat-border-light);
+            background: var(--cat-slate-light);
+            padding: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .cat-prod-thumb {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            transition: transform 0.3s ease;
+        }
+        .cat-prod-card:hover .cat-prod-thumb {
+            transform: scale(1.06);
+        }
+
+        /* Product Details */
+        .cat-prod-details {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        .cat-prod-title {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.98rem;
+            font-weight: 800;
+            color: var(--cat-teal-dark);
+            margin-bottom: 6px;
+            line-height: 1.35;
+        }
+        .cat-meta-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+        .cat-code-badge {
+            font-family: monospace;
+            font-size: 0.7rem;
+            font-weight: 700;
+            background: var(--cat-slate-soft);
+            color: var(--cat-teal-dark);
+            padding: 2px 8px;
+            border-radius: 4px;
+            border: 1px solid var(--cat-border);
+        }
+        .cat-brand-badge {
+            font-size: 0.68rem;
+            font-weight: 700;
+            background: rgba(107, 149, 151, 0.15);
+            color: var(--cat-teal-dark);
+            padding: 2px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+        .cat-prod-desc {
+            font-size: 0.74rem;
+            color: var(--cat-text-muted);
+            line-height: 1.45;
+            margin-bottom: 10px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            flex-grow: 1;
+        }
+
+        /* Price & Action Box */
+        .cat-prod-bottom-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding-top: 8px;
+            border-top: 1px dashed var(--cat-border-light);
+            margin-top: auto;
+        }
+        .cat-price-wrapper {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+        }
+        .cat-price-tag {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.05rem;
+            font-weight: 900;
+            color: var(--cat-teal-dark);
+        }
+        .cat-price-mrp {
+            font-size: 0.72rem;
+            text-decoration: line-through;
+            color: #94a3b8;
+        }
+        .btn-card-inquire {
+            background: #f0fdf4;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.2s ease;
+        }
+        .btn-card-inquire:hover {
+            background: #16a34a;
+            color: #ffffff;
+            border-color: #16a34a;
+        }
+
+        /* ══════════════════════════════════════════════════════════
+           "OUR OFFER / VALUE PROPOSITION" FEATURE BANNER
+           ══════════════════════════════════════════════════════════ */
+        .our-offer-banner {
+            background: var(--cat-teal-dark);
+            color: #ffffff;
+            border-radius: 10px;
+            padding: 28px 32px;
+            margin: 35px 0 25px 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            align-items: center;
+            break-inside: avoid;
+            page-break-inside: avoid;
+            position: relative;
+            overflow: hidden;
+        }
+        .our-offer-banner::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 100px;
+            height: 8px;
+            background: var(--cat-sage);
+        }
+        .offer-left h3 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.45rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: -0.5px;
+        }
+        .offer-left p {
+            font-size: 0.8rem;
+            color: var(--cat-sage-light);
+            line-height: 1.6;
+            margin: 0;
+        }
+        .offer-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .offer-box {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 10px 14px;
+            border-radius: 8px;
+        }
+        .offer-box-title {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 2px;
+        }
+        .offer-box-sub {
+            font-size: 0.68rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* ══════════════════════════════════════════════════════════
+           BACK COVER / DEALERSHIP & CLOSING
+           ══════════════════════════════════════════════════════════ */
+        .cat-back-cover {
+            background: var(--cat-teal-deep);
+            color: #ffffff;
+            padding: 45px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 30px;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
+            position: relative;
+        }
+        .cat-back-cover::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 140px;
+            height: 50px;
+            background: var(--cat-sage);
+        }
+        .inquiry-block {
+            max-width: 580px;
+            z-index: 1;
+        }
+        .inquiry-block h3 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.45rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+        .inquiry-block p {
+            font-size: 0.82rem;
+            color: var(--cat-sage-light);
+            margin-bottom: 16px;
+            line-height: 1.6;
+        }
+        .inquiry-contacts {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            font-size: 0.8rem;
+            color: #ffffff;
+        }
+        .inquiry-contacts a {
+            color: var(--cat-sage-light);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .inquiry-contacts a:hover {
+            color: #ffffff;
+            text-decoration: underline;
+        }
+        .seal-stamp-box {
+            background: rgba(255, 255, 255, 0.06);
+            border: 2px dashed rgba(255, 255, 255, 0.25);
+            border-radius: 12px;
+            padding: 20px 28px;
+            text-align: center;
+            min-width: 220px;
+            z-index: 1;
+        }
+        .seal-stamp-title {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 800;
+            font-size: 0.95rem;
+            color: #ffffff;
+        }
+        .seal-stamp-icon {
+            font-size: 2.2rem;
+            color: var(--cat-gold);
+            margin: 8px 0;
+        }
+        .seal-stamp-sub {
+            font-size: 0.68rem;
+            color: rgba(255, 255, 255, 0.6);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* ── Social Share & Copy Link Modal ────────────────────── */
         .share-modal-backdrop {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(15, 23, 42, 0.72);
+            background: rgba(6, 28, 38, 0.75);
             backdrop-filter: blur(5px);
             z-index: 999999;
             display: flex;
@@ -400,11 +1268,11 @@ $og_canonical_url = $og_base_url . '/catalogue.php' . (!empty($active_cat_id) ? 
             font-size: 1.15rem;
             font-weight: 700;
             margin: 0;
-            color: #0f172a;
+            color: var(--cat-teal-dark);
         }
         .share-modal-sub {
             font-size: 0.78rem;
-            color: #64748b;
+            color: var(--cat-text-muted);
             margin: 3px 0 0 0;
         }
         .share-modal-close {
@@ -416,12 +1284,11 @@ $og_canonical_url = $og_base_url . '/catalogue.php' . (!empty($active_cat_id) ? 
             cursor: pointer;
             padding: 0 4px;
         }
-        .share-modal-close:hover { color: #0f172a; }
         .share-copy-box {
             display: flex;
             gap: 8px;
-            background: #f8fafc;
-            border: 1px solid #cbd5e1;
+            background: var(--cat-slate-light);
+            border: 1px solid var(--cat-border);
             border-radius: 10px;
             padding: 6px 8px;
             margin-bottom: 18px;
@@ -447,457 +1314,110 @@ $og_canonical_url = $og_base_url . '/catalogue.php' . (!empty($active_cat_id) ? 
             gap: 8px;
             padding: 10px 14px;
             border-radius: 10px;
-            color: #fff !important;
+            color: #ffffff !important;
             text-decoration: none;
             font-size: 0.85rem;
             font-weight: 600;
             transition: all 0.2s ease;
         }
-        .share-social-btn:hover { transform: translateY(-2px); color: #fff !important; }
+        .share-social-btn:hover { transform: translateY(-2px); }
         .share-wa { background: #25d366; }
-        .share-wa:hover { background: #1ebd59; }
         .share-tg { background: #229ed9; }
-        .share-tg:hover { background: #1c88bc; }
         .share-fb { background: #1877f2; }
-        .share-fb:hover { background: #1464cc; }
-        .share-x { background: #0f172a; }
-        .share-x:hover { background: #1e293b; }
+        .share-x  { background: #0a2e3d; }
 
-        /* ── Catalogue Page Container ──────────────────────────── */
-        .catalogue-wrapper {
-            padding: 30px 15px;
-            display: flex;
-            justify-content: center;
-        }
-        .catalogue-doc {
-            width: 100%;
-            max-width: 1080px;
-            background: #ffffff;
-            border-radius: 14px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
-            box-sizing: border-box;
-            overflow: visible;
-        }
+        /* ── Mobile Responsive Adjustments ─────────────────────── */
+        @media (max-width: 900px) {
+            .cover-top-split { flex-direction: column; min-height: auto; }
+            .cover-top-dark { flex: none; width: 100%; padding: 30px 24px; }
+            .cover-top-white { flex: none; width: 100%; padding: 20px 24px; align-items: flex-start; }
+            .cover-edition-year { font-size: 2.8rem; text-align: left; }
+            .cover-edition-label { text-align: left; }
+            .cover-circle-frame {
+                position: relative;
+                left: auto;
+                top: auto;
+                transform: none;
+                margin: -40px auto 20px auto;
+                width: 200px;
+                height: 200px;
+            }
+            .cover-bottom-area { padding: 30px 24px 30px 24px; }
+            .editorial-cover-h1 { font-size: 2.5rem; }
+            .cover-sage-block { width: 90px; height: 40px; }
+            .cover-footer-meta { max-width: 100%; }
 
-        /* ── Cover / Hero Banner ───────────────────────────────── */
-        .cat-cover {
-            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
-            color: #fff;
-            padding: 40px 45px;
-            position: relative;
-            break-inside: avoid !important;
-            page-break-inside: avoid !important;
-        }
-        .cover-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding-bottom: 25px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-            margin-bottom: 25px;
-            gap: 20px;
-            break-inside: avoid !important;
-            page-break-inside: avoid !important;
-        }
-        .cover-logo {
-            max-height: 70px;
-            max-width: 200px;
-            object-fit: contain;
-            background: rgba(255,255,255,0.9);
-            padding: 6px 14px;
-            border-radius: 8px;
-        }
-        .cover-badges {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-        .cat-badge {
-            background: rgba(255, 255, 255, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            color: #f1f5f9;
-            font-size: 0.75rem;
-            font-weight: 600;
-            padding: 4px 12px;
-            border-radius: 20px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .cat-title-block h1 {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 2rem;
-            font-weight: 800;
-            margin: 0;
-            color: #ffffff;
-            letter-spacing: -0.5px;
-        }
-        .cat-title-block p {
-            font-size: 1.05rem;
-            color: #93c5fd;
-            margin: 6px 0 0 0;
-            font-weight: 500;
-        }
-        .cover-meta-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 25px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.12);
-            font-size: 0.8rem;
-            color: #cbd5e1;
-        }
-        .cover-meta-grid i {
-            color: #60a5fa;
-            margin-right: 6px;
+            .spread-welcome-toc { grid-template-columns: 1fr; }
+            .welcome-pane { padding: 30px 24px; border-right: none; border-bottom: 1px solid var(--cat-border-light); }
+            .toc-pane { padding: 30px 24px; }
+
+            .specs-strip { grid-template-columns: 1fr 1fr; padding: 20px 24px; }
+            .cat-content-body { padding: 25px 20px; }
+            .product-grid { grid-template-columns: 1fr; }
+            .our-offer-banner { grid-template-columns: 1fr; padding: 24px 20px; }
+            .cat-back-cover { padding: 30px 24px; flex-direction: column; align-items: flex-start; }
         }
 
-        /* ── Company Intro Section ─────────────────────── */
-        .cat-intro-section {
-            padding: 26px 45px;
-            background: #f8fafc;
-            border-bottom: 1px solid #e2e8f0;
-            break-inside: avoid !important;
-            page-break-inside: avoid !important;
-        }
-        .intro-title {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 1.05rem;
-            font-weight: 700;
-            color: #0f172a;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .intro-text {
-            font-size: 0.82rem;
-            color: #475569;
-            line-height: 1.7;
-            margin: 0;
-        }
-
-        /* ── Quality Highlights Bar ────────────────────────────── */
-        .quality-strip {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
-            padding: 16px 45px;
-            background: #ffffff;
-            border-bottom: 2px solid #e2e8f0;
-            break-inside: avoid !important;
-            page-break-inside: avoid !important;
-        }
-        .quality-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 0.78rem;
-            color: #334155;
-            font-weight: 600;
-        }
-        .quality-item i {
-            font-size: 1.2rem;
-            color: #2563eb;
-        }
-
-        /* ── Category & Product Cards Grid ─────────────────────── */
-        .cat-content-body {
-            padding: 30px 45px;
-        }
-        .cat-group-heading {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 1.2rem;
-            font-weight: 800;
-            color: #0f172a;
-            padding-bottom: 8px;
-            margin-top: 25px;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #2563eb;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            break-after: avoid !important;
-            page-break-after: avoid !important;
-            break-inside: avoid !important;
-            page-break-inside: avoid !important;
-        }
-        .cat-group-heading:first-child { margin-top: 0; }
-        .cat-group-count {
-            font-size: 0.75rem;
-            background: #eff6ff;
-            color: #1d4ed8;
-            border: 1px solid #bfdbfe;
-            padding: 3px 10px;
-            border-radius: 20px;
-            font-weight: 600;
-        }
-
-        /* Product Card */
-        .product-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        .product-grid > div[style*="height"] {
-            grid-column: 1 / -1 !important;
-            width: 100% !important;
-        }
-        .cat-prod-card {
-            border: 1px solid #e2e8f0;
-            border-radius: 10px;
-            padding: 16px;
-            background: #ffffff;
-            display: flex;
-            gap: 16px;
-            align-items: flex-start;
-            break-inside: avoid !important;
-            page-break-inside: avoid !important;
-            -webkit-column-break-inside: avoid !important;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-            box-sizing: border-box;
-        }
-        .cat-prod-thumb {
-            width: 110px;
-            height: 110px;
-            object-fit: contain;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-            background: #f8fafc;
-            padding: 4px;
-            flex-shrink: 0;
-        }
-        .cat-prod-details {
-            flex: 1;
-            min-width: 0;
-        }
-        .cat-prod-title {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 0.95rem;
-            font-weight: 700;
-            color: #0f172a;
-            margin-bottom: 4px;
-            line-height: 1.3;
-        }
-        .cat-meta-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-bottom: 6px;
-        }
-        .cat-sku-tag {
-            font-family: monospace;
-            font-size: 0.68rem;
-            background: #f1f5f9;
-            color: #475569;
-            padding: 2px 6px;
-            border-radius: 4px;
-            border: 1px solid #e2e8f0;
-        }
-        .cat-brand-tag {
-            font-size: 0.68rem;
-            background: #eff6ff;
-            color: #1d4ed8;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-weight: 600;
-        }
-        .cat-prod-desc {
-            font-size: 0.72rem;
-            color: #64748b;
-            line-height: 1.4;
-            margin-bottom: 8px;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-        .cat-prod-price {
-            font-size: 0.95rem;
-            font-weight: 800;
-            color: #0f172a;
-        }
-        .cat-price-cut {
-            font-size: 0.72rem;
-            text-decoration: line-through;
-            color: #94a3b8;
-            margin-right: 4px;
-        }
-        .cat-price-sale {
-            color: #1d4ed8;
-            font-weight: 800;
-        }
-
-        /* ── Back Cover / Dealership Section ───────────────────── */
-        .cat-back-cover {
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            color: #ffffff;
-            padding: 35px 45px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 25px;
-            break-inside: avoid !important;
-            page-break-inside: avoid !important;
-        }
-        .inquiry-block {
-            max-width: 580px;
-        }
-        .inquiry-block h3 {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: #f8fafc;
-            margin-bottom: 6px;
-        }
-        .inquiry-block p {
-            font-size: 0.8rem;
-            color: #94a3b8;
-            margin-bottom: 12px;
-            line-height: 1.6;
-        }
-        .inquiry-contacts {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            font-size: 0.78rem;
-            color: #e2e8f0;
-        }
-        .inquiry-contacts a {
-            color: #60a5fa;
-            text-decoration: none;
-            font-weight: 600;
-        }
-        .official-seal-box {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px dashed rgba(255, 255, 255, 0.3);
-            border-radius: 10px;
-            padding: 16px 24px;
-            text-align: center;
-            min-width: 200px;
-        }
-
-        /* ── Category Filter Select & Pills ───────────────────── */
-        .cat-filter-select {
-            background-color: rgba(255, 255, 255, 0.12);
-            color: #ffffff;
-            border: 1px solid rgba(255, 255, 255, 0.28);
-            border-radius: 20px;
-            padding: 6px 14px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            max-width: 250px;
-            cursor: pointer;
-            outline: none;
-            transition: all 0.2s ease;
-        }
-        .cat-filter-select:focus {
-            background-color: rgba(255, 255, 255, 0.2);
-            color: #ffffff;
-            border-color: #60a5fa;
-            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.25);
-        }
-        .cat-filter-select option {
-            background: #0f172a;
-            color: #ffffff;
-        }
-        .cat-pill-bar {
-            padding: 16px 45px;
-            background: #f8fafc;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        .cat-pill-link {
-            text-decoration: none;
-            font-size: 0.8rem;
-            font-weight: 600;
-            padding: 6px 14px;
-            border-radius: 20px;
-            background: #ffffff;
-            color: #334155;
-            border: 1px solid #cbd5e1;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.2s ease;
-        }
-        .cat-pill-link:hover {
-            background: #e2e8f0;
-            color: #0f172a;
-            transform: translateY(-1px);
-        }
-        .cat-pill-link.active {
-            background: #2563eb;
-            color: #ffffff;
-            border-color: #2563eb;
-            box-shadow: 0 3px 10px rgba(37, 99, 235, 0.3);
-        }
-        .cat-pill-count {
-            background: rgba(0, 0, 0, 0.08);
-            padding: 2px 7px;
-            border-radius: 12px;
-            font-size: 0.72rem;
-        }
-        .cat-pill-link.active .cat-pill-count {
-            background: rgba(255, 255, 255, 0.25);
-            color: #ffffff;
-        }
-        .cat-clear-link {
-            font-size: 0.78rem;
-            color: #ef4444;
-            text-decoration: none;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-        }
-        .cat-clear-link:hover {
-            text-decoration: underline;
-        }
-
-        /* ── Print Media ───────────────────────────────────────── */
+        /* ── Print Media Optimization (Standard A4 Portrait) ─── */
         @page {
             size: A4 portrait;
             margin: 8mm 8mm 10mm 8mm;
         }
         @media print {
-            body { background: #ffffff !important; }
-            #action-bar { display: none !important; }
-            .no-print, .cat-pill-bar { display: none !important; }
+            body { background: #ffffff !important; color: #000000 !important; }
+            #action-bar, .no-print, .btn-card-inquire { display: none !important; }
             .catalogue-wrapper { padding: 0 !important; }
             .catalogue-doc {
                 box-shadow: none !important;
                 border-radius: 0 !important;
                 max-width: 100% !important;
             }
-            .cat-prod-card {
-                page-break-inside: avoid;
+            .cover-page {
+                page-break-after: always !important;
+                break-after: page !important;
             }
-            .cat-group-heading {
-                page-break-after: avoid;
+            .spread-welcome-toc {
+                page-break-after: always !important;
+                break-after: page !important;
+            }
+            .cat-prod-card {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+            .category-editorial-bar {
+                page-break-after: avoid !important;
+                break-after: avoid !important;
+            }
+            .our-offer-banner {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+            .cat-back-cover {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
             }
         }
     </style>
 </head>
 <body>
 
-<!-- Sticky Top Action Bar (Hidden in Print & PDF Export) -->
+<!-- Sticky Top Action Bar (Screen Only) -->
 <header id="action-bar">
     <div class="action-bar-inner">
-        <div class="d-flex align-items-center gap-2">
-            <i class="fas fa-book-open text-warning fs-5"></i>
+        <div class="action-branding">
+            <i class="fas fa-book-open"></i>
             <div>
-                <span class="fw-bold d-block text-white" style="font-size: 0.9rem;">Official Product Catalogue</span>
-                <span class="small text-light text-opacity-75" style="font-size: 0.72rem;">Sagar Starter's &bull; High-Performance Motor Starters</span>
+                <span class="fw-bold d-block text-white" style="font-size: 0.88rem; font-family: 'Montserrat', sans-serif; letter-spacing: 0.5px;">Official Product Catalogue</span>
+                <span class="small text-white text-opacity-75" style="font-size: 0.7rem;"><?php echo htmlspecialchars($store_name); ?> &bull; Edition <?php echo date('Y'); ?></span>
             </div>
         </div>
-        <div class="d-flex align-items-center gap-2 flex-wrap">
-            <!-- Category Filter Dropdown in Sticky Action Bar -->
+
+        <div class="action-btn-group">
+            <!-- Category Filter Dropdown -->
             <?php if (!empty($all_categories)): ?>
             <div class="d-flex align-items-center gap-1">
                 <label for="actionCatFilter" class="small text-white text-opacity-75 d-none d-lg-inline text-nowrap m-0">
-                    <i class="fas fa-layer-group text-warning me-1"></i> Category:
+                    <i class="fas fa-layer-group me-1" style="color: var(--cat-sage-light);"></i> Filter:
                 </label>
                 <select id="actionCatFilter" class="cat-filter-select" onchange="filterCatalogueCategory(this.value)">
                     <option value="all" <?php echo empty($active_cat_id) ? 'selected' : ''; ?>>All Categories (<?php echo $total_catalog_products; ?>)</option>
@@ -925,11 +1445,11 @@ $og_canonical_url = $og_base_url . '/catalogue.php' . (!empty($active_cat_id) ? 
                 <i class="fab fa-whatsapp"></i> Inquire on WhatsApp
             </a>
             <a href="<?php echo SITE_URL; ?>/shop.php" class="btn-act btn-act-store">
-                <i class="fas fa-shopping-bag"></i> Browse Store
+                <i class="fas fa-store"></i> Browse Store
             </a>
             <?php if ($is_admin): ?>
                 <a href="<?php echo SITE_URL; ?>/admin/manage_catalogue.php" class="btn-act btn-act-admin">
-                    <i class="fas fa-cog"></i> Settings
+                    <i class="fas fa-sliders-h"></i> Settings
                 </a>
             <?php endif; ?>
         </div>
@@ -939,87 +1459,195 @@ $og_canonical_url = $og_base_url . '/catalogue.php' . (!empty($active_cat_id) ? 
 <!-- Main Printable Catalogue Document -->
 <main class="catalogue-wrapper">
     <div class="catalogue-doc" id="catalogueDocument">
-        <!-- Front Cover / Hero Banner -->
-        <div class="cat-cover">
-            <div class="cover-header">
-                <img src="<?php echo htmlspecialchars($logo_url); ?>" alt="<?php echo htmlspecialchars($store_name); ?>" class="cover-logo" onerror="this.style.display='none';">
-                <div class="cover-badges">
-                    <span class="cat-badge"><i class="fas fa-certificate text-warning me-1"></i> Heavy Duty</span>
-                    <span class="cat-badge"><i class="fas fa-bolt text-warning me-1"></i> 100% Copper</span>
-                    <span class="cat-badge"><i class="fas fa-shield-alt text-success me-1"></i> ISO Certified</span>
+
+        <!-- ══════════════════════════════════════════════════════════
+             FRONT COVER PAGE (BROCHURE DESIGN AS IN SCREENSHOT 1)
+             ══════════════════════════════════════════════════════════ -->
+        <section class="cover-page">
+            <!-- Top Split Section -->
+            <div class="cover-top-split">
+                <!-- Left Dark Teal Area with Logo -->
+                <div class="cover-top-dark">
+                    <div class="cover-logo-box">
+                        <img src="<?php echo htmlspecialchars($logo_url); ?>" alt="<?php echo htmlspecialchars($store_name); ?>" class="cover-logo-img" onerror="this.style.display='none';">
+                    </div>
+                    <div class="cover-brand-tagline">
+                        <i class="fas fa-bolt text-warning me-1"></i> Heavy-Duty Motor Starters & Control Switchgear
+                    </div>
+                </div>
+
+                <!-- Right Clean White Area with Year -->
+                <div class="cover-top-white">
+                    <div class="cover-edition-year"><?php echo date('Y'); ?></div>
+                    <div class="cover-edition-label">Official Edition</div>
+                </div>
+
+                <!-- Overlapping Circular Spotlight Frame -->
+                <div class="cover-circle-frame">
+                    <img src="<?php echo htmlspecialchars($cover_spotlight_img); ?>" alt="Flagship Motor Starter" onerror="this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';">
                 </div>
             </div>
-            <div class="cat-title-block">
-                <h1><?php echo htmlspecialchars($doc_title); ?></h1>
-                <p><?php echo htmlspecialchars($doc_subtitle); ?></p>
-                <?php if (!empty($active_cat_name)): ?>
-                    <div class="mt-3">
-                        <span class="cat-badge" style="background: #f59e0b; color: #0f172a; font-size: 0.85rem; padding: 6px 16px; font-weight: 700; border: none;">
-                            <i class="fas fa-layer-group me-1"></i> Category: <?php echo htmlspecialchars($active_cat_name); ?> (<?php echo $total_matched_items; ?> Models)
-                        </span>
+
+            <!-- Lower White Area with Big Bold Editorial Title -->
+            <div class="cover-bottom-area">
+                <div class="editorial-pretitle">Official Product Portfolio</div>
+                <h1 class="editorial-cover-h1">CATALOGUE</h1>
+                <div class="editorial-cover-sub"><?php echo htmlspecialchars($doc_subtitle); ?></div>
+
+                <!-- Feature Pills -->
+                <div class="cover-feature-pills">
+                    <span class="cover-pill"><i class="fas fa-shield-halved"></i> Precision Overload Protection</span>
+                    <span class="cover-pill"><i class="fas fa-bolt"></i> 100% Electrolytic Copper</span>
+                    <span class="cover-pill"><i class="fas fa-certificate"></i> Weatherproof Enclosure</span>
+                    <span class="cover-pill"><i class="fas fa-truck-fast"></i> All-India Dispatch</span>
+                </div>
+
+                <!-- Cover Footer Contact Meta -->
+                <div class="cover-footer-meta">
+                    <?php if (!empty($store_phone)): ?>
+                        <div><i class="fas fa-phone-alt"></i> <?php echo htmlspecialchars($store_phone); ?></div>
+                    <?php endif; ?>
+                    <?php if (!empty($store_email)): ?>
+                        <div><i class="fas fa-envelope"></i> <?php echo htmlspecialchars($store_email); ?></div>
+                    <?php endif; ?>
+                    <?php if (!empty($store_address)): ?>
+                        <div><i class="fas fa-map-marker-alt"></i> <?php echo htmlspecialchars($store_address); ?></div>
+                    <?php endif; ?>
+                    <div><i class="fas fa-file-invoice"></i> GSTIN: <?php echo htmlspecialchars(!empty($gst_number) ? $gst_number : 'Available on Request'); ?></div>
+                </div>
+
+                <!-- Bottom Right Sage Teal Accent Rectangle (Matching Screenshot 1) -->
+                <div class="cover-sage-block"></div>
+            </div>
+        </section>
+
+        <!-- ══════════════════════════════════════════════════════════
+             SPREAD 2: WELCOME & TABLE OF CONTENTS
+             ══════════════════════════════════════════════════════════ -->
+        <section class="spread-welcome-toc">
+            <!-- Left Page: Welcome / Company Profile -->
+            <div class="welcome-pane">
+                <div>
+                    <div class="welcome-circle-badge">
+                        <i class="fas fa-industry"></i>
                     </div>
-                <?php endif; ?>
+                    <div class="editorial-pretitle">About Our Manufacturing</div>
+                    <h2 class="welcome-title">WELCOME</h2>
+                    <p class="welcome-text">
+                        <?php echo nl2br(htmlspecialchars($doc_about)); ?>
+                    </p>
+                </div>
+                <div class="welcome-features-grid">
+                    <div class="wf-item">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Electrolytic Copper Contactors</span>
+                    </div>
+                    <div class="wf-item">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Powder-Coated Enclosures</span>
+                    </div>
+                    <div class="wf-item">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Low-Voltage Stable Relays</span>
+                    </div>
+                    <div class="wf-item">
+                        <i class="fas fa-check-circle"></i>
+                        <span>100% Factory Bench Tested</span>
+                    </div>
+                </div>
             </div>
-            <div class="cover-meta-grid">
-                <?php if (!empty($store_phone)): ?>
-                    <div><i class="fas fa-phone-alt"></i> <?php echo htmlspecialchars($store_phone); ?></div>
-                <?php endif; ?>
-                <?php if (!empty($store_email)): ?>
-                    <div><i class="fas fa-envelope"></i> <?php echo htmlspecialchars($store_email); ?></div>
-                <?php endif; ?>
-                <?php if (!empty($store_address)): ?>
-                    <div><i class="fas fa-map-marker-alt"></i> <?php echo htmlspecialchars($store_address); ?></div>
-                <?php endif; ?>
-                <div><i class="fas fa-file-invoice"></i> GSTIN: <?php echo htmlspecialchars(!empty($gst_number) ? $gst_number : 'Available on request'); ?></div>
-            </div>
-        </div>
 
-        <!-- Quality Features Strip -->
-        <div class="quality-strip">
-            <div class="quality-item">
-                <i class="fas fa-microchip"></i>
-                <span>Thermal Overload Protection</span>
+            <!-- Right Page: Table of Contents (Dark Teal Layout) -->
+            <div class="toc-pane">
+                <div class="toc-header">
+                    <h2 class="toc-title">TABLE OF CONTENTS</h2>
+                    <div class="toc-subtitle">Comprehensive Range of Agricultural & Industrial Starters</div>
+                </div>
+                <div class="toc-grid">
+                    <?php 
+                    $toc_index = 1;
+                    foreach ($all_categories as $cat_item): 
+                    ?>
+                        <a href="#cat-section-<?php echo $cat_item['id']; ?>" class="toc-row">
+                            <div class="d-flex align-items-center">
+                                <div class="toc-num-box"><?php echo str_pad($toc_index++, 2, '0', STR_PAD_LEFT); ?></div>
+                                <div class="toc-info">
+                                    <div class="toc-name"><?php echo htmlspecialchars($cat_item['name']); ?></div>
+                                    <div class="toc-count"><?php echo (int)$cat_item['product_count']; ?> Certified Models</div>
+                                </div>
+                            </div>
+                            <div class="toc-arrow">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </a>
+                    <?php endforeach; ?>
+                </div>
             </div>
-            <div class="quality-item">
-                <i class="fas fa-cog"></i>
-                <span>100% Copper Contactors</span>
-            </div>
-            <div class="quality-item">
-                <i class="fas fa-box-tissue"></i>
-                <span>Weatherproof Enclosure</span>
-            </div>
-            <div class="quality-item">
-                <i class="fas fa-truck-fast"></i>
-                <span>Nationwide Express Dispatch</span>
-            </div>
-        </div>
+        </section>
 
-        <!-- Company Introduction Section -->
-        <div class="cat-intro-section">
-            <div class="intro-title">
-                <i class="fas fa-award text-primary"></i> About Sagar Starter's
+        <!-- ══════════════════════════════════════════════════════════
+             TECHNICAL SPECIFICATIONS STRIP
+             ══════════════════════════════════════════════════════════ -->
+        <section class="specs-strip">
+            <div class="spec-strip-card">
+                <div class="spec-icon-box"><i class="fas fa-microchip"></i></div>
+                <div>
+                    <div class="spec-strip-title">Thermal Overload Relay</div>
+                    <div class="spec-strip-desc">Guards motors against phase failure & overcurrent</div>
+                </div>
             </div>
-            <p class="intro-text">
-                <?php echo nl2br(htmlspecialchars($doc_about)); ?>
-            </p>
-        </div>
+            <div class="spec-strip-card">
+                <div class="spec-icon-box"><i class="fas fa-bolt"></i></div>
+                <div>
+                    <div class="spec-strip-title">100% Copper Contacts</div>
+                    <div class="spec-strip-desc">Minimal contact wear & superior arc suppression</div>
+                </div>
+            </div>
+            <div class="spec-strip-card">
+                <div class="spec-icon-box"><i class="fas fa-shield-alt"></i></div>
+                <div>
+                    <div class="spec-strip-title">IP54 Weather Enclosure</div>
+                    <div class="spec-strip-desc">Corrosion-proof finish for rugged field operations</div>
+                </div>
+            </div>
+            <div class="spec-strip-card">
+                <div class="spec-icon-box"><i class="fas fa-truck-fast"></i></div>
+                <div>
+                    <div class="spec-strip-title">Fast Nationwide Logistics</div>
+                    <div class="spec-strip-desc">Assured spares support & rapid dealer delivery</div>
+                </div>
+            </div>
+        </section>
 
-
-        <!-- Catalog Product Grid by Categories -->
+        <!-- ══════════════════════════════════════════════════════════
+             CATALOGUE PRODUCTS BY CATEGORY (SPREADS 3, 4, 5)
+             ══════════════════════════════════════════════════════════ -->
         <div class="cat-content-body">
             <?php if (empty($catalog)): ?>
                 <div class="p-5 text-center text-muted">
-                    <i class="fas fa-box-open fa-3x mb-3 text-secondary"></i>
-                    <h5>No Catalogue Products Available</h5>
-                    <p class="small">Please check back shortly or visit our online store.</p>
+                    <i class="fas fa-box-open fa-3x mb-3" style="color: var(--cat-sage);"></i>
+                    <h5 class="fw-bold" style="color: var(--cat-teal-dark);">No Catalogue Products Available</h5>
+                    <p class="small text-muted">Please check back shortly or explore our online shop.</p>
                 </div>
             <?php else: ?>
-                <?php foreach ($catalog as $category_name => $products): ?>
-                    <div class="cat-group-heading">
-                        <span><i class="fas fa-folder text-primary me-2"></i><?php echo htmlspecialchars($category_name); ?></span>
-                        <span class="cat-group-count"><?php echo count($products); ?> Models</span>
+                <?php 
+                $cat_counter = 0;
+                foreach ($catalog as $category_name => $products): 
+                    $cat_counter++;
+                    $cat_anchor_id = !empty($products[0]['category_id']) ? (int)$products[0]['category_id'] : $cat_counter;
+                ?>
+                    <!-- Category Header Band -->
+                    <div class="category-editorial-bar" id="cat-section-<?php echo $cat_anchor_id; ?>">
+                        <div class="cat-bar-title">
+                            <i class="fas fa-folder-open text-warning"></i>
+                            <span><?php echo htmlspecialchars($category_name); ?></span>
+                        </div>
+                        <div class="cat-bar-count-badge">
+                            <?php echo count($products); ?> Models Available
+                        </div>
                     </div>
 
+                    <!-- 2-Column Product Grid -->
                     <div class="product-grid">
                         <?php foreach ($products as $p): ?>
                             <?php
@@ -1027,61 +1655,104 @@ $og_canonical_url = $og_base_url . '/catalogue.php' . (!empty($active_cat_id) ? 
                             $reg_price = (float)($p['regular_price'] ?? $p['price']);
                             $sale_price = !empty($p['sale_price']) && (float)$p['sale_price'] > 0 ? (float)$p['sale_price'] : 0;
                             $summary = !empty($p['short_description']) ? trim($p['short_description']) : (!empty($p['description']) ? substr(strip_tags($p['description']), 0, 110) . '...' : 'Heavy-duty performance motor starter engineered for Indian power conditions.');
+                            $sku_code = !empty($p['sku']) ? $p['sku'] : ('SS-' . str_pad($p['id'], 3, '0', STR_PAD_LEFT));
+                            $wa_inq_msg = "Hello Sagar Starter's, I am inquiring about " . $p['name'] . " (Code: " . $sku_code . ") from your Official Catalogue.";
                             ?>
                             <div class="cat-prod-card">
-                                <img src="<?php echo htmlspecialchars($p_img); ?>" alt="<?php echo htmlspecialchars($p['name']); ?>" class="cat-prod-thumb" onerror="this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';">
+                                <div class="cat-prod-thumb-box">
+                                    <img src="<?php echo htmlspecialchars($p_img); ?>" alt="<?php echo htmlspecialchars($p['name']); ?>" class="cat-prod-thumb" onerror="this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';">
+                                </div>
                                 <div class="cat-prod-details">
-                                    <div class="cat-prod-title"><?php echo htmlspecialchars($p['name']); ?></div>
+                                    <h4 class="cat-prod-title"><?php echo htmlspecialchars($p['name']); ?></h4>
+                                    
                                     <div class="cat-meta-row">
-                                        <?php if ($show_sku && !empty($p['sku'])): ?>
-                                            <span class="cat-sku-tag">SKU: <?php echo htmlspecialchars($p['sku']); ?></span>
+                                        <?php if ($show_sku): ?>
+                                            <span class="cat-code-badge">CODE: <?php echo htmlspecialchars($sku_code); ?></span>
                                         <?php endif; ?>
-                                        <?php if (!empty($p['brand'])): ?>
-                                            <span class="cat-brand-tag"><?php echo htmlspecialchars($p['brand']); ?></span>
-                                        <?php endif; ?>
+                                        <span class="cat-brand-badge"><?php echo htmlspecialchars(!empty($p['brand']) ? $p['brand'] : "Sagar Starter's"); ?></span>
                                     </div>
                                     
                                     <?php if ($show_features): ?>
                                         <p class="cat-prod-desc"><?php echo htmlspecialchars($summary); ?></p>
                                     <?php endif; ?>
 
-                                    <?php if ($show_price || $show_sale_price): ?>
-                                        <div class="cat-prod-price">
-                                            <?php if ($show_price && $reg_price > 0 && $show_sale_price && $sale_price > 0): ?>
-                                                <?php if ($sale_price < $reg_price): ?>
-                                                    <span class="cat-price-cut"><?php echo $currency . number_format($reg_price, 2); ?></span>
-                                                    <span class="cat-price-sale"><?php echo $currency . number_format($sale_price, 2); ?></span>
+                                    <div class="cat-prod-bottom-row">
+                                        <?php if ($show_price || $show_sale_price): ?>
+                                            <div class="cat-price-wrapper">
+                                                <?php if ($show_price && $reg_price > 0 && $show_sale_price && $sale_price > 0): ?>
+                                                    <?php if ($sale_price < $reg_price): ?>
+                                                        <span class="cat-price-mrp"><?php echo $currency . number_format($reg_price, 2); ?></span>
+                                                        <span class="cat-price-tag"><?php echo $currency . number_format($sale_price, 2); ?></span>
+                                                    <?php else: ?>
+                                                        <span class="cat-price-tag"><?php echo $currency . number_format($sale_price, 2); ?></span>
+                                                    <?php endif; ?>
+                                                <?php elseif ($show_sale_price && $sale_price > 0): ?>
+                                                    <span class="cat-price-tag"><?php echo $currency . number_format($sale_price, 2); ?></span>
+                                                <?php elseif ($show_price && $reg_price > 0): ?>
+                                                    <span class="cat-price-tag"><?php echo $currency . number_format($reg_price, 2); ?></span>
                                                 <?php else: ?>
-                                                    <span class="text-muted small me-1">MRP: <?php echo $currency . number_format($reg_price, 2); ?></span>
-                                                    <span class="cat-price-sale">Sale: <?php echo $currency . number_format($sale_price, 2); ?></span>
+                                                    <span class="cat-price-tag text-muted small">Inquire Price</span>
                                                 <?php endif; ?>
-                                            <?php elseif ($show_sale_price && $sale_price > 0): ?>
-                                                <span class="cat-price-sale"><?php echo $currency . number_format($sale_price, 2); ?></span>
-                                            <?php elseif ($show_price && $reg_price > 0): ?>
-                                                <span class="text-primary"><?php echo $currency . number_format($reg_price, 2); ?></span>
-                                            <?php endif; ?>
-                                        </div>
-                                    <?php endif; ?>
+                                            </div>
+                                        <?php endif; ?>
+
+                                        <!-- Quick WhatsApp Inquiry Button -->
+                                        <a href="https://wa.me/<?php echo $wa_phone_clean; ?>?text=<?php echo urlencode($wa_inq_msg); ?>" target="_blank" class="btn-card-inquire no-print">
+                                            <i class="fab fa-whatsapp"></i> Inquire
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         <?php endforeach; ?>
                     </div>
+
+                    <!-- Highlight Feature Banner after 2nd Category (Matching "OUR OFFER" Spread 4) -->
+                    <?php if ($cat_counter === 2 || ($cat_counter === 1 && count($catalog) === 1)): ?>
+                        <div class="our-offer-banner">
+                            <div class="offer-left">
+                                <div class="editorial-pretitle" style="color: var(--cat-sage-light);">The Sagar Advantage</div>
+                                <h3>ENGINEERED FOR EXTREME DURABILITY</h3>
+                                <p>Designed specifically to withstand Indian rural voltage fluctuations, high ambient temperatures, and dust in agricultural fields.</p>
+                            </div>
+                            <div class="offer-grid">
+                                <div class="offer-box">
+                                    <div class="offer-box-title"><i class="fas fa-check-double text-warning me-1"></i> 100% Tested</div>
+                                    <div class="offer-box-sub">Triple quality inspected before leaving factory</div>
+                                </div>
+                                <div class="offer-box">
+                                    <div class="offer-box-title"><i class="fas fa-shield-alt text-warning me-1"></i> 1-Year Guarantee</div>
+                                    <div class="offer-box-sub">Full warranty on contactor coils & relays</div>
+                                </div>
+                                <div class="offer-box">
+                                    <div class="offer-box-title"><i class="fas fa-tools text-warning me-1"></i> Spares Readily Available</div>
+                                    <div class="offer-box-sub">Guaranteed spare parts for all historical models</div>
+                                </div>
+                                <div class="offer-box">
+                                    <div class="offer-box-title"><i class="fas fa-handshake text-warning me-1"></i> Direct Dealer Margins</div>
+                                    <div class="offer-box-sub">Highly attractive wholesale dealer terms</div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
                 <?php endforeach; ?>
             <?php endif; ?>
         </div>
 
-        <!-- Back Cover / Dealership & Inquiries -->
+        <!-- ══════════════════════════════════════════════════════════
+             BACK COVER / DEALERSHIP & INQUIRIES (SPREAD 6)
+             ══════════════════════════════════════════════════════════ -->
         <footer class="cat-back-cover">
             <div class="inquiry-block">
-                <h3><i class="fas fa-handshake me-2 text-warning"></i> Dealership & Bulk Inquiries</h3>
+                <h3><i class="fas fa-handshake text-warning me-2"></i> Dealership & Bulk Inquiries</h3>
                 <p>
-                    We welcome distributors, agricultural retailers, electric pump contractors, and dealers nationwide. Attractive wholesale margin structures, guaranteed spare support, and rapid turnaround on custom starter panels available.
+                    We welcome agricultural equipment distributors, pump contractors, electrical retailers, and bulk buyers across India. Enjoy dedicated technical support, attractive wholesale profit margins, and rapid turnarounds on custom starter panels.
                 </p>
                 <div class="inquiry-contacts">
                     <?php if (!empty($store_phone)): ?>
                         <div><i class="fas fa-phone-alt text-warning me-1"></i> <?php echo htmlspecialchars($store_phone); ?></div>
                     <?php endif; ?>
-                    <div><i class="fab fa-whatsapp text-success me-1"></i> <a href="https://wa.me/<?php echo $wa_phone_clean; ?>" target="_blank">Chat on WhatsApp</a></div>
+                    <div><i class="fab fa-whatsapp text-success me-1"></i> <a href="https://wa.me/<?php echo $wa_phone_clean; ?>" target="_blank">WhatsApp Chat</a></div>
                     <div><i class="fas fa-globe text-info me-1"></i> <a href="<?php echo SITE_URL; ?>" target="_blank"><?php echo parse_url(SITE_URL, PHP_URL_HOST) ?: 'sagarstarters.com'; ?></a></div>
                     <?php if (!empty($store_address)): ?>
                         <div><i class="fas fa-map-marker-alt text-danger me-1"></i> <?php echo htmlspecialchars($store_address); ?></div>
@@ -1091,15 +1762,16 @@ $og_canonical_url = $og_base_url . '/catalogue.php' . (!empty($active_cat_id) ? 
                     <?php endif; ?>
                 </div>
             </div>
-            <div class="official-seal-box">
-                <div class="fw-bold text-white mb-1"><?php echo htmlspecialchars($store_name); ?></div>
-                <div class="small text-light text-opacity-75" style="font-size: 0.7rem;">Official Product Catalogue</div>
-                <div class="my-2 text-warning" style="font-size: 1.6rem;">
-                    <i class="fas fa-stamp"></i>
-                </div>
-                <small class="text-light text-opacity-50 d-block" style="font-size: 0.65rem;">Quality Assured &bull; Edition <?php echo date('Y'); ?></small>
+
+            <!-- Official Certification Stamp Box -->
+            <div class="seal-stamp-box">
+                <div class="seal-stamp-title"><?php echo htmlspecialchars($store_name); ?></div>
+                <div class="seal-stamp-icon"><i class="fas fa-stamp"></i></div>
+                <div class="small text-white fw-bold mb-1">Quality Certified &bull; Authentic</div>
+                <div class="seal-stamp-sub">Official Edition <?php echo date('Y'); ?></div>
             </div>
         </footer>
+
     </div>
 </main>
 
@@ -1116,7 +1788,7 @@ $og_canonical_url = $og_base_url . '/catalogue.php' . (!empty($active_cat_id) ? 
 
         <div class="share-copy-box">
             <input type="text" id="shareUrlInput" readonly value="<?php echo htmlspecialchars($share_url); ?>">
-            <button type="button" class="btn btn-primary btn-sm px-3" id="btnCopyShareLink" onclick="copyShareUrl()">
+            <button type="button" class="btn text-white btn-sm px-3" style="background: var(--cat-teal-dark);" id="btnCopyShareLink" onclick="copyShareUrl()">
                 <i class="fas fa-copy me-1"></i> Copy Link
             </button>
         </div>
@@ -1169,12 +1841,10 @@ function copyShareUrl() {
 
     function done() {
         btn.innerHTML = '<i class="fas fa-check me-1"></i> Copied!';
-        btn.classList.remove('btn-primary');
-        btn.classList.add('btn-success');
+        btn.style.background = '#10b981';
         setTimeout(function() {
             btn.innerHTML = orig;
-            btn.classList.remove('btn-success');
-            btn.classList.add('btn-primary');
+            btn.style.background = 'var(--cat-teal-dark)';
         }, 2000);
     }
 
@@ -1234,7 +1904,7 @@ function downloadCataloguePDF() {
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak: {
             mode: ['css', 'legacy'],
-            avoid: ['.cat-prod-card', '.cat-group-heading', '.cat-cover', '.cat-intro-section', '.quality-strip', '.cat-back-cover']
+            avoid: ['.cat-prod-card', '.category-editorial-bar', '.cover-page', '.spread-welcome-toc', '.specs-strip', '.our-offer-banner', '.cat-back-cover']
         }
     };
 
