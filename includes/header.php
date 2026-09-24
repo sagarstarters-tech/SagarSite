@@ -309,10 +309,15 @@ if (isset($product['slug'])) {
     <link rel="canonical" href="<?php echo htmlspecialchars($seoData['canonical']); ?>">
     <?php endif; ?>
 
-    <!-- PWA Settings -->
+    <!-- PWA Settings & iOS Meta -->
     <link rel="manifest" href="<?php echo SITE_URL; ?>/manifest.json">
     <meta name="theme-color" content="#1e3c72">
-    <link rel="apple-touch-icon" sizes="192x192" href="<?php echo ASSETS_URL; ?>/images/favicon_192.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Sagar Starters">
+    <link rel="apple-touch-icon" sizes="192x192" href="<?php echo ASSETS_URL; ?>/images/icons/icon-192.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="<?php echo ASSETS_URL; ?>/images/icons/icon-512.png">
 
     <!-- Resource Hints: Optimized & Deduped -->
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
@@ -421,14 +426,15 @@ if (isset($product['slug'])) {
     <!-- Language Switcher & Translation Engine -->
     <script src="<?php echo ASSETS_URL; ?>/js/language-switcher.js?v=<?php echo file_exists(__DIR__ . '/../assets/js/language-switcher.js') ? filemtime(__DIR__ . '/../assets/js/language-switcher.js') : '1.1'; ?>" defer></script>
 
-    <!-- Register Service Worker -->
+    <!-- Register Service Worker & PWA Install Script -->
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('<?php echo SITE_URL; ?>/sw.js?v=2').then(r => r.update()).catch(() => {});
+          navigator.serviceWorker.register('<?php echo SITE_URL; ?>/sw.js?v=1.0').then(r => r.update()).catch(() => {});
         });
       }
     </script>
+    <script src="<?php echo ASSETS_URL; ?>/js/pwa-install.js?v=1.0" defer></script>
     
     <?php if (!isset($_SESSION['user_id']) && isset($global_settings['google_login_enabled']) && $global_settings['google_login_enabled'] == '1' && isset($global_settings['google_one_tap_enabled']) && $global_settings['google_one_tap_enabled'] == '1' && !empty($global_settings['google_client_id'])): ?>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -552,6 +558,11 @@ if (isset($product['slug'])) {
           })();
       </script>
 
+      <!-- Desktop PWA Install Button (Revealed dynamically if eligible) -->
+      <button id="pwaInstallBtn" class="btn btn-outline-primary btn-custom btn-sm me-2 d-none pwa-install-btn align-items-center" type="button" title="Install Sagar Starter's App">
+          <i class="fas fa-download me-1"></i><span class="d-none d-md-inline">Install App</span>
+      </button>
+
       <div id="header-auth-container">
           <?php if(isset($_SESSION['user_id'])): ?>
               <div class="dropdown me-2">
@@ -643,6 +654,13 @@ if (isset($product['slug'])) {
                   <li><a class="dropdown-item d-flex justify-content-between align-items-center lang-option notranslate" href="javascript:void(0);" data-lang="ur"><span class="fw-semibold">🇮🇳 اردو (Urdu)</span><i class="fas fa-check text-primary check-icon d-none"></i></a></li>
               </ul>
           </div>
+      </div>
+
+      <!-- Mobile Menu PWA Install Button (Revealed dynamically if eligible) -->
+      <div class="d-lg-none px-2 mb-3">
+          <button id="mobilePwaInstallBtn" class="btn btn-primary btn-sm w-100 rounded-pill py-2 d-none pwa-install-btn fw-bold shadow-sm" type="button">
+              <i class="fas fa-download me-2"></i>Install Sagar Starter's App
+          </button>
       </div>
 
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">

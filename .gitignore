@@ -19,6 +19,8 @@ Thumbs.db
 !/assets/images/*.jpeg
 !/assets/images/*.webp
 !/assets/images/*.ico
+!/assets/images/icons/
+!/assets/images/icons/*
 !/assets/images/slider/
 !/assets/images/slider/*
 !/assets/images/features/

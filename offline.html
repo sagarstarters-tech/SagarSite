@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>You're Offline - Sagar Starter's</title>
+    <meta name="theme-color" content="#1e3c72">
+    <style>
+        :root {
+            --brand-primary: #1e3c72;
+            --brand-secondary: #2a5298;
+            --accent-green: #25D366;
+            --text-dark: #1e293b;
+            --text-muted: #64748b;
+            --bg-light: #f8fafc;
+            --card-bg: #ffffff;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+        }
+        .offline-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 40px 28px;
+            max-width: 480px;
+            width: 100%;
+            box-shadow: 0 20px 40px -15px rgba(30, 60, 114, 0.15);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            position: relative;
+            overflow: hidden;
+        }
+        .offline-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, var(--brand-primary), var(--brand-secondary));
+        }
+        .icon-stage {
+            width: 88px;
+            height: 88px;
+            margin: 0 auto 24px;
+            background: rgba(30, 60, 114, 0.08);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--brand-primary);
+        }
+        .brand-badge {
+            display: inline-block;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--brand-primary);
+            background: rgba(30, 60, 114, 0.08);
+            padding: 4px 12px;
+            border-radius: 50px;
+            margin-bottom: 16px;
+        }
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 12px;
+        }
+        p {
+            font-size: 15px;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+        .btn-retry {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+            color: #ffffff;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 50px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 8px 16px rgba(30, 60, 114, 0.25);
+            width: 100%;
+            margin-bottom: 16px;
+        }
+        .btn-retry:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 20px rgba(30, 60, 114, 0.35);
+        }
+        .btn-retry:active {
+            transform: translateY(0);
+        }
+        .contact-box {
+            border-top: 1px solid #f1f5f9;
+            padding-top: 20px;
+            margin-top: 10px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        .contact-box a {
+            color: var(--brand-primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .online-banner {
+            display: none;
+            background: #10b981;
+            color: #ffffff;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-card">
+        <div id="onlineBanner" class="online-banner">
+            Connection restored! Reloading...
+        </div>
+        <div class="icon-stage">
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+                <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path>
+                <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path>
+                <path d="M10.71 5.05A16 16 0 0 1 22.56 9"></path>
+                <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path>
+                <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+                <line x1="12" y1="20" x2="12.01" y2="20"></line>
+            </svg>
+        </div>
+        <div class="brand-badge">Sagar Starter's</div>
+        <h1>No Internet Connection</h1>
+        <p>You appear to be offline right now. Don't worry — your cart and profile will stay safe once your connection returns.</p>
+        <button id="retryBtn" class="btn-retry" type="button" onclick="handleRetry()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <polyline points="1 20 1 14 7 14"></polyline>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+            Retry Connection
+        </button>
+        <div class="contact-box">
+            Urgent sales or technical query? Call our desk directly at <a href="tel:918573934013">+91 8573934013</a>
+        </div>
+    </div>
+
+    <script>
+        function handleRetry() {
+            var btn = document.getElementById('retryBtn');
+            btn.innerHTML = 'Checking...';
+            btn.disabled = true;
+            if (navigator.onLine) {
+                window.location.reload();
+            } else {
+                fetch(window.location.href, { method: 'HEAD', cache: 'no-store' })
+                    .then(function() {
+                        window.location.reload();
+                    })
+                    .catch(function() {
+                        setTimeout(function() {
+                            btn.disabled = false;
+                            btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> Retry Connection';
+                        }, 600);
+                    });
+            }
+        }
+
+        window.addEventListener('online', function() {
+            var banner = document.getElementById('onlineBanner');
+            if (banner) banner.style.display = 'block';
+            setTimeout(function() {
+                window.location.reload();
+            }, 800);
+        });
+    </script>
+</body>
+</html>
