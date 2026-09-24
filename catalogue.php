@@ -375,6 +375,15 @@ $og_canonical_url = $og_base_url . '/catalogue.php' . (!empty($active_cat_id) ? 
             gap: 8px;
             flex-wrap: wrap;
         }
+        .action-icon-btns {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .btn-act .btn-text {
+            display: inline;
+        }
         .btn-act {
             border: none;
             padding: 8px 16px;
@@ -1358,6 +1367,84 @@ $og_canonical_url = $og_base_url . '/catalogue.php' . (!empty($active_cat_id) ? 
             .cat-back-cover { padding: 30px 24px; flex-direction: column; align-items: flex-start; }
         }
 
+        /* ── Mobile Action Bar & 100% Responsiveness ────────────── */
+        @media (max-width: 768px) {
+            #action-bar {
+                padding: 8px 10px;
+            }
+            .action-bar-inner {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 7px;
+            }
+            .action-branding {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .action-branding i {
+                font-size: 1.15rem;
+            }
+            .action-branding div span.fw-bold {
+                font-size: 0.82rem !important;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .action-branding div span.small {
+                font-size: 0.68rem !important;
+            }
+            .action-btn-group {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+                width: 100%;
+            }
+            .action-filter-wrap {
+                width: 100%;
+            }
+            .cat-filter-select {
+                width: 100%;
+                max-width: 100%;
+                height: 36px;
+                font-size: 0.8rem;
+                padding: 6px 12px;
+                border-radius: 18px;
+            }
+            .action-icon-btns {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 6px;
+                width: 100%;
+                flex-wrap: nowrap;
+            }
+            .btn-act {
+                flex: 1 1 0;
+                height: 38px;
+                min-width: 36px;
+                padding: 0;
+                border-radius: 10px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0;
+            }
+            .btn-act .btn-text {
+                display: none !important;
+            }
+            .btn-act i {
+                margin: 0 !important;
+                font-size: 1.05rem;
+            }
+            .catalogue-wrapper {
+                padding: 12px 6px 40px 6px;
+            }
+            .catalogue-doc {
+                border-radius: 8px;
+            }
+        }
+
         /* ── Discrete A4 PDF Export Staging Styles ─────────────────── */
         .pdf-staging-container {
             position: absolute !important;
@@ -1715,7 +1802,7 @@ $og_canonical_url = $og_base_url . '/catalogue.php' . (!empty($active_cat_id) ? 
         <div class="action-btn-group">
             <!-- Category Filter Dropdown -->
             <?php if (!empty($all_categories)): ?>
-            <div class="d-flex align-items-center gap-1">
+            <div class="action-filter-wrap d-flex align-items-center gap-1">
                 <label for="actionCatFilter" class="small text-white text-opacity-75 d-none d-lg-inline text-nowrap m-0">
                     <i class="fas fa-layer-group me-1" style="color: var(--cat-sage-light);"></i> Filter:
                 </label>
@@ -1730,28 +1817,30 @@ $og_canonical_url = $og_base_url . '/catalogue.php' . (!empty($active_cat_id) ? 
             </div>
             <?php endif; ?>
 
-            <button type="button" class="btn-act btn-act-pdf" id="btnDownloadPdf" onclick="downloadCataloguePDF()">
-                <i class="fas fa-file-download"></i> Download Catalogue (PDF)
-            </button>
-            <button type="button" class="btn-act btn-act-print" onclick="window.print()">
-                <i class="fas fa-print"></i> Print / Save as PDF
-            </button>
-            <?php if ($show_share): ?>
-            <button type="button" class="btn-act btn-act-share" onclick="openShareModal()">
-                <i class="fas fa-share-alt"></i> Share / Copy Link
-            </button>
-            <?php endif; ?>
-            <a href="https://wa.me/<?php echo $wa_phone_clean; ?>?text=Hello%2C%20I%20reviewed%20your%20Product%20Catalogue%20and%20want%20more%20information." target="_blank" class="btn-act btn-act-wa">
-                <i class="fab fa-whatsapp"></i> Inquire on WhatsApp
-            </a>
-            <a href="<?php echo SITE_URL; ?>/shop.php" class="btn-act btn-act-store">
-                <i class="fas fa-store"></i> Browse Store
-            </a>
-            <?php if ($is_admin): ?>
-                <a href="<?php echo SITE_URL; ?>/admin/manage_catalogue.php" class="btn-act btn-act-admin">
-                    <i class="fas fa-sliders-h"></i> Settings
+            <div class="action-icon-btns">
+                <button type="button" class="btn-act btn-act-pdf" id="btnDownloadPdf" onclick="downloadCataloguePDF()" title="Download Catalogue (PDF)" aria-label="Download Catalogue (PDF)">
+                    <i class="fas fa-file-download"></i> <span class="btn-text">Download Catalogue (PDF)</span>
+                </button>
+                <button type="button" class="btn-act btn-act-print" onclick="window.print()" title="Print / Save as PDF" aria-label="Print / Save as PDF">
+                    <i class="fas fa-print"></i> <span class="btn-text">Print / Save as PDF</span>
+                </button>
+                <?php if ($show_share): ?>
+                <button type="button" class="btn-act btn-act-share" onclick="openShareModal()" title="Share / Copy Link" aria-label="Share / Copy Link">
+                    <i class="fas fa-share-alt"></i> <span class="btn-text">Share / Copy Link</span>
+                </button>
+                <?php endif; ?>
+                <a href="https://wa.me/<?php echo $wa_phone_clean; ?>?text=Hello%2C%20I%20reviewed%20your%20Product%20Catalogue%20and%20want%20more%20information." target="_blank" class="btn-act btn-act-wa" title="Inquire on WhatsApp" aria-label="Inquire on WhatsApp">
+                    <i class="fab fa-whatsapp"></i> <span class="btn-text">Inquire on WhatsApp</span>
                 </a>
-            <?php endif; ?>
+                <a href="<?php echo SITE_URL; ?>/shop.php" class="btn-act btn-act-store" title="Browse Store" aria-label="Browse Store">
+                    <i class="fas fa-store"></i> <span class="btn-text">Browse Store</span>
+                </a>
+                <?php if ($is_admin): ?>
+                    <a href="<?php echo SITE_URL; ?>/admin/manage_catalogue.php" class="btn-act btn-act-admin" title="Catalogue Settings" aria-label="Catalogue Settings">
+                        <i class="fas fa-sliders-h"></i> <span class="btn-text">Settings</span>
+                    </a>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 </header>
@@ -2190,7 +2279,7 @@ function filterCatalogueCategory(catId) {
 async function downloadCataloguePDF() {
     var btn = document.getElementById('btnDownloadPdf');
     var origText = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing Catalogue...';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span class="btn-text">Preparing Catalogue...</span>';
     btn.disabled = true;
 
     try {
@@ -2375,7 +2464,7 @@ async function downloadCataloguePDF() {
         var totalPages = pages.length;
 
         for (var i = 0; i < totalPages; i++) {
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating Page ' + (i + 1) + ' of ' + totalPages + '...';
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span class="btn-text">Generating Page ' + (i + 1) + ' of ' + totalPages + '...</span>';
             
             var canvas = await html2canvas(pages[i], {
                 scale: 2,
@@ -2394,7 +2483,7 @@ async function downloadCataloguePDF() {
             pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
         }
 
-        btn.innerHTML = '<i class="fas fa-check"></i> Saving PDF...';
+        btn.innerHTML = '<i class="fas fa-check"></i> <span class="btn-text">Saving PDF...</span>';
         pdf.save(filename);
 
         // Cleanup staging

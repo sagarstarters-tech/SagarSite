@@ -379,7 +379,7 @@ $og_canonical_url = $og_base_url . '/price_list.php' . (!empty($active_cat_id) ?
             display: flex;
             align-items: center;
             justify-content: space-between;
-            flex-wrap: gap;
+            flex-wrap: wrap;
             gap: 12px;
         }
         .action-btns {
@@ -387,6 +387,15 @@ $og_canonical_url = $og_base_url . '/price_list.php' . (!empty($active_cat_id) ?
             align-items: center;
             gap: 10px;
             flex-wrap: wrap;
+        }
+        .action-icon-btns {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .btn-act .btn-text {
+            display: inline;
         }
         .btn-act {
             border: none;
@@ -906,6 +915,95 @@ $og_canonical_url = $og_base_url . '/price_list.php' . (!empty($active_cat_id) ?
             text-decoration: underline;
         }
 
+        /* ── Mobile Action Bar & 100% Responsiveness ────────────── */
+        @media (max-width: 768px) {
+            #action-bar {
+                padding: 8px 10px;
+            }
+            .action-bar-inner {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 7px;
+            }
+            .action-branding {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .action-branding div span.fw-bold {
+                font-size: 0.82rem !important;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .action-branding div span.small {
+                font-size: 0.68rem !important;
+            }
+            .action-btns {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+                width: 100%;
+            }
+            .action-filter-wrap {
+                width: 100%;
+            }
+            .cat-filter-select {
+                width: 100%;
+                max-width: 100%;
+                height: 36px;
+                font-size: 0.8rem;
+                padding: 6px 12px;
+                border-radius: 18px;
+            }
+            .action-icon-btns {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 6px;
+                width: 100%;
+                flex-wrap: nowrap;
+            }
+            .btn-act {
+                flex: 1 1 0;
+                height: 38px;
+                min-width: 36px;
+                padding: 0;
+                border-radius: 10px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0;
+            }
+            .btn-act .btn-text {
+                display: none !important;
+            }
+            .btn-act i {
+                margin: 0 !important;
+                font-size: 1.05rem;
+            }
+            .doc-wrapper {
+                padding: 12px 6px;
+            }
+            .doc-page {
+                padding: 18px 12px;
+                border-radius: 8px;
+            }
+            .doc-header {
+                flex-direction: column;
+                gap: 12px;
+            }
+            .doc-meta {
+                text-align: left;
+            }
+            .price-table {
+                font-size: 0.78rem;
+            }
+            .price-table th, .price-table td {
+                padding: 8px 6px;
+            }
+        }
+
         /* ── Print Media Optimization ──────────────────────────── */
         @page {
             size: A4 portrait;
@@ -936,7 +1034,7 @@ $og_canonical_url = $og_base_url . '/price_list.php' . (!empty($active_cat_id) ?
 <!-- Sticky Action Bar (Hidden in Print & PDF export) -->
 <header id="action-bar">
     <div class="action-bar-inner">
-        <div class="d-flex align-items-center gap-2">
+        <div class="action-branding d-flex align-items-center gap-2">
             <i class="fas fa-file-pdf text-danger fs-5"></i>
             <div>
                 <span class="fw-bold d-block text-white" style="font-size: 0.9rem;">Wholesale Product Price List</span>
@@ -946,7 +1044,7 @@ $og_canonical_url = $og_base_url . '/price_list.php' . (!empty($active_cat_id) ?
         <div class="action-btns">
             <!-- Category Filter in Action Bar -->
             <?php if (!empty($all_categories)): ?>
-            <div class="d-flex align-items-center gap-1">
+            <div class="action-filter-wrap d-flex align-items-center gap-1">
                 <label for="actionCatFilterPl" class="small text-white text-opacity-75 d-none d-lg-inline text-nowrap m-0">
                     <i class="fas fa-layer-group text-warning me-1"></i> Category:
                 </label>
@@ -961,25 +1059,27 @@ $og_canonical_url = $og_base_url . '/price_list.php' . (!empty($active_cat_id) ?
             </div>
             <?php endif; ?>
 
-            <button type="button" class="btn-act btn-act-pdf" id="btnDownloadPdf" onclick="downloadPDF()">
-                <i class="fas fa-file-download"></i> Download PDF
-            </button>
-            <button type="button" class="btn-act btn-act-print" onclick="window.print()">
-                <i class="fas fa-print"></i> Print / Save as PDF
-            </button>
-            <?php if ($show_share): ?>
-            <button type="button" class="btn-act btn-act-share" onclick="openShareModal()">
-                <i class="fas fa-share-alt"></i> Share / Copy Link
-            </button>
-            <?php endif; ?>
-            <a href="<?php echo SITE_URL; ?>/shop.php" class="btn-act btn-act-store">
-                <i class="fas fa-store"></i> Shop
-            </a>
-            <?php if ($is_admin): ?>
-                <a href="<?php echo SITE_URL; ?>/admin/manage_price_list.php" class="btn-act btn-act-admin">
-                    <i class="fas fa-cog"></i> Settings
+            <div class="action-icon-btns">
+                <button type="button" class="btn-act btn-act-pdf" id="btnDownloadPdf" onclick="downloadPDF()" title="Download PDF" aria-label="Download PDF">
+                    <i class="fas fa-file-download"></i> <span class="btn-text">Download PDF</span>
+                </button>
+                <button type="button" class="btn-act btn-act-print" onclick="window.print()" title="Print / Save as PDF" aria-label="Print / Save as PDF">
+                    <i class="fas fa-print"></i> <span class="btn-text">Print / Save as PDF</span>
+                </button>
+                <?php if ($show_share): ?>
+                <button type="button" class="btn-act btn-act-share" onclick="openShareModal()" title="Share / Copy Link" aria-label="Share / Copy Link">
+                    <i class="fas fa-share-alt"></i> <span class="btn-text">Share / Copy Link</span>
+                </button>
+                <?php endif; ?>
+                <a href="<?php echo SITE_URL; ?>/shop.php" class="btn-act btn-act-store" title="Shop" aria-label="Shop">
+                    <i class="fas fa-store"></i> <span class="btn-text">Shop</span>
                 </a>
-            <?php endif; ?>
+                <?php if ($is_admin): ?>
+                    <a href="<?php echo SITE_URL; ?>/admin/manage_price_list.php" class="btn-act btn-act-admin" title="Settings" aria-label="Settings">
+                        <i class="fas fa-cog"></i> <span class="btn-text">Settings</span>
+                    </a>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 </header>
@@ -1275,7 +1375,7 @@ function filterPriceListCategory(catId) {
 function downloadPDF() {
     var btn = document.getElementById('btnDownloadPdf');
     var origText = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Building PDF...';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span class="btn-text">Building PDF...</span>';
     btn.disabled = true;
 
     var element = document.getElementById('priceListDocument');
