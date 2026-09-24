@@ -1358,113 +1358,160 @@ $og_canonical_url = $og_base_url . '/catalogue.php' . (!empty($active_cat_id) ? 
             .cat-back-cover { padding: 30px 24px; flex-direction: column; align-items: flex-start; }
         }
 
-        /* ── PDF Export Mode (Active only during html2pdf export) ─── */
-        body.pdf-export-mode {
+        /* ── Discrete A4 PDF Export Staging Styles ─────────────────── */
+        .pdf-staging-container {
+            position: absolute !important;
+            left: -9999px !important;
+            top: 0 !important;
+            width: 1040px !important;
             background: #ffffff !important;
+            z-index: -9999 !important;
+            box-sizing: border-box !important;
+        }
+
+        .pdf-a4-page {
+            width: 1040px !important;
+            min-height: 1470px !important;
+            max-height: 1470px !important;
+            height: 1470px !important;
+            box-sizing: border-box !important;
+            background: #ffffff !important;
+            position: relative !important;
+            overflow: hidden !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
             margin: 0 !important;
             padding: 0 !important;
-            overflow-x: visible !important;
         }
-        body.pdf-export-mode #action-bar {
-            display: none !important;
+
+        .pdf-running-header {
+            background: #061c26 !important;
+            color: #ffffff !important;
+            font-family: 'Montserrat', sans-serif !important;
+            font-size: 0.72rem !important;
+            font-weight: 700 !important;
+            letter-spacing: 1px !important;
+            text-transform: uppercase !important;
+            padding: 10px 35px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            border-bottom: 2px solid #6b9597 !important;
+            flex-shrink: 0 !important;
         }
-        body.pdf-export-mode .catalogue-wrapper {
-            padding: 0 !important;
-            margin: 0 !important;
-            display: block !important;
-            width: 794px !important;
-            max-width: 794px !important;
+
+        .pdf-running-footer {
+            background: #f8fafc !important;
+            color: #64748b !important;
+            font-family: 'Poppins', sans-serif !important;
+            font-size: 0.72rem !important;
+            font-weight: 600 !important;
+            padding: 10px 35px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            border-top: 1px solid #e2e8f0 !important;
+            flex-shrink: 0 !important;
+            margin-top: auto !important;
         }
-        body.pdf-export-mode .catalogue-doc {
-            box-shadow: none !important;
-            border-radius: 0 !important;
-            max-width: 794px !important;
-            width: 794px !important;
-            margin: 0 !important;
-            border: none !important;
-            display: block !important;
+
+        .pdf-page-content {
+            flex: 1 1 auto !important;
+            padding: 24px 35px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: flex-start !important;
+            background: #ffffff !important;
+            box-sizing: border-box !important;
         }
-        body.pdf-export-mode .cover-top-split {
-            min-height: 320px !important;
+
+        .pdf-page-cover {
+            justify-content: flex-start !important;
         }
-        body.pdf-export-mode .cover-top-dark {
-            flex: 0 0 60% !important;
-            padding: 28px 30px !important;
+
+        .pdf-page-cover .cover-page {
+            border-bottom: none !important;
+            height: 100% !important;
+            min-height: 1470px !important;
+            display: flex !important;
+            flex-direction: column !important;
         }
-        body.pdf-export-mode .cover-top-white {
-            flex: 0 0 40% !important;
-            padding: 28px 30px !important;
+
+        .pdf-page-cover .cover-top-split {
+            min-height: 480px !important;
+            flex: 0 0 480px !important;
         }
-        body.pdf-export-mode .cover-edition-year {
-            font-size: 2.8rem !important;
+
+        .pdf-page-cover .cover-bottom-area {
+            flex: 1 1 auto !important;
+            padding: 50px 48px 45px 48px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
         }
-        body.pdf-export-mode .cover-circle-frame {
-            width: 210px !important;
-            height: 210px !important;
-            left: 54% !important;
-            border-width: 8px !important;
+
+        .pdf-page-cover .cover-circle-frame {
+            width: 270px !important;
+            height: 270px !important;
+            left: 426px !important;
+            top: 105px !important;
+            transform: none !important;
+            border-width: 10px !important;
         }
-        body.pdf-export-mode .cover-bottom-area {
-            padding: 28px 32px 24px 32px !important;
-        }
-        body.pdf-export-mode .editorial-cover-h1 {
-            font-size: 2.9rem !important;
-        }
-        body.pdf-export-mode .cover-sage-block {
-            width: 120px !important;
-            height: 50px !important;
-        }
-        body.pdf-export-mode .welcome-pane {
-            padding: 28px 28px !important;
-        }
-        body.pdf-export-mode .toc-pane {
-            padding: 28px 28px !important;
-        }
-        body.pdf-export-mode .toc-title {
-            font-size: 1.5rem !important;
-        }
-        body.pdf-export-mode .specs-strip {
-            padding: 16px 28px !important;
-            gap: 10px !important;
-        }
-        body.pdf-export-mode .spec-strip-card {
-            padding: 8px 10px !important;
-            gap: 8px !important;
-        }
-        body.pdf-export-mode .spec-icon-box {
-            width: 32px !important;
-            height: 32px !important;
-            font-size: 0.9rem !important;
-        }
-        body.pdf-export-mode .cat-content-body {
-            padding: 24px 28px !important;
-        }
-        body.pdf-export-mode .product-grid {
+
+        /* Ensure product grid inside PDF page is strictly 2 columns */
+        .pdf-staging-container .product-grid {
+            display: grid !important;
             grid-template-columns: repeat(2, 1fr) !important;
             gap: 16px !important;
-            margin-bottom: 24px !important;
+            margin-bottom: 16px !important;
         }
-        body.pdf-export-mode .cat-prod-card {
+
+        .pdf-staging-container .cat-prod-card {
             padding: 12px !important;
             gap: 12px !important;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04) !important;
+            border: 1px solid #e2e8f0 !important;
         }
-        body.pdf-export-mode .cat-prod-thumb-box {
-            width: 95px !important;
-            height: 95px !important;
+
+        .pdf-staging-container .cat-prod-thumb-box {
+            width: 100px !important;
+            height: 100px !important;
+            flex-shrink: 0 !important;
         }
-        body.pdf-export-mode .cat-prod-title {
-            font-size: 0.88rem !important;
+
+        .pdf-staging-container .cat-prod-title {
+            font-size: 0.92rem !important;
+            line-height: 1.3 !important;
         }
-        body.pdf-export-mode .our-offer-banner {
-            padding: 20px 24px !important;
-            gap: 16px !important;
+
+        .pdf-staging-container .cat-prod-desc {
+            font-size: 0.72rem !important;
+            line-height: 1.4 !important;
+            margin-bottom: 6px !important;
         }
-        body.pdf-export-mode .cat-back-cover {
-            padding: 28px 32px !important;
+
+        .pdf-staging-container .cat-price-tag {
+            font-size: 1.05rem !important;
         }
-        body.pdf-export-mode .no-print,
-        body.pdf-export-mode .btn-card-inquire {
+
+        .pdf-staging-container .no-print,
+        .pdf-staging-container .btn-card-inquire {
             display: none !important;
+        }
+
+        .pdf-staging-container .our-offer-banner {
+            margin: 15px 0 !important;
+            padding: 20px 24px !important;
+            gap: 18px !important;
+        }
+
+        .pdf-staging-container .cat-back-cover {
+            padding: 30px 35px !important;
+            background: #061c26 !important;
+            color: #ffffff !important;
+            border-radius: 8px !important;
         }
 
         /* ── Print Media Optimization (Standard A4 Portrait) ─── */
@@ -1923,8 +1970,9 @@ $og_canonical_url = $og_base_url . '/catalogue.php' . (!empty($active_cat_id) ? 
     </div>
 </div>
 
-<!-- html2pdf Client-side High-Resolution PDF Generator -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<!-- High-Resolution Client-side Multi-Page PDF Generator -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 function openShareModal() {
     var modal = document.getElementById('shareModal');
@@ -1995,61 +2043,206 @@ function filterCatalogueCategory(catId) {
     window.location.href = url.toString();
 }
 
-function downloadCataloguePDF() {
+async function downloadCataloguePDF() {
     var btn = document.getElementById('btnDownloadPdf');
     var origText = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating PDF...';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing Catalogue...';
     btn.disabled = true;
 
-    // 1. Capture current scroll position
-    var origScrollX = window.pageXOffset || document.documentElement.scrollLeft || 0;
-    var origScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+    try {
+        if (!window.jspdf || !window.html2canvas) {
+            throw new Error('PDF export libraries not loaded.');
+        }
 
-    // 2. Activate PDF export styling and scroll to (0, 0) so html2canvas doesn't produce blank top offset
-    document.body.classList.add('pdf-export-mode');
-    window.scrollTo(0, 0);
-
-    // 3. Short delay to ensure DOM reflow and scroll position are fully applied
-    setTimeout(function() {
-        var element = document.getElementById('catalogueDocument');
+        var storeName = <?php echo json_encode($store_name); ?>;
+        var docYear = '<?php echo date('Y'); ?>';
         var catSuffix = <?php echo json_encode(!empty($active_cat_slug) ? preg_replace('/[^a-zA-Z0-9_-]/', '_', $active_cat_slug) : (!empty($active_cat_name) ? preg_replace('/[^a-zA-Z0-9_-]/', '_', $active_cat_name) : 'All_Products')); ?>;
-        var filename = '<?php echo preg_replace('/[^a-zA-Z0-9_-]/', '_', $store_name); ?>_Catalogue_' + catSuffix + '_<?php echo date('Y'); ?>.pdf';
+        var filename = storeName.replace(/[^a-zA-Z0-9_-]/g, '_') + '_Catalogue_' + catSuffix + '_' + docYear + '.pdf';
 
-        var opt = {
-            margin: [0, 0, 0, 0],
-            filename: filename,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: {
+        // 1. Create Staging Container off-screen (width 1040px)
+        var stage = document.createElement('div');
+        stage.className = 'pdf-staging-container';
+        document.body.appendChild(stage);
+
+        var pages = [];
+
+        // Helper to construct an exact A4 page wrapper (1040px x 1470px)
+        function createA4Page(headerTitle, pageNumStr, isCover) {
+            var page = document.createElement('div');
+            page.className = 'pdf-a4-page' + (isCover ? ' pdf-page-cover' : '');
+            
+            if (!isCover) {
+                var hdr = document.createElement('div');
+                hdr.className = 'pdf-running-header';
+                hdr.innerHTML = '<span>' + storeName.toUpperCase() + ' &bull; OFFICIAL PRODUCT CATALOGUE</span><span>' + (headerTitle || 'PORTFOLIO').toUpperCase() + '</span>';
+                page.appendChild(hdr);
+            }
+
+            var content = document.createElement('div');
+            content.className = isCover ? 'w-100 h-100 d-flex flex-column' : 'pdf-page-content';
+            page.appendChild(content);
+
+            if (!isCover) {
+                var ftr = document.createElement('div');
+                ftr.className = 'pdf-running-footer';
+                ftr.innerHTML = '<span>' + (pageNumStr || '') + ' &bull; Heavy-Duty Motor Starters & Control Switchgear</span><span>WhatsApp: <?php echo htmlspecialchars($store_phone); ?></span>';
+                page.appendChild(ftr);
+            }
+
+            stage.appendChild(page);
+            pages.push(page);
+            return content;
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        // PAGE 1: FRONT COVER SPREAD
+        // ══════════════════════════════════════════════════════════════
+        var origCover = document.querySelector('.cover-page');
+        if (origCover) {
+            var p1Content = createA4Page('', '', true);
+            var coverClone = origCover.cloneNode(true);
+            p1Content.appendChild(coverClone);
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        // PAGE 2: WELCOME, TABLE OF CONTENTS & TECHNICAL SPECS
+        // ══════════════════════════════════════════════════════════════
+        var origWelcome = document.querySelector('.spread-welcome-toc');
+        var origSpecs = document.querySelector('.specs-strip');
+        if (origWelcome) {
+            var p2Content = createA4Page('Company Profile & Specifications', 'Page 02');
+            p2Content.appendChild(origWelcome.cloneNode(true));
+            if (origSpecs) {
+                p2Content.appendChild(origSpecs.cloneNode(true));
+            }
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        // PRODUCT PAGES (GROUPED BY CATEGORY, NEVER CUTTING A CARD)
+        // ══════════════════════════════════════════════════════════════
+        var catBars = document.querySelectorAll('.cat-content-body > .category-editorial-bar');
+        var catPageNum = 2;
+
+        if (catBars.length > 0) {
+            catBars.forEach(function(bar) {
+                var catTitle = bar.querySelector('.cat-bar-title span') ? bar.querySelector('.cat-bar-title span').innerText.trim() : 'Products';
+                var grid = bar.nextElementSibling;
+                while (grid && !grid.classList.contains('product-grid')) {
+                    grid = grid.nextElementSibling;
+                }
+                
+                var cards = grid ? Array.from(grid.querySelectorAll('.cat-prod-card')) : [];
+                
+                // Check if there is an offer banner right after this grid
+                var nextEl = grid ? grid.nextElementSibling : null;
+                var bannerEl = (nextEl && nextEl.classList.contains('our-offer-banner')) ? nextEl : null;
+
+                // Chunk cards into sets of up to 4 per page so they fit with spacious luxury
+                var chunkSize = 4;
+                var totalChunks = Math.max(1, Math.ceil(cards.length / chunkSize));
+
+                for (var c = 0; c < totalChunks; c++) {
+                    catPageNum++;
+                    var pageLabel = 'Page ' + (catPageNum < 10 ? '0' + catPageNum : catPageNum);
+                    var headerSuffix = catTitle + (totalChunks > 1 ? ' (' + (c + 1) + '/' + totalChunks + ')' : '');
+                    var pageContent = createA4Page(headerSuffix, pageLabel);
+
+                    // Add Category Header Bar on every chunk
+                    var barClone = bar.cloneNode(true);
+                    if (c > 0) {
+                        var titleSpan = barClone.querySelector('.cat-bar-title span');
+                        if (titleSpan) titleSpan.innerText += ' (Cont.)';
+                    }
+                    pageContent.appendChild(barClone);
+
+                    // Create product grid with this chunk's cards
+                    var gridDiv = document.createElement('div');
+                    gridDiv.className = 'product-grid';
+                    var slice = cards.slice(c * chunkSize, (c + 1) * chunkSize);
+                    slice.forEach(function(card) {
+                        gridDiv.appendChild(card.cloneNode(true));
+                    });
+                    pageContent.appendChild(gridDiv);
+
+                    // If banner belongs to this category and this is the last chunk of this category
+                    if (bannerEl && c === totalChunks - 1) {
+                        pageContent.appendChild(bannerEl.cloneNode(true));
+                    }
+                }
+            });
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        // FINAL PAGE: DEALERSHIP & BULK INQUIRIES BACK COVER
+        // ══════════════════════════════════════════════════════════════
+        var origBackCover = document.querySelector('.cat-back-cover');
+        if (origBackCover) {
+            catPageNum++;
+            var finalLabel = 'Page ' + (catPageNum < 10 ? '0' + catPageNum : catPageNum);
+            var backContent = createA4Page('Dealership & Support', finalLabel);
+            
+            var backIntro = document.createElement('div');
+            backIntro.style.cssText = 'padding: 24px 0 16px 0; text-align: center;';
+            backIntro.innerHTML = '<h3 style="font-family: \'Montserrat\', sans-serif; font-size: 1.45rem; font-weight: 800; color: #0a2e3d; text-transform: uppercase; margin-bottom: 8px;"><i class="fas fa-certificate text-warning me-2"></i>Direct From Manufacturer</h3><p style="font-size: 0.84rem; color: #64748b; max-width: 720px; margin: 0 auto; line-height: 1.6;">Trusted by thousands of farmers, pump contractors, and electrical retailers across India for heavy-duty reliability, 100% copper contactors, and rapid pan-India dispatch.</p>';
+            backContent.appendChild(backIntro);
+
+            backContent.appendChild(origBackCover.cloneNode(true));
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        // RENDER PAGES TO PDF USING jsPDF + html2canvas
+        // ══════════════════════════════════════════════════════════════
+        var { jsPDF } = window.jspdf;
+        var pdf = new jsPDF({
+            unit: 'mm',
+            format: 'a4',
+            orientation: 'portrait',
+            compress: true
+        });
+
+        var totalPages = pages.length;
+
+        for (var i = 0; i < totalPages; i++) {
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating Page ' + (i + 1) + ' of ' + totalPages + '...';
+            
+            var canvas = await html2canvas(pages[i], {
                 scale: 2,
                 useCORS: true,
+                allowTaint: true,
                 logging: false,
-                scrollX: 0,
-                scrollY: 0,
-                width: 794,
-                windowWidth: 794
-            },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            pagebreak: {
-                mode: ['css', 'legacy'],
-                after: ['.cover-page', '.spread-welcome-toc'],
-                avoid: ['.cat-prod-card', '.category-editorial-bar', '.spec-strip-card', '.our-offer-banner', '.cat-back-cover']
-            }
-        };
+                backgroundColor: '#ffffff'
+            });
 
-        html2pdf().set(opt).from(element).save().then(function() {
-            document.body.classList.remove('pdf-export-mode');
-            window.scrollTo(origScrollX, origScrollY);
+            var imgData = canvas.toDataURL('image/jpeg', 0.96);
+
+            if (i > 0) {
+                pdf.addPage([210, 297], 'portrait');
+            }
+
+            pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
+        }
+
+        btn.innerHTML = '<i class="fas fa-check"></i> Saving PDF...';
+        pdf.save(filename);
+
+        // Cleanup staging
+        if (stage && stage.parentNode) {
+            stage.parentNode.removeChild(stage);
+        }
+
+        setTimeout(function() {
             btn.innerHTML = origText;
             btn.disabled = false;
-        }).catch(function(err) {
-            console.warn('PDF generation fallback to print:', err);
-            document.body.classList.remove('pdf-export-mode');
-            window.scrollTo(origScrollX, origScrollY);
-            btn.innerHTML = origText;
-            btn.disabled = false;
-            window.print();
-        });
-    }, 150);
+        }, 1200);
+
+    } catch (err) {
+        console.error('PDF Generation failed, falling back to print:', err);
+        var s = document.querySelector('.pdf-staging-container');
+        if (s && s.parentNode) s.parentNode.removeChild(s);
+        btn.innerHTML = origText;
+        btn.disabled = false;
+        window.print();
+    }
 }
 
 <?php if ($auto_download): ?>
