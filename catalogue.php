@@ -1372,17 +1372,95 @@ $og_canonical_url = $og_base_url . '/catalogue.php' . (!empty($active_cat_id) ? 
             padding: 0 !important;
             margin: 0 !important;
             display: block !important;
-            width: 1040px !important;
-            max-width: 1040px !important;
+            width: 794px !important;
+            max-width: 794px !important;
         }
         body.pdf-export-mode .catalogue-doc {
             box-shadow: none !important;
             border-radius: 0 !important;
-            max-width: 1040px !important;
-            width: 1040px !important;
+            max-width: 794px !important;
+            width: 794px !important;
             margin: 0 !important;
             border: none !important;
             display: block !important;
+        }
+        body.pdf-export-mode .cover-top-split {
+            min-height: 320px !important;
+        }
+        body.pdf-export-mode .cover-top-dark {
+            flex: 0 0 60% !important;
+            padding: 28px 30px !important;
+        }
+        body.pdf-export-mode .cover-top-white {
+            flex: 0 0 40% !important;
+            padding: 28px 30px !important;
+        }
+        body.pdf-export-mode .cover-edition-year {
+            font-size: 2.8rem !important;
+        }
+        body.pdf-export-mode .cover-circle-frame {
+            width: 210px !important;
+            height: 210px !important;
+            left: 54% !important;
+            border-width: 8px !important;
+        }
+        body.pdf-export-mode .cover-bottom-area {
+            padding: 28px 32px 24px 32px !important;
+        }
+        body.pdf-export-mode .editorial-cover-h1 {
+            font-size: 2.9rem !important;
+        }
+        body.pdf-export-mode .cover-sage-block {
+            width: 120px !important;
+            height: 50px !important;
+        }
+        body.pdf-export-mode .welcome-pane {
+            padding: 28px 28px !important;
+        }
+        body.pdf-export-mode .toc-pane {
+            padding: 28px 28px !important;
+        }
+        body.pdf-export-mode .toc-title {
+            font-size: 1.5rem !important;
+        }
+        body.pdf-export-mode .specs-strip {
+            padding: 16px 28px !important;
+            gap: 10px !important;
+        }
+        body.pdf-export-mode .spec-strip-card {
+            padding: 8px 10px !important;
+            gap: 8px !important;
+        }
+        body.pdf-export-mode .spec-icon-box {
+            width: 32px !important;
+            height: 32px !important;
+            font-size: 0.9rem !important;
+        }
+        body.pdf-export-mode .cat-content-body {
+            padding: 24px 28px !important;
+        }
+        body.pdf-export-mode .product-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 16px !important;
+            margin-bottom: 24px !important;
+        }
+        body.pdf-export-mode .cat-prod-card {
+            padding: 12px !important;
+            gap: 12px !important;
+        }
+        body.pdf-export-mode .cat-prod-thumb-box {
+            width: 95px !important;
+            height: 95px !important;
+        }
+        body.pdf-export-mode .cat-prod-title {
+            font-size: 0.88rem !important;
+        }
+        body.pdf-export-mode .our-offer-banner {
+            padding: 20px 24px !important;
+            gap: 16px !important;
+        }
+        body.pdf-export-mode .cat-back-cover {
+            padding: 28px 32px !important;
         }
         body.pdf-export-mode .no-print,
         body.pdf-export-mode .btn-card-inquire {
@@ -1946,7 +2024,9 @@ function downloadCataloguePDF() {
                 useCORS: true,
                 logging: false,
                 scrollX: 0,
-                scrollY: 0
+                scrollY: 0,
+                width: 794,
+                windowWidth: 794
             },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
             pagebreak: {
