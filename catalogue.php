@@ -281,6 +281,9 @@ $og_canonical_url = $og_base_url . '/catalogue.php' . (!empty($active_cat_id) ? 
     <title><?php echo htmlspecialchars($page_html_title); ?></title>
     <meta name="description" content="<?php echo htmlspecialchars($og_description); ?>">
 
+    <link rel="canonical" href="<?php echo htmlspecialchars($og_canonical_url); ?>">
+    <meta name="robots" content="index, follow">
+
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="<?php echo htmlspecialchars($store_name); ?>">
@@ -300,6 +303,46 @@ $og_canonical_url = $og_base_url . '/catalogue.php' . (!empty($active_cat_id) ? 
     <meta name="twitter:title" content="<?php echo htmlspecialchars($page_html_title); ?>">
     <meta name="twitter:description" content="<?php echo htmlspecialchars($og_description); ?>">
     <meta name="twitter:image" content="<?php echo htmlspecialchars($og_image_url); ?>">
+
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebPage",
+          "@id": "<?php echo htmlspecialchars($og_canonical_url); ?>#webpage",
+          "url": "<?php echo htmlspecialchars($og_canonical_url); ?>",
+          "name": <?php echo json_encode($page_html_title, JSON_UNESCAPED_SLASHES); ?>,
+          "description": <?php echo json_encode($og_description, JSON_UNESCAPED_SLASHES); ?>,
+          "isPartOf": {
+            "@type": "WebSite",
+            "@id": "https://www.sagarstarters.com/#website",
+            "name": <?php echo json_encode($store_name, JSON_UNESCAPED_SLASHES); ?>,
+            "url": "https://www.sagarstarters.com/"
+          }
+        },
+        {
+          "@type": "BreadcrumbList",
+          "@id": "<?php echo htmlspecialchars($og_canonical_url); ?>#breadcrumb",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Home",
+              "item": "https://www.sagarstarters.com/"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "Product Catalogue",
+              "item": "<?php echo htmlspecialchars($og_canonical_url); ?>"
+            }
+          ]
+        }
+      ]
+    }
+    </script>
 
     <!-- Typography & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

@@ -4,6 +4,33 @@ include 'includes/db_connect.php';
 // Get the slug from URL, default to about
 $slug = isset($_GET['slug']) ? $conn->real_escape_string($_GET['slug']) : 'about';
 
+$base_url_clean = rtrim(defined('SITE_URL') ? SITE_URL : '', '/');
+if (empty($base_url_clean) || strpos($base_url_clean, 'http') !== 0) {
+    $base_url_clean = ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'www.sagarstarters.com');
+}
+
+// 301 Permanent Redirects for legacy/alternate page URLs
+if ($slug === 'about') {
+    header("HTTP/1.1 301 Moved Permanently");
+    header("Location: " . $base_url_clean . "/about.php");
+    exit;
+}
+if ($slug === 'contact') {
+    header("HTTP/1.1 301 Moved Permanently");
+    header("Location: " . $base_url_clean . "/contact.php");
+    exit;
+}
+if ($slug === '1772044436-f-q') {
+    header("HTTP/1.1 301 Moved Permanently");
+    header("Location: " . $base_url_clean . "/page/f-q-44436");
+    exit;
+}
+if ($slug === '1772607638-support') {
+    header("HTTP/1.1 301 Moved Permanently");
+    header("Location: " . $base_url_clean . "/page/support-07638");
+    exit;
+}
+
 // Fetch the page content
 $query = "SELECT * FROM pages WHERE slug = '$slug'";
 $result = $conn->query($query);
@@ -27,6 +54,21 @@ if ($result && $result->num_rows > 0) {
     $page_meta_title = '404 Not Found';
     $page_meta_description = '';
 }
+
+// Generate Breadcrumb Schema for Static/Policy Page
+require_once 'includes/SeoService.php';
+$seoService = new SeoService($conn);
+
+$base_url_clean = rtrim(defined('SITE_URL') ? SITE_URL : '', '/');
+if (empty($base_url_clean) || strpos($base_url_clean, 'http') !== 0) {
+    $base_url_clean = ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'www.sagarstarters.com');
+}
+
+$breadcrumb_items = [
+    ['name' => 'Home', 'url' => $base_url_clean . '/'],
+    ['name' => $page['title'], 'url' => $base_url_clean . '/page/' . $slug]
+];
+$breadcrumb_schema = $seoService->generateBreadcrumbSchema($breadcrumb_items);
 
 include 'includes/header.php';
 ?>
@@ -68,7 +110,12 @@ if (!empty($global_settings[$setting_key])) {
                    In a real-world scenario, you might want to sanitize this using a library like HTMLPurifier 
                    if editors are untrusted. 
                 -->
-                <?php echo $page['content']; ?>
+                <?php 
+                   // Convert any inner <h1> in admin-managed content to <h2> to preserve strict single-H1 hierarchy
+                   $clean_page_content = preg_replace('/<h1\b([^>]*)>/i', '<h2$1>', $page['content']);
+                   $clean_page_content = preg_replace('/<\/h1>/i', '</h2>', $clean_page_content);
+                   echo $clean_page_content; 
+                ?>
             </div>
         </div>
     </div>

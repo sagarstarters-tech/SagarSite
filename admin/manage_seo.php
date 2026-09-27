@@ -81,6 +81,7 @@ $audit = $controller->getSeoAudit();
 // Fetch entities for selection
 $pages = $conn->query("SELECT id, title FROM pages ORDER BY title ASC");
 $categories = $conn->query("SELECT id, name FROM categories ORDER BY name ASC");
+$products = $conn->query("SELECT id, name FROM products ORDER BY name ASC");
 ?>
 
 <div class="container-fluid px-4 py-4 adm-wrapper">
@@ -243,6 +244,7 @@ $categories = $conn->query("SELECT id, name FROM categories ORDER BY name ASC");
                                     <option value="shop">Shop Page</option>
                                     <option value="page">Static Page</option>
                                     <option value="category">Category Page</option>
+                                    <option value="product">Product Page</option>
                                 </select>
                             </div>
                             <div class="col-md-4" id="entityIdWrapper" style="display: none;">
@@ -411,6 +413,7 @@ $categories = $conn->query("SELECT id, name FROM categories ORDER BY name ASC");
 <script>
 const pages = <?php echo json_encode(($pages && $pages instanceof mysqli_result) ? $pages->fetch_all(MYSQLI_ASSOC) : []); ?>;
 const categories = <?php echo json_encode(($categories && $categories instanceof mysqli_result) ? $categories->fetch_all(MYSQLI_ASSOC) : []); ?>;
+const products = <?php echo json_encode(($products && $products instanceof mysqli_result) ? $products->fetch_all(MYSQLI_ASSOC) : []); ?>;
 
 function toggleEntityId() {
     const type = document.getElementById('entityType').value;
@@ -427,6 +430,11 @@ function toggleEntityId() {
     } else if (type === 'category') {
         categories.forEach(c => {
             select.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+        });
+        wrapper.style.display = 'block';
+    } else if (type === 'product') {
+        products.forEach(pr => {
+            select.innerHTML += `<option value="${pr.id}">${pr.name}</option>`;
         });
         wrapper.style.display = 'block';
     } else {

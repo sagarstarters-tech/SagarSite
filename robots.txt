@@ -1,4 +1,10 @@
-# Facebook & WhatsApp crawlers - Allow all (required for OG image previews)
+# ============================================================
+# Sagar Starter's Robots.txt File
+# Website: https://www.sagarstarters.com
+# Clean, Google & Bing compliant crawler directive file
+# ============================================================
+
+# Whitelist Social Media Crawlers (Rich OpenGraph previews)
 User-agent: facebookexternalhit
 Allow: /
 
@@ -8,21 +14,49 @@ Allow: /
 User-agent: WhatsApp
 Allow: /
 
+User-agent: Twitterbot
+Allow: /
+
+# General Search Engine Rules
 User-agent: *
+
+# Allow Public Assets & Media
+Allow: /assets/
+Allow: /uploads/
+
+# Disallow Sensitive System & Backend Directories
 Disallow: /admin/
 Disallow: /includes/
 Disallow: /config/
-Disallow: /user/login.php
-Disallow: /user/register.php
-Disallow: /cart.php
-Disallow: /checkout.php
+Disallow: /api/
+Disallow: /backups/
+Disallow: /bin/
+Disallow: /cron/
+Disallow: /logs/
+Disallow: /scratch/
 Disallow: /payment-gateways/
 Disallow: /shipping_module_src/
 Disallow: /tracking_module_src/
+
+# Disallow Internal Debug & Utility Scripts
 Disallow: /debug_*.php
 Disallow: /verify_*.php
 Disallow: /check_*.php
 Disallow: /test_*.php
-Allow: /assets/
 
+# Disallow Customer Accounts & Transactional Funnels
+Disallow: /user/
+Disallow: /cart.php
+Disallow: /checkout.php
+Disallow: /track_order.php
+Disallow: /my-orders.php
+Disallow: /order_success.php
+
+# Prevent Crawl Traps & Duplicate Parameter Flooding
+Disallow: /*?search=*
+Disallow: /*?*sort=*
+Disallow: /*?*price_min=*
+Disallow: /*?*price_max=*
+
+# Reference XML Sitemap
 Sitemap: https://www.sagarstarters.com/sitemap.xml

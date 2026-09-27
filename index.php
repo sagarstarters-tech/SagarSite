@@ -56,6 +56,8 @@ $clean_contact_phone = preg_replace('/[^0-9+]/', '', $contact_phone);
 // ── SECTION 1: HERO BANNER SLIDER (Dynamic from Admin Panel) ──────────────────
 include 'includes/hero-slider.php'; 
 ?>
+<!-- Semantic H1 for Homepage SEO -->
+<h1 class="visually-hidden">Sagar Starters — Industrial &amp; Agricultural Motor Starters &amp; Submersible Pump Panels Manufacturer</h1>
 
 <?php 
 // ── SECTION 2: VALUE & TRUST BADGES STRIP ─────────────────────────────────────
@@ -157,7 +159,7 @@ if ($cats_enabled == '1'):
 
                     $rawImg = !empty($c['image']) ? $c['image'] : (!empty($c['product_fallback_image']) ? $c['product_fallback_image'] : 'assets/images/' . $matchedAsset);
                     $cat_img = resolve_image_url($rawImg);
-                    $cat_url = !empty($c['slug']) ? SITE_URL . "/shop.php?category_slug=" . urlencode($c['slug']) : SITE_URL . "/shop.php?category=" . (int)$c['id'];
+                    $cat_url = !empty($c['slug']) ? SITE_URL . "/category/" . $c['slug'] : SITE_URL . "/shop.php?category=" . (int)$c['id'];
                     $p_count = (int)($c['product_count'] ?? 0);
             ?>
             <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6 col-12" data-aos="fade-up" data-aos-delay="<?php echo $delay; $delay+=50; ?>">

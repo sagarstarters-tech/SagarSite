@@ -1,25 +1,16 @@
 <?php
-include 'includes/header.php';
+require_once 'includes/db_connect.php';
+require_once 'includes/session_setup.php';
 
-$whereClauses = [];
-$params = [];
-$types = "";
-
-// 1. Pagination Setup
-$limit = 12; // Products per page
-$page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int)$_GET['page'] : 1;
-if ($page < 1) $page = 1;
-$offset = ($page - 1) * $limit;
-
-// 2. Build Filters
-// Category filter logic
+// 1. Build Filters & Category Logic before header
 $cat_id = null;
 $cat_name = '';
+$cat_slug_val = '';
 $is_cat_conflict = false;
 
 if (isset($_GET['category_slug']) && trim($_GET['category_slug']) !== '') {
     $slug = trim($_GET['category_slug']);
-    $cat_stmt = $conn->prepare("SELECT id, name FROM categories WHERE slug = ?");
+    $cat_stmt = $conn->prepare("SELECT id, name, slug FROM categories WHERE slug = ?");
     $cat_stmt->bind_param("s", $slug);
     $cat_stmt->execute();
     $cat_res = $cat_stmt->get_result();
@@ -27,20 +18,56 @@ if (isset($_GET['category_slug']) && trim($_GET['category_slug']) !== '') {
         $cat_data = $cat_res->fetch_assoc();
         $cat_id = (int)$cat_data['id'];
         $cat_name = $cat_data['name'];
+        $cat_slug_val = $cat_data['slug'];
     }
     $cat_stmt->close();
 } elseif (isset($_GET['category']) && is_numeric($_GET['category'])) {
     $cat_id = (int)$_GET['category'];
-    $cat_stmt = $conn->prepare("SELECT id, name FROM categories WHERE id = ?");
+    $cat_stmt = $conn->prepare("SELECT id, name, slug FROM categories WHERE id = ?");
     $cat_stmt->bind_param("i", $cat_id);
     $cat_stmt->execute();
     $cat_res = $cat_stmt->get_result();
     if ($cat_res->num_rows > 0) {
         $cat_data = $cat_res->fetch_assoc();
         $cat_name = $cat_data['name'];
+        $cat_slug_val = $cat_data['slug'];
     }
     $cat_stmt->close();
 }
+
+// 2. Setup Breadcrumb Schema & Title Overrides
+require_once 'includes/SeoService.php';
+$seoService = new SeoService($conn);
+
+$base_url_clean = rtrim(defined('SITE_URL') ? SITE_URL : '', '/');
+if (empty($base_url_clean) || strpos($base_url_clean, 'http') !== 0) {
+    $base_url_clean = ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'www.sagarstarters.com');
+}
+
+$breadcrumb_items = [
+    ['name' => 'Home', 'url' => $base_url_clean . '/'],
+    ['name' => 'Shop', 'url' => $base_url_clean . '/shop.php']
+];
+if (!empty($cat_name)) {
+    $breadcrumb_items[] = [
+        'name' => $cat_name, 
+        'url' => $base_url_clean . '/category/' . (!empty($cat_slug_val) ? $cat_slug_val : $cat_id)
+    ];
+    $page_meta_title = $cat_name;
+}
+$breadcrumb_schema = $seoService->generateBreadcrumbSchema($breadcrumb_items);
+
+include 'includes/header.php';
+
+$whereClauses = [];
+$params = [];
+$types = "";
+
+// 3. Pagination Setup
+$limit = 12; // Products per page
+$page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int)$_GET['page'] : 1;
+if ($page < 1) $page = 1;
+$offset = ($page - 1) * $limit;
 
 // 3. Smart Product Finder / Starter Selector Filters
 // Phase Filter
@@ -176,8 +203,8 @@ if (!empty($global_settings[$setting_key])) {
 ?>
     <div class="row mb-5">
         <div class="col-12 text-center <?php echo $hero_bg_class; ?> p-4 p-md-5 rounded-3" style="<?php echo $hero_style; ?>" data-aos="fade-down">
-            <h1 class="display-5 fw-bold montserrat <?php echo $text_color; ?>">Our Shop</h1>
-            <p class="lead <?php echo $text_muted; ?>">Browse our amazing collection</p>
+            <h1 class="display-5 fw-bold montserrat <?php echo $text_color; ?>"><?php echo !empty($cat_name) ? htmlspecialchars($cat_name) : 'Our Shop'; ?></h1>
+            <p class="lead <?php echo $text_muted; ?>"><?php echo !empty($cat_name) ? 'Heavy-Duty ' . htmlspecialchars($cat_name) . ' — Engineered for Maximum Motor Protection' : 'Explore our complete range of motor starters and pump panels'; ?></p>
         </div>
     </div>
     <div class="row">
@@ -192,9 +219,11 @@ if (!empty($global_settings[$setting_key])) {
 
                 <h5 class="fw-bold mb-3"><i class="fas fa-list me-2"></i>Categories</h5>
                 <div class="list-group list-group-flush mb-4">
-                    <a href="<?php echo SITE_URL; ?>/shop.php" class="list-group-item list-group-item-action border-0 px-0 <?php echo empty($_GET['category']) ? 'fw-bold text-primary' : ''; ?>">All Categories</a>
-                    <?php while($cat = $cats->fetch_assoc()): ?>
-                        <a href="<?php echo SITE_URL; ?>/shop.php?category=<?php echo $cat['id']; ?>" class="list-group-item list-group-item-action border-0 px-0 <?php echo (isset($_GET['category']) && $_GET['category'] == $cat['id']) ? 'fw-bold text-primary' : ''; ?>">
+                    <a href="<?php echo SITE_URL; ?>/shop.php" class="list-group-item list-group-item-action border-0 px-0 <?php echo empty($cat_id) ? 'fw-bold text-primary' : ''; ?>">All Categories</a>
+                    <?php while($cat = $cats->fetch_assoc()): 
+                        $c_url = !empty($cat['slug']) ? SITE_URL . "/category/" . $cat['slug'] : SITE_URL . "/shop.php?category=" . $cat['id'];
+                    ?>
+                        <a href="<?php echo $c_url; ?>" class="list-group-item list-group-item-action border-0 px-0 <?php echo ($cat_id == $cat['id']) ? 'fw-bold text-primary' : ''; ?>">
                             <?php echo htmlspecialchars($cat['name']); ?>
                         </a>
                     <?php endwhile; ?>

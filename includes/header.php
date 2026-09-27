@@ -56,7 +56,9 @@ if (isset($_SESSION['user_id'])) {
     }
 }
 require_once __DIR__ . '/SeoService.php';
-$seoService = new SeoService($conn);
+if (!isset($seoService) || !($seoService instanceof SeoService)) {
+    $seoService = new SeoService($conn);
+}
 
 // Determine entity type and ID for SEO
 $current_script = basename($_SERVER['SCRIPT_NAME']);
@@ -87,11 +89,28 @@ if (isset($product['id'])) {
     if ($page_q && $page_q->num_rows > 0) {
         $entity_id = $page_q->fetch_assoc()['id'];
     }
+} elseif ($current_script === 'about.php') {
+    $entity_type = 'about';
+} elseif ($current_script === 'contact.php') {
+    $entity_type = 'contact';
+} elseif ($current_script === 'catalogue.php') {
+    $entity_type = 'catalogue';
+} elseif ($current_script === 'cart.php') {
+    $entity_type = 'cart';
+} elseif ($current_script === 'checkout.php') {
+    $entity_type = 'checkout';
+} elseif ($current_script === 'track_order.php') {
+    $entity_type = 'track_order';
+} elseif (in_array($current_script, ['login.php', 'signup.php'])) {
+    $entity_type = 'auth';
+} elseif (in_array($current_script, ['orders.php', 'profile.php', 'downloads.php', 'my-orders.php'])) {
+    $entity_type = 'account';
+} elseif ($current_script === '404.php') {
+    $entity_type = '404';
 }
-// DEBUG: error_log("SEO Debug: Page=$current_page, Type=$entity_type, ID=$entity_id, SCRIPT=" . $_SERVER['SCRIPT_NAME']);
 
 $seoData = $seoService->getPageSeo($entity_type, $entity_id, [
-    'title' => $page_meta_title ?? null,
+    'title' => $page_meta_title ?? $page_title ?? null,
     'description' => $page_meta_description ?? null,
     'image' => $page_meta_image ?? null
 ]);
@@ -244,16 +263,11 @@ if (!empty($og_image_url)) {
     }
 }
 
-// Generate current canonical URL for og:url
+// Generate current canonical URL for og:url and canonical link tag
 $scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? "https" : "http";
-$current_uri = $_SERVER['REQUEST_URI'];
-$current_url = $scheme . "://" . $_SERVER['HTTP_HOST'] . $current_uri;
-
-// If we are on a product page and have a valid slug, use the clean slug as canonical
-if (isset($product['slug'])) {
-    $q_str = !empty($_SERVER['QUERY_STRING']) ? '?' . $_SERVER['QUERY_STRING'] : '';
-    $current_url = rtrim(defined('SITE_URL') ? SITE_URL : $scheme . "://" . $_SERVER['HTTP_HOST'], '/') . "/product/" . $product['slug'] . $q_str;
-}
+$current_url = !empty($seoData['canonical']) 
+    ? $seoData['canonical'] 
+    : ($scheme . "://" . ($_SERVER['HTTP_HOST'] ?? 'www.sagarstarters.com') . strtok($_SERVER['REQUEST_URI'] ?? '/', '?'));
 ?>
 <!DOCTYPE html>
 <html lang="en" prefix="og: http://ogp.me/ns#">
@@ -307,6 +321,22 @@ if (isset($product['slug'])) {
 
     <?php if (!empty($seoData['canonical'])): ?>
     <link rel="canonical" href="<?php echo htmlspecialchars($seoData['canonical']); ?>">
+    <?php endif; ?>
+
+    <!-- Global Structured Data (JSON-LD) for Search Engines -->
+    <script type="application/ld+json">
+    <?php echo $seoService->generateOrganizationSchema(); ?>
+    </script>
+    <script type="application/ld+json">
+    <?php echo $seoService->generateWebSiteSchema(); ?>
+    </script>
+    <script type="application/ld+json">
+    <?php echo $seoService->generateLocalBusinessSchema(); ?>
+    </script>
+    <?php if (!empty($breadcrumb_schema)): ?>
+    <script type="application/ld+json">
+    <?php echo $breadcrumb_schema; ?>
+    </script>
     <?php endif; ?>
 
     <!-- PWA Settings & iOS Meta -->

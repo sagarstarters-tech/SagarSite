@@ -54,7 +54,7 @@ $product = $result->fetch_assoc();
 $id = $product['id'];
 
 // SEO Meta Variables
-$page_meta_title = $product['name'] . " - Sagar Starter's";
+$page_meta_title = $product['name'];
 $page_meta_description = !empty($product['meta_description']) ? $product['meta_description'] : (!empty($product['short_description']) ? substr(strip_tags($product['short_description']), 0, 160) : substr(strip_tags($product['description']), 0, 160));
 
 // Use the robust resolve_product_image_url function for social preview images
@@ -65,9 +65,31 @@ $cat_id = $product['category_id'];
 $id = $product['id']; // Ensure $id is defined even if initialized earlier
 $related = $conn->query("SELECT * FROM products WHERE category_id = $cat_id AND id != $id LIMIT 4");
 
+// Resolve category slug for clean SEF breadcrumb & schema
+require_once __DIR__ . '/includes/SeoService.php';
+$seoService = new SeoService($conn);
+
+$cat_slug_val = '';
+$c_res = $conn->query("SELECT slug FROM categories WHERE id = $cat_id LIMIT 1");
+if ($c_res && $c_row = $c_res->fetch_assoc()) {
+    $cat_slug_val = $c_row['slug'];
+}
+$base_url_clean = rtrim(defined('SITE_URL') ? SITE_URL : '', '/');
+if (empty($base_url_clean) || strpos($base_url_clean, 'http') !== 0) {
+    $base_url_clean = ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'www.sagarstarters.com');
+}
+
+$breadcrumb_items = [
+    ['name' => 'Home', 'url' => $base_url_clean . '/'],
+    ['name' => 'Shop', 'url' => $base_url_clean . '/shop.php'],
+    ['name' => $product['category_name'], 'url' => $base_url_clean . '/category/' . (!empty($cat_slug_val) ? $cat_slug_val : $cat_id)],
+    ['name' => $product['name'], 'url' => $base_url_clean . '/product/' . (!empty($product['slug']) ? $product['slug'] : $id)]
+];
+$breadcrumb_schema = $seoService->generateBreadcrumbSchema($breadcrumb_items);
+
 include 'includes/header.php';
 
-// Generate Product Schema
+// Generate Product Schema (Enhanced with Brand, SKU, Offers, Condition, etc.)
 $productSchema = $seoService->generateProductSchema($product);
 ?>
 <script type="application/ld+json">
@@ -180,9 +202,9 @@ if (!empty($global_settings['hero_banner_product'])) {
 <div class="container <?php echo $show_product_hero ? 'mt-4' : 'mt-5 pt-4'; ?> mb-5">
     <nav aria-label="breadcrumb" class="mb-4" data-aos="fade-right">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="index.php" class="text-decoration-none">Home</a></li>
-            <li class="breadcrumb-item"><a href="shop.php" class="text-decoration-none">Shop</a></li>
-            <li class="breadcrumb-item"><a href="shop.php?category=<?php echo $cat_id; ?>" class="text-decoration-none"><?php echo htmlspecialchars($product['category_name']); ?></a></li>
+            <li class="breadcrumb-item"><a href="<?php echo SITE_URL; ?>/" class="text-decoration-none">Home</a></li>
+            <li class="breadcrumb-item"><a href="<?php echo SITE_URL; ?>/shop.php" class="text-decoration-none">Shop</a></li>
+            <li class="breadcrumb-item"><a href="<?php echo SITE_URL; ?>/category/<?php echo !empty($cat_slug_val) ? $cat_slug_val : $cat_id; ?>" class="text-decoration-none"><?php echo htmlspecialchars($product['category_name']); ?></a></li>
             <li class="breadcrumb-item active" aria-current="page"><?php echo htmlspecialchars($product['name']); ?></li>
         </ol>
     </nav>
