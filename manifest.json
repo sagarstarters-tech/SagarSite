@@ -13,6 +13,24 @@
     "shopping",
     "business"
   ],
+  "prefer_related_applications": false,
+  "related_applications": [
+    {
+      "platform": "webapp",
+      "url": "https://sagarstarters.com/manifest.json",
+      "id": "sagar-starters-pwa"
+    },
+    {
+      "platform": "webapp",
+      "url": "https://www.sagarstarters.com/manifest.json",
+      "id": "sagar-starters-pwa"
+    },
+    {
+      "platform": "webapp",
+      "url": "http://localhost/SagarSite/manifest.json",
+      "id": "sagar-starters-pwa"
+    }
+  ],
   "icons": [
     {
       "src": "assets/images/icons/icon-192.png",

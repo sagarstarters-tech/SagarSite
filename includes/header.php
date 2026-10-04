@@ -497,6 +497,11 @@ $current_url = !empty($seoData['canonical'])
             .lang-dropdown-toggle::after {
                 display: none !important;
             }
+            #pwaInstallBtn.d-none,
+            #mobilePwaInstallBtn.d-none,
+            .pwa-install-btn.d-none {
+                display: none !important;
+            }
             #pwaInstallBtn {
                 width: 33px !important;
                 height: 33px !important;
@@ -712,11 +717,11 @@ $current_url = !empty($seoData['canonical'])
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('<?php echo SITE_URL; ?>/sw.js?v=1.0').then(r => r.update()).catch(() => {});
+          navigator.serviceWorker.register('<?php echo SITE_URL; ?>/sw.js?v=1.1').then(r => r.update()).catch(() => {});
         });
       }
     </script>
-    <script src="<?php echo ASSETS_URL; ?>/js/pwa-install.js?v=1.0" defer></script>
+    <script src="<?php echo ASSETS_URL; ?>/js/pwa-install.js?v=<?php echo file_exists(__DIR__ . '/../assets/js/pwa-install.js') ? filemtime(__DIR__ . '/../assets/js/pwa-install.js') : '1.1'; ?>" defer></script>
     
     <?php if (!isset($_SESSION['user_id']) && isset($global_settings['google_login_enabled']) && $global_settings['google_login_enabled'] == '1' && isset($global_settings['google_one_tap_enabled']) && $global_settings['google_one_tap_enabled'] == '1' && !empty($global_settings['google_client_id'])): ?>
     <script src="https://accounts.google.com/gsi/client" async defer></script>

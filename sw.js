@@ -11,7 +11,7 @@
  *   cart.php, checkout.php, payment gateways, webhooks, and private APIs
  */
 
-const CACHE_VERSION = 'sagar-pwa-v1.0';
+const CACHE_VERSION = 'sagar-pwa-v1.1';
 const STATIC_CACHE  = `static-${CACHE_VERSION}`;
 const IMAGE_CACHE   = `images-${CACHE_VERSION}`;
 
