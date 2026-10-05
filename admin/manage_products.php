@@ -31,8 +31,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array(($_POST['action'] ?? ''), 
             // Safety: only delete physical file if NOT referenced by any other product gallery or main image
             $other_gal_refs = (int)$conn->query("SELECT COUNT(*) as c FROM product_images WHERE image='$gal_file' AND id!=$img_id")->fetch_assoc()['c'];
             $main_refs      = (int)$conn->query("SELECT COUNT(*) as c FROM products WHERE image='$gal_file'")->fetch_assoc()['c'];
-            if ($other_gal_refs === 0 && $main_refs === 0 && file_exists('../assets/images/'.$img_q['image'])) {
-                unlink('../assets/images/'.$img_q['image']);
+            if ($other_gal_refs === 0 && $main_refs === 0) {
+                $possible_paths = [
+                    '../' . ltrim($img_q['image'], '/'),
+                    '../uploads/media/images/' . basename($img_q['image']),
+                    '../uploads/images/' . basename($img_q['image']),
+                    '../assets/images/' . basename($img_q['image'])
+                ];
+                foreach ($possible_paths as $p) {
+                    if (file_exists($p) && is_file($p)) {
+                        @unlink($p);
+                        break;
+                    }
+                }
             }
         }
         if ($conn->query("DELETE FROM product_images WHERE id=$img_id")) {
@@ -436,6 +447,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Handle Gallery Uploads (Appends to existing)
             if (isset($_FILES['gallery']) && !empty($_FILES['gallery']['name'][0])) {
                 $count = count($_FILES['gallery']['name']);
+                $max_pos_q = $conn->query("SELECT MAX(position) as max_p FROM product_images WHERE product_id=$id");
+                $max_row = $max_pos_q ? $max_pos_q->fetch_assoc() : null;
+                $next_pos = ($max_row && $max_row['max_p'] !== null) ? intval($max_row['max_p']) + 1 : 0;
+
                 for ($i = 0; $i < $count; $i++) {
                     if ($_FILES['gallery']['error'][$i] === 0) {
                         $ext = strtolower(pathinfo($_FILES['gallery']['name'][$i], PATHINFO_EXTENSION));
@@ -446,9 +461,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         if (move_uploaded_file($_FILES['gallery']['tmp_name'][$i], $upload_target . $g_fname)) {
                             $g_image = 'uploads/media/images/' . $g_fname;
                             $g_esc = $conn->real_escape_string($g_image);
-                            $max_pos_q = $conn->query("SELECT MAX(position) as max_p FROM product_images WHERE product_id=$id");
-                            $max_p = ($max_pos_q && $max_pos_q->num_rows > 0) ? intval($max_pos_q->fetch_assoc()['max_p']) + 1 : 0;
-                            $conn->query("INSERT INTO product_images (product_id, image, position) VALUES ($id, '$g_esc', " . ($max_p + $i) . ")");
+                            $conn->query("INSERT INTO product_images (product_id, image, position) VALUES ($id, '$g_esc', $next_pos)");
+                            $next_pos++;
                         }
                     }
                 }
@@ -1155,8 +1169,16 @@ $current_home_prods_count = isset($global_settings['home_prods_count']) && $glob
                     <label class="form-label fw-bold">Product Gallery <small class="text-muted">(Optional, Multiple)</small></label>
                     <input type="file" id="edit_p_gallery" name="gallery[]" multiple class="form-control" accept="image/*">
                     <div class="form-text">Choose multiple files to add a gallery to this product. Note: Adding new images appends to the existing gallery. You can drag to reorder existing images.</div>
-                    <div id="edit_gallery_preview" class="d-flex flex-wrap gap-2 mt-3"></div>
-                    <div id="edit_gallery_preview_new" class="d-flex flex-wrap gap-2 mt-3"></div>
+                    
+                    <div class="mt-3">
+                        <div class="small fw-bold text-muted mb-2"><i class="fas fa-images me-1"></i> Current Gallery Images (Drag to reorder):</div>
+                        <div id="edit_gallery_preview" class="d-flex flex-wrap gap-2"></div>
+                    </div>
+
+                    <div class="mt-3" id="edit_gallery_new_section" style="display: none;">
+                        <div class="small fw-bold text-primary mb-2"><i class="fas fa-plus-circle me-1"></i> New Images to Add (Drag to reorder):</div>
+                        <div id="edit_gallery_preview_new" class="d-flex flex-wrap gap-2"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1510,20 +1532,43 @@ document.addEventListener('DOMContentLoaded', function() {
             galleryDiv.innerHTML = '';
             let galleryHtml = '';
             if (this.dataset.gallery) {
-                const gallery = JSON.parse(this.dataset.gallery);
-                gallery.forEach(img => {
-                    let imgUrl = img.image_url ? img.image_url : '<?php echo ASSETS_URL; ?>/images/placeholder.svg';
-                    if ((!img.image_url || img.image_url.includes('placeholder.svg')) && img.image) {
-                        let cleanImg = img.image.replace(/^(assets\/images\/|\/)/, '');
-                        imgUrl = `<?php echo ASSETS_URL; ?>/images/${cleanImg}`;
+                try {
+                    const gallery = JSON.parse(this.dataset.gallery);
+                    if (Array.isArray(gallery) && gallery.length > 0) {
+                        gallery.forEach(img => {
+                            let imgUrl = img.image_url ? img.image_url : '';
+                            if (!imgUrl || imgUrl.includes('placeholder.svg')) {
+                                if (img.image) {
+                                    let cleanImg = img.image.replace(/^\/+/, '');
+                                    if (cleanImg.startsWith('http://') || cleanImg.startsWith('https://')) {
+                                        imgUrl = cleanImg;
+                                    } else if (cleanImg.startsWith('uploads/')) {
+                                        imgUrl = `<?php echo rtrim(SITE_URL, '/'); ?>/${cleanImg}`;
+                                    } else if (cleanImg.startsWith('assets/')) {
+                                        imgUrl = `<?php echo rtrim(SITE_URL, '/'); ?>/${cleanImg}`;
+                                    } else {
+                                        imgUrl = `<?php echo ASSETS_URL; ?>/images/${cleanImg}`;
+                                    }
+                                } else {
+                                    imgUrl = '<?php echo ASSETS_URL; ?>/images/placeholder.svg';
+                                }
+                            }
+                            galleryHtml += `
+                                <div class="position-relative border rounded p-1 shadow-sm" style="width: 80px; height: 80px; cursor: move;" id="gal_img_${img.id}" data-img-id="${img.id}">
+                                    <img src="${imgUrl}" class="w-100 h-100 rounded" style="object-fit: cover;" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';">
+                                    <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 p-1 delete-gallery-btn" data-img-id="${img.id}" style="line-height: .8; border-radius: 50%;" title="Delete image"><i class="fas fa-times" style="font-size: 10px;"></i></button>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        galleryHtml = '<span class="text-muted small fst-italic">No gallery images uploaded yet.</span>';
                     }
-                    galleryHtml += `
-                        <div class="position-relative border rounded p-1" style="width: 80px; height: 80px;" id="gal_img_${img.id}" data-img-id="${img.id}">
-                            <img src="${imgUrl}" class="w-100 h-100" style="object-fit: cover;" onerror="this.onerror=null; this.src='<?php echo ASSETS_URL; ?>/images/placeholder.svg';">
-                            <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 p-1 delete-gallery-btn" data-img-id="${img.id}" style="line-height: .8;"><i class="fas fa-times" style="font-size: 10px;"></i></button>
-                        </div>
-                    `;
-                });
+                } catch(e) {
+                    console.error("Error parsing gallery data:", e);
+                    galleryHtml = '<span class="text-muted small fst-italic">No gallery images uploaded yet.</span>';
+                }
+            } else {
+                galleryHtml = '<span class="text-muted small fst-italic">No gallery images uploaded yet.</span>';
             }
             galleryDiv.innerHTML = galleryHtml;
             
@@ -1610,10 +1655,12 @@ document.addEventListener('DOMContentLoaded', function() {
     function setupNewGallerySorting(inputId, previewId) {
         const input = document.getElementById(inputId);
         const preview = document.getElementById(previewId);
+        if (!input || !preview) return { reset: function() {} };
         let selectedFiles = [];
 
         input.addEventListener('change', function() {
-            const files = Array.from(this.files);
+            const files = Array.from(this.files || []);
+            if (!files.length) return;
             // Append new files to our list
             selectedFiles = selectedFiles.concat(files);
             renderPreviews();
@@ -1622,29 +1669,33 @@ document.addEventListener('DOMContentLoaded', function() {
 
         function renderPreviews() {
             preview.innerHTML = '';
+            const newSection = document.getElementById(previewId === 'edit_gallery_preview_new' ? 'edit_gallery_new_section' : '');
+            if (newSection) {
+                newSection.style.display = selectedFiles.length > 0 ? 'block' : 'none';
+            }
+
             selectedFiles.forEach((file, index) => {
-                const reader = new FileReader();
                 const div = document.createElement('div');
-                div.className = 'position-relative border rounded p-1 new-gal-item';
+                div.className = 'position-relative border rounded p-1 new-gal-item shadow-sm';
                 div.style.width = '80px';
                 div.style.height = '80px';
                 div.style.cursor = 'move';
                 div.dataset.index = index;
 
-                reader.onload = function(e) {
-                    div.innerHTML = `
-                        <img src="${e.target.result}" class="w-100 h-100" style="object-fit: cover;">
-                        <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 p-1 remove-new-img" data-index="${index}" style="line-height: .8;"><i class="fas fa-times" style="font-size: 10px;"></i></button>
-                    `;
-                    
-                    div.querySelector('.remove-new-img').addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        selectedFiles.splice(index, 1);
-                        renderPreviews();
-                        updateInputFiles();
-                    });
-                };
-                reader.readAsDataURL(file);
+                const objectUrl = URL.createObjectURL(file);
+                div.innerHTML = `
+                    <img src="${objectUrl}" class="w-100 h-100 rounded" style="object-fit: cover;">
+                    <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 p-1 remove-new-img" data-index="${index}" style="line-height: .8; border-radius: 50%;" title="Remove"><i class="fas fa-times" style="font-size: 10px;"></i></button>
+                `;
+                
+                div.querySelector('.remove-new-img').addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const removeIdx = parseInt(this.dataset.index);
+                    selectedFiles.splice(removeIdx, 1);
+                    renderPreviews();
+                    updateInputFiles();
+                });
+
                 preview.appendChild(div);
             });
 
@@ -1656,7 +1707,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         onEnd: function() {
                             const newOrder = [];
                             preview.querySelectorAll('.new-gal-item').forEach(el => {
-                                newOrder.push(selectedFiles[parseInt(el.dataset.index)]);
+                                const idx = parseInt(el.dataset.index);
+                                if (!isNaN(idx) && selectedFiles[idx]) {
+                                    newOrder.push(selectedFiles[idx]);
+                                }
                             });
                             selectedFiles = newOrder;
                             renderPreviews();
@@ -1678,6 +1732,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 selectedFiles = [];
                 input.value = '';
                 preview.innerHTML = '';
+                const newSection = document.getElementById(previewId === 'edit_gallery_preview_new' ? 'edit_gallery_new_section' : '');
+                if (newSection) newSection.style.display = 'none';
             }
         };
     }

@@ -332,7 +332,7 @@ if (!function_exists('resolve_product_image_url')) {
         $site_url = defined('SITE_URL') ? rtrim(SITE_URL, '/') : '';
         $assets_url = defined('ASSETS_URL') ? rtrim(ASSETS_URL, '/') : ($site_url . '/assets');
         $base_path = defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__);
-        $placeholder_url = $assets_url . '/images/AhaConvert_3ph.webp';
+        $placeholder_url = $assets_url . '/images/placeholder.svg';
         
         // Filter out dummy/empty/invalid image strings
         $dummies = ['placeholder.svg', 'placeholder.png', 'no-image.png', 'no-image.jpg', 'null', 'undefined'];
@@ -445,6 +445,11 @@ if (!function_exists('resolve_product_image_url')) {
                 return encode_url_path($assets_url . '/images/' . $bare);
             }
 
+            // Check in /uploads/media/images/ (media manager & modern gallery uploads)
+            if (file_exists($base_path . '/uploads/media/images/' . $bare)) {
+                return encode_url_path($site_url . '/uploads/media/images/' . $bare);
+            }
+
             // Check in /uploads/images/
             if (file_exists($base_path . '/uploads/images/' . $bare)) {
                 return encode_url_path($site_url . '/uploads/images/' . $bare);
@@ -461,6 +466,10 @@ if (!function_exists('resolve_product_image_url')) {
                 $matches = glob($base_path . '/assets/images/' . $name_no_ext . '.*');
                 if (!empty($matches)) {
                     return encode_url_path($assets_url . '/images/' . basename($matches[0]));
+                }
+                $media_img_matches = glob($base_path . '/uploads/media/images/' . $name_no_ext . '.*');
+                if (!empty($media_img_matches)) {
+                    return encode_url_path($site_url . '/uploads/media/images/' . basename($media_img_matches[0]));
                 }
                 $upload_img_matches = glob($base_path . '/uploads/images/' . $name_no_ext . '.*');
                 if (!empty($upload_img_matches)) {

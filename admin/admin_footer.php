@@ -156,9 +156,20 @@ document.addEventListener('DOMContentLoaded', function() {
     let uploadSourceModalInstance = null;
     let mediaGallerySelectorModalInstance = null;
 
+    // Helper: detect if a file input is a multi-image gallery input
+    function isGalleryInput(el) {
+        if (!el) return false;
+        if (el.multiple) return true;
+        const name = (el.getAttribute('name') || '').toLowerCase();
+        const id = (el.id || '').toLowerCase();
+        return name.includes('gallery') || id.includes('gallery');
+    }
+
     // Helper: update live preview for a specific file input element
     function updateFieldImagePreview(inputEl, srcUrl) {
         if (!inputEl || !srcUrl) return;
+        // Never override existing gallery previews with single-image handlers
+        if (isGalleryInput(inputEl)) return;
 
         // 1. Check for specific preview target by input name or ID convention
         const inputName = inputEl.getAttribute('name') || inputEl.id || '';
@@ -358,8 +369,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
 
-            // Immediately update live image preview on screen
-            updateFieldImagePreview(currentFileInput, url);
+            // Immediately update live image preview on screen (only for single-file inputs)
+            if (!isGalleryInput(currentFileInput)) {
+                updateFieldImagePreview(currentFileInput, url);
+            }
 
             // Fetch the image as a Blob to populate file input
             const response = await fetch(url);
@@ -390,6 +403,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Generic live preview listener for local computer file uploads
     document.addEventListener('change', function(e) {
         if (e.target.tagName === 'INPUT' && e.target.type === 'file' && e.target.files && e.target.files[0]) {
+            if (isGalleryInput(e.target)) return;
             const file = e.target.files[0];
             if (file.type && file.type.startsWith('image/')) {
                 updateFieldImagePreview(e.target, URL.createObjectURL(file));
