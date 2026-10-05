@@ -656,6 +656,8 @@ $current_url = !empty($seoData['canonical'])
 
     <!-- Custom Theme & App CSS (Critical) -->
     <link href="<?php echo ASSETS_URL; ?>/css/style.css?v=<?php echo file_exists(__DIR__ . '/../assets/css/style.css') ? filemtime(__DIR__ . '/../assets/css/style.css') : '2.0'; ?>" rel="stylesheet">
+    <!-- Mobile Bottom Navigation (Flipkart/Amazon Style) -->
+    <link href="<?php echo ASSETS_URL; ?>/css/bottom-nav.css?v=<?php echo file_exists(__DIR__ . '/../assets/css/bottom-nav.css') ? filemtime(__DIR__ . '/../assets/css/bottom-nav.css') : '2.0'; ?>" rel="stylesheet">
     <!-- Theme Customizer CSS Variables -->
     <?php
     require_once __DIR__ . '/ThemeService.php';

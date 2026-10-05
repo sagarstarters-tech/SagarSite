@@ -1,52 +1,95 @@
+/**
+ * Sagar Starters - Mobile Bottom Navigation Bar Logic
+ * Flipkart / Amazon Style Active Detection, Live Cart Badge Sync & Tactile Feedback
+ */
 document.addEventListener('DOMContentLoaded', () => {
-    const navItems = document.querySelectorAll('.bottom-nav-item');
+    const bottomNav = document.getElementById('bottomNav');
+    if (!bottomNav) return;
 
-    // 1. Set active item based on current URL pattern
-    const currentPath = window.location.pathname;
+    const navItems = bottomNav.querySelectorAll('.bottom-nav-item');
+    const currentPath = window.location.pathname.toLowerCase();
 
-    // We try to match the link href with the current path
+    // 1. Smart Active Tab Detection (Flipkart / Amazon standard routing)
+    let matched = false;
     navItems.forEach(item => {
         try {
-            const itemPath = new URL(item.href).pathname;
+            const itemPath = new URL(item.href).pathname.toLowerCase();
+            const tab = item.getAttribute('data-tab');
 
-            // Basic path matching (e.g. /index.php == /index.php)
+            // Exact match or directory index match
             if (currentPath === itemPath || (currentPath.endsWith('/') && itemPath.endsWith('index.php'))) {
-                navItems.forEach(nav => nav.classList.remove('active'));
                 item.classList.add('active');
+                matched = true;
+            } else if (tab === 'categories' && (currentPath.includes('shop.php') || currentPath.includes('category.php') || currentPath.includes('catalogue.php') || currentPath.includes('product.php'))) {
+                item.classList.add('active');
+                matched = true;
+            } else if (tab === 'orders' && currentPath.includes('order')) {
+                item.classList.add('active');
+                matched = true;
+            } else if (tab === 'profile' && (currentPath.includes('profile.php') || currentPath.includes('user/'))) {
+                item.classList.add('active');
+                matched = true;
+            } else if (tab === 'cart' && (currentPath.includes('cart.php') || currentPath.includes('checkout.php'))) {
+                item.classList.add('active');
+                matched = true;
+            } else {
+                item.classList.remove('active');
             }
         } catch (e) { /* ignore invalid URLs */ }
     });
 
-    // 2. Ripple click effect logic (Android-style)
+    // Default to Home if root path or no match
+    if (!matched) {
+        const homeItem = bottomNav.querySelector('[data-tab="home"]');
+        if (homeItem && (currentPath.endsWith('/') || currentPath.endsWith('index.php') || currentPath === '')) {
+            homeItem.classList.add('active');
+        }
+    }
+
+    // 2. Tactile Touch Ripple Effect
     navItems.forEach(item => {
         item.addEventListener('click', function (e) {
+            const oldRipple = this.querySelector('.ripple');
+            if (oldRipple) oldRipple.remove();
 
-            // Remove any existing ripples to prevent stacking
-            let oldRipple = this.querySelector('.ripple');
-            if (oldRipple) {
-                oldRipple.remove();
-            }
-
-            // Create new ripple span element
-            let ripple = document.createElement('span');
+            const ripple = document.createElement('span');
             ripple.classList.add('ripple');
             this.appendChild(ripple);
 
-            // Calculate exact position relative to click
-            let rect = this.getBoundingClientRect();
-            // Size of ripple (max of width or height of nav item)
-            let size = Math.max(rect.width, rect.height);
+            const rect = this.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
             ripple.style.width = size + 'px';
             ripple.style.height = size + 'px';
-
-            // Center the ripple spawn on the exact click coordinates
             ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
             ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
 
-            // Visually change active state instantly for fast feedback
-            // Because PHP causes a reload, this simply adds polish before the page clears.
             navItems.forEach(nav => nav.classList.remove('active'));
             this.classList.add('active');
         });
     });
+
+    // 3. Live Synchronize Cart Badge with Header Cart
+    function syncCartBadge() {
+        const headerBadge = document.querySelector('#header-cart-container .badge');
+        const bottomBadge = document.getElementById('bottomNavCartBadge');
+        if (!bottomBadge) return;
+
+        if (headerBadge) {
+            const text = headerBadge.textContent.trim();
+            const count = parseInt(text, 10);
+            if (!isNaN(count) && count > 0) {
+                bottomBadge.textContent = count > 99 ? '99+' : count;
+                bottomBadge.style.display = 'inline-flex';
+            } else {
+                bottomBadge.style.display = 'none';
+            }
+        }
+    }
+
+    // Observe changes in header-cart-container for dynamic updates
+    const headerCart = document.getElementById('header-cart-container');
+    if (headerCart && window.MutationObserver) {
+        const observer = new MutationObserver(syncCartBadge);
+        observer.observe(headerCart, { childList: true, subtree: true, characterData: true });
+    }
 });
